@@ -1,0 +1,18 @@
+# Produktionsprofil — aktiv via SPRING_PROFILES_ACTIVE=prod
+spring:
+  jpa:
+    show-sql: false
+  devtools:
+    restart:
+      enabled: false
+    livereload:
+      enabled: false
+
+lwe:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://example.com}
+
+logging:
+  level:
+    com.lwe: INFO
+    org.springframework: WARN

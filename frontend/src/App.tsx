@@ -1,22 +1,63 @@
-import { useTranslation } from 'react-i18next';
+import { useEffect } from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { useAuthStore } from './store/authStore';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import DashboardPage from './pages/DashboardPage';
+import WorldEditorPage from './pages/WorldEditorPage';
+import CharacterSheetPage from './pages/CharacterSheetPage';
+import InventoryPage from './pages/InventoryPage';
+import MapPage from './pages/MapPage';
+import AdminPage from './pages/AdminPage';
 
-/**
- * Skeleton-Root-Komponente. Vollständige Routing-Struktur folgt in Phase 3 (P3-T01 ff, siehe
- * docs/UI-UX.md Abschnitt 3 "Komponenten-Struktur").
- */
-function App() {
-  const { t } = useTranslation('common');
+export default function App() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const restoreSession = useAuthStore((s) => s.restoreSession);
+
+  useEffect(() => {
+    restoreSession();
+  }, [restoreSession]);
+
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary font-body">
-      <header className="p-4 bg-bg-surface border-b border-bg-elevated">
-        <h1 className="text-2xl font-heading text-accent">{t('app.title')}</h1>
-        <p className="text-text-secondary">{t('app.subtitle')}</p>
-      </header>
-      <main className="p-6 max-w-3xl">
-        <p className="text-text-secondary">{t('app.skeleton_note')}</p>
-      </main>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/login"
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />}
+        />
+        <Route
+          path="/register"
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />}
+        />
+        <Route
+          path="/dashboard"
+          element={isAuthenticated ? <DashboardPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/worlds/:id"
+          element={isAuthenticated ? <WorldEditorPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/characters/:id"
+          element={isAuthenticated ? <CharacterSheetPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/characters/:id/inventory"
+          element={isAuthenticated ? <InventoryPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/maps/:id"
+          element={isAuthenticated ? <MapPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/admin"
+          element={isAuthenticated ? <AdminPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="*"
+          element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />}
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }
-
-export default App;

@@ -12,7 +12,8 @@
     "save": "Speichern",
     "delete": "Löschen",
     "edit": "Bearbeiten",
-    "create": "Erstellen"
+    "create": "Erstellen",
+    "copy": "Kopieren"
   },
   "language": {
     "switch": "Sprache ändern",

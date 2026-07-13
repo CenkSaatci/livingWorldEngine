@@ -39,6 +39,7 @@ void i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
+    lng: FALLBACK_LOCALE,
     fallbackLng: FALLBACK_LOCALE,
     supportedLngs: SUPPORTED_LOCALES,
     ns: I18N_NAMESPACES,
@@ -68,7 +69,7 @@ void i18n
     },
     detection: {
       order: ['localStorage', 'navigator'],
-      cache: ['localStorage'],
+      caches: ['localStorage'],
       lookupLocalStorage: 'lwe:locale',
     },
   });

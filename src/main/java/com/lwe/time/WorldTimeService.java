@@ -43,11 +43,10 @@ public class WorldTimeService {
      */
     @Scheduled(fixedDelay = 1000)
     public void tickAllWorlds() {
-        var worlds = worldRepo.findAll();
+        var worlds = worldRepo.findByActiveTrue();
         var now = Instant.now();
 
         for (var world : worlds) {
-            if (!world.isActive()) continue;
             var timeCfg = readTimeConfig(world);
             if (timeCfg == null) continue;
             if (timeCfg.paused()) continue;

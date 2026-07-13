@@ -67,7 +67,7 @@ public class CombatService {
         var participants = new ArrayList<CombatParticipant>();
         for (var entity : entities) {
             var initAttr = resolveInitiativeAttr(entity, world);
-            var attrValue = extractAttribute(entity, initAttr).orElse(10);
+            var attrValue = AttributeUtils.extractAttribute(entity, initAttr).orElse(10);
             var req = new RuleEngine.ProbeRequest(initAttr, attrValue, 0, 0);
             var initiative = engine.executeProbe(req).total();
 
@@ -94,6 +94,22 @@ public class CombatService {
     @Transactional
     public CombatActionResult executeAction(UUID userId, UUID sessionId, UUID actorId,
                                             String actionType, UUID targetId, UUID itemId) {
+        var session = validateSession(sessionId, userId, actorId);
+        var participants = participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId);
+        var actor = findActor(participants, actorId);
+        requireAp(actor);
+
+        checkRange(actionType, targetId, actorId);
+
+        var damage = rollDamage(userId, session.getWorldId(), actorId, actionType);
+        deductAp(actor);
+
+        eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
+            "actionType", actionType, "damage", damage));
+        return new CombatActionResult(actionType, damage, actor.getApCurrent(), true, null);
+    }
+
+    private CombatSession validateSession(UUID sessionId, UUID userId, UUID actorId) {
         var session = sessionRepo.findById(sessionId)
             .orElseThrow(() -> new CombatException("COMBAT_NOT_FOUND", "Combat session not found"));
         if (!"ACTIVE".equals(session.getStatus()))
@@ -102,51 +118,48 @@ public class CombatService {
             throw new CombatException("WORLD_ACCESS_DENIED", "Access denied");
         if (!actorId.equals(session.getCurrentTurnEntityId()))
             throw new CombatException("COMBAT_NOT_YOUR_TURN", "Not your turn");
+        return session;
+    }
 
-        var participants = participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId);
-
-        var actor = participants.stream()
+    private CombatParticipant findActor(List<CombatParticipant> participants, UUID actorId) {
+        return participants.stream()
             .filter(p -> p.getEntityId().equals(actorId))
             .findFirst()
             .orElseThrow(() -> new CombatException("COMBAT_TARGET_INVALID", "Actor not in combat"));
+    }
 
+    private void requireAp(CombatParticipant actor) {
         if (actor.getApCurrent() < 1)
             throw new CombatException("COMBAT_AP_INSUFFICIENT", "Not enough AP");
+    }
 
-        // Range check (simplified: max 5 tiles)
-        if ("ATTACK".equals(actionType) && targetId != null) {
-            var attacker = entityRepo.findById(actorId).orElse(null);
-            var defender = entityRepo.findById(targetId).orElse(null);
-            if (attacker != null && defender != null) {
-                var range = gridDistance(attacker, defender);
-                if (range > 5)
-                    throw new CombatException("COMBAT_RANGE_INVALID", "Target out of range (" + range + " tiles)");
-            }
-        }
+    private void checkRange(String actionType, UUID targetId, UUID actorId) {
+        if (!"ATTACK".equals(actionType) || targetId == null) return;
+        var attacker = entityRepo.findById(actorId).orElse(null);
+        var defender = entityRepo.findById(targetId).orElse(null);
+        if (attacker == null || defender == null) return;
+        var aPos = attacker.getPositionJson();
+        var dPos = defender.getPositionJson();
+        if (aPos == null || aPos.isBlank() || dPos == null || dPos.isBlank()) return;
+        var range = AttributeUtils.gridDistance(attacker, defender);
+        if (range > 5)
+            throw new CombatException("COMBAT_RANGE_INVALID", "Target out of range (" + range + " tiles)");
+    }
 
-        // Roll damage
-        var world = worldRepo.findById(session.getWorldId()).orElseThrow();
-        var damageTotal = 0;
-        if ("ATTACK".equals(actionType)) {
-            var entity = entityRepo.findById(actorId).orElse(null);
-            if (entity != null) {
-                var damageAttr = resolveDamageAttr(entity, world);
-                var attrValue = extractAttribute(entity, damageAttr).orElse(10);
-                var rollResult = rollService.executeRoll(userId, session.getWorldId(),
-                    actorId, damageAttr, 0, 0);
-                damageTotal = rollResult != null ? rollResult.total() : 0;
-            }
-        }
+    private int rollDamage(UUID userId, UUID worldId, UUID actorId, String actionType) {
+        if (!"ATTACK".equals(actionType)) return 0;
+        var entity = entityRepo.findById(actorId).orElse(null);
+        if (entity == null) return 0;
+        var world = worldRepo.findById(worldId).orElse(null);
+        if (world == null) return 0;
+        var damageAttr = resolveDamageAttr(entity, world);
+        var rollResult = rollService.executeRoll(userId, worldId, actorId, damageAttr, 0, 0);
+        return rollResult != null ? rollResult.total() : 0;
+    }
 
+    private void deductAp(CombatParticipant actor) {
         actor.setApCurrent(actor.getApCurrent() - 1);
         participantRepo.save(actor);
-
-        eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
-            "actionType", actionType,
-            "damage", damageTotal
-        ));
-
-        return new CombatActionResult(actionType, damageTotal, actor.getApCurrent(), true, null);
     }
 
     @Transactional
@@ -232,25 +245,6 @@ public class CombatService {
 
     private String resolveDamageAttr(GameEntity entity, World world) {
         return "staerke"; // Default
-    }
-
-    private Optional<Integer> extractAttribute(GameEntity entity, String attrName) {
-        try {
-            var tree = objectMapper.readTree(entity.getAttributesJson());
-            var node = tree.get(attrName);
-            if (node != null && node.isInt()) return Optional.of(node.asInt());
-        } catch (Exception ignored) {}
-        return Optional.empty();
-    }
-
-    private int gridDistance(GameEntity a, GameEntity b) {
-        try {
-            var aTree = objectMapper.readTree(a.getPositionJson());
-            var bTree = objectMapper.readTree(b.getPositionJson());
-            int ax = aTree.path("x").asInt(0), ay = aTree.path("y").asInt(0);
-            int bx = bTree.path("x").asInt(0), by = bTree.path("y").asInt(0);
-            return Math.abs(ax - bx) + Math.abs(ay - by); // Manhattan distance
-        } catch (Exception e) { return 0; }
     }
 
     private void requireOwnership(UUID worldId, UUID userId) {

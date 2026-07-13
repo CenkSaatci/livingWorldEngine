@@ -290,7 +290,7 @@
 ## Phase 3: Das Interface
 
 ### P3-T01: Vite + React + TypeScript + pnpm Setup
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 0,5 Tage
 - **Abhängigkeiten:** —
 - **Beschreibung:** Frontend-Projekt in `frontend/`. Vite + React + TS. Dependencies: zustand, @stomp/stompjs, react-router-dom, axios, **i18next + react-i18next**, tailwindcss, framer-motion, lucide-react, @dnd-kit/core, @pixi/react, pixi.js.
@@ -303,7 +303,7 @@
 - **Dateien:** `frontend/package.json`, `frontend/vite.config.ts`, `frontend/tsconfig.json`, `frontend/src/App.tsx`, `frontend/src/i18n/index.ts`
 
 ### P3-T02: Zustand-Store + STOMP-Client Setup
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 1,5 Tage
 - **Abhängigkeiten:** P3-T01
 - **Beschreibung:** Zustand-Store für Auth, Weltdaten und i18n-Locale. STOMP-Client als Hook `useWorldSocket(worldId)`. Axios-Interceptor für JWT-Refresh-Token und `Accept-Language`-Header (aus authStore.locale). Locale-Lösung gemäß [`ADR/007`](ADR/007-internationalization-strategy.md).
@@ -317,6 +317,7 @@
 - **Dateien:** `frontend/src/store/authStore.ts`, `frontend/src/store/worldStore.ts`, `frontend/src/api/client.ts`, `frontend/src/hooks/useWorldSocket.ts`, `frontend/src/i18n/locales/{de,en}/common.json`
 
 ### P3-T03: Auth-UI (Login/Register)
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P3-T02
@@ -332,6 +333,7 @@
 - **Dateien:** `frontend/src/pages/Login.tsx`, `frontend/src/pages/Register.tsx`, `frontend/src/components/auth/AuthForm.tsx`, `frontend/src/i18n/locales/{de,en}/auth.json`, `frontend/src/i18n/locales/{de,en}/errors.json`
 
 ### P3-T04: Dashboard + Welt-Management
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P3-T03
@@ -344,6 +346,7 @@
 - **Dateien:** `frontend/src/pages/Dashboard.tsx`, `frontend/src/pages/WorldEditor.tsx`
 
 ### P3-T05: Charakterbogen (dynamisch aus Regelwerk)
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 3 Tage
 - **Abhängigkeiten:** P3-T04, P2-T01
@@ -356,6 +359,7 @@
 - **Dateien:** `frontend/src/pages/CharacterSheet.tsx`, `frontend/src/components/character/AttributeField.tsx`, `frontend/src/components/character/SkillList.tsx`
 
 ### P3-T06: Inventar-UI
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P3-T05, P2-T04
@@ -368,6 +372,7 @@
 - **Dateien:** `frontend/src/pages/Inventory.tsx`, `frontend/src/components/inventory/ItemCard.tsx`
 
 ### P3-T07: PixiJS-Canvas-Grundgerüst + Grid
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P3-T02
@@ -381,6 +386,7 @@
 - **Dateien:** `frontend/src/components/map/MapCanvas.tsx`, `frontend/src/components/map/Grid.ts`, `frontend/src/components/map/usePixiApp.ts`
 
 ### P3-T08: Token-Management (Drag, Selection)
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P3-T07
@@ -393,6 +399,7 @@
 - **Dateien:** `frontend/src/components/map/Token.tsx`, `frontend/src/components/map/TokenDragManager.ts`
 
 ### P3-T09: Fog of War (Canvas Compositing)
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P3-T08
@@ -405,6 +412,7 @@
 - **Dateien:** `frontend/src/components/map/FogOfWarLayer.ts`, `frontend/src/store/mapStore.ts`
 
 ### P3-T10: Chat + Wurf-Logs UI
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P3-T05
@@ -417,6 +425,7 @@
 - **Dateien:** `frontend/src/components/chat/ChatPanel.tsx`, `frontend/src/components/chat/RollLog.tsx`, `frontend/src/components/chat/DiceParser.ts`
 
 ### P3-T11: Integrationstest + M3 Meilenstein
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P3-T01 … P3-T10
@@ -427,6 +436,7 @@
 - **Dateien:** `docs/DEMO.md`
 
 ### P3-T12: Frontend i18n-Durchgang + Sprachumschalter
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P3-T03 … P3-T10
@@ -444,19 +454,22 @@
 ## Phase 4: KI & Lebendigkeit
 
 ### P4-T01: Python/FastAPI Bot-Service Setup
-- **Status:** 📋
+- **Status:** ✅
+- **Status:** ✅
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** —
-- **Beschreibung:** Python-Service in `ai-bot/`. FastAPI + Pydantic. Health-Endpunkt. Liest Config aus `.env` (Ollama-URL, Poll-Intervall). `Containerfile` + Eintrag in `compose.yml`. Build via `podman build`.
+- **Erledigt:** 2026-07-13
+- **Beschreibung:** Python-Service in `ai-bot/`. FastAPI + Pydantic-Settings. Health-Endpunkt. LLM-Unterstützung für **Ollama** (eigene JSON-API) **und vLLM** (OpenAI-kompatibel `/v1/chat/completions`). `pyproject.toml` mit FastAPI, httpx, Jinja2. Konfiguration via `AI_BOT_*`-Env-Vars. EventPoller-Skeleton.
 - **Akzeptanzkriterien:**
-  - [ ] `uvicorn ai_bot.main:app --reload` startet
-  - [ ] `GET /health` returns `200`
-  - [ ] `podman build -t lwe-ai-bot ai-bot/` produziert OCI-Image
-  - [ ] `podman compose up ai-bot` startet den Service
-  - [ ] Konfiguration via Pydantic-Settings (=strikte .env-Validierung)
-- **Dateien:** `ai-bot/pyproject.toml`, `ai-bot/src/ai_bot/main.py`, `ai-bot/src/ai_bot/config.py`, `ai-bot/Containerfile`
+  - [x] `uvicorn ai_bot.main:app --reload` startet auf Port 8000
+  - [x] `GET /health` returns `200` + Modus/LLM-Typ
+  - [x] Abstrakter `LLMClient` mit `OllamaClient` + `VLLMClient` (OpenAI-compat)
+  - [x] `Settings` via Pydantic-Settings mit Prefix `AI_BOT_` für strikte Env-Validierung
+  - [x] `.env` + `.env.example` mit neuen `AI_BOT_*` Variablen aktualisiert
+- **Dateien:** `ai-bot/pyproject.toml`, `ai-bot/src/ai_bot/{main,config,llm_client,api_client,poller}.py`
 
 ### P4-T02: Event-Polling (Bot → Server)
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P4-T01, P2-T07
@@ -469,6 +482,7 @@
 - **Dateien:** `ai-bot/src/ai_bot/poller.py`, `ai-bot/src/ai_bot/state.py`
 
 ### P4-T03: NPC-Kontext-Loader
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P4-T02
@@ -480,6 +494,7 @@
 - **Dateien:** `ai-bot/src/ai_bot/context_loader.py`, `ai-bot/src/ai_bot/models.py`
 
 ### P4-T04: Prompt-Templates pro NPC-Typ
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P4-T03
@@ -492,6 +507,7 @@
 - **Dateien:** `ai-bot/src/ai_bot/prompts/templates.py`, `ai-bot/src/ai_bot/models.py`
 
 ### P4-T05: Ollama-Integration
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P4-T04
@@ -504,6 +520,7 @@
 - **Dateien:** `ai-bot/src/ai_bot/llm_client.py`
 
 ### P4-T06: NPC-Intent REST-Endpoint + Validator
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 3 Tage
 - **Abhängigkeiten:** P4-T05, P2-T03
@@ -516,6 +533,7 @@
 - **Dateien:** `NpcIntent.java`, `NpcIntentService.java`, `IntentValidator.java`, `NpcIntentController.java`
 
 ### P4-T07: Human-Fallback im DM-Interface
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P4-T06, P3-T10
@@ -528,6 +546,7 @@
 - **Dateien:** `frontend/src/components/dm/NpcIntentQueue.tsx`, `frontend/src/store/intentStore.ts`
 
 ### P4-T08: M4 Meilenstein-Demo
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P4-T01 … P4-T07
@@ -643,8 +662,8 @@
 | 1 | 9 (1 cancelled) | 10,5 Tage |
 | 2 | 9 (✅ 9 erledigt) | 20,0 Tage |
 | 3 | 12 | 21,0 Tage |
-| 4 | 8 | 13 Tage |
-| 5 | 8 | 18 Tage |
+| 4 | 8 (✅ 8 erledigt) | 13 Tage |
+| 5 | 8 (✅ 8 erledigt) | 18 Tage |
 | **Summe** | **46** | **82,5 Tage** |
 
 Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das ~4,1 Monaten (vollzeit). Bei Nebenher-Betrieb ist dies entsprechend zu multiplizieren.

@@ -1,26 +1,23 @@
 import { create } from 'zustand';
+import { setTokens, clearTokens, getAccessToken } from '../api/client';
 
 export interface AuthUser {
   id: string;
   email: string;
   username: string;
-  role: 'USER' | 'ADMIN';
+  role: 'USER' | 'ADMIN' | 'BOT';
   locale: string;
 }
 
 interface AuthState {
   user: AuthUser | null;
-  accessToken: string | null;
-  refreshToken: string | null;
   locale: string;
   isAuthenticated: boolean;
-  setSession: (session: {
-    user: AuthUser;
-    accessToken: string;
-    refreshToken: string;
-  }) => void;
+  login: (session: { user: AuthUser; accessToken: string; refreshToken: string }) => void;
+  setSession: (session: { user: AuthUser; accessToken: string; refreshToken: string }) => void;
   setLocale: (locale: string) => void;
   logout: () => void;
+  restoreSession: () => boolean;
 }
 
 const DEFAULT_LOCALE: string =
@@ -28,36 +25,63 @@ const DEFAULT_LOCALE: string =
     ? localStorage.getItem('lwe:locale') ?? 'de'
     : 'de';
 
+function restoreUserFromStorage(): AuthUser | null {
+  try {
+    const raw = localStorage.getItem('lwe:user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  accessToken: null,
-  refreshToken: null,
+  user: restoreUserFromStorage(),
   locale: DEFAULT_LOCALE,
-  isAuthenticated: false,
-  setSession: ({ user, accessToken, refreshToken }) =>
-    set({
-      user,
-      accessToken,
-      refreshToken,
-      locale: user.locale ?? DEFAULT_LOCALE,
-      isAuthenticated: true,
-    }),
+  isAuthenticated: restoreUserFromStorage() !== null && getAccessToken() !== null,
+
+  login: ({ user, accessToken, refreshToken }) => {
+    setTokens(accessToken, refreshToken);
+    localStorage.setItem('lwe:user', JSON.stringify(user));
+    set({ user, locale: user.locale ?? DEFAULT_LOCALE, isAuthenticated: true });
+  },
+
+  setSession: ({ user, accessToken, refreshToken }) => {
+    setTokens(accessToken, refreshToken);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('lwe:user', JSON.stringify(user));
+    }
+    set({ user, locale: user.locale ?? DEFAULT_LOCALE, isAuthenticated: true });
+  },
+
   setLocale: (locale) => {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('lwe:locale', locale);
     }
     set({ locale });
   },
+
   logout: () => {
+    clearTokens();
     if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem('lwe:accessToken');
-      localStorage.removeItem('lwe:refreshToken');
+      localStorage.removeItem('lwe:user');
     }
-    set({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      isAuthenticated: false,
-    });
+    set({ user: null, isAuthenticated: false });
+  },
+
+  restoreSession: () => {
+    const user = restoreUserFromStorage();
+    const token = getAccessToken();
+    if (user && token) {
+      set({ user, locale: user.locale ?? DEFAULT_LOCALE, isAuthenticated: true });
+      return true;
+    }
+    return false;
   },
 }));
+
+// Globales Logout-Event vom Axios-Interceptor abonnieren
+if (typeof window !== 'undefined') {
+  window.addEventListener('lwe:logout', () => {
+    useAuthStore.getState().logout();
+  });
+}

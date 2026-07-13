@@ -1,0 +1,61 @@
+# ============================================================
+# compose.prod.yml — Production-Setup
+# Nutzt Podman (siehe docs/ADR/006)
+# ============================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: lwe
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d lwe"]
+      interval: 10s
+
+  backend:
+    build:
+      context: .
+      dockerfile: Containerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: admin
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      DB_NAME: lwe
+      JWT_SECRET: ${JWT_SECRET:-please-change-in-production}
+      SPRING_PROFILES_ACTIVE: prod
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Containerfile
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+  ai-bot:
+    build:
+      context: ai-bot
+      dockerfile: Containerfile
+    depends_on:
+      - backend
+    environment:
+      AI_BOT_BACKEND_URL: http://backend:8080/api/v1
+      AI_BOT_LLM_TYPE: ${AI_BOT_LLM_TYPE:-ollama}
+
+  redis:
+    image: redis:7-alpine
+    profiles: ["cache"]
+
+volumes:
+  pgdata:

@@ -6,6 +6,7 @@ import com.lwe.core.service.CombatService;
 import com.lwe.core.service.EntityService;
 import com.lwe.core.service.GameSystemService;
 import com.lwe.core.service.InventoryService;
+import com.lwe.core.service.NpcIntentService;
 import com.lwe.core.service.WorldService;
 import com.lwe.rules.RuleSchemaValidator;
 import org.springframework.http.HttpStatus;
@@ -54,6 +55,15 @@ public class GlobalExceptionHandler {
             case "ADVENTURE_NOT_FOUND", "ADVENTURE_NODE_NOT_FOUND",
                  "ADVENTURE_CHOICE_NOT_FOUND", "ADVENTURE_PROGRESS_NOT_FOUND" -> HttpStatus.NOT_FOUND;
             case "ADVENTURE_ALREADY_COMPLETED" -> HttpStatus.CONFLICT;
+            default -> HttpStatus.BAD_REQUEST;
+        };
+        return ResponseEntity.status(status).body(errorBody(ex.getErrorCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(NpcIntentService.IntentException.class)
+    public ResponseEntity<?> handleIntentException(NpcIntentService.IntentException ex) {
+        var status = switch (ex.getErrorCode()) {
+            case "INTENT_NOT_FOUND" -> HttpStatus.NOT_FOUND;
             default -> HttpStatus.BAD_REQUEST;
         };
         return ResponseEntity.status(status).body(errorBody(ex.getErrorCode(), ex.getMessage()));

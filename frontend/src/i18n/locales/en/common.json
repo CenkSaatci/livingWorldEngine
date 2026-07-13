@@ -12,7 +12,8 @@
     "save": "Save",
     "delete": "Delete",
     "edit": "Edit",
-    "create": "Create"
+    "create": "Create",
+    "copy": "Copy"
   },
   "language": {
     "switch": "Change language",

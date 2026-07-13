@@ -1,0 +1,26 @@
+name: Deploy
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: redhat-actions/podman-login@v1
+        with:
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+          registry: ${{ secrets.REGISTRY_URL }}
+
+      - name: Build Backend
+        run: podman build -t ${{ secrets.REGISTRY_URL }}/lwe-backend:${{ github.ref_name }} .
+      - name: Push Backend
+        run: podman push ${{ secrets.REGISTRY_URL }}/lwe-backend:${{ github.ref_name }}
+
+      - name: Build Frontend
+        run: podman build -t ${{ secrets.REGISTRY_URL }}/lwe-frontend:${{ github.ref_name }} frontend/
+      - name: Push Frontend
+        run: podman push ${{ secrets.REGISTRY_URL }}/lwe-frontend:${{ github.ref_name }}

@@ -60,7 +60,7 @@ public class RollService {
         }
 
         // 3. Attributswert extrahieren
-        var attrValue = extractAttribute(entity, skillId).orElse(10);
+        var attrValue = AttributeUtils.extractAttribute(entity, skillId).orElse(10);
 
         // 4. Game-System laden → Engine bestimmen
         var engine = getEngineForWorld(world);
@@ -92,15 +92,6 @@ public class RollService {
         // Fallback auf D20
         return engines.getOrDefault(DiceExpressionParser.DiceSystem.D20,
             engines.values().iterator().next());
-    }
-
-    private Optional<Integer> extractAttribute(GameEntity entity, String skillName) {
-        try {
-            var tree = objectMapper.readTree(entity.getAttributesJson());
-            var node = tree.get(skillName);
-            if (node != null && node.isInt()) return Optional.of(node.asInt());
-        } catch (JsonProcessingException ignored) {}
-        return Optional.empty();
     }
 
     private RollResult error(String skillId, int target, String msg) {
