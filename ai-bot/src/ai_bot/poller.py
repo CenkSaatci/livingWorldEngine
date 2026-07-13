@@ -61,6 +61,21 @@ class EventPoller:
             return
         personality = (npc.get("metadata_json") or {}).get("personality", "neutral")
         nearby = await self.api.get_nearby_entities(world_id, source)
+        location_id = (npc.get("metadata_json") or {}).get("location_id")
+        location = None
+        region = None
+        npc_events = []
+        location_events = []
+        region_events = []
+
+        # P6-T06: Regionen + Orte + Events laden
+        if location_id:
+            location = await self.api.get_location(location_id)
+            location_events = await self.api.get_entity_events("location", location_id, 5)
+            if location and location.get("region_id"):
+                region = await self.api.get_region(location["region_id"])
+                region_events = await self.api.get_entity_events("region", location["region_id"], 5)
+        npc_events = await self.api.get_entity_events("npc", source, 5)
 
         # 2. Prompt-Template wählen (P4-T04)
         tmpl_name = f"{personality}.j2"
@@ -73,6 +88,11 @@ class EventPoller:
             npc=npc,
             trigger=event,
             nearby=nearby[:5],
+            location=location,
+            region=region,
+            npc_events=npc_events,
+            location_events=location_events,
+            region_events=region_events,
             language=(npc.get("metadata_json") or {}).get("language", "de"),
         )
 

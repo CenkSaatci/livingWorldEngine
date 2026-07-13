@@ -71,6 +71,37 @@ class BackendClient:
             except httpx.HTTPError:
                 return []
 
+    async def get_location(self, location_id: str) -> dict | None:
+        async with httpx.AsyncClient() as client:
+            try:
+                resp = await client.get(
+                    f"{self.base}/regions/locations/{location_id}",
+                    headers=self.headers, timeout=10)
+                return resp.json() if resp.status_code == 200 else None
+            except httpx.HTTPError:
+                return None
+
+    async def get_region(self, region_id: str) -> dict | None:
+        async with httpx.AsyncClient() as client:
+            try:
+                resp = await client.get(
+                    f"{self.base}/worlds/regions/{region_id}",
+                    headers=self.headers, timeout=10)
+                return resp.json() if resp.status_code == 200 else None
+            except httpx.HTTPError:
+                return None
+
+    async def get_entity_events(self, entity_type: str, entity_id: str, limit: int = 5) -> list[dict]:
+        async with httpx.AsyncClient() as client:
+            try:
+                resp = await client.get(
+                    f"{self.base}/entity-events",
+                    params={"entityType": entity_type, "entityId": entity_id, "limit": limit},
+                    headers=self.headers, timeout=10)
+                return resp.json() if resp.status_code == 200 else []
+            except httpx.HTTPError:
+                return []
+
     async def submit_intent(
         self, world_id: str, npc_id: str, intent_type: str,
         params: dict, reasoning: str,

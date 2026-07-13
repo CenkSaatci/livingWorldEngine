@@ -7,7 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import WorldEditorPage from './pages/WorldEditorPage';
 import CharacterSheetPage from './pages/CharacterSheetPage';
 import InventoryPage from './pages/InventoryPage';
-import MapPage from './pages/MapPage';
+import GameView from './pages/GameView';
 import AdminPage from './pages/AdminPage';
 
 export default function App() {
@@ -47,7 +47,7 @@ export default function App() {
         />
         <Route
           path="/maps/:id"
-          element={isAuthenticated ? <MapPage /> : <Navigate to="/login" replace />}
+          element={isAuthenticated ? <GameView /> : <Navigate to="/login" replace />}
         />
         <Route
           path="/admin"

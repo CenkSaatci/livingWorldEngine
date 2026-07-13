@@ -2,10 +2,14 @@ package com.lwe.api;
 
 import com.lwe.core.service.AdventureService;
 import com.lwe.core.service.AuthService;
+import com.lwe.core.service.EntityEventService;
 import com.lwe.core.service.CombatService;
 import com.lwe.core.service.EntityService;
 import com.lwe.core.service.GameSystemService;
 import com.lwe.core.service.InventoryService;
+import com.lwe.core.service.LocationService;
+import com.lwe.core.service.QuestService;
+import com.lwe.core.service.RegionService;
 import com.lwe.core.service.NpcIntentService;
 import com.lwe.core.service.WorldService;
 import com.lwe.rules.RuleSchemaValidator;
@@ -49,12 +53,48 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(errorBody(ex.getErrorCode(), ex.getMessage()));
     }
 
+    @ExceptionHandler(EntityEventService.EntityEventException.class)
+    public ResponseEntity<?> handleEntityEventException(EntityEventService.EntityEventException ex) {
+        var status = switch (ex.getErrorCode()) {
+            case "EVENT_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+            default -> HttpStatus.BAD_REQUEST;
+        };
+        return ResponseEntity.status(status).body(errorBody(ex.getErrorCode(), ex.getMessage()));
+    }
+
     @ExceptionHandler(AdventureService.AdventureException.class)
     public ResponseEntity<?> handleAdventureException(AdventureService.AdventureException ex) {
         var status = switch (ex.getErrorCode()) {
             case "ADVENTURE_NOT_FOUND", "ADVENTURE_NODE_NOT_FOUND",
                  "ADVENTURE_CHOICE_NOT_FOUND", "ADVENTURE_PROGRESS_NOT_FOUND" -> HttpStatus.NOT_FOUND;
             case "ADVENTURE_ALREADY_COMPLETED" -> HttpStatus.CONFLICT;
+            default -> HttpStatus.BAD_REQUEST;
+        };
+        return ResponseEntity.status(status).body(errorBody(ex.getErrorCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(LocationService.LocationException.class)
+    public ResponseEntity<?> handleLocationException(LocationService.LocationException ex) {
+        var status = switch (ex.getErrorCode()) {
+            case "LOCATION_NOT_FOUND", "REGION_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+            default -> HttpStatus.BAD_REQUEST;
+        };
+        return ResponseEntity.status(status).body(errorBody(ex.getErrorCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(QuestService.QuestException.class)
+    public ResponseEntity<?> handleQuestException(QuestService.QuestException ex) {
+        var status = switch (ex.getErrorCode()) {
+            case "QUEST_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+            default -> HttpStatus.BAD_REQUEST;
+        };
+        return ResponseEntity.status(status).body(errorBody(ex.getErrorCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(RegionService.RegionException.class)
+    public ResponseEntity<?> handleRegionException(RegionService.RegionException ex) {
+        var status = switch (ex.getErrorCode()) {
+            case "REGION_NOT_FOUND" -> HttpStatus.NOT_FOUND;
             default -> HttpStatus.BAD_REQUEST;
         };
         return ResponseEntity.status(status).body(errorBody(ex.getErrorCode(), ex.getMessage()));

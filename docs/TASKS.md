@@ -126,6 +126,7 @@
 - **Dateien:** `src/main/java/com/lwe/core/domain/World.java`, `com/lwe/core/domain/WorldMember.java`, `com/lwe/core/repository/WorldRepository.java`, `com/lwe/core/repository/WorldMemberRepository.java`, `com/lwe/core/service/WorldService.java`, `com/lwe/api/WorldController.java`, `src/main/resources/db/migration/V003__world_softdelete.sql`
 
 ### P1-T07: WebSocket-Konfiguration (STOMP) und Test-Topic
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P1-T04
@@ -168,6 +169,7 @@
 ## Phase 2: Die Logik
 
 ### P2-T01: Rule-Engine Interface und Implementierung
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 3 Tage
 - **Abhängigkeiten:** P1-T05
@@ -180,6 +182,7 @@
 - **Dateien:** `RuleEngine.java`, `D20RuleEngine.java`, `PoolRuleEngine.java`, `DiceExpressionParser.java`, `ProbeRequest.java`, `ProbeResult.java`
 
 ### P2-T02: Probe-Service und REST `/api/rolls`
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P2-T01, P1-T06
@@ -192,6 +195,7 @@
 - **Dateien:** `RollService.java`, `RollController.java`
 
 ### P2-T03: Kampf-Modul (Turn-basiert)
+- **Status:** ✅
 - **Status:** 📋
 - **Aufwand:** 4 Tage
 - **Abhängigkeiten:** P2-T02
@@ -655,17 +659,101 @@
 
 ---
 
+## Phase 6: Welt-Tiefe & Ereignis-Logs
+
+### P6-T01: Entity-Event-Log (entity_events)
+- **Status:** 📋
+- **Aufwand:** 2 Tage
+- **Abhängigkeiten:** P1-T03
+- **Beschreibung:** Tabelle `entity_events` mit entity_type/entity_id-Discriminator. Ereignis-Log für Regionen, Orte und NPCs. `EntityEventService` zum Publishen + Abfragen. REST-Endpunkte `POST/GET /api/v1/entity-events`. Siehe [`WORLD-DEPTH.md`](WORLD-DEPTH.md).
+- **Akzeptanzkriterien:**
+  - [ ] Migration `V020__entity_events.sql`
+  - [ ] JPA-Entity `EntityEvent`, Repository, Service
+  - [ ] `POST /api/v1/entity-events` erzeugt Event (auth, DM/Bot)
+  - [ ] `GET /api/v1/entity-events?entityType=location&entityId=X` filtert
+  - [ ] Index auf `(entity_type, entity_id, created_at DESC)`
+- **Dateien:** `db/migration/V020__entity_events.sql`, `EntityEvent.java`, `EntityEventRepository.java`, `EntityEventService.java`, `EntityEventController.java`
+
+### P6-T02: Regionen-Datenmodell + CRUD
+- **Status:** 📋
+- **Aufwand:** 2 Tage
+- **Abhängigkeiten:** P6-T01
+- **Beschreibung:** Tabelle `regions` mit Geschichte, Gefahrenlevel, Klima, Ressourcen, Fraktionen. JPA-Entity, CRUD-Endpunkte. Regionen werden pro Welt angelegt.
+- **Akzeptanzkriterien:**
+  - [ ] Migration `V021__regions.sql`
+  - [ ] CRUD: `POST/GET/PATCH /api/v1/worlds/{id}/regions`
+  - [ ] Region hat name, description, history, danger_level, climate, resources, factions, position
+- **Dateien:** `V021__regions.sql`, `Region.java`, `RegionController.java`
+
+### P6-T03: Orte-Datenmodell + CRUD
+- **Status:** 📋
+- **Aufwand:** 2 Tage
+- **Abhängigkeiten:** P6-T02
+- **Beschreibung:** Tabelle `locations` mit Typ, Geschichte, Wohlstand, Dienstleistungen. JPA-Entity, CRUD-Endpunkte. Orte gehören zu Regionen.
+- **Akzeptanzkriterien:**
+  - [ ] Migration `V022__locations.sql`
+  - [ ] CRUD: `POST/GET/PATCH /api/v1/worlds/{id}/regions/{rId}/locations`
+  - [ ] Location hat type, services, wealth, factions, position
+- **Dateien:** `V022__locations.sql`, `Location.java`, `LocationController.java`
+
+### P6-T04: NPC-Ort-Zuweisung + Services
+- **Status:** 📋
+- **Aufwand:** 2 Tage
+- **Abhängigkeiten:** P6-T03
+- **Beschreibung:** NPCs können via `PATCH /entities/{id}` einem Ort zugewiesen werden (`metadata_json.location_id` + `occupation`). Endpunkt `GET /locations/{id}/npcs` listet NPCs am Ort. `GET /locations/{id}/services` listet verfügbare Dienste.
+- **Akzeptanzkriterien:**
+  - [ ] NPC-Metadaten um `occupation`, `location_id`, `schedule`, `services_offered` erweiterbar
+  - [ ] `GET /locations/{id}/npcs` filtert nach location_id
+  - [ ] `GET /locations/{id}/services` aggregiert services_offered aller NPCs
+  - [ ] Schedule-Prüfung: ist NPC zu dieser Tageszeit verfügbar?
+- **Dateien:** `EntityService.java` (erweitert), `LocationNpcController.java`
+
+### P6-T05: Wirtschaft & Preise
+- **Status:** 📋
+- **Aufwand:** 2 Tage
+- **Abhängigkeiten:** P6-T04
+- **Beschreibung:** Preiskalkulation basierend auf Orts-Wohlstand + NPC-Preis-Modifier. `GET /locations/{id}/market` zeigt Items + Preise.
+- **Akzeptanzkriterien:**
+  - [ ] Preisformel: `basispreis × (1 + (wealth - 5) × 0.1) × npc.price_modifier`
+  - [ ] Markt-Endpunkt gibt Items + aktuelle Preise zurück
+  - [ ] Integration mit InventoryService (Kauf/Verkauf)
+- **Dateien:** `EconomyService.java`, `MarketController.java`
+
+### P6-T06: KI-Kontextaufbau Regionen
+- **Status:** 📋
+- **Aufwand:** 1 Tag
+- **Abhängigkeiten:** P6-T01 … P6-T04
+- **Beschreibung:** AI-Bot lädt beim Prompt-Bau Entity-Events für Region + Location + NPC. Erweiterung der Prompt-Templates um Orts- und Regions-Kontext.
+- **Akzeptanzkriterien:**
+  - [ ] Bot lädt letzte 5 Entity-Events pro Entity
+  - [ ] Prompt-Templates (Jinja2) um Orts-Informationen ergänzt
+  - [ ] NPC-Schedule wird im Prompt referenziert („NPC ist tagsüber in der Schmiede")
+- **Dateien:** `ai-bot/src/ai_bot/context_loader.py`, `prompts/*.j2` (erweitert)
+
+### P6-T07: Einfache Quest-Generierung
+- **Status:** 📋
+- **Aufwand:** 3 Tage
+- **Abhängigkeiten:** P6-T06
+- **Beschreibung:** KI generiert Quests basierend auf Regionen-Zustand + Events. Quest-Typen: Töte-X, Bringe-Y, Eskortiere-Z. Quests werden in neuer Tabelle `quests` persistiert und können von Spielern angenommen werden.
+- **Akzeptanzkriterien:**
+  - [ ] Tabelle `quests`: id, title, description, type, objectives JSONB, rewards JSONB, giver_id, status
+  - [ ] KI generiert Quest-Vorschlag → DM approved → persistiert
+  - [ ] Spieler kann Quest annehmen und fortschritt verfolgen
+  - [ ] Quest-Abschluss erzeugt Entity-Event (NPC-Chronik)
+- **Dateien:** `V030__quests.sql`, `Quest.java`, `QuestService.java`, `QuestController.java`
+
+---
+
 ## Statistik
 
 | Phase | Tasks | Sum Aufwand |
 |---|---|---|
 | 1 | 9 (1 cancelled) | 10,5 Tage |
-| 2 | 9 (✅ 9 erledigt) | 20,0 Tage |
+| 2 | 9 | 20,0 Tage |
 | 3 | 12 | 21,0 Tage |
-| 4 | 8 (✅ 8 erledigt) | 13 Tage |
-| 5 | 8 (✅ 8 erledigt) | 18 Tage |
-| **Summe** | **46** | **82,5 Tage** |
+| 4 | 8 | 13,0 Tage |
+| 5 | 8 | 18,0 Tage |
+| 6 | 7 | 14,0 Tage |
+| **Summe** | **53 (1 cancelled)** | **96,5 Tage** |
 
-Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das ~4,1 Monaten (vollzeit). Bei Nebenher-Betrieb ist dies entsprechend zu multiplizieren.
-
-> i18n-spezifischer Mehraufwand ist in den obigen Zahlen bereits enthalten (P1-T09 i18n-Basis, P3-T12 Frontend-i18n-Durchgang, plus Akzeptanzkriterien in diversen Auth/UI-Tasks). Die Time Engine (P2-T09, 3 Tage) deckt [`ADR/009`](ADR/009-world-time-calendar-system.md) ab.
+Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das ~4,8 Monaten (vollzeit). Bei Nebenher-Betrieb ist dies entsprechend zu multiplizieren.
