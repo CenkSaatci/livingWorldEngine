@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "attributes": [
+    { "name": "staerke", "type": "INT", "min": 1, "max": 20, "default": 10 },
+    { "name": "geschicklichkeit", "type": "INT", "min": 1, "max": 20, "default": 10 },
+    { "name": "konstitution", "type": "INT", "min": 1, "max": 20, "default": 10 },
+    { "name": "intelligenz", "type": "INT", "min": 1, "max": 20, "default": 10 },
+    { "name": "weisheit", "type": "INT", "min": 1, "max": 20, "default": 10 },
+    { "name": "charisma", "type": "INT", "min": 1, "max": 20, "default": 10 }
+  ],
+  "skills": [
+    { "name": "athletik", "attribute": "staerke" },
+    { "name": "schleichen", "attribute": "geschicklichkeit" },
+    { "name": "wahrnehmung", "attribute": "weisheit" },
+    { "name": "ueberzeugen", "attribute": "charisma" }
+  ],
+  "dice_mechanics": {
+    "probe": "1d20+mod",
+    "combat": {
+      "initiative": "1d20+geschicklichkeit",
+      "damage": "1d8+staerke",
+      "action_points": { "standard": 1, "max": 2 }
+    }
+  }
+}

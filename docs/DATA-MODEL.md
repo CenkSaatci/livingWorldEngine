@@ -393,15 +393,12 @@ WORLD_CREATED, SESSION_STARTED, SESSION_ENDED
 
 ```
 src/main/resources/db/migration/
-├── V001__initial.sql            # users (inkl. locale), game_systems, worlds, world_members, entities
-├── V002__events.sql             # world_events, npc_intents
-├── V003__combat.sql             # combat_sessions, combat_participants
-├── V004__items.sql              # items
-├── V005__maps.sql               # maps, map_tokens
-├── V006__adventures.sql         # adventures, adventure_nodes, node_choices, adventure_progress
-├── V007__world_time.sql         # worlds.current_game_time + worlds.last_tick_at (Phase 2, laut [`ADR/009`](ADR/009-world-time-calendar-system.md))
-├── V010__tenant_rls.sql         # RLS-Policies (Phase 5)
-└── V011__events_archive.sql     # Archiv-Tabelle (Phase 5)
+├── V001__initial.sql            # users, game_systems, worlds, world_members, entities, world_events, npc_intents
+├── V002__auth.sql               # refresh_tokens (JWT-Refresh)
+├── V003__world_softdelete.sql   # worlds.active + entities.active (Soft-Delete)
+├── V004__combat.sql             # combat_sessions, combat_participants
+├── V005__items.sql              # items-Katalog (Waffen, Rüstungen, etc.)
+└── V006__adventures.sql         # adventures, adventure_nodes, node_choices, adventure_progress
 ```
 
 Konventions:

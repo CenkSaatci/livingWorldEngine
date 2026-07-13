@@ -2,6 +2,7 @@ package com.lwe;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Haupteinstiegspunkt des Living World Engine Backends.
@@ -10,6 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * combat, time, i18n.
  */
 @SpringBootApplication
+@EnableScheduling
 public class LweApplication {
 
     public static void main(String[] args) {

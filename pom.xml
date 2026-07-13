@@ -15,7 +15,7 @@
     <artifactId>livingworldengine-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>Living World Engine Backend</name>
-    <description>Modular Pen-&-Paper VTT mit lebender Welt-Simulation</description>
+    <description>Modular Pen-&amp;-Paper VTT mit lebender Welt-Simulation</description>
 
     <properties>
         <java.version>21</java.version>

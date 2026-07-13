@@ -45,18 +45,18 @@
 | **Ziel** | Spielmechanik funktioniert |
 | **Meilenstein** | **M2**: „Charakter würfelt regelkonform" |
 | **Erfolgskriterium** | Ein Charakter führt über die API eine Probe basierend auf JSON-Regelwerk aus; Ergebnis wird validiert, geloggt und über WS verbreitet |
-| **Tasks** | P2-T01 … P2-T08 |
+| **Tasks** | P2-T01 … P2-T09 |
 | **Phasenabgrenzung** | Noch kein Frontend; alle Endpunkte via `curl` / Postman |
 
 **Inhalt**
-- Rule-Engine (Interface + Implementierung)
-- Probe-Service + REST `/api/v1/rolls`
-- Kampf-System (Initiative, Turns, Aktionen) — Turn-basiert
-- Inventar-System + Equip-Berechnung
-- Abenteuer-Struktur (Node-basiert, JSON)
-- Event-Log-Architektur (`world_events`)
-- Time Engine (`WorldTimeService`): automatic/manual/hybrid, DM kann Tag überspringen — siehe [`ADR/009`](ADR/009-world-time-calendar-system.md)
-- Integrationstests für Regel-Engine
+- Rule-Engine (Interface + Implementierung: D20 + Pool)
+- Probe-Service + REST `/api/v1/rolls` (dynamischer Engine-Dispatch via DiceExpressionParser)
+- Kampf-System (Initiative, Turns, Aktionen, AP, Range) — Turn-basiert
+- Inventar-System + Equip-Berechnung + Stacking + Bonuses
+- Abenteuer-Struktur (Node-basiert, Skill-Checks, Choices, Resume/Abandon)
+- Event-Log-Architektur (`WorldEventService`, EventType-Enum, WS-Broadcast)
+- Time Engine (`WorldTimeService`): automatic/manual/hybrid, DM kann Tag überspringen, DayPhase-Berechnung
+- Integrationstests (vollständiger Flow: Register → Game-System → Welt → Charakter → Probe)
 
 ---
 

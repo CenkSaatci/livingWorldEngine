@@ -1,0 +1,229 @@
+package com.lwe.core.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lwe.core.domain.*;
+import com.lwe.core.repository.*;
+import org.springframework.stereotype.Service;
+import static com.lwe.core.service.WorldEventService.EventType.*;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
+import java.util.UUID;
+
+@Service
+public class AdventureService {
+
+    private final AdventureRepository adventureRepo;
+    private final AdventureNodeRepository nodeRepo;
+    private final NodeChoiceRepository choiceRepo;
+    private final AdventureProgressRepository progressRepo;
+    private final WorldRepository worldRepo;
+    private final RollService rollService;
+    private final WorldEventService eventService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public AdventureService(AdventureRepository adventureRepo, AdventureNodeRepository nodeRepo,
+                            NodeChoiceRepository choiceRepo, AdventureProgressRepository progressRepo,
+                            WorldRepository worldRepo, RollService rollService,
+                            WorldEventService eventService) {
+        this.adventureRepo = adventureRepo;
+        this.nodeRepo = nodeRepo;
+        this.choiceRepo = choiceRepo;
+        this.progressRepo = progressRepo;
+        this.worldRepo = worldRepo;
+        this.rollService = rollService;
+        this.eventService = eventService;
+    }
+
+    @Transactional
+    public Adventure createAdventure(UUID worldId, UUID userId, String name, String description) {
+        verifyWorldAccess(worldId, userId);
+        var adv = new Adventure(worldId, name);
+        if (description != null) adv.setDescription(description);
+        return adventureRepo.save(adv);
+    }
+
+    @Transactional
+    public AdventureNode addNode(UUID adventureId, UUID userId, String text, String imageUrl, boolean isEnd) {
+        verifyAdventureAccess(adventureId, userId);
+        var node = new AdventureNode(adventureId, text, isEnd);
+        if (imageUrl != null) node.setImageUrl(imageUrl);
+        return nodeRepo.save(node);
+    }
+
+    @Transactional
+    public void setStartNode(UUID adventureId, UUID userId, UUID nodeId) {
+        var adv = verifyAdventureAccess(adventureId, userId);
+        adv.setStartNodeId(nodeId);
+        adventureRepo.save(adv);
+    }
+
+    @Transactional
+    public NodeChoice addChoice(UUID nodeId, UUID userId, String label, UUID targetNodeId,
+                                String skillCheckJson, UUID onSuccess, UUID onFailure) {
+        // Skill-Check-JSON validieren, falls vorhanden
+        if (skillCheckJson != null && !skillCheckJson.isBlank()) {
+            try {
+                var tree = objectMapper.readTree(skillCheckJson);
+                if (!tree.has("skill") || !tree.has("target")) {
+                    throw new AdventureException("ADVENTURE_NODE_NOT_FOUND",
+                        "skill_check must contain 'skill' and 'target' fields");
+                }
+            } catch (Exception e) {
+                throw new AdventureException("ADVENTURE_NODE_NOT_FOUND",
+                    "Invalid skill_check JSON: " + e.getMessage());
+            }
+        }
+        var choice = new NodeChoice(nodeId, label, targetNodeId);
+        if (skillCheckJson != null) choice.setSkillCheck(skillCheckJson);
+        if (onSuccess != null) choice.setOnSuccessNodeId(onSuccess);
+        if (onFailure != null) choice.setOnFailureNodeId(onFailure);
+        return choiceRepo.save(choice);
+    }
+
+    @Transactional
+    public AdventureProgress start(UUID adventureId, UUID entityId, UUID userId) {
+        var adv = adventureRepo.findById(adventureId)
+            .orElseThrow(() -> new AdventureException("ADVENTURE_NOT_FOUND", "Adventure not found"));
+        verifyWorldAccess(adv.getWorldId(), userId);
+
+        if (adv.getStartNodeId() == null)
+            throw new AdventureException("ADVENTURE_NODE_NOT_FOUND", "Adventure has no start node");
+
+        var existing = progressRepo.findByAdventureIdAndEntityId(adventureId, entityId);
+        if (existing.isPresent()) {
+            if ("COMPLETED".equals(existing.get().getStatus()))
+                throw new AdventureException("ADVENTURE_ALREADY_COMPLETED", "Adventure already completed");
+            return existing.get(); // Resume
+        }
+
+        var progress = new AdventureProgress(adventureId, entityId, adv.getStartNodeId());
+        progress = progressRepo.save(progress);
+
+        eventService.publish(adv.getWorldId(), ADVENTURE_STARTED, entityId, null,
+            Map.of("adventureId", adventureId, "startNodeId", adv.getStartNodeId()));
+
+        return progress;
+    }
+
+    @Transactional
+    public AdvanceResult advance(UUID adventureId, UUID entityId, UUID choiceId, UUID userId) {
+        var progress = progressRepo.findByAdventureIdAndEntityId(adventureId, entityId)
+            .orElseThrow(() -> new AdventureException("ADVENTURE_PROGRESS_NOT_FOUND",
+                "Character has not started this adventure"));
+
+        if (!"ACTIVE".equals(progress.getStatus()))
+            throw new AdventureException("ADVENTURE_ALREADY_COMPLETED", "Adventure is already completed");
+
+        var choice = choiceRepo.findById(choiceId)
+            .orElseThrow(() -> new AdventureException("ADVENTURE_CHOICE_NOT_FOUND",
+                "Choice not found"));
+
+        // Determine next node
+        UUID nextNodeId;
+        boolean skillCheckSuccess = false;
+
+        if (choice.getSkillCheck() != null && !choice.getSkillCheck().isBlank()) {
+            // Evaluate skill check via Rule-Engine
+            try {
+                var tree = objectMapper.readTree(choice.getSkillCheck());
+                var skill = tree.path("skill").asText("staerke");
+                var modifier = tree.path("modifier").asInt(0);
+                var target = tree.path("target").asInt(10);
+
+                // Use RollService to evaluate
+                var rollResult = rollService.executeRoll(userId,
+                    adventureRepo.findById(adventureId).orElseThrow().getWorldId(),
+                    entityId, skill, modifier, target);
+
+                skillCheckSuccess = rollResult != null && rollResult.success();
+            } catch (Exception e) {
+                skillCheckSuccess = false;
+            }
+
+            nextNodeId = skillCheckSuccess
+                ? (choice.getOnSuccessNodeId() != null ? choice.getOnSuccessNodeId() : choice.getTargetNodeId())
+                : (choice.getOnFailureNodeId() != null ? choice.getOnFailureNodeId() : choice.getTargetNodeId());
+        } else {
+            nextNodeId = choice.getTargetNodeId();
+        }
+
+        if (nextNodeId == null)
+            throw new AdventureException("ADVENTURE_NODE_NOT_FOUND", "No valid next node");
+
+        // Update progress
+        progress.setCurrentNodeId(nextNodeId);
+        progress.addVisitedNode(nextNodeId);
+
+        var nextNode = nodeRepo.findById(nextNodeId)
+            .orElseThrow(() -> new AdventureException("ADVENTURE_NODE_NOT_FOUND", "Next node not found"));
+
+        if (nextNode.isEnd()) {
+            progress.setStatus("COMPLETED");
+        }
+
+        progressRepo.save(progress);
+
+        var adv = adventureRepo.findById(adventureId).orElse(null);
+        eventService.publish(adv != null ? adv.getWorldId() : null, ADVENTURE_ADVANCED,
+            entityId, null, Map.of(
+                "adventureId", adventureId,
+                "choiceId", choiceId,
+                "nextNodeId", nextNodeId,
+                "skillCheckSuccess", skillCheckSuccess));
+
+        return new AdvanceResult(nextNode, nextNode.isEnd(), skillCheckSuccess);
+    }
+
+    public AdventureProgress getProgress(UUID adventureId, UUID entityId, UUID userId) {
+        verifyAdventureAccess(adventureId, userId);
+        return progressRepo.findByAdventureIdAndEntityId(adventureId, entityId)
+            .orElseThrow(() -> new AdventureException("ADVENTURE_PROGRESS_NOT_FOUND",
+                "Character has not started this adventure"));
+    }
+
+    @Transactional
+    public void abandon(UUID adventureId, UUID entityId, UUID userId) {
+        var progress = getProgress(adventureId, entityId, userId);
+        progress.setStatus("ABANDONED");
+        progressRepo.save(progress);
+    }
+
+    public java.util.List<AdventureNode> getNodes(UUID adventureId, UUID userId) {
+        verifyAdventureAccess(adventureId, userId);
+        return nodeRepo.findByAdventureId(adventureId);
+    }
+
+    public java.util.List<NodeChoice> getChoices(UUID nodeId, UUID userId) {
+        return choiceRepo.findByNodeId(nodeId);
+    }
+
+    public AdventureNode getNodeById(UUID nodeId, UUID userId) {
+        var node = nodeRepo.findById(nodeId)
+            .orElseThrow(() -> new AdventureException("ADVENTURE_NODE_NOT_FOUND", "Node not found"));
+        return node;
+    }
+
+    private Adventure verifyAdventureAccess(UUID adventureId, UUID userId) {
+        var adv = adventureRepo.findById(adventureId)
+            .orElseThrow(() -> new AdventureException("ADVENTURE_NOT_FOUND", "Adventure not found"));
+        verifyWorldAccess(adv.getWorldId(), userId);
+        return adv;
+    }
+
+    private void verifyWorldAccess(UUID worldId, UUID userId) {
+        worldRepo.findById(worldId).ifPresentOrElse(
+            w -> { if (!w.getOwnerId().equals(userId))
+                throw new AdventureException("WORLD_ACCESS_DENIED", "Access denied"); },
+            () -> { throw new AdventureException("WORLD_NOT_FOUND", "World not found"); }
+        );
+    }
+
+    public record AdvanceResult(AdventureNode nextNode, boolean completed, boolean skillCheckSuccess) {}
+
+    public static class AdventureException extends RuntimeException {
+        private final String errorCode;
+        public AdventureException(String errorCode, String message) { super(message); this.errorCode = errorCode; }
+        public String getErrorCode() { return errorCode; }
+    }
+}

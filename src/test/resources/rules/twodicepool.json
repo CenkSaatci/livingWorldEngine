@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "attributes": [
+    { "name": "kraft", "type": "INT", "min": 1, "max": 6, "default": 3 },
+    { "name": "intelligenz", "type": "INT", "min": 1, "max": 6, "default": 3 },
+    { "name": "geschick", "type": "INT", "min": 1, "max": 6, "default": 3 }
+  ],
+  "skills": [
+    { "name": "schlagen", "attribute": "kraft" },
+    { "name": "zaubern", "attribute": "intelligenz" }
+  ],
+  "dice_mechanics": {
+    "probe": "2d6+mod",
+    "combat": {
+      "initiative": "2d6+geschick",
+      "damage": "2d6+kraft",
+      "action_points": { "standard": 2, "max": 3 }
+    }
+  }
+}
