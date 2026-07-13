@@ -1,0 +1,19 @@
+{
+  "queue": {
+    "title": "KI-Intent-Queue",
+    "approve": "Freigeben",
+    "reject": "Ablehnen",
+    "empty": "Keine pendenten Intents"
+  },
+  "time": {
+    "pause": "Zeit pausieren",
+    "resume": "Zeit fortsetzen",
+    "advance": "Zeit überspringen",
+    "advance_one_hour": "+1 Stunde",
+    "advance_six_hours": "+6 Stunden",
+    "advance_one_day": "+1 Tag — „Tag ist vorbei\"",
+    "advance_to_dawn": "Bis Morgens",
+    "advance_to_dusk": "Bis Abends",
+    "set": "Zeit setzen"
+  }
+}

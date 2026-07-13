@@ -1,0 +1,12 @@
+{
+  "sheet": {
+    "title": "Charakterbogen",
+    "attributes": "Attribute",
+    "skills": "Fertigkeiten",
+    "inventory": "Inventar",
+    "roll_button": "Würfeln"
+  },
+  "attribute": {
+    "modifier": "Modifikator"
+  }
+}

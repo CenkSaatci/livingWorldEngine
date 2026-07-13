@@ -1,0 +1,12 @@
+{
+  "sheet": {
+    "title": "Character sheet",
+    "attributes": "Attributes",
+    "skills": "Skills",
+    "inventory": "Inventory",
+    "roll_button": "Roll"
+  },
+  "attribute": {
+    "modifier": "Modifier"
+  }
+}

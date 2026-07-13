@@ -1,0 +1,23 @@
+{
+  "AUTH_INVALID_CREDENTIALS": "E-Mail oder Passwort ist falsch.",
+  "AUTH_TOKEN_EXPIRED": "Ihr Token ist abgelaufen. Bitte neu einloggen.",
+  "AUTH_TOKEN_INVALID": "Authentifizierung fehlgeschlagen.",
+  "AUTH_REFRESH_INVALID": "Refresh-Token ist ungültig oder wurde widerrufen.",
+  "AUTH_REFRESH_EXPIRED": "Refresh-Token ist abgelaufen. Bitte neu einloggen.",
+  "AUTH_ROLE_INSUFFICIENT": "Ihre Rolle reicht für diese Aktion nicht aus.",
+  "AUTH_USER_DISABLED": "Ihr Konto ist gesperrt.",
+  "AUTH_EMAIL_TAKEN": "Diese E-Mail-Adresse ist bereits registriert.",
+  "AUTH_USERNAME_TAKEN": "Dieser Benutzername ist bereits vergeben.",
+  "WORLD_NOT_FOUND": "Welt nicht gefunden.",
+  "WORLD_ACCESS_DENIED": "Sie haben keinen Zugriff auf diese Welt.",
+  "WORLD_OWNER_REQUIRED": "Nur der Besitzer der Welt darf diese Aktion ausführen.",
+  "ENTITY_NOT_FOUND": "Entity nicht gefunden.",
+  "GAME_SYSTEM_NOT_FOUND": "Regelwerk nicht gefunden.",
+  "GAME_SYSTEM_SCHEMA_INVALID": "Regelwerk ist nicht schema-konform.",
+  "ROLL_EXPRESSION_INVALID": "Ausdruck konnte nicht geparsed werden.",
+  "INTENT_VALIDATION_RULE": "Regelverletzung: Aktion ist regeltechnisch nicht erlaubt.",
+  "INTENT_VALIDATION_RANGE": "Außerhalb Reichweite.",
+  "TIME_PAUSED": "Operation nicht möglich, die Zeit ist pausiert.",
+  "TIME_DM_OVERRIDE_REQUIRED": "Im manuellen Modus ist automatisches Advance verboten.",
+  "SYSTEM_INTERNAL_ERROR": "Ein unerwarteter Fehler ist aufgetreten."
+}

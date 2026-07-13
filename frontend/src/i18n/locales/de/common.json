@@ -1,0 +1,26 @@
+{
+  "app": {
+    "title": "Living World Engine",
+    "subtitle": "Modulare Pen-&-Paper-Plattform mit lebendiger Welt-Simulation",
+    "skeleton_note": "Frontend-Skelett — Login, Dashboard und Karten folgen in Phase 3 (P3-T03 ff). Siehe docs/UI-UX.md."
+  },
+  "actions": {
+    "login": "Anmelden",
+    "register": "Registrieren",
+    "logout": "Abmelden",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "create": "Erstellen"
+  },
+  "language": {
+    "switch": "Sprache ändern",
+    "de": "Deutsch",
+    "en": "English"
+  },
+  "status": {
+    "loading": "Wird geladen…",
+    "offline": "Verbindung getrennt"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "title": "Map",
+  "zoom_in": "Zoom in",
+  "zoom_out": "Zoom out",
+  "reset_zoom": "Reset zoom",
+  "fog": {
+    "show": "Show fog of war",
+    "hide": "Hide fog of war"
+  },
+  "token": {
+    "drag": "Drag token",
+    "select": "Select token"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "app": {
+    "title": "Living World Engine",
+    "subtitle": "Modular tabletop RPG platform with living-world simulation",
+    "skeleton_note": "Frontend skeleton — login, dashboard, and map arrive in Phase 3 (P3-T03+). See docs/UI-UX.md."
+  },
+  "actions": {
+    "login": "Sign in",
+    "register": "Register",
+    "logout": "Sign out",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create"
+  },
+  "language": {
+    "switch": "Change language",
+    "de": "Deutsch",
+    "en": "English"
+  },
+  "status": {
+    "loading": "Loading…",
+    "offline": "Connection lost"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "AUTH_INVALID_CREDENTIALS": "Email or password is incorrect.",
+  "AUTH_TOKEN_EXPIRED": "Your token has expired. Please log in again.",
+  "AUTH_TOKEN_INVALID": "Authentication failed.",
+  "AUTH_REFRESH_INVALID": "Refresh token is invalid or has been revoked.",
+  "AUTH_REFRESH_EXPIRED": "Refresh token has expired. Please log in again.",
+  "AUTH_ROLE_INSUFFICIENT": "Your role is not sufficient for this action.",
+  "AUTH_USER_DISABLED": "Your account is locked.",
+  "AUTH_EMAIL_TAKEN": "This email address is already registered.",
+  "AUTH_USERNAME_TAKEN": "This username is already in use.",
+  "WORLD_NOT_FOUND": "World not found.",
+  "WORLD_ACCESS_DENIED": "You do not have access to this world.",
+  "WORLD_OWNER_REQUIRED": "Only the world owner may perform this action.",
+  "ENTITY_NOT_FOUND": "Entity not found.",
+  "GAME_SYSTEM_NOT_FOUND": "Game system not found.",
+  "GAME_SYSTEM_SCHEMA_INVALID": "Game system JSON is not schema-compliant.",
+  "ROLL_EXPRESSION_INVALID": "Expression could not be parsed.",
+  "INTENT_VALIDATION_RULE": "Rule violation: action is not allowed.",
+  "INTENT_VALIDATION_RANGE": "Out of range.",
+  "TIME_PAUSED": "Operation not possible, time is paused.",
+  "TIME_DM_OVERRIDE_REQUIRED": "Automatic advance in manual mode is forbidden.",
+  "SYSTEM_INTERNAL_ERROR": "An unexpected error occurred."
+}

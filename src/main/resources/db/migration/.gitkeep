@@ -1,0 +1,2 @@
+# Flyway-Migrations-Verzeichnis — Dateien folgen dem Namensschema `V{NNN}__name.sql`.
+# Siehe docs/DATA-MODEL.md Abschnitt 4.

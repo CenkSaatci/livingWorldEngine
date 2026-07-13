@@ -1,0 +1,17 @@
+# Entwicklungsprofil — aktiviert热-Reloading, verbose SQL-Log, erweiterte Spring-Logs.
+spring:
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  devtools:
+    restart:
+      enabled: true
+
+logging:
+  level:
+    com.lwe: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
+    org.flywaydb: INFO
