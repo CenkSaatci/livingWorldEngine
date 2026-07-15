@@ -96,6 +96,7 @@ class InventoryServiceTest {
     void shouldUnequipItem() {
         var entity = entityWithInventory("[{\"itemId\":\"" + itemId + "\",\"quantity\":1,\"equipped\":true,\"slot\":\"weapon\"}]");
         when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(itemRepo.findById(itemId)).thenReturn(Optional.of(createItem("WEAPON", "{}")));
         when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var result = service.unequipItem(entityId, userId, "weapon");
