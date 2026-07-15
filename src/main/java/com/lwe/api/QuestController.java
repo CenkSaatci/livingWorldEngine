@@ -1,6 +1,6 @@
 package com.lwe.api;
 
-import com.lwe.core.domain.Quest;
+import com.lwe.api.dto.QuestResponse;
 import com.lwe.core.domain.User;
 import com.lwe.core.service.QuestService;
 import jakarta.validation.Valid;
@@ -10,8 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -25,56 +24,42 @@ public class QuestController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@Valid @RequestBody CreateRequest req,
-                                    @AuthenticationPrincipal User user) {
+    public ResponseEntity<QuestResponse> create(@Valid @RequestBody CreateRequest req,
+                                                 @AuthenticationPrincipal User user) {
         var quest = service.create(req.worldId(), user.getId(), req.title(),
             req.description(), req.type(), req.giverId(), req.locationId(),
             req.objectives(), req.rewards(), req.aiGenerated());
-        return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(quest));
+        return ResponseEntity.status(HttpStatus.CREATED).body(QuestResponse.from(quest));
     }
 
     @GetMapping
-    public ResponseEntity<?> list(@RequestParam UUID worldId,
-                                  @RequestParam(required = false) String status,
-                                  @AuthenticationPrincipal User user) {
-        var list = service.list(worldId, user.getId(), status).stream().map(this::toResponse).toList();
+    public ResponseEntity<List<QuestResponse>> list(@RequestParam UUID worldId,
+                                                     @RequestParam(required = false) String status,
+                                                     @AuthenticationPrincipal User user) {
+        var list = service.list(worldId, user.getId(), status)
+            .stream().map(QuestResponse::from).toList();
         return ResponseEntity.ok(list);
     }
 
     @GetMapping("/{questId}")
-    public ResponseEntity<?> getById(@PathVariable UUID questId,
-                                     @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(toResponse(service.getById(questId, user.getId())));
+    public ResponseEntity<QuestResponse> getById(@PathVariable UUID questId,
+                                                  @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(QuestResponse.from(service.getById(questId, user.getId())));
     }
 
     @PatchMapping("/{questId}/status")
-    public ResponseEntity<?> updateStatus(@PathVariable UUID questId,
-                                          @RequestBody StatusRequest req,
-                                          @AuthenticationPrincipal User user) {
+    public ResponseEntity<QuestResponse> updateStatus(@PathVariable UUID questId,
+                                                       @RequestBody StatusRequest req,
+                                                       @AuthenticationPrincipal User user) {
         var quest = service.updateStatus(questId, user.getId(), req.status());
-        return ResponseEntity.ok(toResponse(quest));
+        return ResponseEntity.ok(QuestResponse.from(quest));
     }
 
     @DeleteMapping("/{questId}")
-    public ResponseEntity<?> delete(@PathVariable UUID questId,
-                                    @AuthenticationPrincipal User user) {
+    public ResponseEntity<Void> delete(@PathVariable UUID questId,
+                                        @AuthenticationPrincipal User user) {
         service.delete(questId, user.getId());
         return ResponseEntity.noContent().build();
-    }
-
-    private Map<String, Object> toResponse(Quest q) {
-        var m = new HashMap<String, Object>();
-        m.put("id", q.getId());
-        m.put("world_id", q.getWorldId());
-        m.put("title", q.getTitle());
-        m.put("description", q.getDescription() != null ? q.getDescription() : "");
-        m.put("type", q.getType());
-        m.put("status", q.getStatus());
-        m.put("objectives", q.getObjectives());
-        m.put("rewards", q.getRewards());
-        m.put("ai_generated", q.isAiGenerated());
-        m.put("created_at", q.getCreatedAt().toString());
-        return m;
     }
 
     public record CreateRequest(
