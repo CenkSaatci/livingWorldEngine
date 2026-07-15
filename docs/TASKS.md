@@ -839,7 +839,7 @@
 - **Aufwand:** 1h
 - **Beschreibung:** Seite `/worlds/:id/entities` mit Liste aller NPCs und PCs einer Welt. Filter nach Typ (PC/NPC), Text-Suche, Klick → NpcViewPage. "Create Entity"-Button mit EntityCreateModal. Delete-Button mit Bestätigung.
 
-### P10-T03: Welten-Clone/Export
+### ✅ Welten-Clone/Export
 - **Status:** 📋
 - **Aufwand:** 2h
 - **Beschreibung:** Backend: `POST /worlds/{id}/clone` erzeugt Kopie einer Welt (inkl. Regionen, Orte, NPCs, Fraktionen). Frontend: "Clone"-Button im WorldEditor. Export als JSON-Download.
@@ -925,13 +925,71 @@
 
 ---
 
+## Phase 12: Qualität & Robustheit
+
+### P12-T01: Fehlende Service-Tests (QuestService, QuotaService, WorldMapService)
+- **Status:** 📋
+- **Aufwand:** 2h
+- **Beschreibung:** Drei Services haben keine Tests:
+  - `QuestService` — CRUD + Status-Update + Zugriffsprüfung
+  - `QuotaService` — World-Limit-Prüfung, Member-Limit
+  - `WorldMapService` — getOrCreate, update, getById
+  **Pattern:** Mokende Repositories + `@ExtendWith(MockitoExtension.class)` (siehe bestehende Tests)
+
+### P12-T02: ResponseEntity<?> durch typisierte Returns ersetzen
+- **Status:** 📋
+- **Aufwand:** 2h
+- **Beschreibung:** 17/31 Controller geben `ResponseEntity<?>` zurück. Die Methode sollte den konkreten DTO-Typ deklarieren:
+  - `QuestController` — verwendet `HashMap` statt DTO
+  - `EntityController`, `FactionController`, `LocationController`, `MarketController`, `RegionController`, `WorldMapController` — `ResponseEntity<?>` → konkreter Typ
+  - `FileUploadController`, `FogController`, `RollController`, `UserController` — teilweise bereits DTOs, Rest-Lücken schließen
+
+### P12-T03: GlobalExceptionHandler auf ErrorResponse umstellen
+- **Status:** 📋
+- **Aufwand:** 0,5h
+- **Beschreibung:** 6 `Map.of()`-Aufrufe im Handler durch `ErrorResponse`-Record ersetzen. Frontend erwartet weiterhin `{"error": {"code": "...", "message": "..."}}` → `ErrorResponse` JSON-Struktur anpassen falls nötig.
+
+### P12-T04: Frontend-Testabdeckung erweitern (+5 Testdateien)
+- **Status:** 📋
+- **Aufwand:** 3h
+- **Beschreibung:** Vitest-Tests für:
+  - `WorldCard` (rendert World-Info, Klick-Callback)
+  - `DiceRollModal` (öffnet/schließt, Roll-Action)
+  - `ChatPanel` (Nachricht senden, Roll-Befehl)
+  - `EntityCreateModal` (Formular ausfüllen, Submit)
+  - `RegionTree` (Tree rendern, Klick auf Node)
+  **Setup:** i18n + Testing-Library ist bereits konfiguriert.
+
+### P12-T05: QuestController DTO-Refactoring
+- **Status:** 📋
+- **Aufwand:** 0,5h
+- **Beschreibung:** `HashMap` in `toResponse()` durch `QuestResponse`-Record ersetzen, analog zu den anderen Controllern.
+
+### P12-T06: Skeleton-Loader für Dashboard + GameView
+- **Status:** 📋
+- **Aufwand:** 1h
+- **Beschreibung:** Ladezustände visuell ansprechender gestalten:
+  - Dashboard: Skeleton-Karten (graue Boxen mit Puls-Animation) statt "Loading…"-Text
+  - GameView: Skeleton-Sidebar + Skeleton-Content-Bereich
+  - Neue Komponente: `SkeletonCard`, `SkeletonList`
+
+### P12-T07: UI-Transitionen & Micro-Interaktionen
+- **Status:** 📋
+- **Aufwand:** 2h
+- **Beschreibung:** Fehlende Animationen ergänzen:
+  - Page-Transitions (fade beim Routen-Wechsel)
+  - Modal Open/Close (scale + opacity)
+  - Toast Slide-In von rechts
+  - Sidebar Slide (bereits vorhanden, aber ohne transition-Klasse)
+  - Button-Hover states sind OK, Fokus-Ringe prüfen
+
+---
+
 ## NOCH OFFEN (Architektur-Risiken)
 
 | ID | Was | Aufwand | Priorität |
 |---|---|---|---|
-| ⭕ | **~72 `Map.of()`-Responses → DTOs** | ~6h | Niedrig |
-| ⭕ | **Frontend Komponenten-Tests** (Vitest + Testing Library) | ~4h | Niedrig |
-| ⭕ | **🚀 Deploy-Workflow** (von dir ans Ende gestellt) | 0,5h | Ganz ans Ende |
+| ⭕ | **🚀 Deploy-Workflow** (GitHub Actions für prod) | 0,5h | Ganz ans Ende |
 
 ---
 
@@ -950,6 +1008,7 @@
 | 9 (Diplomatie) | 3 | 4,0 Tage |
 | 10 (Campaign-Polish) | 10 | 19,0 Tage |
 | 11 (Architektur) | 8 | 19,0 Tage |
-| **Summe** | **85 (1 cancelled)** | **152,0 Tage** |
+| 12 (Qualität & Robustheit) | 7 | 11,0 Tage |
+| **Summe** | **92 (1 cancelled)** | **163,0 Tage** |
 
-Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das ~6,65 Monaten (vollzeit). Bei Nebenher-Betrieb ist dies entsprechend zu multiplizieren. Zuzüglich offener Risiken (~10 Tage).
+Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das ~8,15 Monaten (vollzeit). Bei Nebenher-Betrieb ist dies entsprechend zu multiplizieren. Zuzüglich offener Risiken (~0,5 Tage).
