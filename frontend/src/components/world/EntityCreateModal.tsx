@@ -113,11 +113,11 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 pt-12"
+      className="modal-overlay fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 pt-12"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-xl border border-bg-elevated bg-bg-surface p-6 shadow-2xl mb-12"
+        className="modal-content w-full max-w-lg rounded-xl border border-bg-elevated bg-bg-surface p-6 shadow-2xl mb-12"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">

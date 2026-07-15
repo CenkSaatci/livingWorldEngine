@@ -6,7 +6,7 @@ import type { AxiosError } from 'axios';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import { useWorldStore, type WorldSummary } from '../store/worldStore';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { SkeletonCard } from '../components/ui/SkeletonCard';
 
 export default function DashboardPage() {
   const { t, i18n } = useTranslation('common');
@@ -213,7 +213,11 @@ export default function DashboardPage() {
 
         {/* World List */}
         {loadingWorlds ? (
-          <LoadingSpinner size="md" text={t('status.loading')} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonCard key={i} lines={3} />
+            ))}
+          </div>
         ) : worlds.length === 0 ? (
           <div className="rounded-lg border border-dashed border-bg-elevated p-12 text-center">
             <p className="text-text-secondary">{t('app.skeleton_note')}</p>

@@ -17,7 +17,7 @@ export function ToastContainer() {
       {toasts.map((t) => (
         <div
           key={t.id}
-          className={`flex items-start gap-3 rounded border-l-4 px-4 py-3 shadow-lg backdrop-blur-sm ${colorMap[t.type]}`}
+          className={`toast-slide flex items-start gap-3 rounded border-l-4 px-4 py-3 shadow-lg backdrop-blur-sm ${colorMap[t.type]}`}
           role="alert"
         >
           <span className="flex-1 text-sm text-text-primary">{t.message}</span>
