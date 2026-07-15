@@ -65,6 +65,16 @@ public class CombatController {
         return ResponseEntity.ok(CombatSessionResponse.from(session));
     }
 
+    @PostMapping("/{sessionId}/ability")
+    public ResponseEntity<CombatActionResultResponse> useAbility(@PathVariable UUID sessionId,
+                                                                   @Valid @RequestBody AbilityRequest req,
+                                                                   @AuthenticationPrincipal User user) {
+        var result = combatService.useAbility(user.getId(), sessionId,
+            req.actorId(), req.abilityId(), req.targetId());
+        return ResponseEntity.ok(new CombatActionResultResponse(
+            result.actionType(), result.totalDamage(), result.apRemaining(), result.success()));
+    }
+
     public record StartRequest(
         @NotBlank UUID worldId,
         @NotEmpty List<UUID> participantIds,
@@ -76,6 +86,12 @@ public class CombatController {
         @NotBlank String actionType,
         UUID targetId,
         UUID itemId
+    ) {}
+
+    public record AbilityRequest(
+        @NotBlank UUID actorId,
+        @NotBlank UUID abilityId,
+        UUID targetId
     ) {}
 
     public record CombatActionResultResponse(String actionType, int totalDamage,

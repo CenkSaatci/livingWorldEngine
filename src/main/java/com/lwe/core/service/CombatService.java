@@ -21,6 +21,7 @@ public class CombatService {
     private final GameSystemRepository gameSystemRepo;
     private final WorldEventService eventService;
     private final RollService rollService;
+    private final AbilityRepository abilityRepo;
     private final com.lwe.core.util.WorldAccess worldAccess;
     private final Map<DiceExpressionParser.DiceSystem, RuleEngine> engines;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -32,6 +33,7 @@ public class CombatService {
                          GameSystemRepository gameSystemRepo,
                          WorldEventService eventService,
                          RollService rollService,
+                         AbilityRepository abilityRepo,
                          com.lwe.core.util.WorldAccess worldAccess,
                          java.util.List<RuleEngine> engineList) {
         this.sessionRepo = sessionRepo;
@@ -41,6 +43,7 @@ public class CombatService {
         this.gameSystemRepo = gameSystemRepo;
         this.eventService = eventService;
         this.rollService = rollService;
+        this.abilityRepo = abilityRepo;
         this.worldAccess = worldAccess;
         this.engines = new EnumMap<>(DiceExpressionParser.DiceSystem.class);
         for (var engine : engineList) {
@@ -139,6 +142,77 @@ public class CombatService {
         eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
             "actionType", actionType, "damage", damage));
         return new CombatActionResult(actionType, damage, actor.getApCurrent(), true, null);
+    }
+
+    @Transactional
+    public CombatActionResult useAbility(UUID userId, UUID sessionId, UUID actorId,
+                                          UUID abilityId, UUID targetId) {
+        var session = validateSession(sessionId, userId, actorId);
+        var participants = participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId);
+        var actor = findActor(participants, actorId);
+
+        var ability = abilityRepo.findById(abilityId)
+            .orElseThrow(() -> new CombatException("ABILITY_NOT_FOUND", "Ability not found"));
+        if (ability.getType() != Ability.AbilityType.ACTIVE)
+            throw new CombatException("ABILITY_NOT_ACTIVE", "Ability is not an active ability");
+        if (actor.getApCurrent() < ability.getApCost())
+            throw new CombatException("COMBAT_AP_INSUFFICIENT", "Not enough AP");
+
+        // Parse damage from effects_json
+        var effects = parseEffectsJson(ability.getEffectsJson());
+        int damage = 0;
+        if (effects.damageExpr != null) {
+            var entity = entityRepo.findById(actorId)
+                .orElseThrow(() -> new CombatException("ENTITY_NOT_FOUND", "Actor not found"));
+            var world = worldRepo.findById(session.getWorldId())
+                .orElseThrow(() -> new CombatException("WORLD_NOT_FOUND", "World not found"));
+            var rollResult = rollService.executeRoll(userId, session.getWorldId(), actorId,
+                effects.damageExpr, 0, 0);
+            damage = rollResult != null ? rollResult.total() : 0;
+        }
+
+        // Apply damage to target
+        if (damage > 0 && targetId != null) {
+            var target = participants.stream()
+                .filter(p -> p.getEntityId().equals(targetId)).findFirst().orElse(null);
+            if (target != null) {
+                target.setHpCurrent(Math.max(0, target.getHpCurrent() - damage));
+                participantRepo.save(target);
+                if (target.getHpCurrent() <= 0) {
+                    eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED,
+                        target.getEntityId(), null, Map.of("actionType", "DEFEATED"));
+                }
+            }
+        }
+
+        // Apply healing to actor
+        if (effects.healExpr != null) {
+            var healAmount = new com.lwe.rules.DiceExpression(effects.healExpr).getTotal();
+            actor.setHpCurrent(Math.min(actor.getHpMax(), actor.getHpCurrent() + healAmount));
+            participantRepo.save(actor);
+        }
+
+        actor.setApCurrent(actor.getApCurrent() - ability.getApCost());
+        participantRepo.save(actor);
+
+        eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
+            "actionType", "ABILITY_" + ability.getName(), "damage", damage));
+        return new CombatActionResult("ABILITY_" + ability.getName(), damage,
+            actor.getApCurrent(), true, null);
+    }
+
+    private record Effects(String damageExpr, String healExpr) {}
+
+    private Effects parseEffectsJson(String effectsJson) {
+        if (effectsJson == null || effectsJson.isBlank()) return new Effects(null, null);
+        try {
+            var tree = new ObjectMapper().readTree(effectsJson);
+            return new Effects(
+                tree.path("damage").asText(null),
+                tree.path("heal").asText(null));
+        } catch (Exception e) {
+            return new Effects(null, null);
+        }
     }
 
     private CombatSession validateSession(UUID sessionId, UUID userId, UUID actorId) {

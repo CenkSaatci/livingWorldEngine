@@ -1,11 +1,18 @@
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Sword, SkipForward, LogOut, Move, Shield } from 'lucide-react';
+import { Sword, SkipForward, LogOut, Move, Shield, Zap } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useCombatStore } from '../../store/combatStore';
 import { playCombatHit } from '../../utils/sound';
 
 interface Props {
   worldId: string;
+}
+
+interface AbilityEntry {
+  abilityId: string;
+  abilityName: string;
+  apCost: number;
 }
 
 export function ActionBar({ worldId: _worldId }: Props) {
@@ -15,9 +22,31 @@ export function ActionBar({ worldId: _worldId }: Props) {
   const targetEntityId = useCombatStore((s) => s.targetEntityId);
   const setTargetEntityId = useCombatStore((s) => s.setTargetEntityId);
 
+  const [abilities, setAbilities] = useState<AbilityEntry[]>([]);
+
+  const currentActor = participants.find((p) => p.entity_id === session?.current_turn_entity_id);
+
+  // Fetch abilities for current actor
+  useEffect(() => {
+    if (!currentActor?.entity_id) {
+      setAbilities([]);
+      return;
+    }
+    let cancelled = false;
+    apiClient
+      .get(`/entities/${currentActor.entity_id}/abilities`)
+      .then((r) => {
+        if (cancelled) return;
+        setAbilities(r.data as AbilityEntry[]);
+      })
+      .catch(() => setAbilities([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [currentActor?.entity_id]);
+
   if (!session || session.status !== 'ACTIVE') return null;
 
-  const currentActor = participants.find((p) => p.entity_id === session.current_turn_entity_id);
   const aliveTargets = participants.filter(
     (p) => p.entity_id !== session.current_turn_entity_id && p.ap_current > 0,
   );
@@ -36,7 +65,25 @@ export function ActionBar({ worldId: _worldId }: Props) {
           .updateParticipantAp(currentActor?.entity_id ?? '', res.data.ap_remaining);
         playCombatHit();
       }
-      // Neu laden für aktualisierte HP
+      const refresh = await apiClient.get(`/combat/${session.id}`);
+      useCombatStore.getState().setSession(refresh.data.session, refresh.data.participants);
+    } catch {
+      /* */
+    }
+  };
+
+  const handleAbility = async (abilityId: string) => {
+    try {
+      const res = await apiClient.post(`/combat/${session.id}/ability`, {
+        actorId: currentActor?.entity_id,
+        abilityId,
+        targetId: targetEntityId,
+      });
+      if (res.data.success) {
+        useCombatStore
+          .getState()
+          .updateParticipantAp(currentActor?.entity_id ?? '', res.data.ap_remaining);
+      }
       const refresh = await apiClient.get(`/combat/${session.id}`);
       useCombatStore.getState().setSession(refresh.data.session, refresh.data.participants);
     } catch {
@@ -94,7 +141,6 @@ export function ActionBar({ worldId: _worldId }: Props) {
 
   return (
     <div className="space-y-3">
-      {/* Target Selection */}
       {aliveTargets.length > 0 && (
         <div>
           <p className="text-xs text-text-secondary mb-1">{t('combat.target')}</p>
@@ -118,7 +164,6 @@ export function ActionBar({ worldId: _worldId }: Props) {
         </div>
       )}
 
-      {/* Actions */}
       <div className="flex items-center gap-2">
         <button
           onClick={handleAttack}
@@ -141,6 +186,17 @@ export function ActionBar({ worldId: _worldId }: Props) {
         >
           <Move size={14} /> Move
         </button>
+
+        {abilities.map((a) => (
+          <button
+            key={a.abilityId}
+            onClick={() => handleAbility(a.abilityId)}
+            className="flex items-center gap-1 rounded bg-warning/20 px-3 py-1.5 text-xs text-warning hover:bg-warning/30 disabled:opacity-40"
+            title={`AP cost: ${a.apCost}`}
+          >
+            <Zap size={14} /> {a.abilityName}
+          </button>
+        ))}
 
         <button
           onClick={handleNextTurn}

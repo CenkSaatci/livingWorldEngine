@@ -15,6 +15,8 @@ import com.lwe.core.service.WorldService;
 import com.lwe.core.service.FactionService;
 import com.lwe.core.service.GameSessionService;
 import com.lwe.core.service.QuotaService;
+import com.lwe.core.service.AbilityService;
+import com.lwe.core.service.EntityAbilityService;
 import com.lwe.core.util.WorldAccess;
 import com.lwe.rules.RuleSchemaValidator;
 import org.springframework.http.HttpStatus;
@@ -155,6 +157,27 @@ public class GlobalExceptionHandler {
         var status = switch (ex.getErrorCode()) {
             case "ENTITY_NOT_FOUND" -> HttpStatus.NOT_FOUND;
             case "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
+            default -> HttpStatus.BAD_REQUEST;
+        };
+        return ResponseEntity.status(status).body(errorBody(ex.getErrorCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(AbilityService.AbilityException.class)
+    public ResponseEntity<?> handleAbilityException(AbilityService.AbilityException ex) {
+        var status = switch (ex.getErrorCode()) {
+            case "ABILITY_NOT_FOUND", "WORLD_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+            case "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
+            default -> HttpStatus.BAD_REQUEST;
+        };
+        return ResponseEntity.status(status).body(errorBody(ex.getErrorCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(EntityAbilityService.EntityAbilityException.class)
+    public ResponseEntity<?> handleEntityAbilityException(EntityAbilityService.EntityAbilityException ex) {
+        var status = switch (ex.getErrorCode()) {
+            case "ENTITY_NOT_FOUND", "ABILITY_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+            case "ALREADY_ASSIGNED" -> HttpStatus.CONFLICT;
+            case "WORLD_MISMATCH" -> HttpStatus.UNPROCESSABLE_ENTITY;
             default -> HttpStatus.BAD_REQUEST;
         };
         return ResponseEntity.status(status).body(errorBody(ex.getErrorCode(), ex.getMessage()));

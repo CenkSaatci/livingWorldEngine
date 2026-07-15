@@ -24,6 +24,7 @@ class CombatServiceTest {
     private final GameSystemRepository gameSystemRepo = mock();
     private final WorldEventService eventService = mock();
     private final RollService rollService = mock();
+    private final AbilityRepository abilityRepo = mock();
     private final WorldAccess worldAccess = mock();
 
     private CombatService combatService;
@@ -33,7 +34,7 @@ class CombatServiceTest {
     @BeforeEach
     void setUp() {
         combatService = new CombatService(sessionRepo, participantRepo, entityRepo,
-            worldRepo, gameSystemRepo, eventService, rollService, worldAccess, List.of(new D20RuleEngine()));
+            worldRepo, gameSystemRepo, eventService, rollService, abilityRepo, worldAccess, List.of(new D20RuleEngine()));
     }
 
     @Test

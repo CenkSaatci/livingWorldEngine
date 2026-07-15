@@ -6,6 +6,7 @@ import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.GameItem;
 import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.repository.GameItemRepository;
+import com.lwe.rules.DiceExpression;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -140,6 +141,60 @@ public class InventoryService {
     }
 
     // -- Helpers --
+
+    @Transactional
+    public int useConsumable(UUID entityId, UUID userId, UUID itemId) {
+        var entity = findEntity(entityId, userId);
+        var item = itemRepo.findById(itemId)
+            .orElseThrow(() -> new InventoryException("INVENTORY_ITEM_NOT_FOUND", "Item not found"));
+        if (!"CONSUMABLE".equals(item.getType()))
+            throw new InventoryException("INVENTORY_NOT_CONSUMABLE", "Item is not consumable");
+
+        var effect = parseEffect(item.getMetadataJson());
+        if (effect == null)
+            throw new InventoryException("INVENTORY_NO_EFFECT", "Item has no use effect defined");
+
+        int total = 0;
+        if (effect.heal != null) {
+            total = new DiceExpression(effect.heal).getTotal();
+        }
+        if (effect.damage != null) {
+            total = -new DiceExpression(effect.damage).getTotal();
+        }
+
+        // Quantity decrement
+        var inventory = parseInventory(entity.getInventoryJson());
+        var existing = inventory.stream().filter(e -> e.itemId().equals(itemId)).findFirst()
+            .orElseThrow(() -> new InventoryException("INVENTORY_ITEM_NOT_FOUND", "Item not in inventory"));
+
+        var newQty = existing.quantity() - 1;
+        if (newQty <= 0) {
+            inventory.remove(existing);
+        } else {
+            var idx = inventory.indexOf(existing);
+            inventory.set(idx, new RawEntry(existing.itemId(), newQty, existing.equipped(), existing.slot()));
+        }
+        entity.setInventoryJson(toJson(inventory));
+        entityRepo.save(entity);
+
+        return total;
+    }
+
+    private EffectSpec parseEffect(String metadataJson) {
+        if (metadataJson == null || metadataJson.isBlank()) return null;
+        try {
+            var tree = objectMapper.readTree(metadataJson);
+            var eff = tree.path("effect");
+            if (eff.isMissingNode()) return null;
+            return new EffectSpec(
+                eff.path("heal").asText(null),
+                eff.path("damage").asText(null));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    record EffectSpec(String heal, String damage) {}
 
     private GameEntity findEntity(UUID entityId, UUID userId) {
         var entity = entityRepo.findById(entityId)
