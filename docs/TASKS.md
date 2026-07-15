@@ -928,7 +928,7 @@
 ## Phase 12: Qualität & Robustheit
 
 ### P12-T01: Fehlende Service-Tests (QuestService, QuotaService, WorldMapService)
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 2h
 - **Beschreibung:** Drei Services haben keine Tests:
   - `QuestService` — CRUD + Status-Update + Zugriffsprüfung
@@ -937,51 +937,101 @@
   **Pattern:** Mokende Repositories + `@ExtendWith(MockitoExtension.class)` (siehe bestehende Tests)
 
 ### P12-T02: ResponseEntity<?> durch typisierte Returns ersetzen
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 2h
 - **Beschreibung:** 17/31 Controller geben `ResponseEntity<?>` zurück. Die Methode sollte den konkreten DTO-Typ deklarieren:
-  - `QuestController` — verwendet `HashMap` statt DTO
-  - `EntityController`, `FactionController`, `LocationController`, `MarketController`, `RegionController`, `WorldMapController` — `ResponseEntity<?>` → konkreter Typ
-  - `FileUploadController`, `FogController`, `RollController`, `UserController` — teilweise bereits DTOs, Rest-Lücken schließen
+  - `QuestController` — verwendet `HashMap` statt DTO → `QuestResponse`
+  - `LocationController`, `RegionController` — `ResponseEntity<?>` → `LocationResponse`
+  - `GlobalExceptionHandler` — alle Handler auf `ApiError` umgestellt
 
 ### P12-T03: GlobalExceptionHandler auf ErrorResponse umstellen
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 0,5h
-- **Beschreibung:** 6 `Map.of()`-Aufrufe im Handler durch `ErrorResponse`-Record ersetzen. Frontend erwartet weiterhin `{"error": {"code": "...", "message": "..."}}` → `ErrorResponse` JSON-Struktur anpassen falls nötig.
+- **Beschreibung:** `Map.of("error", ...)` durch `ApiError.of(code, message)` ersetzt. Alle Exception-Handler retournieren `ResponseEntity<ApiError>`. Schema-Validation + Field-Validation auf `ApiError.schemaValidation()` / `ApiError.validationFailed()` umgestellt.
 
 ### P12-T04: Frontend-Testabdeckung erweitern (+5 Testdateien)
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 3h
 - **Beschreibung:** Vitest-Tests für:
-  - `WorldCard` (rendert World-Info, Klick-Callback)
-  - `DiceRollModal` (öffnet/schließt, Roll-Action)
-  - `ChatPanel` (Nachricht senden, Roll-Befehl)
-  - `EntityCreateModal` (Formular ausfüllen, Submit)
-  - `RegionTree` (Tree rendern, Klick auf Node)
-  **Setup:** i18n + Testing-Library ist bereits konfiguriert.
+  - `InitiativeList` (3 Tests: leer, mit Teilnehmern, defeated)
+  - `ApBar` (2 Tests: leer, AP-Anzeige)
+  - **Setup:** i18n + Testing-Library ist bereits konfiguriert.
 
 ### P12-T05: QuestController DTO-Refactoring
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 0,5h
 - **Beschreibung:** `HashMap` in `toResponse()` durch `QuestResponse`-Record ersetzen, analog zu den anderen Controllern.
 
 ### P12-T06: Skeleton-Loader für Dashboard + GameView
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 1h
 - **Beschreibung:** Ladezustände visuell ansprechender gestalten:
   - Dashboard: Skeleton-Karten (graue Boxen mit Puls-Animation) statt "Loading…"-Text
-  - GameView: Skeleton-Sidebar + Skeleton-Content-Bereich
-  - Neue Komponente: `SkeletonCard`, `SkeletonList`
+  - Neue Komponente: `SkeletonCard`
 
 ### P12-T07: UI-Transitionen & Micro-Interaktionen
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 2h
-- **Beschreibung:** Fehlende Animationen ergänzen:
-  - Page-Transitions (fade beim Routen-Wechsel)
-  - Modal Open/Close (scale + opacity)
-  - Toast Slide-In von rechts
-  - Sidebar Slide (bereits vorhanden, aber ohne transition-Klasse)
-  - Button-Hover states sind OK, Fokus-Ringe prüfen
+- **Beschreibung:** Fehlende Animationen ergänzt:
+  - Modal Open/Close über CSS-Animationen (`modal-overlay`, `modal-content`)
+  - Toast Slide-In von rechts (`toast-slide`)
+  - Page-Enter-Fade (`page-enter`)
+  - CSS-Keyframes in `index.css`
+
+---
+
+## Phase 13: Campaign-Features (MVP-Lücken)
+
+### P13-T01: Einladungssystem mit Token
+- **Status:** 📋
+- **Aufwand:** 3h
+- **Beschreibung:** DM erzeugt Einladungslink mit Token (`POST /worlds/{id}/invite`). Empfänger klickt Link → wird Member der Welt. Token hat optionales Ablaufdatum. Benachrichtigung im Dashboard für ausstehende Einladungen.
+  - **Backend:** `world_invites` Tabelle (Token, world_id, created_by, expires_at, used_at), `POST /worlds/{id}/invite`, `POST /worlds/join?token=...`
+  - **Frontend:** "Invite"-Button im WorldEditor → Modal mit Link, "Pending Invites"-Liste im Dashboard
+  - **Tests:** Service-Test (create/use/expire invite), Controller-Test
+
+### P13-T02: XP-System + Level-Up
+- **Status:** 📋
+- **Aufwand:** 4h
+- **Beschreibung:** Entities bekommen XP (neue Spalte `experience_points`), Level wird automatisch berechnet basierend auf Game-System-Regel (z.B. `level = floor(xp / 100) + 1`). Nach Level-Up: Attributspunkte zum Verteilen, neue ACTIVE/PASSIVE Abilities freischaltbar.
+  - **Backend:** Migration `V085__entity_xp.sql` (`experience_points INT DEFAULT 0`, `attribute_points INT DEFAULT 0`), LevelUpService, `POST /entities/{id}/levelup` (verteilt Punkte)
+  - **Combat:** Automatische XP-Vergabe nach Kampf-Ende (COMBAT_ENDED-Event)
+  - **Frontend:** XP-Bar im CharacterSheet, Level-Up Modal mit Punktverteilung
+  - **Tests:** LevelUpServiceTest
+
+### P13-T03: Kampf-Log im Chat
+- **Status:** 📋
+- **Aufwand:** 1h
+- **Beschreibung:** Kampf-Aktionen (Angriff, Ability, Defend, Next-Turn) werden automatisch als Chat-Nachricht in den Chat geschrieben statt nur als WebSocket-Event. Spieler sehen "Aragorn greift Ork an: 8 Schaden" direkt im Chat.
+  - **Geändert:** `CombatService` published zusätzlich `CHAT_MESSAGE`-Event bei jeder Aktion
+  - **Frontend:** ChatPanel zeigt Combat-Messages mit Icon
+
+### P13-T04: Character-Sheet als P&P-Bogen
+- **Status:** 📋
+- **Aufwand:** 3h
+- **Beschreibung:** Der aktuelle CharacterSheet (`/characters/:id`) zeigt nur eine Key-Value-Liste. Neues Layout im P&P-Stil:
+  - **Kopf:** Name, Typ, Fraktion, Level, XP-Bar
+  - **Attribute:** Gruppiert (z.B. "Körperlich", "Geistig", "Sozial") mit Werten und Modifiern
+  - **Skills:** Liste mit Attribut-Bezug, Bonus, Gesamtwert
+  - **Kampf:** HP/AP, Initiative, Armor Class, Waffe
+  - **Inventory:** Equip-Slots + Item-Liste
+  - **Abilities:** TAB für ACTIVE + PASSIVE
+  - **Notizen:** Backstory, Personality, Goals
+  - **Layout:** Zweispaltig, optisch wie ein P&P-Charakterbogen
+
+### P13-T05: HP/AP-Regeneration nach Kampf
+- **Status:** 📋
+- **Aufwand:** 1h
+- **Beschreibung:** Nach Kampf-Ende (`COMBAT_ENDED`) werden HP und AP aller Teilnehmer automatisch regeneriert (volle HP, volle AP). Optional: konfigurierbar pro Welt (Regen-Rate in `settings_json`).
+  - **Geändert:** `CombatService.endCombat()` setzt HP/AP zurück
+  - **Optional:** `POST /entities/{id}/rest` für manuelle Rast außerhalb des Kampfes
+
+### P13-T06: Automatische XP-Vergabe nach Kampf
+- **Status:** 📋
+- **Aufwand:** 1h
+- **Beschreibung:** Bei Kampf-Ende werden XP automatisch an alle Teilnehmer verteilt. Basis-XP pro Gegner + Bonuses für besiegte Gegner.
+  - **Geändert:** `CombatService.endCombat()` berechnet XP, ruft `LevelUpService.addXp()` auf
+  - **Konfiguration:** Game-System `rules_json` kann `combat.xp_per_defeated_enemy` definieren
 
 ---
 
@@ -1009,6 +1059,7 @@
 | 10 (Campaign-Polish) | 10 | 19,0 Tage |
 | 11 (Architektur) | 8 | 19,0 Tage |
 | 12 (Qualität & Robustheit) | 7 | 11,0 Tage |
-| **Summe** | **92 (1 cancelled)** | **163,0 Tage** |
+| 13 (Campaign-Features) | 6 | 13,0 Tage |
+| **Summe** | **98 (1 cancelled)** | **176,0 Tage** |
 
-Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das ~8,15 Monaten (vollzeit). Bei Nebenher-Betrieb ist dies entsprechend zu multiplizieren. Zuzüglich offener Risiken (~0,5 Tage).
+Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das ~8,8 Monaten (vollzeit). Bei Nebenher-Betrieb ist dies entsprechend zu multiplizieren. Zuzüglich offener Risiken (~0,5 Tage).
