@@ -4,6 +4,7 @@ import com.lwe.core.domain.Location;
 import com.lwe.core.repository.LocationRepository;
 import com.lwe.core.repository.RegionRepository;
 import com.lwe.core.repository.WorldRepository;
+import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,14 +16,14 @@ public class LocationService {
 
     private final LocationRepository repo;
     private final RegionRepository regionRepo;
-    private final WorldRepository worldRepo;
+    private final WorldAccess worldAccess;
     private final EntityEventService eventService;
 
     public LocationService(LocationRepository repo, RegionRepository regionRepo,
-                           WorldRepository worldRepo, EntityEventService eventService) {
+                           WorldAccess worldAccess, EntityEventService eventService) {
         this.repo = repo;
         this.regionRepo = regionRepo;
-        this.worldRepo = worldRepo;
+        this.worldAccess = worldAccess;
         this.eventService = eventService;
     }
 
@@ -87,11 +88,7 @@ public class LocationService {
     private void requireAccess(UUID regionId, UUID userId) {
         var region = regionRepo.findById(regionId)
             .orElseThrow(() -> new LocationException("REGION_NOT_FOUND", "Region not found"));
-        worldRepo.findById(region.getWorldId()).ifPresent(w -> {
-            if (!w.getOwnerId().equals(userId)) {
-                throw new LocationException("WORLD_ACCESS_DENIED", "Access denied");
-            }
-        });
+        worldAccess.requireAccess(region.getWorldId(), userId);
     }
 
     public static class LocationException extends RuntimeException {

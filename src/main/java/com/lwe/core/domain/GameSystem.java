@@ -61,12 +61,14 @@ public class GameSystem {
 
     public UUID getId() { return id; }
     public String getName() { return name; }
+    public void setName(String v) { this.name = v; }
     public int getVersion() { return version; }
+    public void setVersion(int v) { this.version = v; }
     public String getRulesJson() { return rulesJson; }
+    public void setRulesJson(String v) { this.rulesJson = v; }
     public String getSchemaJson() { return schemaJson; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
-    public void setName(String name) { this.name = name; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

@@ -20,7 +20,10 @@ export function PriceTag({ basePrice, finalPrice }: Props) {
       )}
       <span className={isPremium ? 'text-danger' : 'text-text-primary'}>{finalPrice} G</span>
       {diff !== 0 && (
-        <span className="text-[10px] text-text-secondary">({isPremium ? '+' : ''}{diff})</span>
+        <span className="text-[10px] text-text-secondary">
+          ({isPremium ? '+' : ''}
+          {diff})
+        </span>
       )}
     </span>
   );

@@ -1,94 +1,148 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
+import { DndContext, DragOverlay, type DragEndEvent } from '@dnd-kit/core';
 import { apiClient } from '../api/client';
 import { ItemCard, type InventoryEntry } from '../components/inventory/ItemCard';
+import { DraggableItem } from '../components/inventory/DraggableItem';
+import { DroppableSlot } from '../components/inventory/DroppableSlot';
+import { useApiGet } from '../hooks/useApiGet';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+
+const SLOTS = ['weapon', 'armor', 'helmet', 'accessory'];
 
 export default function InventoryPage() {
   const { t } = useTranslation('character');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [dragTarget, setDragTarget] = useState<string | null>(null);
 
-  const [items, setItems] = useState<InventoryEntry[]>([]);
-  const [bonuses, setBonuses] = useState<Record<string, number>>({});
+  const { data, loading, refetch } = useApiGet<{
+    items: InventoryEntry[];
+    computed_bonuses: Record<string, number>;
+  }>(`/entities/${id}/inventory`, [id]);
 
-  useEffect(() => {
-    if (!id) return;
-    apiClient.get(`/entities/${id}/inventory`).then((res) => {
-      setItems(res.data.items ?? []);
-      setBonuses(res.data.computed_bonuses ?? {});
-    });
-  }, [id]);
+  const items = data?.items ?? [];
+  const bonuses = data?.computed_bonuses ?? {};
 
   const handleEquip = async (itemId: string, slot: string) => {
     if (!id) return;
-    const res = await apiClient.post(`/entities/${id}/inventory/equip`, { itemId, slot });
-    setItems(res.data.items ?? []);
-    setBonuses(res.data.computed_bonuses ?? {});
+    try {
+      await apiClient.post(`/entities/${id}/inventory/equip`, { itemId, slot });
+      refetch();
+    } catch {
+      /* */
+    }
   };
 
-  const handleUnequip = async (_itemId: string) => {
+  const handleUnequip = async (itemId: string) => {
     if (!id) return;
-    const res = await apiClient.post(`/entities/${id}/inventory/unequip`, { slot: 'weapon' });
-    setItems(res.data.items ?? []);
-    setBonuses(res.data.computed_bonuses ?? {});
+    try {
+      await apiClient.post(`/entities/${id}/inventory/unequip`, { itemId });
+      refetch();
+    } catch {
+      /* */
+    }
   };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setDragTarget(null);
+    const { active, over } = event;
+    if (!active || !over) return;
+    const itemId = active.id as string;
+    const slot = over.id as string;
+    if (SLOTS.includes(slot)) handleEquip(itemId, slot);
+  };
+
+  if (loading)
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-bg-primary">
+        <LoadingSpinner />
+      </div>
+    );
 
   const equipped = items.filter((i) => i.equipped);
   const backpack = items.filter((i) => !i.equipped);
+  const equippedBySlot = Object.fromEntries(
+    SLOTS.map((s) => [s, equipped.find((i) => i.slot === s)]),
+  );
 
   return (
-    <div className="min-h-screen bg-bg-primary">
-      <header className="flex items-center gap-3 border-b border-bg-elevated bg-bg-surface px-6 py-3">
-        <button onClick={() => navigate(-1)} className="text-text-secondary hover:text-accent">
-          <ArrowLeft size={20} />
-        </button>
-        <h1 className="text-lg font-heading text-text-primary">{t('sheet.inventory')}</h1>
-      </header>
+    <DndContext onDragEnd={handleDragEnd} onDragStart={(e) => setDragTarget(e.active.id as string)}>
+      <div className="min-h-screen bg-bg-primary">
+        <header className="flex items-center gap-3 border-b border-bg-elevated bg-bg-surface px-6 py-3">
+          <button onClick={() => navigate(-1)} className="text-text-secondary hover:text-accent">
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="text-lg font-heading text-text-primary">{t('sheet.inventory')}</h1>
+        </header>
 
-      <main className="mx-auto max-w-3xl space-y-6 p-6">
-        <section className="rounded-lg bg-bg-surface p-5">
-          <h2 className="mb-3 font-heading text-text-primary">Equipped</h2>
-          {equipped.length === 0 ? (
-            <p className="text-sm text-text-secondary">No items equipped</p>
-          ) : (
-            <div className="space-y-2">
-              {equipped.map((e) => (
-                <ItemCard key={e.itemId} entry={e} onUnequip={handleUnequip} />
-              ))}
-            </div>
-          )}
-        </section>
-
-        {Object.keys(bonuses).length > 0 && (
+        <main className="mx-auto max-w-3xl space-y-6 p-6">
+          {/* Equip Slots */}
           <section className="rounded-lg bg-bg-surface p-5">
-            <h2 className="mb-3 font-heading text-text-primary">Active Bonuses</h2>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(bonuses).map(([key, val]) => (
-                <span key={key} className="rounded bg-accent/15 px-2 py-1 text-xs text-accent">
-                  {key}: +{val}
-                </span>
-              ))}
+            <h2 className="mb-3 font-heading text-text-primary">Equipped</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {SLOTS.map((slot) => {
+                const item = equippedBySlot[slot];
+                return (
+                  <DroppableSlot key={slot} id={slot} isEmpty={!item} isDragActive={!!dragTarget}>
+                    {item ? (
+                      <DraggableItem id={item.itemId}>
+                        <ItemCard entry={item} onUnequip={() => handleUnequip(item.itemId)} />
+                      </DraggableItem>
+                    ) : (
+                      <span className="text-xs text-text-secondary capitalize italic">{slot}</span>
+                    )}
+                  </DroppableSlot>
+                );
+              })}
             </div>
           </section>
-        )}
 
-        <section className="rounded-lg bg-bg-surface p-5">
-          <h2 className="mb-3 font-heading text-text-primary">
-            Inventory ({backpack.length})
-          </h2>
-          {backpack.length === 0 ? (
-            <p className="text-sm text-text-secondary">Empty</p>
-          ) : (
-            <div className="space-y-2">
-              {backpack.map((item) => (
-                <ItemCard key={item.itemId} entry={item} onEquip={handleEquip} />
-              ))}
-            </div>
+          {/* Bonuses */}
+          {Object.keys(bonuses).length > 0 && (
+            <section className="rounded-lg bg-bg-surface p-5">
+              <h2 className="mb-3 font-heading text-text-primary">Active Bonuses</h2>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(bonuses).map(([key, val]) => (
+                  <span key={key} className="rounded bg-accent/15 px-2 py-1 text-xs text-accent">
+                    {key}: +{val}
+                  </span>
+                ))}
+              </div>
+            </section>
           )}
-        </section>
-      </main>
-    </div>
+
+          {/* Backpack */}
+          <section className="rounded-lg bg-bg-surface p-5">
+            <h2 className="mb-3 font-heading text-text-primary">Inventory ({backpack.length})</h2>
+            {backpack.length === 0 ? (
+              <p className="text-sm text-text-secondary">Empty</p>
+            ) : (
+              <ul className="space-y-2" role="list" aria-label="Backpack items">
+                {backpack.map((item) => (
+                  <li key={item.itemId}>
+                    <DraggableItem id={item.itemId}>
+                      <ItemCard entry={item} />
+                    </DraggableItem>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </main>
+      </div>
+
+      <DragOverlay>
+        {dragTarget && items.find((i) => i.itemId === dragTarget) && (
+          <div className="w-64 rounded border border-accent bg-bg-surface p-3 shadow-xl">
+            <p className="text-sm text-text-primary">
+              {items.find((i) => i.itemId === dragTarget)!.name}
+            </p>
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
   );
 }

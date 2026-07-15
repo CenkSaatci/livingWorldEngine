@@ -33,6 +33,21 @@ public class User {
     @Column(nullable = false, length = 10)
     private String locale = "de";
 
+    @Column(name = "plan_id")
+    private UUID planId;
+
+    @Column(name = "plan_expires_at")
+    private Instant planExpiresAt;
+
+    @Column(name = "email_verified_at")
+    private Instant emailVerifiedAt;
+
+    @Column(name = "verification_token", length = 200)
+    private String verificationToken;
+
+    @Column(name = "verification_token_expires_at")
+    private Instant verificationTokenExpiresAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -58,8 +73,21 @@ public class User {
     public String getEmail() { return email; }
     public String getUsername() { return username; }
     public String getPasswordHash() { return passwordHash; }
+    public void setPasswordHash(String v) { this.passwordHash = v; }
     public String getRole() { return role; }
     public String getLocale() { return locale; }
+    public void setLocale(String v) { this.locale = v; }
+    public UUID getPlanId() { return planId; }
+    public void setPlanId(UUID v) { this.planId = v; }
+    public Instant getPlanExpiresAt() { return planExpiresAt; }
+    public void setPlanExpiresAt(Instant v) { this.planExpiresAt = v; }
+    public void setRole(String v) { this.role = v; }
+    public Instant getEmailVerifiedAt() { return emailVerifiedAt; }
+    public void setEmailVerifiedAt(Instant v) { this.emailVerifiedAt = v; }
+    public String getVerificationToken() { return verificationToken; }
+    public void setVerificationToken(String v) { this.verificationToken = v; }
+    public Instant getVerificationTokenExpiresAt() { return verificationTokenExpiresAt; }
+    public void setVerificationTokenExpiresAt(Instant v) { this.verificationTokenExpiresAt = v; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

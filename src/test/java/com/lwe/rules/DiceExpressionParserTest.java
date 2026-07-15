@@ -3,6 +3,7 @@ package com.lwe.rules;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class DiceExpressionParserTest {
 
@@ -23,8 +24,29 @@ class DiceExpressionParserTest {
     }
 
     @Test
-    void shouldReturnUnknownForInvalid() {
-        assertThat(DiceExpressionParser.detect("not json")).isEqualTo(DiceExpressionParser.DiceSystem.UNKNOWN);
-        assertThat(DiceExpressionParser.detect("{}")).isEqualTo(DiceExpressionParser.DiceSystem.UNKNOWN);
+    void shouldThrowForInvalidJson() {
+        assertThatThrownBy(() -> DiceExpressionParser.detect("not json"))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldThrowForMissingProbe() {
+        assertThatThrownBy(() -> DiceExpressionParser.detect("{}"))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldDetectThrown() {
+        var rules = """
+            {"version":1,"attributes":[],"dice_mechanics":{"probe":"1d100"}}
+            """;
+        assertThat(DiceExpressionParser.detect(rules)).isEqualTo(DiceExpressionParser.DiceSystem.THROWN);
+    }
+
+    @Test
+    void shouldParseProbe() {
+        var result = DiceExpressionParser.parseProbe("3d6+mod");
+        assertThat(result.count()).isEqualTo(3);
+        assertThat(result.sides()).isEqualTo(6);
     }
 }

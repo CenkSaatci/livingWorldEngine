@@ -32,7 +32,7 @@ public class RegionController {
                                     @AuthenticationPrincipal User user) {
         var region = service.create(worldId, user.getId(), req.name(),
             req.description(), req.history(), req.dangerLevel(), req.climate(),
-            req.resources(), req.factions(), req.positionJson());
+            req.resources(), req.factions(), req.positionJson(), req.polygonPoints());
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(region));
     }
 
@@ -57,7 +57,7 @@ public class RegionController {
                                     @AuthenticationPrincipal User user) {
         var region = service.update(regionId, user.getId(), req.name(),
             req.description(), req.history(), req.dangerLevel(), req.climate(),
-            req.resources(), req.factions(), req.positionJson());
+            req.resources(), req.factions(), req.positionJson(), req.polygonPoints());
         return ResponseEntity.ok(toResponse(region));
     }
 
@@ -81,6 +81,7 @@ public class RegionController {
         m.put("resources", r.getResources());
         m.put("factions", r.getFactions());
         m.put("population", r.getPopulation());
+        m.put("polygon_points", r.getPolygonPoints() != null ? r.getPolygonPoints() : "");
         m.put("created_at", r.getCreatedAt().toString());
         return m;
     }
@@ -88,11 +89,13 @@ public class RegionController {
     public record CreateRequest(
         @NotBlank String name, String description, String history,
         @Min(1) @Max(10) int dangerLevel, String climate,
-        String resources, String factions, String positionJson
+        String resources, String factions, String positionJson,
+        String polygonPoints
     ) {}
     public record UpdateRequest(
         String name, String description, String history,
         Integer dangerLevel, String climate,
-        String resources, String factions, String positionJson
+        String resources, String factions, String positionJson,
+        String polygonPoints
     ) {}
 }

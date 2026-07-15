@@ -3,6 +3,7 @@ package com.lwe.core.service;
 import com.lwe.core.domain.Region;
 import com.lwe.core.repository.RegionRepository;
 import com.lwe.core.repository.WorldRepository;
+import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,20 +14,21 @@ import java.util.UUID;
 public class RegionService {
 
     private final RegionRepository repo;
-    private final WorldRepository worldRepo;
+    private final WorldAccess worldAccess;
     private final EntityEventService eventService;
 
-    public RegionService(RegionRepository repo, WorldRepository worldRepo,
+    public RegionService(RegionRepository repo, WorldAccess worldAccess,
                          EntityEventService eventService) {
         this.repo = repo;
-        this.worldRepo = worldRepo;
+        this.worldAccess = worldAccess;
         this.eventService = eventService;
     }
 
     @Transactional
     public Region create(UUID worldId, UUID userId, String name, String description,
                          String history, int dangerLevel, String climate,
-                         String resources, String factions, String positionJson) {
+                         String resources, String factions, String positionJson,
+                         String polygonPoints) {
         requireOwner(worldId, userId);
 
         var region = new Region(worldId, name);
@@ -37,6 +39,7 @@ public class RegionService {
         if (resources != null) region.setResources(resources);
         if (factions != null) region.setFactions(factions);
         if (positionJson != null) region.setPositionJson(positionJson);
+        if (polygonPoints != null) region.setPolygonPoints(polygonPoints);
 
         region = repo.save(region);
 
@@ -60,7 +63,8 @@ public class RegionService {
     @Transactional
     public Region update(UUID regionId, UUID userId, String name, String description,
                          String history, Integer dangerLevel, String climate,
-                         String resources, String factions, String positionJson) {
+                         String resources, String factions, String positionJson,
+                         String polygonPoints) {
         var region = getById(regionId, userId);
         if (name != null) region.setName(name);
         if (description != null) region.setDescription(description);
@@ -70,6 +74,7 @@ public class RegionService {
         if (resources != null) region.setResources(resources);
         if (factions != null) region.setFactions(factions);
         if (positionJson != null) region.setPositionJson(positionJson);
+        if (polygonPoints != null) region.setPolygonPoints(polygonPoints);
         return repo.save(region);
     }
 
@@ -80,10 +85,7 @@ public class RegionService {
     }
 
     private void requireOwner(UUID worldId, UUID userId) {
-        worldRepo.findById(worldId).ifPresent(w -> {
-            if (!w.getOwnerId().equals(userId))
-                throw new RegionException("WORLD_ACCESS_DENIED", "Access denied");
-        });
+        worldAccess.requireAccess(worldId, userId);
     }
 
     public static class RegionException extends RuntimeException {

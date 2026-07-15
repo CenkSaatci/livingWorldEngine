@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Package } from 'lucide-react';
+import { ArrowLeft, Package, Save } from 'lucide-react';
 import { apiClient } from '../api/client';
+import { useApiGet } from '../hooks/useApiGet';
+import { useToast } from '../hooks/useToast';
 import { AttributeField } from '../components/character/AttributeField';
 import { SkillList } from '../components/character/SkillList';
 
@@ -33,23 +35,21 @@ export default function CharacterSheetPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [char, setChar] = useState<CharData | null>(null);
+  const toast = useToast();
+  const { data: char, loading } = useApiGet<CharData>(id ? `/entities/${id}` : '', []);
   const [attrs, setAttrs] = useState<AttributeDef[]>([]);
   const [skills, setSkills] = useState<SkillDef[]>([]);
   const [values, setValues] = useState<Record<string, number | string | boolean>>({});
-  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
+    if (!char) return;
     (async () => {
       try {
-        const r = await apiClient.get(`/entities/${id}`);
-        const data = r.data as CharData;
-        setChar(data);
-        const parsed = JSON.parse(data.attributes_json ?? '{}');
+        const parsed = JSON.parse(char.attributes_json ?? '{}');
         setValues(parsed);
 
-        const worldRes = await apiClient.get(`/worlds/${data.world_id}`);
+        const worldRes = await apiClient.get(`/worlds/${char.world_id}`);
         const gsId: string | null = worldRes.data.game_system_id;
         if (gsId) {
           const gsRes = await apiClient.get(`/game-systems/${gsId}`);
@@ -58,12 +58,25 @@ export default function CharacterSheetPage() {
           setSkills(rules.skills ?? []);
         }
       } catch {
-        // Entity or world not found
-      } finally {
-        setLoading(false);
+        toast.error('Failed to load character data');
       }
     })();
-  }, [id]);
+  }, [char]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSave = async () => {
+    if (!id || !char) return;
+    setSaving(true);
+    try {
+      await apiClient.patch(`/worlds/${char.world_id}/entities/${id}`, {
+        attributesJson: JSON.stringify(values),
+      });
+      toast.success(t('sheet.saved'));
+    } catch {
+      toast.error(t('sheet.save_error'));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -91,6 +104,14 @@ export default function CharacterSheetPage() {
         <span className="rounded bg-bg-elevated px-2 py-0.5 text-xs text-text-secondary">
           {char.entity_type}
         </span>
+        <div className="flex-1" />
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-1 rounded bg-accent px-3 py-1.5 text-xs text-white hover:bg-accent/80 disabled:opacity-40"
+        >
+          <Save size={14} /> {saving ? t('sheet.saving') : t('sheet.save')}
+        </button>
       </header>
 
       <main className="mx-auto max-w-2xl space-y-6 p-6">
@@ -103,7 +124,7 @@ export default function CharacterSheetPage() {
                 key={attr.name}
                 label={attr.name}
                 type={attr.type}
-                value={values[attr.name] ?? attr.type === 'INT' ? 10 : ''}
+                value={(values[attr.name] ?? attr.type === 'INT') ? 10 : ''}
                 onChange={(v: number | string | boolean) =>
                   setValues((prev) => ({ ...prev, [attr.name]: v }))
                 }
@@ -120,11 +141,11 @@ export default function CharacterSheetPage() {
               skills={skills}
               entityId={char.id}
               worldId={char.world_id}
-              attributes={Object.fromEntries(
-                Object.entries(values).filter(
-                  ([, v]) => typeof v === 'number',
-                ),
-              ) as Record<string, number>}
+              attributes={
+                Object.fromEntries(
+                  Object.entries(values).filter(([, v]) => typeof v === 'number'),
+                ) as Record<string, number>
+              }
             />
           </section>
         )}

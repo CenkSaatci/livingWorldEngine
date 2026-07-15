@@ -38,7 +38,8 @@ management:
         include: health,info,metrics
   endpoint:
     health:
-      show-details: when-authorized
+      show-details: always
+      show-components: always
 
 lwe:
   jwt:
@@ -49,6 +50,26 @@ lwe:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
   time:
     tick-check-interval-ms: 1000
+  rate-limit:
+    default: 100
+    default-window-seconds: 60
+    paths:
+      - pattern: /api/v1/auth/login
+        max: 5
+        window-seconds: 900
+      - pattern: /api/v1/auth/register
+        max: 3
+        window-seconds: 3600
+      - pattern: /api/v1/worlds
+        method: POST
+        max: 5
+        window-seconds: 60
+      - pattern: /api/v1/combat/*/action
+        max: 30
+        window-seconds: 60
+      - pattern: /api/v1/chat/*
+        max: 20
+        window-seconds: 60
 
 logging:
   level:

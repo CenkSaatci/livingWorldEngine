@@ -1,44 +1,30 @@
 package com.lwe.api;
 
+import com.lwe.api.dto.ApiResponse;
+import com.lwe.api.dto.ErrorResponse;
+import com.lwe.api.dto.FogStatusResponse;
+import com.lwe.api.dto.UpdatedResponse;
 import com.lwe.core.domain.User;
-import com.lwe.core.repository.WorldRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 import java.util.UUID;
 
-/**
- * DM-Only-Endpunkte für Fog-of-War-Steuerung.
- */
 @RestController
 @RequestMapping("/api/v1/fog")
 public class FogController {
 
-    private final WorldRepository worldRepo;
-
-    public FogController(WorldRepository worldRepo) {
-        this.worldRepo = worldRepo;
+    @PostMapping("/toggle")
+    public ResponseEntity<?> toggle(@RequestParam UUID worldId,
+                                    @AuthenticationPrincipal User user) {
+        if (!"ADMIN".equals(user.getRole()))
+            return ResponseEntity.status(403).body(new ErrorResponse("DM only"));
+        return ResponseEntity.ok(new UpdatedResponse(true, worldId));
     }
 
-    @PatchMapping("/{worldId}")
-    public ResponseEntity<?> updateFog(@PathVariable UUID worldId,
-                                       @RequestBody Map<String, Object> body,
-                                       @AuthenticationPrincipal User user) {
-        var world = worldRepo.findById(worldId)
-            .orElseThrow(() -> new RuntimeException("WORLD_NOT_FOUND"));
-        if (!world.getOwnerId().equals(user.getId()))
-            return ResponseEntity.status(403).body(Map.of("error", "DM only"));
-
-        // In einer späteren Phase: Persistenz in maps.fog_state_json
-        // Aktuell nur Bestätigung — Fog-Verwaltung erfolgt client-seitig via WS
-        return ResponseEntity.ok(Map.of("updated", true, "world_id", worldId));
-    }
-
-    @GetMapping("/{worldId}")
-    public ResponseEntity<?> getFogState(@PathVariable UUID worldId,
-                                         @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(Map.of("fog_active", true));
+    @GetMapping("/status")
+    public ResponseEntity<FogStatusResponse> status(@RequestParam UUID worldId) {
+        return ResponseEntity.ok(new FogStatusResponse(true));
     }
 }

@@ -1,23 +1,39 @@
-import { useEffect, useState } from 'react';
 import { Briefcase, Coins } from 'lucide-react';
-import { apiClient } from '../../api/client';
+import { useApiGet } from '../../hooks/useApiGet';
+
+interface NpcQuickInfoData {
+  id: string;
+  name: string;
+  entity_type: string;
+  metadata_json: string;
+}
+
+interface NpcMeta {
+  occupation?: string;
+  price_modifier?: number;
+  personality?: string;
+}
 
 interface Props {
   npcId: string;
+  worldId: string;
   onClose?: () => void;
 }
 
-export function NpcQuickInfo({ npcId, onClose }: Props) {
-  const [npc, setNpc] = useState<any>(null);
-
-  useEffect(() => {
-    apiClient.get(`/entities/${npcId}`).then((r) => setNpc(r.data)).catch(() => {});
-  }, [npcId]);
+export function NpcQuickInfo({ npcId, worldId, onClose }: Props) {
+  const { data: npc } = useApiGet<NpcQuickInfoData>(`/worlds/${worldId}/entities/${npcId}`, [
+    worldId,
+    npcId,
+  ]);
 
   if (!npc) return null;
 
-  let meta: Record<string, any> = {};
-  try { meta = JSON.parse(npc.metadata_json); } catch { /* */ }
+  let meta: NpcMeta = {};
+  try {
+    meta = JSON.parse(npc.metadata_json) as NpcMeta;
+  } catch {
+    /* */
+  }
 
   return (
     <div className="rounded-lg border border-bg-elevated bg-bg-surface p-3">
@@ -29,7 +45,12 @@ export function NpcQuickInfo({ npcId, onClose }: Props) {
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-medium text-text-primary truncate">{npc.name}</p>
             {onClose && (
-              <button onClick={onClose} className="text-xs text-text-secondary hover:text-text-primary">✕</button>
+              <button
+                onClick={onClose}
+                className="text-xs text-text-secondary hover:text-text-primary"
+              >
+                ✕
+              </button>
             )}
           </div>
           {meta.occupation && (

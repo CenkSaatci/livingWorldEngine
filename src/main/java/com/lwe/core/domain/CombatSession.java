@@ -27,6 +27,9 @@ public class CombatSession {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
+    @Column(name = "map_id")
+    private UUID mapId;
+
     @Column(name = "ended_at")
     private Instant endedAt;
 
@@ -40,6 +43,8 @@ public class CombatSession {
     public UUID getWorldId() { return worldId; }
     public UUID getCurrentTurnEntityId() { return currentTurnEntityId; }
     public void setCurrentTurnEntityId(UUID v) { this.currentTurnEntityId = v; }
+    public UUID getMapId() { return mapId; }
+    public void setMapId(UUID v) { this.mapId = v; }
     public int getRound() { return round; }
     public void setRound(int v) { this.round = v; }
     public String getStatus() { return status; }

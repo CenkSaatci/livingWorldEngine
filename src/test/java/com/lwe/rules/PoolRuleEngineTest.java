@@ -17,7 +17,7 @@ class PoolRuleEngineTest {
 
     @Test
     void shouldExecuteProbe() {
-        var req = new RuleEngine.ProbeRequest("schlagen", 3, 0, 0);
+        var req = new RuleEngine.ProbeRequest("schlagen", 3, 0, 0, "2d6+mod");
         var result = engine.executeProbe(req);
 
         assertThat(result.expression()).contains("2d6");
@@ -28,18 +28,16 @@ class PoolRuleEngineTest {
 
     @Test
     void shouldAlwaysFailWithMinimalAttributes() {
-        var req = new RuleEngine.ProbeRequest("kraft", 0, -5, 0);
+        var req = new RuleEngine.ProbeRequest("kraft", 0, -5, 0, "2d6+mod");
         var result = engine.executeProbe(req);
         // total = 2d6(2-12) - 5 = -3 bis 7
-        // → kann gelegentlich tier-1 erreichen, aber in Einzelfällen testbar:
-        // Mit 0 Attribut und -5 Mod = -5 → 2d6-5 = -3 bis 7
         assertThat(result.successTier()).isGreaterThanOrEqualTo(0);
     }
 
     @Test
     void shouldReachHighTierWithGoodRoll() {
         // max total = 12 + 6 = 18 → Tier 3
-        var req = new RuleEngine.ProbeRequest("zaubern", 6, 0, 0);
+        var req = new RuleEngine.ProbeRequest("zaubern", 6, 0, 0, "2d6+mod");
         var result = engine.executeProbe(req);
         assertThat(result.total()).isBetween(8, 18);
     }

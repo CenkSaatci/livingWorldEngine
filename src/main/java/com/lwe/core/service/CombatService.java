@@ -21,6 +21,7 @@ public class CombatService {
     private final GameSystemRepository gameSystemRepo;
     private final WorldEventService eventService;
     private final RollService rollService;
+    private final com.lwe.core.util.WorldAccess worldAccess;
     private final Map<DiceExpressionParser.DiceSystem, RuleEngine> engines;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -31,6 +32,7 @@ public class CombatService {
                          GameSystemRepository gameSystemRepo,
                          WorldEventService eventService,
                          RollService rollService,
+                         com.lwe.core.util.WorldAccess worldAccess,
                          java.util.List<RuleEngine> engineList) {
         this.sessionRepo = sessionRepo;
         this.participantRepo = participantRepo;
@@ -39,17 +41,20 @@ public class CombatService {
         this.gameSystemRepo = gameSystemRepo;
         this.eventService = eventService;
         this.rollService = rollService;
+        this.worldAccess = worldAccess;
         this.engines = new EnumMap<>(DiceExpressionParser.DiceSystem.class);
         for (var engine : engineList) {
-            var system = engine.getClass().getSimpleName().toLowerCase().contains("pool")
-                ? DiceExpressionParser.DiceSystem.POOL
-                : DiceExpressionParser.DiceSystem.D20;
-            this.engines.put(system, engine);
+            this.engines.put(engine.getDiceSystem(), engine);
         }
     }
 
     @Transactional
     public CombatSession startCombat(UUID userId, UUID worldId, List<UUID> entityIds) {
+        return startCombat(userId, worldId, entityIds, null);
+    }
+
+    @Transactional
+    public CombatSession startCombat(UUID userId, UUID worldId, List<UUID> entityIds, UUID mapId) {
         var world = worldRepo.findById(worldId)
             .orElseThrow(() -> new CombatException("WORLD_NOT_FOUND", "World not found"));
         if (!world.getOwnerId().equals(userId))
@@ -62,6 +67,7 @@ public class CombatService {
         var engine = resolveEngine(world);
 
         var session = new CombatSession(worldId);
+        if (mapId != null) session.setMapId(mapId);
         session = sessionRepo.save(session);
 
         var participants = new ArrayList<CombatParticipant>();
@@ -99,10 +105,36 @@ public class CombatService {
         var actor = findActor(participants, actorId);
         requireAp(actor);
 
+        if ("MOVE".equals(actionType)) {
+            deductAp(actor);
+            eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED, actorId, null, Map.of(
+                "actionType", "MOVE", "damage", 0));
+            return new CombatActionResult("MOVE", 0, actor.getApCurrent(), true, null);
+        }
+
+        if ("DEFEND".equals(actionType)) {
+            deductAp(actor);
+            eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED, actorId, null, Map.of(
+                "actionType", "DEFEND", "damage", 0));
+            return new CombatActionResult("DEFEND", 0, actor.getApCurrent(), true, null);
+        }
+
         checkRange(actionType, targetId, actorId);
 
         var damage = rollDamage(userId, session.getWorldId(), actorId, actionType);
         deductAp(actor);
+
+        // Death check
+        if (targetId != null && damage > 0) {
+            var target = findActor(participants, targetId);
+            target.setHpCurrent(target.getHpCurrent() - damage);
+            participantRepo.save(target);
+
+            if (target.getHpCurrent() <= 0) {
+                eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED,
+                    target.getEntityId(), null, Map.of("actionType", "DEFEATED"));
+            }
+        }
 
         eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
             "actionType", actionType, "damage", damage));
@@ -114,8 +146,7 @@ public class CombatService {
             .orElseThrow(() -> new CombatException("COMBAT_NOT_FOUND", "Combat session not found"));
         if (!"ACTIVE".equals(session.getStatus()))
             throw new CombatException("COMBAT_NOT_ACTIVE", "Combat has ended");
-        if (!userId.equals(worldRepo.findById(session.getWorldId()).orElseThrow().getOwnerId()))
-            throw new CombatException("WORLD_ACCESS_DENIED", "Access denied");
+        worldAccess.requireAccess(session.getWorldId(), userId);
         if (!actorId.equals(session.getCurrentTurnEntityId()))
             throw new CombatException("COMBAT_NOT_YOUR_TURN", "Not your turn");
         return session;
@@ -135,9 +166,10 @@ public class CombatService {
 
     private void checkRange(String actionType, UUID targetId, UUID actorId) {
         if (!"ATTACK".equals(actionType) || targetId == null) return;
-        var attacker = entityRepo.findById(actorId).orElse(null);
-        var defender = entityRepo.findById(targetId).orElse(null);
-        if (attacker == null || defender == null) return;
+        var attacker = entityRepo.findById(actorId)
+            .orElseThrow(() -> new CombatException("ENTITY_NOT_FOUND", "Actor not found"));
+        var defender = entityRepo.findById(targetId)
+            .orElseThrow(() -> new CombatException("ENTITY_NOT_FOUND", "Target not found"));
         var aPos = attacker.getPositionJson();
         var dPos = defender.getPositionJson();
         if (aPos == null || aPos.isBlank() || dPos == null || dPos.isBlank()) return;
@@ -148,10 +180,10 @@ public class CombatService {
 
     private int rollDamage(UUID userId, UUID worldId, UUID actorId, String actionType) {
         if (!"ATTACK".equals(actionType)) return 0;
-        var entity = entityRepo.findById(actorId).orElse(null);
-        if (entity == null) return 0;
-        var world = worldRepo.findById(worldId).orElse(null);
-        if (world == null) return 0;
+        var entity = entityRepo.findById(actorId)
+            .orElseThrow(() -> new CombatException("ENTITY_NOT_FOUND", "Actor not found"));
+        var world = worldRepo.findById(worldId)
+            .orElseThrow(() -> new CombatException("WORLD_NOT_FOUND", "World not found"));
         var damageAttr = resolveDamageAttr(entity, world);
         var rollResult = rollService.executeRoll(userId, worldId, actorId, damageAttr, 0, 0);
         return rollResult != null ? rollResult.total() : 0;
@@ -210,15 +242,44 @@ public class CombatService {
         return session;
     }
 
+    public CombatSession getSession(UUID userId, UUID sessionId) {
+        var session = sessionRepo.findById(sessionId)
+            .orElseThrow(() -> new CombatException("COMBAT_NOT_FOUND", "Combat session not found"));
+        requireOwnership(session.getWorldId(), userId);
+        return session;
+    }
+
+    public List<Map<String, Object>> getParticipants(UUID sessionId) {
+        return participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId).stream()
+            .map(p -> {
+                Map<String, Object> m = new java.util.HashMap<>();
+                m.put("id", p.getId());
+                m.put("entity_id", p.getEntityId());
+                m.put("initiative", p.getInitiative());
+                m.put("ap_current", p.getApCurrent());
+                m.put("ap_max", p.getApMax());
+                m.put("hp_current", p.getHpCurrent());
+                m.put("hp_max", p.getHpMax());
+                m.put("side", p.getSide());
+                return m;
+            })
+            .toList();
+    }
+
     // -- Helpers --
 
     private RuleEngine resolveEngine(World world) {
         if (world.getGameSystemId() != null) {
-            var gs = gameSystemRepo.findById(world.getGameSystemId()).orElse(null);
-            if (gs != null) {
-                var system = DiceExpressionParser.detect(gs.getRulesJson());
-                var engine = engines.get(system);
-                if (engine != null) return engine;
+            try {
+                var opt = gameSystemRepo.findById(world.getGameSystemId());
+                if (opt.isPresent()) {
+                    var gs = opt.get();
+                    var system = DiceExpressionParser.detect(gs.getRulesJson());
+                    var engine = engines.get(system);
+                    if (engine != null) return engine;
+                }
+            } catch (IllegalArgumentException e) {
+                // unsupported dice system → fall through to fallback
             }
         }
         return engines.getOrDefault(DiceExpressionParser.DiceSystem.D20,
@@ -228,8 +289,9 @@ public class CombatService {
     private int resolveApMax(World world, RuleEngine engine) {
         if (world.getGameSystemId() != null) {
             try {
-                var gs = gameSystemRepo.findById(world.getGameSystemId()).orElse(null);
-                if (gs != null) {
+                var opt = gameSystemRepo.findById(world.getGameSystemId());
+                if (opt.isPresent()) {
+                    var gs = opt.get();
                     var tree = objectMapper.readTree(gs.getRulesJson());
                     return tree.path("dice_mechanics").path("combat")
                         .path("action_points").path("max").asInt(2);
@@ -240,18 +302,29 @@ public class CombatService {
     }
 
     private String resolveInitiativeAttr(GameEntity entity, World world) {
-        return "geschicklichkeit"; // Default — P2-T07 wird Parsing aus rules_json ergänzen
+        return resolveCombatAttr(world, "initiative", "geschicklichkeit");
     }
 
     private String resolveDamageAttr(GameEntity entity, World world) {
-        return "staerke"; // Default
+        return resolveCombatAttr(world, "damage", "staerke");
+    }
+
+    private String resolveCombatAttr(World world, String combatKey, String fallback) {
+        if (world.getGameSystemId() == null) return fallback;
+        try {
+            var gs = gameSystemRepo.findById(world.getGameSystemId()).orElse(null);
+            if (gs == null) return fallback;
+            var tree = objectMapper.readTree(gs.getRulesJson());
+            var expr = tree.path("dice_mechanics").path("combat").path(combatKey).asText("");
+            var m = java.util.regex.Pattern.compile("[+-](\\w+)$").matcher(expr);
+            return m.find() ? m.group(1) : fallback;
+        } catch (Exception e) {
+            return fallback;
+        }
     }
 
     private void requireOwnership(UUID worldId, UUID userId) {
-        worldRepo.findById(worldId).ifPresent(w -> {
-            if (!w.getOwnerId().equals(userId))
-                throw new CombatException("WORLD_ACCESS_DENIED", "Access denied");
-        });
+        worldAccess.requireAccess(worldId, userId);
     }
 
     public record CombatActionResult(String actionType, int totalDamage,

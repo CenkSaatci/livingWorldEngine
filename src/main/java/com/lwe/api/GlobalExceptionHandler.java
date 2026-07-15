@@ -12,6 +12,10 @@ import com.lwe.core.service.QuestService;
 import com.lwe.core.service.RegionService;
 import com.lwe.core.service.NpcIntentService;
 import com.lwe.core.service.WorldService;
+import com.lwe.core.service.FactionService;
+import com.lwe.core.service.GameSessionService;
+import com.lwe.core.service.QuotaService;
+import com.lwe.core.util.WorldAccess;
 import com.lwe.rules.RuleSchemaValidator;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -100,6 +104,33 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(errorBody(ex.getErrorCode(), ex.getMessage()));
     }
 
+    @ExceptionHandler(FactionService.FactionException.class)
+    public ResponseEntity<?> handleFactionException(FactionService.FactionException ex) {
+        var status = switch (ex.getErrorCode()) {
+            case "FACTION_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+            default -> HttpStatus.BAD_REQUEST;
+        };
+        return ResponseEntity.status(status).body(errorBody(ex.getErrorCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(GameSessionService.SessionException.class)
+    public ResponseEntity<?> handleSessionException(GameSessionService.SessionException ex) {
+        var status = switch (ex.getErrorCode()) {
+            case "SESSION_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+            default -> HttpStatus.BAD_REQUEST;
+        };
+        return ResponseEntity.status(status).body(errorBody(ex.getErrorCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(QuotaService.QuotaException.class)
+    public ResponseEntity<?> handleQuotaException(QuotaService.QuotaException ex) {
+        var status = switch (ex.getErrorCode()) {
+            case "WORLD_LIMIT_REACHED", "WORLD_MEMBER_LIMIT" -> HttpStatus.FORBIDDEN;
+            default -> HttpStatus.BAD_REQUEST;
+        };
+        return ResponseEntity.status(status).body(errorBody(ex.getErrorCode(), ex.getMessage()));
+    }
+
     @ExceptionHandler(NpcIntentService.IntentException.class)
     public ResponseEntity<?> handleIntentException(NpcIntentService.IntentException ex) {
         var status = switch (ex.getErrorCode()) {
@@ -162,6 +193,11 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    @ExceptionHandler(TimeController.TimeControllerException.class)
+    public ResponseEntity<?> handleTimeControllerException(TimeController.TimeControllerException ex) {
+        return ResponseEntity.status(ex.getStatus()).body(errorBody(ex.getErrorCode(), ex.getMessage()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidation(MethodArgumentNotValidException ex) {
         var details = ex.getBindingResult().getFieldErrors().stream()
@@ -174,6 +210,16 @@ public class GlobalExceptionHandler {
                 "details", details
             )
         ));
+    }
+
+    @ExceptionHandler(WorldAccess.WorldAccessException.class)
+    public ResponseEntity<?> handleWorldAccessException(WorldAccess.WorldAccessException ex) {
+        var status = switch (ex.getErrorCode()) {
+            case "WORLD_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+            case "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
+            default -> HttpStatus.BAD_REQUEST;
+        };
+        return ResponseEntity.status(status).body(errorBody(ex.getErrorCode(), ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

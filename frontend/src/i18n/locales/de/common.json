@@ -4,6 +4,9 @@
     "subtitle": "Modulare Pen-&-Paper-Plattform mit lebendiger Welt-Simulation",
     "skeleton_note": "Frontend-Skelett — Login, Dashboard und Karten folgen in Phase 3 (P3-T03 ff). Siehe docs/UI-UX.md."
   },
+  "nav": {
+    "backToDashboard": "← Dashboard"
+  },
   "actions": {
     "login": "Anmelden",
     "register": "Registrieren",
@@ -13,7 +16,8 @@
     "delete": "Löschen",
     "edit": "Bearbeiten",
     "create": "Erstellen",
-    "copy": "Kopieren"
+    "copy": "Kopieren",
+    "loadMore": "Mehr laden"
   },
   "language": {
     "switch": "Sprache ändern",
@@ -23,5 +27,131 @@
   "status": {
     "loading": "Wird geladen…",
     "offline": "Verbindung getrennt"
+  },
+  "gameView": {
+    "title": "Game View",
+    "combat": "Kampf",
+    "location": "📍 Ort",
+    "explore": "🗺️ Erkunden",
+    "chat": "Chat"
+  },
+  "admin": {
+    "accessDenied": "Zugriff verweigert",
+    "title": "Admin",
+    "totalWorlds": "Welten gesamt",
+    "activeWorlds": "Aktive Welten",
+    "users": "Benutzer"
+  },
+  "worldEditor": {
+    "worldInfo": "Welt-Info",
+    "created": "Erstellt",
+    "gameTime": "Spielzeit",
+    "invite": "Einladen",
+    "members": "Mitglieder"
+  },
+  "combat": {
+    "target": "Ziel",
+    "attack": "Angreifen",
+    "nextTurn": "Nächster Zug",
+    "end": "Beenden",
+    "initiative": "Initiative",
+    "round": "Runde",
+    "noParticipants": "Keine Teilnehmer",
+    "ap": "AP"
+  },
+  "entityTimeline": {
+    "today": "heute",
+    "yesterday": "gestern",
+    "daysAgo": "vor {{count}} Tagen",
+    "daysAgo_plural": "vor {{count}} Tagen",
+    "events": "Ereignisse",
+    "noEvents": "Noch keine Ereignisse"
+  },
+  "locationDetail": {
+    "noNpcs": "Keine NPCs an diesem Ort gefunden",
+    "history": "Geschichte",
+    "servicesAndNpcs": "Dienste & NPCs",
+    "wealth": "Wohlstand"
+  },
+  "entity": {
+    "create": "Charakter erstellen",
+    "name": "Name *",
+    "type": "Typ",
+    "age": "Alter",
+    "experience": "Erfahrung",
+    "standing": "Stand",
+    "faction": "Fraktion",
+    "location": "Ort",
+    "personality": "Persönlichkeit",
+    "knowledge": "Wissen (Tags)",
+    "goals": "Ziele",
+    "backstory": "Hintergrund"
+  },
+  "faction": {
+    "create": "Fraktion erstellen",
+    "name": "Name",
+    "color": "Farbe"
+  },
+  "location": {
+    "create": "Ort erstellen",
+    "name": "Name *",
+    "type": "Typ",
+    "wealth": "Wohlstand (1-10)",
+    "population": "Bevölkerung",
+    "description": "Beschreibung"
+  },
+  "session": {
+    "title": "Sitzung",
+    "start": "Starten",
+    "end": "Beenden",
+    "active": "Aktiv",
+    "active_since": "Aktiv seit",
+    "ended": "Beendet",
+    "recent": "Letzte Sitzungen",
+    "started": "Sitzung gestartet",
+    "ended_msg": "Sitzung beendet",
+    "load_error": "Fehler beim Laden der Sitzungen",
+    "start_error": "Fehler beim Starten",
+    "end_error": "Fehler beim Beenden"
+  },
+  "combatModal": {
+    "title": "Kampf starten",
+    "selectParticipants": "Teilnehmer auswählen (min. 2)",
+    "noEntities": "Keine NPCs oder PCs in dieser Welt gefunden",
+    "battleMap": "Kampfkarte",
+    "start": "Kampf starten",
+    "minParticipants": "Wähle mindestens 2 Teilnehmer",
+    "startError": "Kampf konnte nicht gestartet werden"
+  },
+  "entityList": {
+    "title": "Charaktere",
+    "search": "Suchen…",
+    "allTypes": "Alle Typen",
+    "name": "Name",
+    "type": "Typ",
+    "age": "Alter",
+    "experience": "Erfahrung",
+    "standing": "Stand",
+    "faction": "Fraktion",
+    "actions": "Aktionen",
+    "empty": "Keine Charaktere gefunden"
+  },
+  "verify": {
+    "banner": "Bitte bestätige deine E-Mail-Adresse.",
+    "resend": "Verifizierung erneut senden"
+  },
+  "welcome": {
+    "title": "Willkommen bei Living World Engine!",
+    "subtitle": "Folge diesen Schritten, um deine erste Welt einzurichten",
+    "stepWorld": "Erstelle deine erste Welt",
+    "stepWorldDesc": "Gib deiner Welt einen Namen und leg los",
+    "stepNpc": "Erstelle deinen ersten NPC",
+    "stepNpcDesc": "Füge Charaktere hinzu, um deine Welt zu bevölkern",
+    "stepCombat": "Starte deinen ersten Kampf",
+    "stepCombatDesc": "Teste das Kampfsystem mit deinen Charakteren",
+    "worldNamePlaceholder": "z.B. Vergessene Reiche",
+    "create": "Erstellen",
+    "done": "✓ Erledigt!",
+    "start": "Los geht's →"
   }
 }

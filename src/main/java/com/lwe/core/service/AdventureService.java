@@ -20,12 +20,13 @@ public class AdventureService {
     private final WorldRepository worldRepo;
     private final RollService rollService;
     private final WorldEventService eventService;
+    private final com.lwe.core.util.WorldAccess worldAccess;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public AdventureService(AdventureRepository adventureRepo, AdventureNodeRepository nodeRepo,
                             NodeChoiceRepository choiceRepo, AdventureProgressRepository progressRepo,
                             WorldRepository worldRepo, RollService rollService,
-                            WorldEventService eventService) {
+                            WorldEventService eventService, com.lwe.core.util.WorldAccess worldAccess) {
         this.adventureRepo = adventureRepo;
         this.nodeRepo = nodeRepo;
         this.choiceRepo = choiceRepo;
@@ -33,6 +34,7 @@ public class AdventureService {
         this.worldRepo = worldRepo;
         this.rollService = rollService;
         this.eventService = eventService;
+        this.worldAccess = worldAccess;
     }
 
     @Transactional
@@ -212,11 +214,7 @@ public class AdventureService {
     }
 
     private void verifyWorldAccess(UUID worldId, UUID userId) {
-        worldRepo.findById(worldId).ifPresentOrElse(
-            w -> { if (!w.getOwnerId().equals(userId))
-                throw new AdventureException("WORLD_ACCESS_DENIED", "Access denied"); },
-            () -> { throw new AdventureException("WORLD_NOT_FOUND", "World not found"); }
-        );
+        worldAccess.requireAccess(worldId, userId);
     }
 
     public record AdvanceResult(AdventureNode nextNode, boolean completed, boolean skillCheckSuccess) {}

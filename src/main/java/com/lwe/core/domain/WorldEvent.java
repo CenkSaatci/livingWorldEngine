@@ -65,6 +65,8 @@ public class WorldEvent {
     public Long getId() { return id; }
     public UUID getWorldId() { return worldId; }
     public String getEventType() { return eventType; }
+    public UUID getSourceEntityId() { return sourceEntityId; }
+    public UUID getTargetEntityId() { return targetEntityId; }
     public Instant getCreatedAt() { return createdAt; }
     public String getPayloadJson() { return payloadJson; }
 }

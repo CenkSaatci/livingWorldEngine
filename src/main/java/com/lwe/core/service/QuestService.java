@@ -3,6 +3,7 @@ package com.lwe.core.service;
 import com.lwe.core.domain.Quest;
 import com.lwe.core.repository.QuestRepository;
 import com.lwe.core.repository.WorldRepository;
+import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,13 +14,13 @@ import java.util.UUID;
 public class QuestService {
 
     private final QuestRepository repo;
-    private final WorldRepository worldRepo;
+    private final WorldAccess worldAccess;
     private final EntityEventService eventService;
 
-    public QuestService(QuestRepository repo, WorldRepository worldRepo,
+    public QuestService(QuestRepository repo, WorldAccess worldAccess,
                         EntityEventService eventService) {
         this.repo = repo;
-        this.worldRepo = worldRepo;
+        this.worldAccess = worldAccess;
         this.eventService = eventService;
     }
 
@@ -74,10 +75,7 @@ public class QuestService {
     }
 
     private void requireOwner(UUID worldId, UUID userId) {
-        worldRepo.findById(worldId).ifPresent(w -> {
-            if (!w.getOwnerId().equals(userId))
-                throw new QuestException("WORLD_ACCESS_DENIED", "Access denied");
-        });
+        worldAccess.requireAccess(worldId, userId);
     }
 
     public static class QuestException extends RuntimeException {

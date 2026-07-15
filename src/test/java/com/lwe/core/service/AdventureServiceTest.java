@@ -1,6 +1,7 @@
 package com.lwe.core.service;
 
 import com.lwe.core.domain.*;
+import com.lwe.core.util.WorldAccess;
 import com.lwe.core.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ class AdventureServiceTest {
     private final WorldRepository worldRepo = mock();
     private final RollService rollService = mock();
     private final WorldEventService eventService = mock();
+    private final WorldAccess worldAccess = mock();
 
     private AdventureService service;
     private final UUID userId = UUID.randomUUID();
@@ -38,7 +40,7 @@ class AdventureServiceTest {
     @BeforeEach
     void setUp() {
         service = new AdventureService(adventureRepo, nodeRepo, choiceRepo, progressRepo,
-            worldRepo, rollService, eventService);
+            worldRepo, rollService, eventService, worldAccess);
     }
 
     @Test

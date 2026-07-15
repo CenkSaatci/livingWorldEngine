@@ -4,7 +4,11 @@
     "attributes": "Attribute",
     "skills": "Fertigkeiten",
     "inventory": "Inventar",
-    "roll_button": "Würfeln"
+    "roll_button": "Würfeln",
+    "save": "Speichern",
+    "saving": "Speichert…",
+    "saved": "Gespeichert",
+    "save_error": "Fehler beim Speichern"
   },
   "attribute": {
     "modifier": "Modifikator"

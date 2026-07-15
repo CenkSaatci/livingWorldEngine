@@ -1,10 +1,18 @@
 package com.lwe.core.service;
 
+import com.lwe.core.domain.User;
 import com.lwe.core.domain.World;
 import com.lwe.core.domain.WorldMember;
 import com.lwe.core.repository.GameSystemRepository;
 import com.lwe.core.repository.WorldMemberRepository;
 import com.lwe.core.repository.WorldRepository;
+import com.lwe.core.repository.RegionRepository;
+import com.lwe.core.repository.LocationRepository;
+import com.lwe.core.repository.GameEntityRepository;
+import com.lwe.core.repository.FactionRepository;
+import com.lwe.core.repository.FactionRelationRepository;
+import com.lwe.core.repository.WorldMapRepository;
+import com.lwe.core.repository.RegionWeatherRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +34,14 @@ class WorldServiceTest {
     @Mock private WorldRepository worldRepo;
     @Mock private WorldMemberRepository memberRepo;
     @Mock private GameSystemRepository gameSystemRepo;
+    @Mock private QuotaService quotaService;
+    @Mock private RegionRepository regionRepo;
+    @Mock private LocationRepository locationRepo;
+    @Mock private GameEntityRepository entityRepo;
+    @Mock private FactionRepository factionRepo;
+    @Mock private FactionRelationRepository factionRelationRepo;
+    @Mock private WorldMapRepository worldMapRepo;
+    @Mock private RegionWeatherRepository regionWeatherRepo;
 
     private WorldService worldService;
     private final UUID ownerId = UUID.randomUUID();
@@ -34,11 +50,15 @@ class WorldServiceTest {
 
     @BeforeEach
     void setUp() {
-        worldService = new WorldService(worldRepo, memberRepo, gameSystemRepo);
+        worldService = new WorldService(worldRepo, memberRepo, gameSystemRepo, quotaService,
+            regionRepo, locationRepo, entityRepo, factionRepo, factionRelationRepo,
+            worldMapRepo, regionWeatherRepo);
     }
 
     @Test
     void shouldCreateWorld() {
+        var user = new User("test@test.com", "test", "hash", "USER", "de");
+        doNothing().when(quotaService).checkCanCreateWorld(ownerId, user);
         when(gameSystemRepo.findById(gameSystemId)).thenReturn(Optional.of(
             new com.lwe.core.domain.GameSystem("D20", 1, "{}", "{}")));
         when(worldRepo.save(any())).thenAnswer(inv -> {
@@ -47,7 +67,7 @@ class WorldServiceTest {
             return w;
         });
 
-        var result = worldService.create("Schattental", ownerId, gameSystemId, "{}");
+        var result = worldService.create("Schattental", ownerId, gameSystemId, "{}", user);
 
         assertThat(result.getName()).isEqualTo("Schattental");
         assertThat(result.getOwnerId()).isEqualTo(ownerId);
@@ -126,6 +146,7 @@ class WorldServiceTest {
     @Test
     void shouldAddMember() {
         var world = worldWithId("Test", ownerId);
+        doNothing().when(quotaService).checkCanAddMember(world.getId(), ownerId);
         when(worldRepo.findById(world.getId())).thenReturn(Optional.of(world));
         when(memberRepo.existsByWorldIdAndUserId(world.getId(), memberId)).thenReturn(false);
         when(memberRepo.save(any())).thenAnswer(inv -> {
@@ -144,12 +165,33 @@ class WorldServiceTest {
     @Test
     void shouldRejectAddDuplicateMember() {
         var world = worldWithId("Test", ownerId);
+        doNothing().when(quotaService).checkCanAddMember(world.getId(), ownerId);
         when(worldRepo.findById(world.getId())).thenReturn(Optional.of(world));
         when(memberRepo.existsByWorldIdAndUserId(world.getId(), memberId)).thenReturn(true);
 
         assertThatThrownBy(() -> worldService.addMember(world.getId(), ownerId, memberId, "PLAYER"))
             .isInstanceOf(WorldService.WorldException.class)
             .matches(e -> ((WorldService.WorldException) e).getErrorCode().equals("WORLD_MEMBER_ALREADY"));
+    }
+
+    @Test
+    void shouldCloneWorld() {
+        var user = new User("test@test.com", "test", "hash", "USER", "de");
+        var original = worldWithId("Schattental", ownerId);
+        setId(original, UUID.randomUUID());
+
+        when(worldRepo.findById(original.getId())).thenReturn(Optional.of(original));
+        when(worldRepo.save(any())).thenAnswer(inv -> {
+            var w = inv.<World>getArgument(0);
+            setId(w, UUID.randomUUID());
+            return w;
+        });
+
+        var clone = worldService.clone(original.getId(), ownerId, user);
+
+        assertThat(clone).isNotNull();
+        assertThat(clone.getName()).startsWith("Schattental");
+        assertThat(clone.getOwnerId()).isEqualTo(ownerId);
     }
 
     // -- helpers --

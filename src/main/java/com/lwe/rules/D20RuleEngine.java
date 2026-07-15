@@ -2,15 +2,15 @@ package com.lwe.rules;
 
 import org.springframework.stereotype.Component;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Pattern;
 
-/**
- * D20-basierte Rule-Engine (angelehnt an D&D 5e/3.x).
- *
- * <p>Würfelt 1W20, addiert den Attribut-Modifikator {@code floor((attr - 10) / 2)} und
- * optionalen Bonus. Vergleich mit {@code target} → {@code total >= target} ist Erfolg.
- */
 @Component
 public class D20RuleEngine implements RuleEngine {
+
+    @Override
+    public DiceExpressionParser.DiceSystem getDiceSystem() { return DiceExpressionParser.DiceSystem.D20; }
+
+    private static final Pattern DICE_PATTERN = Pattern.compile("(\\d+)d(\\d+)");
 
     @Override
     public int calculateModifier(int attributeValue) {
@@ -20,9 +20,17 @@ public class D20RuleEngine implements RuleEngine {
     @Override
     public ProbeResult executeProbe(ProbeRequest request) {
         var mod = calculateModifier(request.attributeValue()) + request.modifier();
-        var roll = ThreadLocalRandom.current().nextInt(1, 21);
-        var total = roll + mod;
-        var expr = "1d20" + (mod >= 0 ? "+" : "") + mod;
-        return new ProbeResult(expr, new int[]{roll}, total, request.target(), total >= request.target());
+        int sides = 20, count = 1;
+        var m = DICE_PATTERN.matcher(request.diceExpression());
+        if (m.find()) { count = Integer.parseInt(m.group(1)); sides = Integer.parseInt(m.group(2)); }
+        var total = 0;
+        var rolls = new int[count];
+        for (int i = 0; i < count; i++) {
+            rolls[i] = ThreadLocalRandom.current().nextInt(1, sides + 1);
+            total += rolls[i];
+        }
+        total += mod;
+        var expr = count + "d" + sides + (mod >= 0 ? "+" : "") + mod;
+        return new ProbeResult(expr, rolls, total, request.target(), total >= request.target());
     }
 }

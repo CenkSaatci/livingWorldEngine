@@ -1,6 +1,6 @@
 package com.lwe.api;
 
-import com.lwe.core.domain.CombatSession;
+import com.lwe.api.dto.CombatSessionResponse;
 import com.lwe.core.domain.User;
 import com.lwe.core.service.CombatService;
 import jakarta.validation.Valid;
@@ -26,55 +26,49 @@ public class CombatController {
     }
 
     @PostMapping("/start")
-    public ResponseEntity<?> start(@Valid @RequestBody StartRequest req,
-                                   @AuthenticationPrincipal User user) {
-        var session = combatService.startCombat(user.getId(), req.worldId(), req.participantIds());
-        return ResponseEntity.status(HttpStatus.CREATED).body(sessionResponse(session));
+    public ResponseEntity<CombatSessionResponse> start(@Valid @RequestBody StartRequest req,
+                                                        @AuthenticationPrincipal User user) {
+        var session = combatService.startCombat(user.getId(), req.worldId(), req.participantIds(), req.mapId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(CombatSessionResponse.from(session));
     }
 
     @PostMapping("/{sessionId}/action")
-    public ResponseEntity<?> action(@PathVariable UUID sessionId,
-                                    @Valid @RequestBody ActionRequest req,
-                                    @AuthenticationPrincipal User user) {
+    public ResponseEntity<CombatActionResultResponse> action(@PathVariable UUID sessionId,
+                                                              @Valid @RequestBody ActionRequest req,
+                                                              @AuthenticationPrincipal User user) {
         var result = combatService.executeAction(user.getId(), sessionId,
             req.actorId(), req.actionType(), req.targetId(), req.itemId());
-        return ResponseEntity.ok(Map.of(
-            "action_type", result.actionType(),
-            "total_damage", result.totalDamage(),
-            "ap_remaining", result.apRemaining(),
-            "success", result.success()
-        ));
+        return ResponseEntity.ok(new CombatActionResultResponse(
+            result.actionType(), result.totalDamage(), result.apRemaining(), result.success()));
     }
 
     @PostMapping("/{sessionId}/next-turn")
-    public ResponseEntity<?> nextTurn(@PathVariable UUID sessionId,
-                                      @AuthenticationPrincipal User user) {
+    public ResponseEntity<CombatSessionResponse> nextTurn(@PathVariable UUID sessionId,
+                                                           @AuthenticationPrincipal User user) {
         var session = combatService.nextTurn(user.getId(), sessionId);
-        return ResponseEntity.ok(sessionResponse(session));
+        return ResponseEntity.ok(CombatSessionResponse.from(session));
+    }
+
+    @GetMapping("/{sessionId}")
+    public ResponseEntity<CombatSessionWithParticipants> getSession(@PathVariable UUID sessionId,
+                                                                     @AuthenticationPrincipal User user) {
+        var session = combatService.getSession(user.getId(), sessionId);
+        var participants = combatService.getParticipants(sessionId);
+        return ResponseEntity.ok(new CombatSessionWithParticipants(
+            CombatSessionResponse.from(session), participants));
     }
 
     @PostMapping("/{sessionId}/end")
-    public ResponseEntity<?> end(@PathVariable UUID sessionId,
-                                 @AuthenticationPrincipal User user) {
+    public ResponseEntity<CombatSessionResponse> end(@PathVariable UUID sessionId,
+                                                      @AuthenticationPrincipal User user) {
         var session = combatService.endCombat(user.getId(), sessionId);
-        return ResponseEntity.ok(sessionResponse(session));
-    }
-
-    private Map<String, Object> sessionResponse(CombatSession s) {
-        return Map.of(
-            "id", s.getId(),
-            "world_id", s.getWorldId(),
-            "status", s.getStatus(),
-            "round", s.getRound(),
-            "current_turn_entity_id", s.getCurrentTurnEntityId() != null
-                ? s.getCurrentTurnEntityId().toString() : "",
-            "created_at", s.getCreatedAt().toString()
-        );
+        return ResponseEntity.ok(CombatSessionResponse.from(session));
     }
 
     public record StartRequest(
         @NotBlank UUID worldId,
-        @NotEmpty List<UUID> participantIds
+        @NotEmpty List<UUID> participantIds,
+        UUID mapId
     ) {}
 
     public record ActionRequest(
@@ -83,4 +77,10 @@ public class CombatController {
         UUID targetId,
         UUID itemId
     ) {}
+
+    public record CombatActionResultResponse(String actionType, int totalDamage,
+                                              int apRemaining, boolean success) {}
+
+    public record CombatSessionWithParticipants(CombatSessionResponse session,
+                                                  List<Map<String, Object>> participants) {}
 }

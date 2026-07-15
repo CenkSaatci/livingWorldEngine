@@ -35,26 +35,19 @@ public class RollService {
         this.eventService = eventService;
         this.engines = new EnumMap<>(DiceExpressionParser.DiceSystem.class);
         for (var engine : engineList) {
-            var system = engine.getClass().getSimpleName().toLowerCase().contains("pool")
-                ? DiceExpressionParser.DiceSystem.POOL
-                : DiceExpressionParser.DiceSystem.D20;
-            this.engines.put(system, engine);
+            this.engines.put(engine.getDiceSystem(), engine);
         }
     }
 
     public RollResult executeRoll(UUID userId, UUID worldId, UUID entityId,
                                   String skillId, int modifier, int target) {
         // 1. Entity prüfen
-        var entity = entityRepo.findById(entityId).orElse(null);
-        if (entity == null) {
-            return error(skillId, target, "Entity not found");
-        }
+        var entity = entityRepo.findById(entityId)
+            .orElseThrow(() -> new RuntimeException("ENTITY_NOT_FOUND"));
 
         // 2. Welt + Zugriff prüfen
-        var world = worldRepo.findById(worldId).orElse(null);
-        if (world == null) {
-            return error(skillId, target, "World not found");
-        }
+        var world = worldRepo.findById(worldId)
+            .orElseThrow(() -> new RuntimeException("WORLD_NOT_FOUND"));
         if (!world.getOwnerId().equals(userId)) {
             return error(skillId, target, "Access denied");
         }
@@ -64,7 +57,8 @@ public class RollService {
 
         // 4. Game-System laden → Engine bestimmen
         var engine = getEngineForWorld(world);
-        var req = new RuleEngine.ProbeRequest(skillId, attrValue, modifier, target);
+        var diceExpr = resolveDiceExpression(world);
+        var req = new RuleEngine.ProbeRequest(skillId, attrValue, modifier, target, diceExpr);
         var probeResult = engine.executeProbe(req);
 
         // 5. Event loggen
@@ -82,16 +76,35 @@ public class RollService {
 
     private RuleEngine getEngineForWorld(com.lwe.core.domain.World world) {
         if (world.getGameSystemId() != null) {
-            var gs = gameSystemRepo.findById(world.getGameSystemId()).orElse(null);
-            if (gs != null) {
-                var system = DiceExpressionParser.detect(gs.getRulesJson());
-                var engine = engines.get(system);
-                if (engine != null) return engine;
+            try {
+                var opt = gameSystemRepo.findById(world.getGameSystemId());
+                if (opt.isPresent()) {
+                    var gs = opt.get();
+                    var system = DiceExpressionParser.detect(gs.getRulesJson());
+                    var engine = engines.get(system);
+                    if (engine != null) return engine;
+                }
+            } catch (IllegalArgumentException e) {
+                // unsupported dice system → fall through to fallback
             }
         }
-        // Fallback auf D20
         return engines.getOrDefault(DiceExpressionParser.DiceSystem.D20,
             engines.values().iterator().next());
+    }
+
+    private String resolveDiceExpression(com.lwe.core.domain.World world) {
+        if (world.getGameSystemId() != null) {
+            try {
+                var gs = gameSystemRepo.findById(world.getGameSystemId()).orElse(null);
+                if (gs != null) {
+                    var tree = objectMapper.readTree(gs.getRulesJson());
+                    return tree.path("dice_mechanics").path("probe").asText("1d20+mod");
+                }
+            } catch (Exception e) {
+                // fall through
+            }
+        }
+        return "1d20+mod";
     }
 
     private RollResult error(String skillId, int target, String msg) {

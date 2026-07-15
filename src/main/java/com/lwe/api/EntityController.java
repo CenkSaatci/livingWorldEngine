@@ -29,7 +29,8 @@ public class EntityController {
                                     @AuthenticationPrincipal User user) {
         var entity = entityService.create(worldId, user.getId(), req.entityType(),
             req.name(), req.attributesJson(), req.inventoryJson(),
-            req.positionJson(), req.metadataJson(), req.factionId());
+            req.positionJson(), req.metadataJson(), req.factionId(),
+            req.backstory(), req.age(), req.experienceLevel(), req.socialStanding());
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(entity));
     }
 
@@ -56,7 +57,8 @@ public class EntityController {
                                     @AuthenticationPrincipal User user) {
         var entity = entityService.update(entityId, user.getId(),
             req.name(), req.attributesJson(), req.inventoryJson(),
-            req.positionJson(), req.metadataJson());
+            req.positionJson(), req.metadataJson(),
+            req.backstory(), req.age(), req.experienceLevel(), req.socialStanding());
         return ResponseEntity.ok(toResponse(entity));
     }
 
@@ -69,18 +71,22 @@ public class EntityController {
     }
 
     private Map<String, Object> toResponse(com.lwe.core.domain.GameEntity e) {
-        return Map.of(
-            "id", e.getId(),
-            "world_id", e.getWorldId(),
-            "entity_type", e.getEntityType(),
-            "name", e.getName(),
-            "attributes_json", e.getAttributesJson(),
-            "inventory_json", e.getInventoryJson(),
-            "position_json", e.getPositionJson() != null ? e.getPositionJson() : "",
-            "metadata_json", e.getMetadataJson(),
-            "faction_id", e.getFactionId() != null ? e.getFactionId().toString() : "",
-            "created_at", e.getCreatedAt().toString()
-        );
+        var m = new java.util.HashMap<String, Object>();
+        m.put("id", e.getId());
+        m.put("world_id", e.getWorldId());
+        m.put("entity_type", e.getEntityType());
+        m.put("name", e.getName());
+        m.put("attributes_json", e.getAttributesJson());
+        m.put("inventory_json", e.getInventoryJson());
+        m.put("position_json", e.getPositionJson() != null ? e.getPositionJson() : "");
+        m.put("metadata_json", e.getMetadataJson());
+        m.put("faction_id", e.getFactionId() != null ? e.getFactionId().toString() : "");
+        m.put("backstory", e.getBackstory() != null ? e.getBackstory() : "");
+        m.put("age", e.getAge());
+        m.put("experience_level", e.getExperienceLevel());
+        m.put("social_standing", e.getSocialStanding());
+        m.put("created_at", e.getCreatedAt().toString());
+        return m;
     }
 
     public record CreateRequest(
@@ -90,7 +96,11 @@ public class EntityController {
         String inventoryJson,
         String positionJson,
         String metadataJson,
-        UUID factionId
+        UUID factionId,
+        String backstory,
+        Integer age,
+        String experienceLevel,
+        String socialStanding
     ) {}
 
     public record UpdateRequest(
@@ -98,6 +108,10 @@ public class EntityController {
         String attributesJson,
         String inventoryJson,
         String positionJson,
-        String metadataJson
+        String metadataJson,
+        String backstory,
+        Integer age,
+        String experienceLevel,
+        String socialStanding
     ) {}
 }

@@ -4,6 +4,9 @@
     "subtitle": "Modular tabletop RPG platform with living-world simulation",
     "skeleton_note": "Frontend skeleton — login, dashboard, and map arrive in Phase 3 (P3-T03+). See docs/UI-UX.md."
   },
+  "nav": {
+    "backToDashboard": "← Dashboard"
+  },
   "actions": {
     "login": "Sign in",
     "register": "Register",
@@ -13,7 +16,8 @@
     "delete": "Delete",
     "edit": "Edit",
     "create": "Create",
-    "copy": "Copy"
+    "copy": "Copy",
+    "loadMore": "Load More"
   },
   "language": {
     "switch": "Change language",
@@ -23,5 +27,131 @@
   "status": {
     "loading": "Loading…",
     "offline": "Connection lost"
+  },
+  "gameView": {
+    "title": "Game View",
+    "combat": "Combat",
+    "location": "📍 Location",
+    "explore": "🗺️ Explore",
+    "chat": "Chat"
+  },
+  "admin": {
+    "accessDenied": "Access denied",
+    "title": "Admin",
+    "totalWorlds": "Total Worlds",
+    "activeWorlds": "Active Worlds",
+    "users": "Users"
+  },
+  "worldEditor": {
+    "worldInfo": "World Info",
+    "created": "Created",
+    "gameTime": "Game Time",
+    "invite": "Invite",
+    "members": "Members"
+  },
+  "combat": {
+    "target": "Target",
+    "attack": "Attack",
+    "nextTurn": "Next Turn",
+    "end": "End",
+    "initiative": "Initiative",
+    "round": "Round",
+    "noParticipants": "No participants",
+    "ap": "AP"
+  },
+  "entityTimeline": {
+    "today": "today",
+    "yesterday": "yesterday",
+    "daysAgo": "{{count}} day ago",
+    "daysAgo_plural": "{{count}} days ago",
+    "events": "Events",
+    "noEvents": "No events yet"
+  },
+  "locationDetail": {
+    "noNpcs": "No NPCs found at this location",
+    "history": "History",
+    "servicesAndNpcs": "Services & NPCs",
+    "wealth": "Wealth"
+  },
+  "entity": {
+    "create": "Create Character",
+    "name": "Name *",
+    "type": "Type",
+    "age": "Age",
+    "experience": "Experience",
+    "standing": "Standing",
+    "faction": "Faction",
+    "location": "Location",
+    "personality": "Personality",
+    "knowledge": "Knowledge (tags)",
+    "goals": "Goals",
+    "backstory": "Backstory"
+  },
+  "faction": {
+    "create": "Create Faction",
+    "name": "Name",
+    "color": "Color"
+  },
+  "location": {
+    "create": "Create Location",
+    "name": "Name *",
+    "type": "Type",
+    "wealth": "Wealth (1-10)",
+    "population": "Population",
+    "description": "Description"
+  },
+  "session": {
+    "title": "Session",
+    "start": "Start",
+    "end": "End",
+    "active": "Active",
+    "active_since": "Active since",
+    "ended": "Ended",
+    "recent": "Recent sessions",
+    "started": "Session started",
+    "ended_msg": "Session ended",
+    "load_error": "Failed to load sessions",
+    "start_error": "Failed to start session",
+    "end_error": "Failed to end session"
+  },
+  "combatModal": {
+    "title": "Start Combat",
+    "selectParticipants": "Select participants (min. 2)",
+    "noEntities": "No NPCs or PCs found in this world",
+    "battleMap": "Battle Map",
+    "start": "Start Combat",
+    "minParticipants": "Select at least 2 participants",
+    "startError": "Failed to start combat"
+  },
+  "entityList": {
+    "title": "Entities",
+    "search": "Search…",
+    "allTypes": "All Types",
+    "name": "Name",
+    "type": "Type",
+    "age": "Age",
+    "experience": "Experience",
+    "standing": "Standing",
+    "faction": "Faction",
+    "actions": "Actions",
+    "empty": "No entities found"
+  },
+  "verify": {
+    "banner": "Please verify your email address.",
+    "resend": "Resend verification"
+  },
+  "welcome": {
+    "title": "Welcome to Living World Engine!",
+    "subtitle": "Follow these steps to set up your first world",
+    "stepWorld": "Create your first world",
+    "stepWorldDesc": "Give your world a name and start building",
+    "stepNpc": "Create your first NPC",
+    "stepNpcDesc": "Add characters to populate your world",
+    "stepCombat": "Start your first combat",
+    "stepCombatDesc": "Test the combat system with your characters",
+    "worldNamePlaceholder": "e.g. Forgotten Realms",
+    "create": "Create",
+    "done": "✓ Done!",
+    "start": "Start Exploring →"
   }
 }

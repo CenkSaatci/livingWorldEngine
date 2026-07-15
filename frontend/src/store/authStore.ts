@@ -7,6 +7,7 @@ export interface AuthUser {
   username: string;
   role: 'USER' | 'ADMIN' | 'BOT';
   locale: string;
+  emailVerified?: boolean;
 }
 
 interface AuthState {
@@ -21,9 +22,7 @@ interface AuthState {
 }
 
 const DEFAULT_LOCALE: string =
-  typeof localStorage !== 'undefined'
-    ? localStorage.getItem('lwe:locale') ?? 'de'
-    : 'de';
+  typeof localStorage !== 'undefined' ? (localStorage.getItem('lwe:locale') ?? 'de') : 'de';
 
 function restoreUserFromStorage(): AuthUser | null {
   try {

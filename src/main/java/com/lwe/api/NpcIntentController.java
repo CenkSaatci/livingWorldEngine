@@ -1,6 +1,6 @@
 package com.lwe.api;
 
-import com.lwe.core.domain.NpcIntent;
+import com.lwe.api.dto.NpcIntentResponse;
 import com.lwe.core.domain.User;
 import com.lwe.core.service.NpcIntentService;
 import jakarta.validation.Valid;
@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -24,50 +24,38 @@ public class NpcIntentController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@Valid @RequestBody CreateRequest req) {
+    public ResponseEntity<NpcIntentResponse> create(@Valid @RequestBody CreateRequest req,
+                                                     @AuthenticationPrincipal User user) {
         var intent = service.create(req.worldId(), req.npcId(), req.intentType(),
             req.paramsJson(), req.reasoning());
-        return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(intent));
+        return ResponseEntity.status(HttpStatus.CREATED).body(NpcIntentResponse.from(intent));
     }
 
     @GetMapping
-    public ResponseEntity<?> listPending(@RequestParam UUID worldId) {
-        var intents = service.listPending(worldId).stream().map(this::toResponse).toList();
+    public ResponseEntity<List<NpcIntentResponse>> listPending(@RequestParam UUID worldId,
+                                                                @AuthenticationPrincipal User user) {
+        var intents = service.listPending(worldId).stream().map(NpcIntentResponse::from).toList();
         return ResponseEntity.ok(intents);
     }
 
     @PostMapping("/{id}/approve")
-    public ResponseEntity<?> approve(@PathVariable UUID id) {
+    public ResponseEntity<NpcIntentResponse> approve(@PathVariable UUID id,
+                                                      @AuthenticationPrincipal User user) {
         var intent = service.approve(id);
-        return ResponseEntity.ok(toResponse(intent));
+        return ResponseEntity.ok(NpcIntentResponse.from(intent));
     }
 
     @PostMapping("/{id}/reject")
-    public ResponseEntity<?> reject(@PathVariable UUID id, @RequestBody RejectRequest req) {
+    public ResponseEntity<NpcIntentResponse> reject(@PathVariable UUID id,
+                                                     @RequestBody RejectRequest req,
+                                                     @AuthenticationPrincipal User user) {
         var intent = service.reject(id, req.reason());
-        return ResponseEntity.ok(toResponse(intent));
-    }
-
-    private Map<String, Object> toResponse(NpcIntent i) {
-        return Map.of(
-            "id", i.getId(),
-            "world_id", i.getWorldId(),
-            "npc_id", i.getNpcId(),
-            "intent_type", i.getIntentType(),
-            "reasoning", i.getReasoning() != null ? i.getReasoning() : "",
-            "status", i.getStatus(),
-            "rejection_reason", i.getRejectionReason() != null ? i.getRejectionReason() : "",
-            "created_at", i.getCreatedAt().toString()
-        );
+        return ResponseEntity.ok(NpcIntentResponse.from(intent));
     }
 
     public record CreateRequest(
-        @NotBlank UUID worldId,
-        @NotBlank UUID npcId,
-        @NotBlank String intentType,
-        String paramsJson,
-        String reasoning
+        @NotBlank UUID worldId, @NotBlank UUID npcId, @NotBlank String intentType,
+        String paramsJson, String reasoning
     ) {}
-
     public record RejectRequest(String reason) {}
 }

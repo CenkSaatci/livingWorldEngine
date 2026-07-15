@@ -16,6 +16,79 @@ import java.util.List;
 @Component
 public class RuleSchemaValidator {
 
+    public static final String DEFAULT_SCHEMA = """
+        {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "title": "GameSystem",
+          "type": "object",
+          "required": ["version", "attributes", "dice_mechanics"],
+          "additionalProperties": false,
+          "properties": {
+            "version": { "type": "integer", "minimum": 1 },
+            "attributes": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/attribute" }
+            },
+            "skills": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/skill" }
+            },
+            "dice_mechanics": {
+              "type": "object",
+              "required": ["probe"],
+              "properties": {
+                "probe":        { "type": "string", "$ref": "#/$defs/diceExpression" },
+                "combat":       { "$ref": "#/$defs/combat" }
+              }
+            }
+          },
+          "$defs": {
+            "attribute": {
+              "type": "object",
+              "required": ["name", "type", "default"],
+              "properties": {
+                "name":    { "type": "string", "minLength": 1, "maxLength": 50 },
+                "type":    { "enum": ["INT", "FLOAT", "STRING", "BOOL"] },
+                "min":     { "type": "number" },
+                "max":     { "type": "number" },
+                "default": { }
+              }
+            },
+            "skill": {
+              "type": "object",
+              "required": ["name", "attribute"],
+              "properties": {
+                "name":      { "type": "string" },
+                "attribute": { "type": "string", "description": "Referenz auf Attribut #/properties/attributes/items/properties/name" },
+                "bonus":     { "type": "integer", "default": 0 }
+              }
+            },
+            "combat": {
+              "type": "object",
+              "required": ["initiative", "damage"],
+              "properties": {
+                "initiative":     { "$ref": "#/$defs/diceExpression" },
+                "damage":         { "$ref": "#/$defs/diceExpression" },
+                "action_points":  { "$ref": "#/$defs/actionPoints" }
+              }
+            },
+            "actionPoints": {
+              "type": "object",
+              "properties": {
+                "standard": { "type": "integer", "default": 2 },
+                "max":      { "type": "integer", "default": 4 }
+              }
+            },
+            "diceExpression": {
+              "type": "string",
+              "pattern": "^[0-9]+d[0-9]+([+-][a-z_0-9]+)([+-][0-9]+)?$",
+              "description": "Ausdr\u00fccke wie '1d20+mod', '2d6+intelligenz', '1d8+st\u00e4rke'"
+            }
+          }
+        }
+        """;
+
     private final ObjectMapper objectMapper;
     private final JsonSchemaFactory factory;
 

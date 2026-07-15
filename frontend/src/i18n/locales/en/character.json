@@ -4,7 +4,11 @@
     "attributes": "Attributes",
     "skills": "Skills",
     "inventory": "Inventory",
-    "roll_button": "Roll"
+    "roll_button": "Roll",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "save_error": "Failed to save"
   },
   "attribute": {
     "modifier": "Modifier"

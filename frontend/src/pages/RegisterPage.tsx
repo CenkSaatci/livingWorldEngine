@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
+import type { AxiosError } from 'axios';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import { AuthForm } from '../components/auth/AuthForm';
@@ -26,13 +27,15 @@ export default function RegisterPage() {
           username: res.data.username,
           role: res.data.role,
           locale: res.data.locale,
+          emailVerified: res.data.emailVerified,
         },
         accessToken: res.data.accessToken,
         refreshToken: res.data.refreshToken,
       });
-      navigate('/dashboard');
-    } catch (err: any) {
-      const code = err.response?.data?.error?.code;
+      navigate('/welcome');
+    } catch (err: unknown) {
+      const axiosErr = err as AxiosError<{ error?: { code?: string } }>;
+      const code = axiosErr.response?.data?.error?.code;
       if (code === 'AUTH_EMAIL_TAKEN' || code === 'AUTH_USERNAME_TAKEN') {
         setError(t('register.error_generic') + ' (' + code + ')');
       } else {
@@ -47,9 +50,7 @@ export default function RegisterPage() {
         <h1 className="mb-2 text-center text-2xl font-heading text-text-primary">
           Living World Engine
         </h1>
-        <p className="mb-8 text-center text-sm text-text-secondary">
-          {t('register.title')}
-        </p>
+        <p className="mb-8 text-center text-sm text-text-secondary">{t('register.title')}</p>
 
         <div className="rounded-lg bg-bg-surface p-6 shadow-lg">
           <AuthForm mode="register" onSubmit={handleRegister} error={error} />

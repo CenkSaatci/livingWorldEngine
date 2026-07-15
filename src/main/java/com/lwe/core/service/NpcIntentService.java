@@ -2,6 +2,8 @@ package com.lwe.core.service;
 
 import com.lwe.core.domain.NpcIntent;
 import com.lwe.core.repository.NpcIntentRepository;
+import com.lwe.core.repository.WorldRepository;
+import com.lwe.rules.IntentExecutor;
 import com.lwe.rules.IntentValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,12 +18,17 @@ public class NpcIntentService {
     private final NpcIntentRepository repo;
     private final IntentValidator validator;
     private final WorldEventService eventService;
+    private final WorldRepository worldRepo;
+    private final IntentExecutor executor;
 
     public NpcIntentService(NpcIntentRepository repo, IntentValidator validator,
-                            WorldEventService eventService) {
+                            WorldEventService eventService, WorldRepository worldRepo,
+                            IntentExecutor executor) {
         this.repo = repo;
         this.validator = validator;
         this.eventService = eventService;
+        this.worldRepo = worldRepo;
+        this.executor = executor;
     }
 
     @Transactional
@@ -29,23 +36,55 @@ public class NpcIntentService {
                             String paramsJson, String reasoning) {
         var intent = new NpcIntent(worldId, npcId, intentType, paramsJson, reasoning);
 
-        // Automatisch validieren
+        // 1. Validieren
         var result = validator.validate(intent);
-        if (result.approved()) {
-            intent.setStatus("pending");
-        } else {
+        if (!result.approved()) {
             intent.setStatus("rejected");
             intent.setRejectionReason(result.rejectionReason());
+            intent = repo.save(intent);
+            eventService.publish(worldId, WorldEventService.EventType.NPC_INTENT_PROPOSED,
+                npcId, null, java.util.Map.of(
+                    "intentId", intent.getId(),
+                    "intentType", intentType,
+                    "status", intent.getStatus()
+                ));
+            return intent;
         }
 
-        intent = repo.save(intent);
+        // 2. ai_mode aus worlds.settings_json auslesen
+        var aiMode = readAiMode(worldId);
 
-        eventService.publish(worldId, WorldEventService.EventType.NPC_INTENT_PROPOSED,
-            npcId, null, java.util.Map.of(
-                "intentId", intent.getId(),
-                "intentType", intentType,
-                "status", intent.getStatus()
-            ));
+        if ("autonom".equals(aiMode)) {
+            // Autonom: sofort approven + ausführen
+            intent.setStatus("approved");
+            intent.setValidatedAt(Instant.now());
+            intent = repo.save(intent);
+
+            eventService.publish(worldId, WorldEventService.EventType.NPC_INTENT_PROPOSED,
+                npcId, null, java.util.Map.of(
+                    "intentId", intent.getId(),
+                    "intentType", intentType,
+                    "status", "approved"
+                ));
+
+            executor.execute(intent);
+        } else if ("suggest".equals(aiMode) || aiMode == null) {
+            // Suggest: pending, DM muss freigeben
+            intent.setStatus("pending");
+            intent = repo.save(intent);
+
+            eventService.publish(worldId, WorldEventService.EventType.NPC_INTENT_PROPOSED,
+                npcId, null, java.util.Map.of(
+                    "intentId", intent.getId(),
+                    "intentType", intentType,
+                    "status", "pending"
+                ));
+        } else {
+            // "off" oder unbekannt: ablehnen
+            intent.setStatus("rejected");
+            intent.setRejectionReason("AI mode is off");
+            intent = repo.save(intent);
+        }
 
         return intent;
     }
@@ -64,6 +103,10 @@ public class NpcIntentService {
 
         eventService.publish(intent.getWorldId(), WorldEventService.EventType.NPC_INTENT_APPROVED,
             intent.getNpcId(), null, java.util.Map.of("intentId", intentId));
+
+        // Intent ausführen
+        executor.execute(intent);
+
         return intent;
     }
 
@@ -79,6 +122,19 @@ public class NpcIntentService {
         eventService.publish(intent.getWorldId(), WorldEventService.EventType.NPC_INTENT_REJECTED,
             intent.getNpcId(), null, java.util.Map.of("intentId", intentId, "reason", reason));
         return intent;
+    }
+
+    private String readAiMode(UUID worldId) {
+        return worldRepo.findById(worldId)
+            .map(w -> {
+                try {
+                    var tree = new com.fasterxml.jackson.databind.ObjectMapper().readTree(w.getSettingsJson());
+                    return tree.path("ai_mode").asText(null);
+                } catch (Exception e) {
+                    return null;
+                }
+            })
+            .orElse(null);
     }
 
     public static class IntentException extends RuntimeException {

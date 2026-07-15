@@ -1,4 +1,4 @@
-import * as PIXI from 'pixi.js';
+import type { Graphics } from 'pixi.js';
 
 const LINE_COLOR = 0x2a3640;
 const LINE_WIDTH = 1;
@@ -7,7 +7,7 @@ const LINE_WIDTH = 1;
  * Zeichnet ein quadratisches Grid n×m auf das gegebene PIXI.Graphics-Objekt.
  * Wird in MapCanvas verwendet.
  */
-export function drawGrid(gfx: PIXI.Graphics, cols: number, rows: number, tileSize: number) {
+export function drawGrid(gfx: Graphics, cols: number, rows: number, tileSize: number) {
   gfx.clear();
   gfx.lineStyle(LINE_WIDTH, LINE_COLOR, 0.5);
 

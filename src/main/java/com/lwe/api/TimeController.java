@@ -1,17 +1,23 @@
 package com.lwe.api;
 
+import com.lwe.api.dto.ErrorResponse;
+import com.lwe.api.dto.ModeResponse;
+import com.lwe.api.dto.PausedResponse;
+import com.lwe.api.dto.TimeGetResponse;
 import com.lwe.core.domain.User;
 import com.lwe.core.domain.World;
 import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.service.WorldEventService;
 import com.lwe.time.WorldTimeService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.UUID;
 
@@ -20,6 +26,8 @@ import static com.lwe.core.service.WorldEventService.EventType.*;
 @RestController
 @RequestMapping("/api/v1/worlds/{worldId}/time")
 public class TimeController {
+
+    private static final Logger log = LoggerFactory.getLogger(TimeController.class);
 
     private final WorldRepository worldRepo;
     private final WorldTimeService timeService;
@@ -33,25 +41,24 @@ public class TimeController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getTime(@PathVariable UUID worldId,
-                                     @AuthenticationPrincipal User user) {
+    public ResponseEntity<TimeGetResponse> getTime(@PathVariable UUID worldId,
+                                                    @AuthenticationPrincipal User user) {
         var world = requireOwner(worldId, user.getId());
         var cfg = timeService.readTimeConfig(world);
-        return ResponseEntity.ok(Map.of(
-            "current_game_time", world.getCurrentGameTime() != null
-                ? world.getCurrentGameTime().toString() : "",
-            "mode", cfg != null ? cfg.mode() : "hybrid",
-            "paused", cfg != null && cfg.paused(),
-            "day_phase", timeService.dayPhase(world).name().toLowerCase(),
-            "is_daytime", timeService.dayPhase(world) == WorldTimeService.DayPhase.DAY
+        return ResponseEntity.ok(new TimeGetResponse(
+            world.getCurrentGameTime() != null ? world.getCurrentGameTime().toString() : "",
+            cfg != null ? cfg.mode() : "hybrid",
+            cfg != null && cfg.paused(),
+            timeService.dayPhase(world).name().toLowerCase(),
+            timeService.dayPhase(world) == WorldTimeService.DayPhase.DAY
                 || timeService.dayPhase(world) == WorldTimeService.DayPhase.DAWN
         ));
     }
 
     @PostMapping("/advance")
-    public ResponseEntity<?> advance(@PathVariable UUID worldId,
-                                     @RequestBody AdvanceRequest req,
-                                     @AuthenticationPrincipal User user) {
+    public ResponseEntity<TimeResponse> advance(@PathVariable UUID worldId,
+                                                 @RequestBody AdvanceRequest req,
+                                                 @AuthenticationPrincipal User user) {
         var world = requireOwner(worldId, user.getId());
         var minutes = parseDuration(req.by());
         var result = timeService.advanceTime(world, Duration.ofMinutes(minutes));
@@ -59,9 +66,9 @@ public class TimeController {
     }
 
     @PostMapping("/set")
-    public ResponseEntity<?> set(@PathVariable UUID worldId,
-                                 @RequestBody SetRequest req,
-                                 @AuthenticationPrincipal User user) {
+    public ResponseEntity<TimeResponse> set(@PathVariable UUID worldId,
+                                             @RequestBody SetRequest req,
+                                             @AuthenticationPrincipal User user) {
         var world = requireOwner(worldId, user.getId());
         var target = Instant.parse(req.to());
         var result = timeService.setTime(world, target);
@@ -69,40 +76,40 @@ public class TimeController {
     }
 
     @PostMapping("/pause")
-    public ResponseEntity<?> pause(@PathVariable UUID worldId,
-                                   @AuthenticationPrincipal User user) {
+    public ResponseEntity<PausedResponse> pause(@PathVariable UUID worldId,
+                                                 @AuthenticationPrincipal User user) {
         var world = updateTimeConfig(worldId, user.getId(), cfg -> cfg.withPaused(true));
         eventService.publish(worldId, TIME_PAUSED, null, null, Map.of("at", Instant.now().toString()));
-        return ResponseEntity.ok(Map.of("paused", true));
+        return ResponseEntity.ok(new PausedResponse(true));
     }
 
     @PostMapping("/resume")
-    public ResponseEntity<?> resume(@PathVariable UUID worldId,
-                                    @AuthenticationPrincipal User user) {
+    public ResponseEntity<PausedResponse> resume(@PathVariable UUID worldId,
+                                                  @AuthenticationPrincipal User user) {
         var world = updateTimeConfig(worldId, user.getId(), cfg -> cfg.withPaused(false));
         eventService.publish(worldId, TIME_RESUMED, null, null, Map.of("at", Instant.now().toString()));
-        return ResponseEntity.ok(Map.of("paused", false));
+        return ResponseEntity.ok(new PausedResponse(false));
     }
 
     @PatchMapping("/mode")
     public ResponseEntity<?> setMode(@PathVariable UUID worldId,
-                                     @RequestBody ModeRequest req,
-                                     @AuthenticationPrincipal User user) {
+                                      @RequestBody ModeRequest req,
+                                      @AuthenticationPrincipal User user) {
         if (!req.mode().matches("^(automatic|manual|hybrid)$")) {
-            return ResponseEntity.badRequest().body(Map.of("error", Map.of("code", "TIME_MODE_INVALID")));
+            return ResponseEntity.badRequest().body(new ErrorResponse("TIME_MODE_INVALID"));
         }
         var world = updateTimeConfig(worldId, user.getId(), cfg -> cfg.withMode(req.mode()));
         eventService.publish(worldId, TIME_MODE_CHANGED, null, null, Map.of("mode", req.mode()));
-        return ResponseEntity.ok(Map.of("mode", req.mode()));
+        return ResponseEntity.ok(new ModeResponse(req.mode()));
     }
 
     // -- Helpers --
 
     private World requireOwner(UUID worldId, UUID userId) {
         var world = worldRepo.findById(worldId)
-            .orElseThrow(() -> new RuntimeException("WORLD_NOT_FOUND"));
+            .orElseThrow(() -> new TimeControllerException("TIME_NOT_FOUND", HttpStatus.NOT_FOUND));
         if (!world.getOwnerId().equals(userId))
-            throw new RuntimeException("WORLD_ACCESS_DENIED");
+            throw new TimeControllerException("TIME_ACCESS_DENIED", HttpStatus.FORBIDDEN);
         return world;
     }
 
@@ -110,7 +117,7 @@ public class TimeController {
                                    java.util.function.UnaryOperator<WorldTimeService.TimeConfig> updater) {
         var world = requireOwner(worldId, userId);
         var cfg = timeService.readTimeConfig(world);
-        if (cfg == null) throw new RuntimeException("TIME_CONFIG_MISSING");
+        if (cfg == null) throw new TimeControllerException("TIME_CONFIG_MISSING", HttpStatus.NOT_FOUND);
         var newCfg = updater.apply(cfg);
         try {
             var tree = new com.fasterxml.jackson.databind.ObjectMapper().readTree(world.getSettingsJson());
@@ -128,7 +135,8 @@ public class TimeController {
             world.setSettingsJson(tree.toString());
             worldRepo.save(world);
         } catch (Exception e) {
-            throw new RuntimeException("TIME_CONFIG_INVALID");
+            log.error("Failed to update time config for world {}", worldId, e);
+            throw new TimeControllerException("TIME_CONFIG_INVALID", HttpStatus.INTERNAL_SERVER_ERROR);
         }
         return world;
     }
@@ -169,21 +177,26 @@ public class TimeController {
         return result;
     }
 
-    private Map<String, Object> timeResponse(World w) {
-        return Map.of("current_game_time", w.getCurrentGameTime() != null
-                ? w.getCurrentGameTime().toString() : "",
-            "mode", timeService.readTimeConfig(w) != null
-                ? timeService.readTimeConfig(w).mode() : "hybrid");
+    private TimeResponse timeResponse(World w) {
+        return new TimeResponse(
+            w.getCurrentGameTime() != null ? w.getCurrentGameTime().toString() : "",
+            timeService.readTimeConfig(w) != null ? timeService.readTimeConfig(w).mode() : "hybrid");
     }
 
     public record AdvanceRequest(String by) {}
     public record SetRequest(String to) {}
     public record ModeRequest(String mode) {}
+    public record TimeResponse(String currentGameTime, String mode) {}
 
-    // Mutable TimeConfig record for updates
-    record MutableTimeConfig(String mode, int tickIntervalRealSeconds,
-                              int tickAdvanceGameMinutes, boolean paused, int dayStartsAtHour) {
-        MutableTimeConfig withPaused(boolean p) { return new MutableTimeConfig(mode, tickIntervalRealSeconds, tickAdvanceGameMinutes, p, dayStartsAtHour); }
-        MutableTimeConfig withMode(String m) { return new MutableTimeConfig(m, tickIntervalRealSeconds, tickAdvanceGameMinutes, paused, dayStartsAtHour); }
+    public static class TimeControllerException extends RuntimeException {
+        private final String errorCode;
+        private final HttpStatus status;
+        public TimeControllerException(String errorCode, HttpStatus status) {
+            super(errorCode);
+            this.errorCode = errorCode;
+            this.status = status;
+        }
+        public String getErrorCode() { return errorCode; }
+        public HttpStatus getStatus() { return status; }
     }
 }

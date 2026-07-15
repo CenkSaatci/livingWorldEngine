@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
+import type { AxiosError } from 'axios';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import { AuthForm } from '../components/auth/AuthForm';
@@ -25,13 +26,15 @@ export default function LoginPage() {
           username: res.data.username,
           role: res.data.role,
           locale: res.data.locale,
+          emailVerified: res.data.emailVerified,
         },
         accessToken: res.data.accessToken,
         refreshToken: res.data.refreshToken,
       });
       navigate('/dashboard');
-    } catch (err: any) {
-      const code = err.response?.data?.error?.code;
+    } catch (err: unknown) {
+      const axiosErr = err as AxiosError<{ error?: { code?: string } }>;
+      const code = axiosErr.response?.data?.error?.code;
       setError(t(code ?? 'login.error_generic'));
     }
   };
@@ -42,15 +45,17 @@ export default function LoginPage() {
         <h1 className="mb-2 text-center text-2xl font-heading text-text-primary">
           Living World Engine
         </h1>
-        <p className="mb-8 text-center text-sm text-text-secondary">
-          {t('login.title')}
-        </p>
+        <p className="mb-8 text-center text-sm text-text-secondary">{t('login.title')}</p>
 
         <div className="rounded-lg bg-bg-surface p-6 shadow-lg">
           <AuthForm mode="login" onSubmit={handleLogin} error={error} />
         </div>
 
         <p className="mt-6 text-center text-sm text-text-secondary">
+          <Link to="/forgot-password" className="text-text-secondary hover:text-accent">
+            Forgot password?
+          </Link>
+          <span className="mx-2 text-text-secondary">·</span>
           <Link to="/register" className="text-accent hover:underline">
             {t('register.title')}
           </Link>

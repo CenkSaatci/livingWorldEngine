@@ -28,9 +28,7 @@ export function ItemCard({ entry, onEquip, onUnequip, children }: Props) {
   return (
     <div
       className={`group relative rounded border px-3 py-2 text-sm transition ${
-        entry.equipped
-          ? 'border-accent/60 bg-accent/10'
-          : 'border-bg-elevated bg-bg-surface'
+        entry.equipped ? 'border-accent/60 bg-accent/10' : 'border-bg-elevated bg-bg-surface'
       }`}
     >
       <div className="flex items-center gap-2">
@@ -68,9 +66,7 @@ export function ItemCard({ entry, onEquip, onUnequip, children }: Props) {
       <div className="invisible absolute left-0 top-full z-10 mt-1 w-56 rounded-lg border border-bg-elevated bg-bg-elevated p-3 shadow-xl group-hover:visible">
         <p className="mb-1 font-heading text-text-primary">{entry.name}</p>
         <p className="mb-1 text-xs text-text-secondary">Type: {entry.type}</p>
-        <p className="text-xs text-text-secondary">
-          Weight: {Number(entry.weight).toFixed(1)} kg
-        </p>
+        <p className="text-xs text-text-secondary">Weight: {Number(entry.weight).toFixed(1)} kg</p>
       </div>
 
       {children}

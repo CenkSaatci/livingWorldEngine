@@ -33,15 +33,14 @@ public class InventoryService {
         var detailedItems = new ArrayList<InventoryEntry>();
         for (var entry : inventory) {
             var itemOpt = itemRepo.findById(entry.itemId());
-            var item = itemOpt.orElse(null);
-            if (item != null && entry.equipped()) {
+            var item = itemOpt.orElseThrow(
+                () -> new InventoryException("INVENTORY_ITEM_NOT_FOUND", "Item not found"));
+            if (entry.equipped()) {
                 addBonuses(computedBonuses, item.getBonusesJson());
             }
             detailedItems.add(new InventoryEntry(
                 entry.itemId(), entry.quantity(), entry.equipped(), entry.slot(),
-                item != null ? item.getName() : "Unknown",
-                item != null ? item.getType() : "MISC",
-                item != null ? item.getWeight() : BigDecimal.ZERO
+                item.getName(), item.getType(), item.getWeight()
             ));
         }
 
@@ -179,12 +178,10 @@ public class InventoryService {
     private InventoryResult buildDetailedResult(List<RawEntry> inventory, Map<String, Integer> bonuses) {
         var items = new ArrayList<InventoryEntry>();
         for (var entry : inventory) {
-            var itemOpt = itemRepo.findById(entry.itemId());
-            var item = itemOpt.orElse(null);
+            var item = itemRepo.findById(entry.itemId())
+                .orElseThrow(() -> new InventoryException("INVENTORY_ITEM_NOT_FOUND", "Item not found"));
             items.add(new InventoryEntry(entry.itemId(), entry.quantity(), entry.equipped(), entry.slot(),
-                item != null ? item.getName() : "Unknown",
-                item != null ? item.getType() : "MISC",
-                item != null ? item.getWeight() : BigDecimal.ZERO));
+                item.getName(), item.getType(), item.getWeight()));
         }
         return new InventoryResult(items, bonuses);
     }

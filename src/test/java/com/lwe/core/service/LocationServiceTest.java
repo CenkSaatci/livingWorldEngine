@@ -5,6 +5,7 @@ import com.lwe.core.domain.Region;
 import com.lwe.core.domain.World;
 import com.lwe.core.repository.LocationRepository;
 import com.lwe.core.repository.RegionRepository;
+import com.lwe.core.util.WorldAccess;
 import com.lwe.core.repository.WorldRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,7 @@ class LocationServiceTest {
 
     @Mock private LocationRepository repo;
     @Mock private RegionRepository regionRepo;
-    @Mock private WorldRepository worldRepo;
+    @Mock private WorldAccess worldAccess;
     @Mock private EntityEventService eventService;
 
     private LocationService service;
@@ -35,18 +36,16 @@ class LocationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new LocationService(repo, regionRepo, worldRepo, eventService);
+        service = new LocationService(repo, regionRepo, worldAccess, eventService);
     }
 
     @Test
     void shouldCreateLocation() {
         var region = new Region(worldId, "R");
         setId(region, regionId);
-        var world = new World("W", userId, null, "{}");
-        setId(world, worldId);
 
+        doNothing().when(worldAccess).requireAccess(worldId, userId);
         when(regionRepo.findById(regionId)).thenReturn(Optional.of(region));
-        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(eventService.publish(any(), any(), any(), any(), any(), anyInt(), any())).thenReturn(null);
 
@@ -63,11 +62,10 @@ class LocationServiceTest {
     void shouldRejectAccess() {
         var region = new Region(worldId, "R");
         setId(region, regionId);
-        var world = new World("W", UUID.randomUUID(), null, "{}");
-        setId(world, worldId);
 
+        doThrow(new LocationService.LocationException("WORLD_ACCESS_DENIED", "Access denied"))
+            .when(worldAccess).requireAccess(worldId, userId);
         when(regionRepo.findById(regionId)).thenReturn(Optional.of(region));
-        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
 
         assertThatThrownBy(() -> service.create(regionId, userId, "village", "X", null, null, 0, 5, null, null, false, null))
             .isInstanceOf(LocationService.LocationException.class)

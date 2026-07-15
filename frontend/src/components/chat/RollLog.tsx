@@ -20,9 +20,7 @@ export function RollLog() {
       )}
       {rolls.map((r) => (
         <div key={r.id} className="rounded bg-bg-primary/50 px-2 py-1">
-          <p className="text-xs font-mono text-text-primary">
-            {JSON.stringify(r.payload)}
-          </p>
+          <p className="text-xs font-mono text-text-primary">{JSON.stringify(r.payload)}</p>
         </div>
       ))}
     </div>

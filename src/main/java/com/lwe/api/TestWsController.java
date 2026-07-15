@@ -1,5 +1,6 @@
 package com.lwe.api;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,6 +16,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/v1/test/ws")
+@Profile("dev")
 public class TestWsController {
 
     private final SimpMessagingTemplate messaging;

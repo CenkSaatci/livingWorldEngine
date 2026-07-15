@@ -51,6 +51,10 @@ public class Region {
     @Column(name = "position_json")
     private String positionJson;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "polygon_points")
+    private String polygonPoints;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -88,6 +92,8 @@ public class Region {
     public void setCapitalId(UUID v) { this.capitalId = v; }
     public String getPositionJson() { return positionJson; }
     public void setPositionJson(String v) { this.positionJson = v; }
+    public String getPolygonPoints() { return polygonPoints; }
+    public void setPolygonPoints(String v) { this.polygonPoints = v; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Check, X } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Check, X, Bot } from 'lucide-react';
 import { apiClient } from '../../api/client';
+import { useToast } from '../../hooks/useToast';
 
 interface NpcIntent {
   id: string;
+  world_id: string;
   npc_id: string;
   intent_type: string;
   reasoning: string;
@@ -17,84 +18,75 @@ interface Props {
 }
 
 export function DmQueuePanel({ worldId }: Props) {
-  const { t } = useTranslation('dm');
+  const toast = useToast();
   const [intents, setIntents] = useState<NpcIntent[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  const fetchIntents = async () => {
-    setLoading(true);
+  const fetchIntents = useCallback(async () => {
     try {
-      const res = await apiClient.get(`/npc-intents`, {
+      const res = await apiClient.get('/npc-intents', {
         params: { worldId, status: 'pending' },
       });
       setIntents(res.data ?? []);
     } catch {
-      // silent
-    } finally {
-      setLoading(false);
+      toast.error('Failed to fetch intents');
     }
-  };
+  }, [worldId, toast]);
 
   useEffect(() => {
     fetchIntents();
     const interval = setInterval(fetchIntents, 5000);
     return () => clearInterval(interval);
-  }, [worldId]);
+  }, [fetchIntents]);
 
-  const handleApprove = async (id: string) => {
-    await apiClient.post(`/npc-intents/${id}/approve`);
-    setIntents((prev) => prev.filter((i) => i.id !== id));
+  const handleAction = async (id: string, action: 'approve' | 'reject') => {
+    try {
+      await apiClient.post(`/npc-intents/${id}/${action}`);
+      setIntents((prev) => prev.filter((i) => i.id !== id));
+    } catch {
+      toast.error('Failed to approve/reject intent');
+    }
   };
 
-  const handleReject = async (id: string) => {
-    await apiClient.post(`/npc-intents/${id}/reject`, { reason: 'DM rejected' });
-    setIntents((prev) => prev.filter((i) => i.id !== id));
-  };
+  if (intents.length === 0) return null;
 
   return (
-    <div className="space-y-2">
-      <h3 className="flex items-center gap-2 text-sm font-semibold text-text-secondary uppercase tracking-wide">
-        {t('queue.title')}
-        {intents.length > 0 && (
-          <span className="rounded-full bg-accent/20 px-2 py-0.5 text-xs text-accent">
-            {intents.length}
-          </span>
-        )}
+    <div className="rounded-lg border border-accent/20 bg-accent/5 p-3">
+      <h3 className="flex items-center gap-1.5 text-xs font-semibold text-accent uppercase tracking-wide mb-2">
+        <Bot size={14} /> KI-Intents ({intents.length})
       </h3>
 
-      {loading && intents.length === 0 && (
-        <p className="text-xs text-text-secondary">{t('queue.title')}…</p>
-      )}
-
-      {intents.length === 0 && !loading && (
-        <p className="text-xs text-text-secondary">{t('queue.empty')}</p>
-      )}
-
-      {intents.map((intent) => (
-        <div key={intent.id} className="rounded border border-bg-elevated bg-bg-surface p-3">
-          <div className="mb-1 flex items-center gap-2">
-            <span className="text-xs font-bold text-accent uppercase">{intent.intent_type}</span>
-            <span className="text-xs text-text-secondary">{intent.npc_id.slice(0, 8)}…</span>
+      <div className="space-y-2">
+        {intents.map((intent) => (
+          <div key={intent.id} className="rounded border border-bg-elevated bg-bg-surface p-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-text-primary truncate">
+                  {intent.intent_type}
+                </p>
+                <p className="text-[10px] text-text-secondary mt-0.5 line-clamp-2">
+                  {intent.reasoning || '—'}
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-1">
+                <button
+                  onClick={() => handleAction(intent.id, 'approve')}
+                  className="rounded bg-success/20 p-1 text-success hover:bg-success/30"
+                  title="Approve"
+                >
+                  <Check size={14} />
+                </button>
+                <button
+                  onClick={() => handleAction(intent.id, 'reject')}
+                  className="rounded bg-danger/20 p-1 text-danger hover:bg-danger/30"
+                  title="Reject"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
           </div>
-          {intent.reasoning && (
-            <p className="mb-2 text-xs text-text-primary">{intent.reasoning}</p>
-          )}
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleApprove(intent.id)}
-              className="flex items-center gap-1 rounded bg-accent/20 px-2 py-1 text-xs text-accent hover:bg-accent/40"
-            >
-              <Check size={14} /> {t('queue.approve')}
-            </button>
-            <button
-              onClick={() => handleReject(intent.id)}
-              className="flex items-center gap-1 rounded bg-danger/20 px-2 py-1 text-xs text-danger hover:bg-danger/40"
-            >
-              <X size={14} /> {t('queue.reject')}
-            </button>
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

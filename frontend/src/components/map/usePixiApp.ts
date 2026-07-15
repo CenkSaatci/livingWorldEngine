@@ -27,14 +27,33 @@ export function usePixiApp(containerRef: React.RefObject<HTMLDivElement | null>)
     el.appendChild(app.view as unknown as HTMLElement);
     appRef.current = app;
 
-    // Zoom (Mausrad)
+    // Zoom (Mausrad) — cursor-following
     const view = app.view as HTMLCanvasElement;
-    view.addEventListener('wheel', (e: WheelEvent) => {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      viewportRef.current.zoom = Math.min(4, Math.max(0.25, viewportRef.current.zoom * delta));
-      app.stage.scale.set(viewportRef.current.zoom);
-    }, { passive: false });
+    view.addEventListener(
+      'wheel',
+      (e: WheelEvent) => {
+        e.preventDefault();
+        const rect = view.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const oldZoom = viewportRef.current.zoom;
+        const factor = e.deltaY > 0 ? 0.9 : 1.1;
+        const newZoom = Math.min(4, Math.max(0.25, oldZoom * factor));
+
+        // Weltpunkt unter Maus fixieren
+        const worldX = (mouseX - viewportRef.current.x) / oldZoom;
+        const worldY = (mouseY - viewportRef.current.y) / oldZoom;
+
+        viewportRef.current.zoom = newZoom;
+        viewportRef.current.x = mouseX - worldX * newZoom;
+        viewportRef.current.y = mouseY - worldY * newZoom;
+
+        app.stage.scale.set(newZoom);
+        app.stage.position.set(viewportRef.current.x, viewportRef.current.y);
+      },
+      { passive: false },
+    );
 
     // Pan (Drag im leeren Bereich)
     let panning = false;
@@ -58,6 +77,29 @@ export function usePixiApp(containerRef: React.RefObject<HTMLDivElement | null>)
     });
 
     window.addEventListener('mouseup', () => {
+      panning = false;
+      view.style.cursor = 'default';
+    });
+
+    // Touch: start panning
+    view.addEventListener('touchstart', (e: TouchEvent) => {
+      if (e.touches.length === 0) return;
+      panning = true;
+      panStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      viewStart = { ...viewportRef.current };
+      view.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('touchmove', (e: TouchEvent) => {
+      if (!panning || e.touches.length === 0) return;
+      const dx = e.touches[0].clientX - panStart.x;
+      const dy = e.touches[0].clientY - panStart.y;
+      viewportRef.current.x = viewStart.x + dx;
+      viewportRef.current.y = viewStart.y + dy;
+      app.stage.position.set(viewportRef.current.x, viewportRef.current.y);
+    });
+
+    window.addEventListener('touchend', () => {
       panning = false;
       view.style.cursor = 'default';
     });

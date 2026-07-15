@@ -55,6 +55,18 @@ public class GameEntity {
     @Column(name = "faction_id")
     private UUID factionId;
 
+    @Column(columnDefinition = "text")
+    private String backstory;
+
+    @Column(nullable = false)
+    private int age = 30;
+
+    @Column(name = "experience_level", nullable = false, length = 20)
+    private String experienceLevel = "green";
+
+    @Column(name = "social_standing", nullable = false, length = 20)
+    private String socialStanding = "peasant";
+
     @Column(nullable = false)
     private boolean active = true;
 
@@ -88,6 +100,14 @@ public class GameEntity {
     public void setMetadataJson(String v) { this.metadataJson = v; }
     public UUID getFactionId() { return factionId; }
     public void setFactionId(UUID v) { this.factionId = v; }
+    public String getBackstory() { return backstory; }
+    public void setBackstory(String v) { this.backstory = v; }
+    public int getAge() { return age; }
+    public void setAge(int v) { this.age = v; }
+    public String getExperienceLevel() { return experienceLevel; }
+    public void setExperienceLevel(String v) { this.experienceLevel = v; }
+    public String getSocialStanding() { return socialStanding; }
+    public void setSocialStanding(String v) { this.socialStanding = v; }
     public void setName(String v) { this.name = v; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }

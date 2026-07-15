@@ -59,6 +59,7 @@ public class World {
     public String getName() { return name; }
     public UUID getOwnerId() { return ownerId; }
     public UUID getGameSystemId() { return gameSystemId; }
+    public void setGameSystemId(UUID v) { this.gameSystemId = v; }
     public String getSettingsJson() { return settingsJson; }
     public Instant getCurrentGameTime() { return currentGameTime; }
     public void setCurrentGameTime(Instant v) { this.currentGameTime = v; }

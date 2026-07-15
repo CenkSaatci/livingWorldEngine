@@ -1,24 +1,16 @@
 package com.lwe.rules;
 
 import org.springframework.stereotype.Component;
-
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Pattern;
 
-/**
- * Pool-basierte Rule-Engine (2W6 + Attribut vs. Erfolgsstufen).
- *
- * <p>Erfolgsstufen:
- * <ul>
- *   <li>{@code total &lt; 6} → Fehlschlag (Tier 0)</li>
- *   <li>{@code total &gt;= 6} → Komplikation (Tier 1)</li>
- *   <li>{@code total &gt;= 8} → Erfolg (Tier 2)</li>
- *   <li>{@code total &gt;= 11} → Großer Erfolg (Tier 3)</li>
- * </ul>
- *
- * Der Modifikator ist der direkte Attributswert ({@code floor((x-10)/2)} wird nicht angewendet).
- */
 @Component("poolRuleEngine")
 public class PoolRuleEngine implements RuleEngine {
+
+    @Override
+    public DiceExpressionParser.DiceSystem getDiceSystem() { return DiceExpressionParser.DiceSystem.POOL; }
+
+    private static final Pattern DICE_PATTERN = Pattern.compile("(\\d+)d(\\d+)");
 
     @Override
     public int calculateModifier(int attributeValue) {
@@ -28,10 +20,17 @@ public class PoolRuleEngine implements RuleEngine {
     @Override
     public ProbeResult executeProbe(ProbeRequest request) {
         var mod = calculateModifier(request.attributeValue()) + request.modifier();
-        var roll1 = ThreadLocalRandom.current().nextInt(1, 7);
-        var roll2 = ThreadLocalRandom.current().nextInt(1, 7);
-        var total = roll1 + roll2 + mod;
-        var expr = "2d6" + (mod >= 0 ? "+" : "") + mod;
+        int sides = 6, count = 2;
+        var m = DICE_PATTERN.matcher(request.diceExpression());
+        if (m.find()) { count = Integer.parseInt(m.group(1)); sides = Integer.parseInt(m.group(2)); }
+        var total = 0;
+        var rolls = new int[count];
+        for (int i = 0; i < count; i++) {
+            rolls[i] = ThreadLocalRandom.current().nextInt(1, sides + 1);
+            total += rolls[i];
+        }
+        total += mod;
+        var expr = count + "d" + sides + (mod >= 0 ? "+" : "") + mod;
 
         int tier;
         if (total < 6) {
@@ -44,7 +43,6 @@ public class PoolRuleEngine implements RuleEngine {
             tier = 3;
         }
 
-        return new ProbeResult(expr, new int[]{roll1, roll2}, total, request.target(),
-            tier >= 1, tier);
+        return new ProbeResult(expr, rolls, total, request.target(), tier >= 1, tier);
     }
 }

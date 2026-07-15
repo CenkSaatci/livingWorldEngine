@@ -3,6 +3,7 @@ package com.lwe.core.service;
 import com.lwe.core.domain.GameEntity;
 import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.repository.WorldRepository;
+import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,17 +14,19 @@ import java.util.UUID;
 public class EntityService {
 
     private final GameEntityRepository entityRepo;
-    private final WorldRepository worldRepo;
+    private final WorldAccess worldAccess;
 
-    public EntityService(GameEntityRepository entityRepo, WorldRepository worldRepo) {
+    public EntityService(GameEntityRepository entityRepo, WorldAccess worldAccess) {
         this.entityRepo = entityRepo;
-        this.worldRepo = worldRepo;
+        this.worldAccess = worldAccess;
     }
 
     @Transactional
     public GameEntity create(UUID worldId, UUID userId, String entityType, String name,
-                             String attributesJson, String inventoryJson, String positionJson,
-                             String metadataJson, UUID factionId) {
+                              String attributesJson, String inventoryJson, String positionJson,
+                              String metadataJson, UUID factionId,
+                              String backstory, Integer age, String experienceLevel,
+                              String socialStanding) {
         requireWorldAccess(worldId, userId);
 
         var entity = new GameEntity(worldId, entityType, name);
@@ -32,6 +35,10 @@ public class EntityService {
         if (positionJson != null) entity.setPositionJson(positionJson);
         if (metadataJson != null) entity.setMetadataJson(metadataJson);
         if (factionId != null) entity.setFactionId(factionId);
+        if (backstory != null) entity.setBackstory(backstory);
+        if (age != null) entity.setAge(age);
+        if (experienceLevel != null) entity.setExperienceLevel(experienceLevel);
+        if (socialStanding != null) entity.setSocialStanding(socialStanding);
 
         return entityRepo.save(entity);
     }
@@ -53,13 +60,19 @@ public class EntityService {
 
     @Transactional
     public GameEntity update(UUID entityId, UUID userId, String name, String attributesJson,
-                             String inventoryJson, String positionJson, String metadataJson) {
+                              String inventoryJson, String positionJson, String metadataJson,
+                              String backstory, Integer age, String experienceLevel,
+                              String socialStanding) {
         var entity = getById(entityId, userId);
         if (name != null) entity.setName(name);
         if (attributesJson != null) entity.setAttributesJson(attributesJson);
         if (inventoryJson != null) entity.setInventoryJson(inventoryJson);
         if (positionJson != null) entity.setPositionJson(positionJson);
         if (metadataJson != null) entity.setMetadataJson(metadataJson);
+        if (backstory != null) entity.setBackstory(backstory);
+        if (age != null) entity.setAge(age);
+        if (experienceLevel != null) entity.setExperienceLevel(experienceLevel);
+        if (socialStanding != null) entity.setSocialStanding(socialStanding);
         return entityRepo.save(entity);
     }
 
@@ -71,14 +84,7 @@ public class EntityService {
     }
 
     private void requireWorldAccess(UUID worldId, UUID userId) {
-        worldRepo.findById(worldId).ifPresentOrElse(
-            world -> {
-                if (!world.getOwnerId().equals(userId)) {
-                    throw new EntityException("WORLD_ACCESS_DENIED", "Access denied to this world");
-                }
-            },
-            () -> { throw new EntityException("WORLD_NOT_FOUND", "World not found"); }
-        );
+        worldAccess.requireAccess(worldId, userId);
     }
 
     public static class EntityException extends RuntimeException {

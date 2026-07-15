@@ -63,9 +63,7 @@ export const useWorldStore = create<WorldState>((set) => ({
 
   updateTokenPosition: (entityId, x, y) =>
     set((state) => ({
-      tokens: state.tokens.map((t) =>
-        t.entityId === entityId ? { ...t, x, y } : t,
-      ),
+      tokens: state.tokens.map((t) => (t.entityId === entityId ? { ...t, x, y } : t)),
     })),
 
   setTokens: (tokens) => set({ tokens }),

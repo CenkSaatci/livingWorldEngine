@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { CompatClient, Stomp, StompSubscription } from '@stomp/stompjs';
+import { Stomp, type CompatClient, type StompSubscription } from '@stomp/stompjs';
 import { useAuthStore } from '../store/authStore';
 import { useWorldStore, type WorldEvent } from '../store/worldStore';
-import { getAccessToken } from '../api/client';
+import { useCombatStore } from '../store/combatStore';
+import { getAccessToken, apiClient } from '../api/client';
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8080/ws';
 const RECONNECT_BASE_MS = 3000;
@@ -54,7 +55,9 @@ export function useWorldSocket(worldId: string | undefined) {
       globalClient = client;
 
       client.configure({
-        beforeConnect: () => { client.connectHeaders = { Authorization: `Bearer ${token}` }; },
+        beforeConnect: () => {
+          client.connectHeaders = { Authorization: `Bearer ${token}` };
+        },
         onConnect: () => {
           retryRef.current = 0;
           subRef.current = client.subscribe(`/topic/world/${worldId}`, (msg) => {
@@ -71,7 +74,42 @@ export function useWorldSocket(worldId: string | undefined) {
                   Number(p.y ?? 0),
                 );
               }
-            } catch { /* ignore */ }
+
+              // Combat-Events
+              if (event.event_type === 'COMBAT_STARTED') {
+                const p = event.payload as Record<string, unknown>;
+                const combatStore = useCombatStore.getState();
+                apiClient
+                  .get(`/combat/${p.sessionId}`)
+                  .then((r) => {
+                    combatStore.setSession(r.data.session, r.data.participants);
+                  })
+                  .catch(() => {});
+              }
+
+              if (event.event_type === 'COMBAT_ACTION_EXECUTED') {
+                const combatStore = useCombatStore.getState();
+                if (combatStore.session) {
+                  apiClient
+                    .get(`/combat/${combatStore.session.id}`)
+                    .then((r) => {
+                      combatStore.setSession(r.data.session, r.data.participants);
+                    })
+                    .catch(() => {});
+                }
+              }
+
+              if (event.event_type === 'TURN_CHANGED') {
+                const p = event.payload as { currentTurn?: string; round?: number };
+                useCombatStore.getState().handleTurnChanged(p.currentTurn ?? '', p.round ?? 1);
+              }
+
+              if (event.event_type === 'COMBAT_ENDED') {
+                useCombatStore.getState().clearCombat();
+              }
+            } catch {
+              /* ignore */
+            }
           });
         },
         onWebSocketClose: () => scheduleReconnect(),
@@ -84,7 +122,10 @@ export function useWorldSocket(worldId: string | undefined) {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
       if (subRef.current) subRef.current.unsubscribe();
-      if (clientRef.current) { clientRef.current.deactivate(); globalClient = null; }
+      if (clientRef.current) {
+        clientRef.current.deactivate();
+        globalClient = null;
+      }
     };
   }, [worldId, isAuthenticated, addEvent, updateTokenPos]);
 }

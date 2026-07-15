@@ -9,4 +9,5 @@ import java.util.UUID;
 public interface WorldRepository extends JpaRepository<World, UUID> {
     List<World> findByOwnerIdAndActiveTrue(UUID ownerId);
     List<World> findByActiveTrue();
+    long countByOwnerIdAndActiveTrue(UUID ownerId);
 }

@@ -744,6 +744,197 @@
 
 ---
 
+## Phase 7: Architektur & Code-Qualität (Post-Mortem-Analyse)
+
+### P7-T01: ObjectMapper zentralisieren
+- **Status:** ✅
+- **Aufwand:** 1h
+- **Beschreibung:** 19 ad-hoc `new ObjectMapper()` durch zentralen `@Bean` in `JacksonConfig` ersetzt.
+- **Dateien:** `JacksonConfig.java`, 7 Services (nach und nach per DI)
+
+### P7-T02: @Transactional-Lücken schließen
+- **Status:** ✅
+- **Aufwand:** 0,5h
+- **Beschreibung:** `WorldTimeService.tickAllWorlds()` + `MemoryCleanupJob.decayMemories()` + `IntentExecutor.execute()` mit `@Transactional` versehen.
+
+### P7-T03: Exception-Handler-Vollständigkeit
+- **Status:** ✅
+- **Aufwand:** 0,5h
+- **Beschreibung:** `GameSessionService.SessionException` in `GlobalExceptionHandler` aufgenommen. `RuntimeException`-Würfe in `AdminController` + `TimeController` durch saubere Fehlerbehandlung ersetzt.
+
+### P7-T04: Dead Code beseitigen
+- **Status:** ✅
+- **Aufwand:** 0,5h
+- **Beschreibung:** Leere `ai/` + `combat/` Packages entfernt. `TestWsController` mit `@Profile("dev")` versehen. 7 tote Frontend-Komponenten entfernt. `@dnd-kit/utilities` aus Dependencies entfernt. `@types/three` in devDependencies verschoben.
+
+### P7-T05: Bot-Infrastruktur
+- **Status:** ✅
+- **Aufwand:** 1h
+- **Beschreibung:** `Containerfile` pip-Reihenfolge gefixt. `conftest.py` unused imports bereinigt. HTTP-Fehler-Logging in `api_client.py` (13 Catch-Blöcke). 6 neue Tests (weather, memories).
+
+### P7-T06: Frontend-Performance
+- **Status:** ✅
+- **Aufwand:** 2h
+- **Beschreibung:** GameView-Monolith → RightPanel extrahiert. ChatPanel `React.memo`. FactionPage `useMemo`. N+1 Weather → `Promise.all`. `useKeyboardShortcuts` → useRef-basiert (kein Re-Register). 3 Pages auf `useApiGet` umgestellt.
+
+### P7-T07: UI/UX-Polish
+- **Status:** ✅
+- **Aufwand:** 2h
+- **Beschreibung:** `ErrorBoundary` in App.tsx. StatusBar + DM-Time-Controls + Fog-Toggle. Keyboard-Shortcuts (Esc/B/M). Cursor-fokussierter Zoom. Service-Cards in LocationDetail. SettingsPage (Sprache, Dice-Mode). Accessibility: aria-labels (11 Buttons) + aria-live (Chat, StatusBar).
+
+---
+
+## Phase 8: NPC-Bewusstsein & Erweitertes Entity-Modell
+
+### P8-T01: Entity-Felder (Backstory, Age, XP, Standing)
+- **Status:** ✅
+- **Aufwand:** 2h
+- **Beschreibung:** `V061__entity_extended.sql` — `backstory`, `age`, `experience_level`, `social_standing` auf `entities`. Backend + API + Frontend NPC-Profil aktualisiert. AI-Bot-Prompts enthalten neue Felder.
+
+### P8-T02: Entity Memories + Relationships
+- **Status:** ✅
+- **Aufwand:** 3h
+- **Beschreibung:** `V062__entity_memories.sql` — `entity_memories` + `entity_relationships` Tabellen. `MemoryService`, `RelationshipService`, `EntitySocialController` (GET/POST). Bot leitet Memories aus Events ab (combat/disrespect/helped).
+
+### P8-T03: Gossip-System
+- **Status:** ✅
+- **Aufwand:** 1h
+- **Beschreibung:** NPCs mit starken Erinnerungen (|sentiment|≥2) teilen diese mit ~20% Wahrscheinlichkeit per SPEAK-Intent mit anderen NPCs am selben Ort.
+
+### P8-T04: Memory-Drift + Cleanup
+- **Status:** ✅
+- **Aufwand:** 0,5h
+- **Beschreibung:** `MemoryCleanupJob` — täglicher Scheduled-Job: Sentiment driftet um ±1/Tag, Null-Erinnerungen >30 Tage werden gelöscht.
+
+---
+
+## Phase 9: Emergente Diplomatie & Intent-Execution
+
+### P9-T01: IntentExecutor (NPCs handeln)
+- **Status:** ✅
+- **Aufwand:** 2h
+- **Beschreibung:** `IntentExecutor.java` — dispatcht approved Intents: MOVE (Positionsupdate), ATTACK (Schaden), SPEAK (Chat-Event), CHANGE_RELATION (Faction-Diplomatie).
+
+### P9-T02: ai_mode-Routing
+- **Status:** ✅
+- **Aufwand:** 1h
+- **Beschreibung:** `NpcIntentService.create()` wertet `worlds.settings_json.ai_mode` aus: `autonom` → sofort ausführen, `suggest` → DM-Queue, `off` → ablehnen.
+
+### P9-T03: Target-Event-Handling (Bot)
+- **Status:** ✅
+- **Aufwand:** 1h
+- **Beschreibung:** Bot reagiert nicht nur auf source_entity_id, sondern auch auf target_entity_id. Ermöglicht NPC-Reaktionen, wenn sie Ziel einer Aktion wurden.
+
+---
+
+## Phase 10: Campaign-Polish & UX-Vervollständigung
+
+### P10-T01: Start Combat UI
+- **Status:** ✅
+- **Aufwand:** 1h
+- **Beschreibung:** GameView erhält einen "Start Combat"-Button mit Entity-Auswahl (welche NPCs/PCs nehmen teil?). POST /api/v1/combat/start mit ausgewählten IDs + optionaler mapId. CombatPage lädt bestehenden Kampf-Zustand beim Mount. Neue Migration V081 für map_id-Spalte. Neuer GET /api/v1/maps/{mapId} Endpunkt. StartCombatModal mit Checkbox-Liste + Map-Dropdown.
+
+### P10-T02: Entity-Übersicht (NPC/PC-Liste)
+- **Status:** ✅
+- **Aufwand:** 1h
+- **Beschreibung:** Seite `/worlds/:id/entities` mit Liste aller NPCs und PCs einer Welt. Filter nach Typ (PC/NPC), Text-Suche, Klick → NpcViewPage. "Create Entity"-Button mit EntityCreateModal. Delete-Button mit Bestätigung.
+
+### P10-T03: Welten-Clone/Export
+- **Status:** 📋
+- **Aufwand:** 2h
+- **Beschreibung:** Backend: `POST /worlds/{id}/clone` erzeugt Kopie einer Welt (inkl. Regionen, Orte, NPCs, Fraktionen). Frontend: "Clone"-Button im WorldEditor. Export als JSON-Download.
+
+### P10-T04: Email-Verifikation
+- **Status:** 📋
+- **Aufwand:** 2h
+- **Beschreibung:** Bei Registrierung `email_verified_at = null` setzen. Verifikationstoken generieren und speichern. `POST /auth/verify-email` mit Token. Ungültige Email → resenden. Frontend: VerifyEmailPage.
+
+### P10-T05: Dashboard Pagination
+- **Status:** 📋
+- **Aufwand:** 1h
+- **Beschreibung:** Backend: `GET /worlds/accessible` mit `page`/`size`-Parametern. Frontend: "Load more"-Button oder Infinite-Scroll.
+
+### P10-T06: Onboarding für neue User
+- **Status:** 📋
+- **Aufwand:** 2h
+- **Beschreibung:** Erstanmelde-Flow: Willkommensseite → "Erstelle deine erste Welt" → Tutorial-Tooltips in GameView. Checkliste für erste Schritte.
+
+### P10-T07: Map Background Upload persistieren
+- **Status:** 📋
+- **Aufwand:** 2h
+- **Beschreibung:** Backend: FileUploadController mit MultipartFile → Speicherung auf Disk (später S3). `world_maps.image_url` zeigt auf gespeicherte Datei. Frontend: Upload-UI im MapEditor speichert tatsächlich.
+
+### P10-T08: Mobile Responsiveness
+- **Status:** 📋
+- **Aufwand:** 4h
+- **Beschreibung:** Sidebar/RightPanel klappen auf <768px automatisch zu. GameView layout passt sich an. Touch-Unterstützung für Token-Drag. Map Canvas minimale Höhe anpassen.
+
+### P10-T09: Soundeffekte (optional)
+- **Status:** 📋
+- **Aufwand:** 2h
+- **Beschreibung:** Würfelgeräusche beim Roll (CSS Dice + 3D). Chat-Nachricht-Ton. Kampf-Aktion-Ton. Umschaltbar in Settings.
+
+### P10-T10: JSON-Editor Syntax-Highlighting
+- **Status:** 📋
+- **Aufwand:** 2h
+- **Beschreibung:** Ersetze das reine `<textarea>` im JSON-Editor durch einen einfachen Code-Editor (CodeMirror oder Monaco Editor light). Zeigt Syntax-Fehler direkt an.
+
+---
+
+## Phase 11: Architektur & Infrastruktur
+
+### P11-T01: SessionController konsolidieren
+- **Status:** 📋
+- **Aufwand:** 1h
+- **Beschreibung:** Zwei Controller mit überlappenden Funktionen: `SessionController` (publiziert nur Events) und `GameSessionController` (persistiert Sessions). `SessionController` entfernen oder auf `GameSessionService` umleiten.
+
+### P11-T02: RuleEngine Plugin-Registry
+- **Status:** 📋
+- **Aufwand:** 2h
+- **Beschreibung:** Engine-Erkennung per `className.contains("pool")`/`"fudge"` ist fragil. Stattdessen: `Map<DiceSystem, RuleEngine>` via `@PostConstruct` in einer zentralen Registry registrieren. Neue Engines registrieren sich selbst via `@Component` + Interface.
+
+### P11-T03: GameSystem-Caching
+- **Status:** 📋
+- **Aufwand:** 2h
+- **Beschreibung:** Jeder Wurf (RollService, CombatService) lädt das GameSystem aus der DB → N+1 Problem. Cache per `@Cacheable` auf `gameSystemRepository.findById()`. Redis ist bereits in `compose.prod.yml` konfiguriert.
+
+### P11-T04: Event-Archivierung testen + aktivieren
+- **Status:** 📋
+- **Aufwand:** 1h
+- **Beschreibung:** `EventArchiveJob` läuft täglich um 03:00 UTC, aber es gibt keinen Test und kein Monitoring. Test schreiben + Logging ergänzen + manuell triggerbaren Endpunkt `POST /admin/events/archive`.
+
+### P11-T05: API-Rate-Limiting pro Endpunkt
+- **Status:** 📋
+- **Aufwand:** 2h
+- **Beschreibung:** Aktuell nur globales Limit (100/IP/min) + Login-Limit (5/IP/min). Per-Endpunkt-Limits für world-creation, combat-actions, und AI-bot-endpoints.
+
+### P11-T06: Health-Check für Abhängigkeiten
+- **Status:** 📋
+- **Aufwand:** 1h
+- **Beschreibung:** Spring Boot Actuator `/actuator/health` zeigt nur den Status der App an. Erweitern um DB-Connectivity, Redis-Ping, AI-Bot-Connectivity (optional). Custom HealthIndicator.
+
+### P11-T07: ~72 Map.of() → DTOs
+- **Status:** 📋
+- **Aufwand:** 6h
+- **Beschreibung:** Alle Controller ersetzen ad-hoc `Map.of()`-Responses durch dedizierte Response-DTOs/Records. Ermöglicht OpenAPI-Schema-Generierung und Type-Safety. Betrifft ~27 Controller.
+
+### P11-T08: Frontend Komponenten-Tests
+- **Status:** 📋
+- **Aufwand:** 4h
+- **Beschreibung:** Vitest + Testing Library für kritische Komponenten: AuthForm, EntityCreateModal, ChatPanel, ActionBar, StatusBar. Grundlegende Render-Tests + Interaktions-Tests.
+
+---
+
+## NOCH OFFEN (Architektur-Risiken)
+
+| ID | Was | Aufwand | Priorität |
+|---|---|---|---|
+| ⭕ | **~72 `Map.of()`-Responses → DTOs** | ~6h | Niedrig |
+| ⭕ | **Frontend Komponenten-Tests** (Vitest + Testing Library) | ~4h | Niedrig |
+| ⭕ | **🚀 Deploy-Workflow** (von dir ans Ende gestellt) | 0,5h | Ganz ans Ende |
+
+---
+
 ## Statistik
 
 | Phase | Tasks | Sum Aufwand |
@@ -754,6 +945,11 @@
 | 4 | 8 | 13,0 Tage |
 | 5 | 8 | 18,0 Tage |
 | 6 | 7 | 14,0 Tage |
-| **Summe** | **53 (1 cancelled)** | **96,5 Tage** |
+| 7 (Qualität) | 7 | 7,0 Tage |
+| 8 (NPC) | 4 | 6,5 Tage |
+| 9 (Diplomatie) | 3 | 4,0 Tage |
+| 10 (Campaign-Polish) | 10 | 19,0 Tage |
+| 11 (Architektur) | 8 | 19,0 Tage |
+| **Summe** | **85 (1 cancelled)** | **152,0 Tage** |
 
-Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das ~4,8 Monaten (vollzeit). Bei Nebenher-Betrieb ist dies entsprechend zu multiplizieren.
+Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das ~6,65 Monaten (vollzeit). Bei Nebenher-Betrieb ist dies entsprechend zu multiplizieren. Zuzüglich offener Risiken (~10 Tage).

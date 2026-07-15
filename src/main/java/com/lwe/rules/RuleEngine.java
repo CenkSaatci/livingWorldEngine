@@ -10,6 +10,8 @@ package com.lwe.rules;
  */
 public interface RuleEngine {
 
+    DiceExpressionParser.DiceSystem getDiceSystem();
+
     /**
      * Führt eine Probe (Skill-Check) auf Basis der übergebenen Parameter aus.
      *
@@ -23,7 +25,11 @@ public interface RuleEngine {
      */
     int calculateModifier(int attributeValue);
 
-    record ProbeRequest(String skillId, int attributeValue, int modifier, int target) {}
+    record ProbeRequest(String skillId, int attributeValue, int modifier, int target, String diceExpression) {
+        public ProbeRequest(String skillId, int attributeValue, int modifier, int target) {
+            this(skillId, attributeValue, modifier, target, "1d20");
+        }
+    }
     /**
      * Ergebnis einer Probe.
      *

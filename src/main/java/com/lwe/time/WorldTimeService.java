@@ -42,6 +42,7 @@ public class WorldTimeService {
      * Läuft jede Sekunde, prüft aber pro Welt das Intervall.
      */
     @Scheduled(fixedDelay = 1000)
+    @Transactional
     public void tickAllWorlds() {
         var worlds = worldRepo.findByActiveTrue();
         var now = Instant.now();

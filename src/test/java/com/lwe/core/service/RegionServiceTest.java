@@ -3,6 +3,7 @@ package com.lwe.core.service;
 import com.lwe.core.domain.Region;
 import com.lwe.core.domain.World;
 import com.lwe.core.repository.RegionRepository;
+import com.lwe.core.util.WorldAccess;
 import com.lwe.core.repository.WorldRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,7 @@ import static org.mockito.Mockito.*;
 class RegionServiceTest {
 
     @Mock private RegionRepository repo;
-    @Mock private WorldRepository worldRepo;
+    @Mock private WorldAccess worldAccess;
     @Mock private EntityEventService eventService;
 
     private RegionService service;
@@ -31,18 +32,16 @@ class RegionServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new RegionService(repo, worldRepo, eventService);
+        service = new RegionService(repo, worldAccess, eventService);
     }
 
     @Test
     void shouldCreateRegion() {
-        var world = new World("W", userId, null, "{}");
-        setId(world, worldId);
-        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        doNothing().when(worldAccess).requireAccess(worldId, userId);
         when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(eventService.publish(any(), any(), any(), any(), any(), anyInt(), any())).thenReturn(null);
 
-        var region = service.create(worldId, userId, "Schattental", null, null, 3, "forest", null, null, null);
+        var region = service.create(worldId, userId, "Schattental", null, null, 3, "forest", null, null, null, null);
 
         assertThat(region.getName()).isEqualTo("Schattental");
         assertThat(region.getDangerLevel()).isEqualTo(3);
@@ -52,11 +51,10 @@ class RegionServiceTest {
 
     @Test
     void shouldRejectAccess() {
-        var world = new World("W", UUID.randomUUID(), null, "{}");
-        setId(world, worldId);
-        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        doThrow(new RegionService.RegionException("WORLD_ACCESS_DENIED", "Access denied"))
+            .when(worldAccess).requireAccess(worldId, userId);
 
-        assertThatThrownBy(() -> service.create(worldId, userId, "X", null, null, 1, "plain", null, null, null))
+        assertThatThrownBy(() -> service.create(worldId, userId, "X", null, null, 1, "plain", null, null, null, null))
             .isInstanceOf(RegionService.RegionException.class)
             .matches(e -> ((RegionService.RegionException) e).getErrorCode().equals("WORLD_ACCESS_DENIED"));
     }

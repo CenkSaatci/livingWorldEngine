@@ -10,6 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -50,6 +51,11 @@ public class AuthService {
 
         var hash = passwordEncoder.encode(password);
         var user = new User(email, username, hash, "USER", locale != null ? locale : "de");
+
+        var token = HexFormat.of().formatHex(new SecureRandom().generateSeed(32));
+        user.setVerificationToken(token);
+        user.setVerificationTokenExpiresAt(Instant.now().plus(Duration.ofHours(24)));
+
         user = userRepo.save(user);
 
         return createAuthResult(user);
@@ -138,8 +144,38 @@ public class AuthService {
             user.getEmail(),
             user.getUsername(),
             user.getRole(),
-            user.getLocale()
+            user.getLocale(),
+            user.getVerificationToken(),
+            user.getEmailVerifiedAt() != null
         );
+    }
+
+    @Transactional
+    public User verifyEmail(String token) {
+        var user = userRepo.findByVerificationToken(token)
+            .orElseThrow(() -> new AuthException("AUTH_VERIFICATION_INVALID", "Invalid verification token"));
+        if (user.getVerificationTokenExpiresAt() != null
+            && user.getVerificationTokenExpiresAt().isBefore(Instant.now())) {
+            throw new AuthException("AUTH_VERIFICATION_EXPIRED", "Verification token expired");
+        }
+        user.setEmailVerifiedAt(Instant.now());
+        user.setVerificationToken(null);
+        user.setVerificationTokenExpiresAt(null);
+        return userRepo.save(user);
+    }
+
+    @Transactional
+    public String resendVerification(String email) {
+        var user = userRepo.findByEmail(email)
+            .orElseThrow(() -> new AuthException("AUTH_USER_NOT_FOUND", "User not found"));
+        if (user.getEmailVerifiedAt() != null) {
+            throw new AuthException("AUTH_ALREADY_VERIFIED", "Email already verified");
+        }
+        var token = HexFormat.of().formatHex(new SecureRandom().generateSeed(32));
+        user.setVerificationToken(token);
+        user.setVerificationTokenExpiresAt(Instant.now().plus(Duration.ofHours(24)));
+        userRepo.save(user);
+        return token;
     }
 
     private void persistRefreshToken(UUID userId, String rawToken) {
@@ -167,7 +203,9 @@ public class AuthService {
         String email,
         String username,
         String role,
-        String locale
+        String locale,
+        String verificationToken,
+        boolean emailVerified
     ) {}
 
     public static class AuthException extends RuntimeException {

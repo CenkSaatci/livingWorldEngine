@@ -1,6 +1,8 @@
 package com.lwe.api;
 
+import com.lwe.api.dto.GameSystemInfoResponse;
 import com.lwe.core.service.GameSystemService;
+import com.lwe.rules.RuleSchemaValidator;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
@@ -8,7 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -16,60 +18,54 @@ import java.util.UUID;
 public class GameSystemController {
 
     private final GameSystemService service;
+    private final RuleSchemaValidator validator;
 
-    public GameSystemController(GameSystemService service) {
+    public GameSystemController(GameSystemService service, RuleSchemaValidator validator) {
         this.service = service;
+        this.validator = validator;
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@Valid @RequestBody CreateRequest req) {
+    public ResponseEntity<GameSystemInfoResponse> create(@Valid @RequestBody CreateRequest req) {
         var gs = service.create(req.name(), req.version(), req.rulesJson(), req.schemaJson());
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-            "id", gs.getId(),
-            "name", gs.getName(),
-            "version", gs.getVersion(),
-            "active", gs.isActive()
-        ));
+        return ResponseEntity.status(HttpStatus.CREATED).body(GameSystemInfoResponse.from(gs));
     }
 
     @GetMapping
-    public ResponseEntity<?> list() {
-        var list = service.listActive().stream().map(gs -> Map.of(
-            "id", gs.getId(),
-            "name", gs.getName(),
-            "version", gs.getVersion()
-        )).toList();
+    public ResponseEntity<List<GameSystemInfoResponse>> list() {
+        var list = service.listActive().stream().map(GameSystemInfoResponse::from).toList();
         return ResponseEntity.ok(list);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable UUID id) {
         var gs = service.getById(id);
-        return ResponseEntity.ok(Map.of(
-            "id", gs.getId(),
-            "name", gs.getName(),
-            "version", gs.getVersion(),
-            "rules_json", gs.getRulesJson(),
-            "active", gs.isActive()
-        ));
+        return ResponseEntity.ok(new GameSystemDetailResponse(
+            gs.getId(), gs.getName(), gs.getVersion(), gs.getRulesJson(), gs.isActive()));
     }
 
-    @PostMapping("/{id}/validate")
-    public ResponseEntity<?> validate(@PathVariable UUID id) {
-        var errors = service.revalidate(id);
-        if (errors.isEmpty()) {
-            return ResponseEntity.ok(Map.of("valid", true));
-        }
-        return ResponseEntity.ok(Map.of(
-            "valid", false,
-            "errors", errors
-        ));
+    @PutMapping("/{id}")
+    public ResponseEntity<GameSystemInfoResponse> update(@PathVariable UUID id,
+                                                          @Valid @RequestBody CreateRequest req) {
+        var gs = service.update(id, req.name(), req.version(), req.rulesJson());
+        return ResponseEntity.ok(GameSystemInfoResponse.from(gs));
     }
 
-    public record CreateRequest(
-        @NotBlank String name,
-        @Positive int version,
-        @NotBlank String rulesJson,
-        @NotBlank String schemaJson
-    ) {}
+    @PostMapping("/validate")
+    public ResponseEntity<?> validate(@RequestBody String rulesJson) {
+        var errors = validator.validate(rulesJson, "{}");
+        if (errors.isEmpty()) return ResponseEntity.ok(new ValidationResponse(true, null));
+        return ResponseEntity.ok(new ValidationResponse(false,
+            errors.stream().map(e -> e.path() + ": " + e.message()).toList()));
+    }
+
+    @PostMapping("/{id}/clone")
+    public ResponseEntity<GameSystemInfoResponse> clone(@PathVariable UUID id) {
+        var gs = service.clone(id);
+        return ResponseEntity.ok(GameSystemInfoResponse.from(gs));
+    }
+
+    public record CreateRequest(@NotBlank String name, @Positive int version, String rulesJson, String schemaJson) {}
+    public record GameSystemDetailResponse(UUID id, String name, int version, String rulesJson, boolean active) {}
+    public record ValidationResponse(boolean valid, List<String> errors) {}
 }
