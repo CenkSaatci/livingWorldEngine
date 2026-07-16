@@ -1020,17 +1020,23 @@
 
 ## Phase 14: Adventure Visual Editor + Live-DM
 
-### P14-T01: Backend — Adventure Override API
+### P14-T01: Backend — Adventure Discovery + Override API
 - **Status:** 📋
-- **Aufwand:** 2h
-- **Beschreibung:** Der DM muss während des Spiels jederzeit eingreifen können. Neue Endpunkte ermöglichen Live-Override:
-  - `POST /api/v1/adventures/{id}/override-node-text` — überschreibt den Text des aktuellen Nodes (Body: `{text: "..."}`)
-  - `POST /api/v1/adventures/{id}/force-node/{nodeId}` — setzt alle Spieler auf einen bestimmten Node
-  - `POST /api/v1/adventures/{id}/override-skillcheck` — ändert den Skill-Check einer Choice im Live-Verlauf
-  - `POST /api/v1/adventures/{id}/inject-choice/{nodeId}` — fügt dynamisch eine neue Choice in einen Node ein
-  - `PATCH /api/v1/adventures/{id}/nodes/{nodeId}` — editiert einen Node (Text, Image, isEnd) während das Adventure läuft
-  - `PATCH /api/v1/adventures/{id}/nodes/{nodeId}/choices/{choiceId}` — editiert eine Choice
-  - Alle Override-Änderungen werden per WebSocket an alle verbundenen Clients gepusht (Event: `ADVENTURE_NODE_CHANGED`, `ADVENTURE_CHOICES_CHANGED`)
+- **Aufwand:** 3h
+- **Beschreibung:** Adventures müssen auffindbar und NPC-gebunden sein. Neue Features:
+  - **Migration V088:** `adventures` um `location_id` und `giver_entity_id` (optional, FK→entities) erweitern
+  - **Listen-Endpunkte:**
+    - `GET /api/v1/adventures?worldId=X` — alle Adventures einer Welt
+    - `GET /api/v1/locations/{id}/adventures` — Adventures an einem Ort
+    - `GET /api/v1/entities/{id}/adventures` — Adventures, die ein NPC vergibt
+  - **DM-Override-Endpunkte** (Live-Editing während Spiel läuft):
+    - `POST /adventures/{id}/override-node-text` — überschreibt Text des aktuellen Nodes
+    - `POST /adventures/{id}/force-node/{nodeId}` — setzt alle Spieler auf einen Node
+    - `POST /adventures/{id}/override-skillcheck` — ändert Skill-Check einer Choice
+    - `POST /adventures/{id}/inject-choice/{nodeId}` — dynamisch neue Choice einfügen
+    - `PATCH /adventures/{id}/nodes/{nodeId}` — Node editieren (Text, Image, isEnd)
+    - `PATCH /adventures/{id}/nodes/{nodeId}/choices/{choiceId}` — Choice editieren
+  - **WebSocket-Events:** `ADVENTURE_NODE_CHANGED`, `ADVENTURE_CHOICES_CHANGED`
 
 ### P14-T02: Frontend — ReactFlow Adventure Editor
 - **Status:** 📋
@@ -1043,19 +1049,23 @@
   - **Connect:** Von Node zu Node ziehen = neue Choice
   - **Sidebar:** Bei Klick auf Node → Editor für Text/Image/SkillCheck/isEnd
   - **Choice-Editor:** Label, Target-Node, Skill-Check-JSON, Success/Failure-Node
+  - **Location/NPC-Binding:** Dropdown zur Auswahl, welcher NPC/Location dieses Adventure zugeordnet ist
   - **Preview-Button:** DM klickt sich durch den Graph wie ein Spieler
   - **Save:** Änderungen werden via API persistiert
 
-### P14-T03: Frontend — Adventure Play Page (Spieler-Sicht)
+### P14-T03: Frontend — Adventure Discovery + Play Page
 - **Status:** 📋
-- **Aufwand:** 1,5h
-- **Beschreibung:** Spieler sehen und interagieren mit einem Adventure:
-  - **Node-Ansicht:** Zeigt Text + optionales Bild des aktuellen Nodes
-  - **Choice-Buttons:** Jede Choice als Button, Klick → `POST /adventures/{id}/advance`
-  - **Skill-Check-Indikator:** Wenn eine Choice einen Skill-Check erfordert, wird das angezeigt (z.B. "🎲 Geschicklichkeit 12")
-  - **Progress-Bar:** Aktueller Fortschritt im Adventure (Node X von Y)
-  - **WebSocket-Empfang:** Wenn der DM override-t, ändert sich der Text/die Choices sofort
-  - **Route:** `/worlds/{worldId}/adventures/{adventureId}`
+- **Aufwand:** 2,5h
+- **Beschreibung:** Spieler finden und spielen Adventures:
+  - **Discovery (NPC):** `NpcViewPage` zeigt "[NPC] bietet ein Adventure an" mit "Start"-Button
+  - **Discovery (Location):** `LocationDetail` zeigt "📜 Available Adventures"-Liste
+  - **Available-Badge:** GameView-Sidebar zeigt ob in der aktuellen Location ein Adventure startbar ist
+  - **Play Page:** Route `/worlds/{worldId}/adventures/{adventureId}`
+  - **Node-Ansicht:** Text + optionales Bild
+  - **Choice-Buttons:** Klick → `POST /adventures/{id}/advance`
+  - **Skill-Check-Indikator:** "🎲 Geschicklichkeit 12" bei entsprechenden Choices
+  - **Progress-Bar:** Node X von Y
+  - **WebSocket-Empfang:** Live-Updates bei DM-Override
 
 ### P14-T04: Frontend — Live DM Override UI
 - **Status:** 📋
@@ -1094,7 +1104,7 @@
 | 11 (Architektur) | 8 | 19,0 Tage |
 | 12 (Qualität & Robustheit) | 7 | 11,0 Tage |
 | 13 (Campaign-Features) | 5 | 12,0 Tage |
-| 14 (Adventure Editor) | 4 | 7,5 Tage |
+| 14 (Adventure Editor) | 4 | 9,5 Tage |
 | **Summe** | **102 (1 cancelled)** | **191,0 Tage** |
 
 Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das ~9,5 Monaten (vollzeit). Bei Nebenher-Betrieb ist dies entsprechend zu multiplizieren. Zuzüglich offener Risiken (~0,5 Tage).
