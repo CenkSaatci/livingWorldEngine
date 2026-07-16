@@ -1005,38 +1005,32 @@
 - **Ersetzt:** Alten P13-T02 + P13-T06 (XP-Automatik entfällt)
 
 ### P13-T03: Kampf-Log im Chat
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 1h
-- **Beschreibung:** Kampf-Aktionen (Angriff, Ability, Defend, Next-Turn) werden automatisch als Chat-Nachricht in den Chat geschrieben statt nur als WebSocket-Event. Spieler sehen "Aragorn greift Ork an: 8 Schaden" direkt im Chat.
-  - **Geändert:** `CombatService` published zusätzlich `CHAT_MESSAGE`-Event bei jeder Aktion
-  - **Frontend:** ChatPanel zeigt Combat-Messages mit Icon
 
 ### P13-T04: Character-Sheet als P&P-Bogen
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 3h
-- **Beschreibung:** Der aktuelle CharacterSheet (`/characters/:id`) zeigt nur eine Key-Value-Liste. Neues Layout im P&P-Stil:
-  - **Kopf:** Name, Typ, Fraktion, Level, XP-Bar
-  - **Attribute:** Gruppiert (z.B. "Körperlich", "Geistig", "Sozial") mit Werten und Modifiern
-  - **Skills:** Liste mit Attribut-Bezug, Bonus, Gesamtwert
-  - **Kampf:** HP/AP, Initiative, Armor Class, Waffe
-  - **Inventory:** Equip-Slots + Item-Liste
-  - **Abilities:** TAB für ACTIVE + PASSIVE
-  - **Notizen:** Backstory, Personality, Goals
-  - **Layout:** Zweispaltig, optisch wie ein P&P-Charakterbogen
 
-### P13-T05: HP/AP-Regeneration nach Kampf
-- **Status:** 📋
-- **Aufwand:** 1h
-- **Beschreibung:** Nach Kampf-Ende (`COMBAT_ENDED`) werden HP und AP aller Teilnehmer automatisch regeneriert (volle HP, volle AP). Optional: konfigurierbar pro Welt (Regen-Rate in `settings_json`).
-  - **Geändert:** `CombatService.endCombat()` setzt HP/AP zurück
-  - **Optional:** `POST /entities/{id}/rest` für manuelle Rast außerhalb des Kampfes
+### P13-T05: HP/AP-Regeneration + Rest
+- **Status:** ✅
+- **Aufwand:** 2h
 
-### P13-T06: Automatische XP-Vergabe nach Kampf
+---
+
+## Phase 14: Adventure Visual Editor + Live-DM
+
+### P14-T01: Adventure Visual Editor (ReactFlow)
 - **Status:** 📋
-- **Aufwand:** 1h
-- **Beschreibung:** Bei Kampf-Ende werden XP automatisch an alle Teilnehmer verteilt. Basis-XP pro Gegner + Bonuses für besiegte Gegner.
-  - **Geändert:** `CombatService.endCombat()` berechnet XP, ruft `LevelUpService.addXp()` auf
-  - **Konfiguration:** Game-System `rules_json` kann `combat.xp_per_defeated_enemy` definieren
+- **Aufwand:** 7,5h
+- **Beschreibung:** Visueller Node-Editor für Adventures mit Drag & Drop und Live-DM-Override.
+  - **Canvas:** `@xyflow/react` für Node-Graph (Drag & Drop, Connect, Zoom)
+  - **Editor:** Sidebar pro Node (Text, Image, SkillCheck, isEnd), Choice-Editor (label, target, skill_check)
+  - **Preview:** DM klickt sich durch den Graph wie ein Spieler
+  - **Live-DM-Mode:** Während Spieler ein Adventure spielen, kann der DM Text überschreiben, Skill-Checks ändern, Nodes forcen (`POST /adventures/{id}/override-text`, `POST /adventures/{id}/force-node`)
+  - **Spieler-UI:** `AdventurePlayPage` zeigt Node-Text + Choice-Buttons, automatische Skill-Checks via Würfel-API
+  - **Backend:** Neue Endpunkte für DM-Override + Live-Editing
+  - **Daten:** Bestehende Adventure-Tabellen (adventures, adventure_nodes, node_choices, adventure_progress)
 
 ---
 
@@ -1064,7 +1058,8 @@
 | 10 (Campaign-Polish) | 10 | 19,0 Tage |
 | 11 (Architektur) | 8 | 19,0 Tage |
 | 12 (Qualität & Robustheit) | 7 | 11,0 Tage |
-| 13 (Campaign-Features) | 6 | 13,0 Tage |
-| **Summe** | **98 (1 cancelled)** | **176,0 Tage** |
+| 13 (Campaign-Features) | 5 | 12,0 Tage |
+| 14 (Adventure Editor) | 1 | 7,5 Tage |
+| **Summe** | **99 (1 cancelled)** | **183,5 Tage** |
 
-Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das ~8,8 Monaten (vollzeit). Bei Nebenher-Betrieb ist dies entsprechend zu multiplizieren. Zuzüglich offener Risiken (~0,5 Tage).
+Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das ~9,2 Monaten (vollzeit). Bei Nebenher-Betrieb ist dies entsprechend zu multiplizieren. Zuzüglich offener Risiken (~0,5 Tage).
