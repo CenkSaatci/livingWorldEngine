@@ -28,6 +28,7 @@ interface Member {
 
 interface WorldSettings {
   ai_mode?: string;
+  combat_chat_log?: boolean;
   event_archive_days?: number;
   time?: {
     mode?: string;
@@ -386,6 +387,24 @@ export default function WorldEditorPage() {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Event Archiving */}
+        <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
+          <h2 className="mb-3 font-heading text-text-primary">Combat Chat Log</h2>
+          <p className="mb-3 text-xs text-text-secondary">
+            When enabled, all combat actions are posted as chat messages so all players can see what
+            happens.
+          </p>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.combat_chat_log ?? true}
+              onChange={(e) => updateSetting(['combat_chat_log'], e.target.checked)}
+              className="accent-accent h-4 w-4"
+            />
+            <span className="text-sm text-text-primary">Combat Chat Log</span>
+          </label>
         </section>
 
         {/* Event Archiving */}

@@ -5,6 +5,7 @@ import com.lwe.core.domain.*;
 import com.lwe.core.repository.*;
 import com.lwe.rules.DiceExpressionParser;
 import com.lwe.rules.RuleEngine;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import static com.lwe.core.service.WorldEventService.EventType.*;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ public class CombatService {
     private final WorldEventService eventService;
     private final RollService rollService;
     private final AbilityRepository abilityRepo;
+    private final SimpMessagingTemplate messaging;
     private final com.lwe.core.util.WorldAccess worldAccess;
     private final Map<DiceExpressionParser.DiceSystem, RuleEngine> engines;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -34,6 +36,7 @@ public class CombatService {
                          WorldEventService eventService,
                          RollService rollService,
                          AbilityRepository abilityRepo,
+                         SimpMessagingTemplate messaging,
                          com.lwe.core.util.WorldAccess worldAccess,
                          java.util.List<RuleEngine> engineList) {
         this.sessionRepo = sessionRepo;
@@ -44,6 +47,7 @@ public class CombatService {
         this.eventService = eventService;
         this.rollService = rollService;
         this.abilityRepo = abilityRepo;
+        this.messaging = messaging;
         this.worldAccess = worldAccess;
         this.engines = new EnumMap<>(DiceExpressionParser.DiceSystem.class);
         for (var engine : engineList) {
@@ -110,6 +114,7 @@ public class CombatService {
 
         if ("MOVE".equals(actionType)) {
             deductAp(actor);
+            sendCombatMessage(session.getWorldId(), "🚶 " + entityName(actorId) + " bewegt sich");
             eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED, actorId, null, Map.of(
                 "actionType", "MOVE", "damage", 0));
             return new CombatActionResult("MOVE", 0, actor.getApCurrent(), true, null);
@@ -117,6 +122,7 @@ public class CombatService {
 
         if ("DEFEND".equals(actionType)) {
             deductAp(actor);
+            sendCombatMessage(session.getWorldId(), "🛡️ " + entityName(actorId) + " verteidigt sich");
             eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED, actorId, null, Map.of(
                 "actionType", "DEFEND", "damage", 0));
             return new CombatActionResult("DEFEND", 0, actor.getApCurrent(), true, null);
@@ -134,11 +140,14 @@ public class CombatService {
             participantRepo.save(target);
 
             if (target.getHpCurrent() <= 0) {
+                sendCombatMessage(session.getWorldId(), "💀 " + entityName(targetId) + " wurde besiegt!");
                 eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED,
                     target.getEntityId(), null, Map.of("actionType", "DEFEATED"));
             }
         }
 
+        sendCombatMessage(session.getWorldId(), "⚔️ " + entityName(actorId) + " greift "
+            + (targetId != null ? entityName(targetId) : "unbekannt") + " an: " + damage + " Schaden");
         eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
             "actionType", actionType, "damage", damage));
         return new CombatActionResult(actionType, damage, actor.getApCurrent(), true, null);
@@ -399,6 +408,34 @@ public class CombatService {
 
     private void requireOwnership(UUID worldId, UUID userId) {
         worldAccess.requireAccess(worldId, userId);
+    }
+
+    private String entityName(UUID entityId) {
+        return entityRepo.findById(entityId)
+            .map(e -> e.getName() != null && !e.getName().isBlank() ? e.getName() : entityId.toString().substring(0, 8))
+            .orElse(entityId.toString().substring(0, 8));
+    }
+
+    private void sendCombatMessage(UUID worldId, String text) {
+        if (!isCombatChatEnabled(worldId)) return;
+        var msg = Map.of(
+            "sender", "⚔️ Combat",
+            "text", text,
+            "timestamp", java.time.Instant.now().toString());
+        messaging.convertAndSend("/topic/world/" + worldId,
+            Map.of("event_type", "CHAT_MESSAGE", "payload", msg));
+    }
+
+    private boolean isCombatChatEnabled(UUID worldId) {
+        var world = worldRepo.findById(worldId).orElse(null);
+        if (world == null) return true;
+        try {
+            var tree = new ObjectMapper().readTree(world.getSettingsJson());
+            var val = tree.path("combat_chat_log");
+            return val.isMissingNode() || val.asBoolean(true);
+        } catch (Exception e) {
+            return true;
+        }
     }
 
     public record CombatActionResult(String actionType, int totalDamage,

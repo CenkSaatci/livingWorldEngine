@@ -4,6 +4,7 @@ import com.lwe.core.domain.*;
 import com.lwe.core.util.WorldAccess;
 import com.lwe.core.repository.*;
 import com.lwe.rules.D20RuleEngine;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -25,6 +26,7 @@ class CombatServiceTest {
     private final WorldEventService eventService = mock();
     private final RollService rollService = mock();
     private final AbilityRepository abilityRepo = mock();
+    private final SimpMessagingTemplate messaging = mock();
     private final WorldAccess worldAccess = mock();
 
     private CombatService combatService;
@@ -34,7 +36,7 @@ class CombatServiceTest {
     @BeforeEach
     void setUp() {
         combatService = new CombatService(sessionRepo, participantRepo, entityRepo,
-            worldRepo, gameSystemRepo, eventService, rollService, abilityRepo, worldAccess, List.of(new D20RuleEngine()));
+            worldRepo, gameSystemRepo, eventService, rollService, abilityRepo, messaging, worldAccess, List.of(new D20RuleEngine()));
     }
 
     @Test
