@@ -990,14 +990,19 @@
   - **Frontend:** "Invite"-Button im WorldEditor → Modal mit Link, "Pending Invites"-Liste im Dashboard
   - **Tests:** Service-Test (create/use/expire invite), Controller-Test
 
-### P13-T02: XP-System + Level-Up
+### P13-T02: XP-System + Progression (Level/Shop)
 - **Status:** 📋
-- **Aufwand:** 4h
-- **Beschreibung:** Entities bekommen XP (neue Spalte `experience_points`), Level wird automatisch berechnet basierend auf Game-System-Regel (z.B. `level = floor(xp / 100) + 1`). Nach Level-Up: Attributspunkte zum Verteilen, neue ACTIVE/PASSIVE Abilities freischaltbar.
-  - **Backend:** Migration `V085__entity_xp.sql` (`experience_points INT DEFAULT 0`, `attribute_points INT DEFAULT 0`), LevelUpService, `POST /entities/{id}/levelup` (verteilt Punkte)
-  - **Combat:** Automatische XP-Vergabe nach Kampf-Ende (COMBAT_ENDED-Event)
-  - **Frontend:** XP-Bar im CharacterSheet, Level-Up Modal mit Punktverteilung
+- **Aufwand:** 5h
+- **Beschreibung:** Zwei Progression-Modelle via `rules_json.progression`:
+  - **`mode: "level"`** — XP → Level laut Level-Tabelle → Attributspunkte + Ability-Slots
+  - **`mode: "shop"`** — XP direkt gegen Attributspunkte eintauschbar
+  - **Level-Tabelle:** `[{level, xp, attribute_points, ability_slots}]` im Game-System
+  - **Nur DM vergibt XP:** Keine Automatik
+  - **Reset möglich:** `POST /entities/{id}/reset-points`
+  - **Backend:** Migration `V086__entity_xp.sql`, `LevelUpService`, API-Endpunkte
+  - **Frontend:** XP/Level im CharacterSheet, Level-Up Modal, DM-Grant-Button
   - **Tests:** LevelUpServiceTest
+- **Ersetzt:** Alten P13-T02 + P13-T06 (XP-Automatik entfällt)
 
 ### P13-T03: Kampf-Log im Chat
 - **Status:** 📋

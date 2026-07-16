@@ -67,6 +67,12 @@ public class GameEntity {
     @Column(name = "social_standing", nullable = false, length = 20)
     private String socialStanding = "peasant";
 
+    @Column(name = "experience_points", nullable = false)
+    private int experiencePoints = 0;
+
+    @Column(name = "unspent_attribute_points", nullable = false)
+    private int unspentAttributePoints = 0;
+
     @Column(nullable = false)
     private boolean active = true;
 
@@ -90,6 +96,7 @@ public class GameEntity {
     public UUID getWorldId() { return worldId; }
     public String getEntityType() { return entityType; }
     public String getName() { return name; }
+    public void setName(String v) { this.name = v; }
     public String getAttributesJson() { return attributesJson; }
     public void setAttributesJson(String v) { this.attributesJson = v; }
     public String getInventoryJson() { return inventoryJson; }
@@ -108,7 +115,10 @@ public class GameEntity {
     public void setExperienceLevel(String v) { this.experienceLevel = v; }
     public String getSocialStanding() { return socialStanding; }
     public void setSocialStanding(String v) { this.socialStanding = v; }
-    public void setName(String v) { this.name = v; }
+    public int getExperiencePoints() { return experiencePoints; }
+    public void setExperiencePoints(int v) { this.experiencePoints = v; }
+    public int getUnspentAttributePoints() { return unspentAttributePoints; }
+    public void setUnspentAttributePoints(int v) { this.unspentAttributePoints = v; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
     public Instant getCreatedAt() { return createdAt; }
