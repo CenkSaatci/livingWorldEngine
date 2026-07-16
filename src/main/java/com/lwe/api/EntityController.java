@@ -1,7 +1,10 @@
 package com.lwe.api;
 
+import com.lwe.api.dto.ApiResponse;
+import com.lwe.api.dto.ErrorResponse;
 import com.lwe.core.domain.User;
 import com.lwe.core.service.EntityService;
+import com.lwe.core.service.RestService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -18,9 +21,11 @@ import java.util.UUID;
 public class EntityController {
 
     private final EntityService entityService;
+    private final RestService restService;
 
-    public EntityController(EntityService entityService) {
+    public EntityController(EntityService entityService, RestService restService) {
         this.entityService = entityService;
+        this.restService = restService;
     }
 
     @PostMapping
@@ -70,6 +75,13 @@ public class EntityController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{entityId}/rest")
+    public ResponseEntity<ApiResponse> rest(@PathVariable UUID entityId,
+                                             @AuthenticationPrincipal User user) {
+        restService.rest(entityId);
+        return ResponseEntity.ok(new ApiResponse("Rast durchgeführt"));
+    }
+
     private Map<String, Object> toResponse(com.lwe.core.domain.GameEntity e) {
         var m = new java.util.HashMap<String, Object>();
         m.put("id", e.getId());
@@ -85,6 +97,12 @@ public class EntityController {
         m.put("age", e.getAge());
         m.put("experience_level", e.getExperienceLevel());
         m.put("social_standing", e.getSocialStanding());
+        m.put("experience_points", e.getExperiencePoints());
+        m.put("unspent_attribute_points", e.getUnspentAttributePoints());
+        m.put("hp_current", e.getHpCurrent());
+        m.put("hp_max", e.getHpMax());
+        m.put("ap_current", e.getApCurrent());
+        m.put("ap_max", e.getApMax());
         m.put("created_at", e.getCreatedAt().toString());
         return m;
     }

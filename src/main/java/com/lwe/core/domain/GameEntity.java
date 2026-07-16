@@ -73,6 +73,18 @@ public class GameEntity {
     @Column(name = "unspent_attribute_points", nullable = false)
     private int unspentAttributePoints = 0;
 
+    @Column(name = "hp_current", nullable = false)
+    private int hpCurrent = 10;
+
+    @Column(name = "hp_max", nullable = false)
+    private int hpMax = 10;
+
+    @Column(name = "ap_current", nullable = false)
+    private int apCurrent = 2;
+
+    @Column(name = "ap_max", nullable = false)
+    private int apMax = 2;
+
     @Column(nullable = false)
     private boolean active = true;
 
@@ -119,6 +131,14 @@ public class GameEntity {
     public void setExperiencePoints(int v) { this.experiencePoints = v; }
     public int getUnspentAttributePoints() { return unspentAttributePoints; }
     public void setUnspentAttributePoints(int v) { this.unspentAttributePoints = v; }
+    public int getHpCurrent() { return hpCurrent; }
+    public void setHpCurrent(int v) { this.hpCurrent = v; }
+    public int getHpMax() { return hpMax; }
+    public void setHpMax(int v) { this.hpMax = v; }
+    public int getApCurrent() { return apCurrent; }
+    public void setApCurrent(int v) { this.apCurrent = v; }
+    public int getApMax() { return apMax; }
+    public void setApMax(int v) { this.apMax = v; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
     public Instant getCreatedAt() { return createdAt; }
