@@ -1020,17 +1020,52 @@
 
 ## Phase 14: Adventure Visual Editor + Live-DM
 
-### P14-T01: Adventure Visual Editor (ReactFlow)
+### P14-T01: Backend — Adventure Override API
 - **Status:** 📋
-- **Aufwand:** 7,5h
-- **Beschreibung:** Visueller Node-Editor für Adventures mit Drag & Drop und Live-DM-Override.
-  - **Canvas:** `@xyflow/react` für Node-Graph (Drag & Drop, Connect, Zoom)
-  - **Editor:** Sidebar pro Node (Text, Image, SkillCheck, isEnd), Choice-Editor (label, target, skill_check)
-  - **Preview:** DM klickt sich durch den Graph wie ein Spieler
-  - **Live-DM-Mode:** Während Spieler ein Adventure spielen, kann der DM Text überschreiben, Skill-Checks ändern, Nodes forcen (`POST /adventures/{id}/override-text`, `POST /adventures/{id}/force-node`)
-  - **Spieler-UI:** `AdventurePlayPage` zeigt Node-Text + Choice-Buttons, automatische Skill-Checks via Würfel-API
-  - **Backend:** Neue Endpunkte für DM-Override + Live-Editing
-  - **Daten:** Bestehende Adventure-Tabellen (adventures, adventure_nodes, node_choices, adventure_progress)
+- **Aufwand:** 2h
+- **Beschreibung:** Der DM muss während des Spiels jederzeit eingreifen können. Neue Endpunkte ermöglichen Live-Override:
+  - `POST /api/v1/adventures/{id}/override-node-text` — überschreibt den Text des aktuellen Nodes (Body: `{text: "..."}`)
+  - `POST /api/v1/adventures/{id}/force-node/{nodeId}` — setzt alle Spieler auf einen bestimmten Node
+  - `POST /api/v1/adventures/{id}/override-skillcheck` — ändert den Skill-Check einer Choice im Live-Verlauf
+  - `POST /api/v1/adventures/{id}/inject-choice/{nodeId}` — fügt dynamisch eine neue Choice in einen Node ein
+  - `PATCH /api/v1/adventures/{id}/nodes/{nodeId}` — editiert einen Node (Text, Image, isEnd) während das Adventure läuft
+  - `PATCH /api/v1/adventures/{id}/nodes/{nodeId}/choices/{choiceId}` — editiert eine Choice
+  - Alle Override-Änderungen werden per WebSocket an alle verbundenen Clients gepusht (Event: `ADVENTURE_NODE_CHANGED`, `ADVENTURE_CHOICES_CHANGED`)
+
+### P14-T02: Frontend — ReactFlow Adventure Editor
+- **Status:** 📋
+- **Aufwand:** 3h
+- **Beschreibung:** Visueller Node-Graph-Editor für den DM:
+  - **Canvas:** `@xyflow/react` (ReactFlow) mit Custom Nodes
+  - **Nodes:** AdventureNodes als Karten im Graph (Titel, Text-Vorschau, Image)
+  - **Edges:** Choices als Verbindungslinien mit Label
+  - **Drag & Drop:** Neue Nodes aus einer Toolbox ziehen
+  - **Connect:** Von Node zu Node ziehen = neue Choice
+  - **Sidebar:** Bei Klick auf Node → Editor für Text/Image/SkillCheck/isEnd
+  - **Choice-Editor:** Label, Target-Node, Skill-Check-JSON, Success/Failure-Node
+  - **Preview-Button:** DM klickt sich durch den Graph wie ein Spieler
+  - **Save:** Änderungen werden via API persistiert
+
+### P14-T03: Frontend — Adventure Play Page (Spieler-Sicht)
+- **Status:** 📋
+- **Aufwand:** 1,5h
+- **Beschreibung:** Spieler sehen und interagieren mit einem Adventure:
+  - **Node-Ansicht:** Zeigt Text + optionales Bild des aktuellen Nodes
+  - **Choice-Buttons:** Jede Choice als Button, Klick → `POST /adventures/{id}/advance`
+  - **Skill-Check-Indikator:** Wenn eine Choice einen Skill-Check erfordert, wird das angezeigt (z.B. "🎲 Geschicklichkeit 12")
+  - **Progress-Bar:** Aktueller Fortschritt im Adventure (Node X von Y)
+  - **WebSocket-Empfang:** Wenn der DM override-t, ändert sich der Text/die Choices sofort
+  - **Route:** `/worlds/{worldId}/adventures/{adventureId}`
+
+### P14-T04: Frontend — Live DM Override UI
+- **Status:** 📋
+- **Aufwand:** 1h
+- **Beschreibung:** Während Spieler ein Adventure spielen, kann der DM über ein Overlay eingreifen:
+  - **Live-Status:** In der DM-Queue / GameView wird angezeigt, welcher Spieler welches Adventure spielt und an welchem Node
+  - **Override-Button:** "Edit Active Node" → öffnet Inline-Editor für Text
+  - **Force-Node-Dropdown:** DM wählt einen Ziel-Node aus dem Graphen
+  - **Inject-Choice-Form:** Fügt dynamisch eine Choice hinzu (Label + Target + Skill-Check)
+  - **WebSocket-Push:** Änderungen werden sofort an alle Spieler gesendet
 
 ---
 
@@ -1059,7 +1094,7 @@
 | 11 (Architektur) | 8 | 19,0 Tage |
 | 12 (Qualität & Robustheit) | 7 | 11,0 Tage |
 | 13 (Campaign-Features) | 5 | 12,0 Tage |
-| 14 (Adventure Editor) | 1 | 7,5 Tage |
-| **Summe** | **99 (1 cancelled)** | **183,5 Tage** |
+| 14 (Adventure Editor) | 4 | 7,5 Tage |
+| **Summe** | **102 (1 cancelled)** | **191,0 Tage** |
 
-Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das ~9,2 Monaten (vollzeit). Bei Nebenher-Betrieb ist dies entsprechend zu multiplizieren. Zuzüglich offener Risiken (~0,5 Tage).
+Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das ~9,5 Monaten (vollzeit). Bei Nebenher-Betrieb ist dies entsprechend zu multiplizieren. Zuzüglich offener Risiken (~0,5 Tage).
