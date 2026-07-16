@@ -53,13 +53,15 @@ export default function WorldEditorPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const toast = useToast();
-  const [copied, setCopied] = useState(false);
   const [newMemberId, setNewMemberId] = useState('');
   const [searchResults, setSearchResults] = useState<
     { id: string; username: string; email: string }[]
   >([]);
   const [searchTimer, setSearchTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [copied, setCopied] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [inviteLink, setInviteLink] = useState('');
+  const [generating, setGenerating] = useState(false);
 
   const handleSearchInput = (value: string) => {
     setNewMemberId(value);
@@ -171,6 +173,19 @@ export default function WorldEditorPage() {
       navigate(`/worlds/${res.data.id}/edit`);
     } catch {
       toast.error('Failed to clone');
+    }
+  };
+
+  const handleGenerateInvite = async () => {
+    if (!id) return;
+    setGenerating(true);
+    try {
+      const res = await apiClient.post(`/worlds/${id}/invites`, { maxUses: 1 });
+      setInviteLink(res.data.url);
+    } catch {
+      toast.error('Failed to generate invite');
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -510,6 +525,41 @@ export default function WorldEditorPage() {
               <Copy size={16} className="inline mr-1" /> Clone World
             </button>
           </div>
+        </section>
+
+        {/* Invites */}
+        <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
+          <h2 className="mb-3 font-heading text-text-primary">Invites</h2>
+          <p className="text-xs text-text-secondary mb-3">
+            Generate single-use invite links for your players. Each link works once.
+          </p>
+          <div className="flex gap-2 mb-3">
+            <input
+              readOnly
+              value={inviteLink}
+              placeholder="Click 'Generate' to create an invite link"
+              className="flex-1 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-xs text-text-secondary"
+            />
+            {inviteLink && (
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(inviteLink);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="rounded bg-accent px-3 py-2 text-xs text-white hover:bg-accent/80"
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            )}
+          </div>
+          <button
+            onClick={handleGenerateInvite}
+            disabled={generating}
+            className="rounded bg-accent px-4 py-2 text-sm text-white hover:bg-accent/80 disabled:opacity-40"
+          >
+            {generating ? '…' : 'Generate Invite Link'}
+          </button>
         </section>
 
         {/* Danger Zone */}

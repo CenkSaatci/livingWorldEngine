@@ -171,6 +171,13 @@ public class GlobalExceptionHandler {
                 case "WORLD_MISMATCH" -> HttpStatus.UNPROCESSABLE_ENTITY;
                 default -> HttpStatus.BAD_REQUEST;
             };
+            case WorldInviteService.InviteException e -> switch (e.getErrorCode()) {
+                case "INVITE_NOT_FOUND", "WORLD_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                case "INVITE_EXPIRED" -> HttpStatus.GONE;
+                case "INVITE_EXHAUSTED" -> HttpStatus.CONFLICT;
+                case "ALREADY_MEMBER" -> HttpStatus.CONFLICT;
+                default -> HttpStatus.BAD_REQUEST;
+            };
             default -> HttpStatus.BAD_REQUEST;
         };
         return code;

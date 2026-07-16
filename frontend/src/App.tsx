@@ -22,6 +22,7 @@ import MapEditorPage from './pages/MapEditorPage';
 import EntityListPage from './pages/EntityListPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import WelcomePage from './pages/WelcomePage';
+import JoinPage from './pages/JoinPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import { ToastContainer } from './components/ui/Toast';
@@ -133,6 +134,10 @@ export default function App() {
           <Route
             path="/welcome"
             element={isAuthenticated ? <WelcomePage /> : <Navigate to="/login" replace />}
+          />
+          <Route
+            path="/join"
+            element={isAuthenticated ? <JoinPage /> : <Navigate to="/login" replace />}
           />
           <Route
             path="*"
