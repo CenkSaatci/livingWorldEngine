@@ -11,6 +11,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -26,11 +27,64 @@ public class AdventureController {
     @PostMapping
     public ResponseEntity<AdventureResponse> create(@Valid @RequestBody CreateRequest req,
                                                      @AuthenticationPrincipal User user) {
-        var adv = adventureService.createAdventure(req.worldId(), user.getId(), req.name(), req.description());
+        var adv = adventureService.createAdventure(req.worldId(), user.getId(), req.name(),
+            req.description(), req.locationId(), req.giverEntityId());
         return ResponseEntity.status(HttpStatus.CREATED).body(AdventureResponse.from(adv));
     }
 
-    @PostMapping("/{id}/nodes")
+    // -- Discovery --
+    @GetMapping
+    public ResponseEntity<List<AdventureResponse>> listByWorld(@RequestParam UUID worldId) {
+        var list = adventureService.listByWorld(worldId).stream().map(AdventureResponse::from).toList();
+        return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/by-location/{locationId}")
+    public ResponseEntity<List<AdventureResponse>> listByLocation(@PathVariable UUID locationId) {
+        var list = adventureService.listByLocation(locationId).stream().map(AdventureResponse::from).toList();
+        return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/by-giver/{giverEntityId}")
+    public ResponseEntity<List<AdventureResponse>> listByGiver(@PathVariable UUID giverEntityId) {
+        var list = adventureService.listByGiver(giverEntityId).stream().map(AdventureResponse::from).toList();
+        return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<AdventureResponse> getById(@PathVariable UUID id) {
+        var adv = adventureService.getById(id);
+        return ResponseEntity.ok(AdventureResponse.from(adv));
+    }
+
+    // -- Override (Live DM) --
+    @PostMapping("/{id}/override-text")
+    public ResponseEntity<ApiResponse> overrideText(@PathVariable UUID id,
+                                                     @RequestBody Map<String, String> body,
+                                                     @AuthenticationPrincipal User user) {
+        adventureService.overrideNodeText(id, user.getId(), body.get("text"));
+        return ResponseEntity.ok(new ApiResponse("Text updated"));
+    }
+
+    @PostMapping("/{id}/force-node/{nodeId}")
+    public ResponseEntity<ApiResponse> forceNode(@PathVariable UUID id,
+                                                   @PathVariable UUID nodeId,
+                                                   @AuthenticationPrincipal User user) {
+        adventureService.forceNode(id, user.getId(), nodeId);
+        return ResponseEntity.ok(new ApiResponse("Node forced"));
+    }
+
+    @PostMapping("/{id}/inject-choice/{nodeId}")
+    public ResponseEntity<AdventureChoiceResponse> injectChoice(@PathVariable UUID id,
+                                                                  @PathVariable UUID nodeId,
+                                                                  @Valid @RequestBody ChoiceRequest req,
+                                                                  @AuthenticationPrincipal User user) {
+        var choice = adventureService.injectChoice(id, user.getId(), nodeId, req.label(),
+            req.targetNodeId(), req.skillCheckJson());
+        return ResponseEntity.status(HttpStatus.CREATED).body(AdventureChoiceResponse.created(choice));
+    }
+
+    // -- Existing endpoints --
     public ResponseEntity<AdventureNodeResponse> addNode(@PathVariable UUID id,
                                                           @Valid @RequestBody NodeRequest req,
                                                           @AuthenticationPrincipal User user) {
@@ -121,7 +175,8 @@ public class AdventureController {
         return ResponseEntity.ok(AdventureNodeResponse.from(node));
     }
 
-    public record CreateRequest(@NotBlank UUID worldId, @NotBlank String name, String description) {}
+    public record CreateRequest(@NotBlank UUID worldId, @NotBlank String name, String description,
+                                 UUID locationId, UUID giverEntityId) {}
     public record NodeRequest(@NotBlank String text, String imageUrl, boolean isEnd) {}
     public record ChoiceRequest(@NotBlank String label, UUID targetNodeId,
                                 String skillCheckJson, UUID onSuccessNodeId, UUID onFailureNodeId) {}

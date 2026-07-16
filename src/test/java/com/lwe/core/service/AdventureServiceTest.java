@@ -50,7 +50,7 @@ class AdventureServiceTest {
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(adventureRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        var result = service.createAdventure(worldId, userId, "Quest", null);
+        var result = service.createAdventure(worldId, userId, "Quest", null, null, null);
         assertThat(result.getName()).isEqualTo("Quest");
     }
 

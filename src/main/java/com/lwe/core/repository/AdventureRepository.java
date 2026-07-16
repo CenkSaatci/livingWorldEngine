@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface AdventureRepository extends JpaRepository<Adventure, UUID> {
     List<Adventure> findByWorldId(UUID worldId);
+    List<Adventure> findByLocationId(UUID locationId);
+    List<Adventure> findByGiverEntityId(UUID giverEntityId);
 }

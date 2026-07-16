@@ -21,6 +21,12 @@ public class Adventure {
     @Column(columnDefinition = "text")
     private String description;
 
+    @Column(name = "location_id")
+    private UUID locationId;
+
+    @Column(name = "giver_entity_id")
+    private UUID giverEntityId;
+
     @Column(name = "start_node_id")
     private UUID startNodeId;
 
@@ -45,6 +51,10 @@ public class Adventure {
     public void setName(String v) { this.name = v; }
     public String getDescription() { return description; }
     public void setDescription(String v) { this.description = v; }
+    public UUID getLocationId() { return locationId; }
+    public void setLocationId(UUID v) { this.locationId = v; }
+    public UUID getGiverEntityId() { return giverEntityId; }
+    public void setGiverEntityId(UUID v) { this.giverEntityId = v; }
     public UUID getStartNodeId() { return startNodeId; }
     public void setStartNodeId(UUID v) { this.startNodeId = v; }
     public Instant getCreatedAt() { return createdAt; }

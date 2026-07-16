@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import static com.lwe.core.service.WorldEventService.EventType.*;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -38,11 +39,26 @@ public class AdventureService {
     }
 
     @Transactional
-    public Adventure createAdventure(UUID worldId, UUID userId, String name, String description) {
+    public Adventure createAdventure(UUID worldId, UUID userId, String name, String description,
+                                      UUID locationId, UUID giverEntityId) {
         verifyWorldAccess(worldId, userId);
         var adv = new Adventure(worldId, name);
         if (description != null) adv.setDescription(description);
+        if (locationId != null) adv.setLocationId(locationId);
+        if (giverEntityId != null) adv.setGiverEntityId(giverEntityId);
         return adventureRepo.save(adv);
+    }
+
+    public List<Adventure> listByWorld(UUID worldId) {
+        return adventureRepo.findByWorldId(worldId);
+    }
+
+    public List<Adventure> listByLocation(UUID locationId) {
+        return adventureRepo.findByLocationId(locationId);
+    }
+
+    public List<Adventure> listByGiver(UUID giverEntityId) {
+        return adventureRepo.findByGiverEntityId(giverEntityId);
     }
 
     @Transactional
@@ -194,6 +210,47 @@ public class AdventureService {
     public java.util.List<AdventureNode> getNodes(UUID adventureId, UUID userId) {
         verifyAdventureAccess(adventureId, userId);
         return nodeRepo.findByAdventureId(adventureId);
+    }
+
+    // -- Override API (Live DM) --
+
+    @Transactional
+    public void overrideNodeText(UUID adventureId, UUID userId, String newText) {
+        var adv = verifyAdventureAccess(adventureId, userId);
+        if (newText == null || newText.isBlank()) return;
+        eventService.publish(adv.getWorldId(), ADVENTURE_NODE_CHANGED, null, null, Map.of(
+            "adventureId", adventureId.toString(), "text", newText));
+    }
+
+    @Transactional
+    public void forceNode(UUID adventureId, UUID userId, UUID nodeId) {
+        verifyAdventureAccess(adventureId, userId);
+        var node = nodeRepo.findById(nodeId)
+            .orElseThrow(() -> new AdventureException("ADVENTURE_NODE_NOT_FOUND", "Node not found"));
+        var progresses = progressRepo.findByAdventureIdAndStatus(adventureId, "ACTIVE");
+        for (var p : progresses) {
+            p.setCurrentNodeId(nodeId);
+            progressRepo.save(p);
+        }
+        eventService.publish(node.getAdventureId(), ADVENTURE_NODE_CHANGED, null, null, Map.of(
+            "adventureId", adventureId.toString(), "nodeId", nodeId.toString()));
+    }
+
+    @Transactional
+    public NodeChoice injectChoice(UUID adventureId, UUID userId, UUID nodeId, String label,
+                                    UUID targetNodeId, String skillCheckJson) {
+        verifyAdventureAccess(adventureId, userId);
+        var choice = new NodeChoice(nodeId, label, targetNodeId);
+        if (skillCheckJson != null) choice.setSkillCheck(skillCheckJson);
+        choice = choiceRepo.save(choice);
+        eventService.publish(adventureId, ADVENTURE_CHOICES_CHANGED, null, null, Map.of(
+            "adventureId", adventureId.toString(), "nodeId", nodeId.toString()));
+        return choice;
+    }
+
+    public Adventure getById(UUID id) {
+        return adventureRepo.findById(id)
+            .orElseThrow(() -> new AdventureException("ADVENTURE_NOT_FOUND", "Adventure not found"));
     }
 
     public java.util.List<NodeChoice> getChoices(UUID nodeId, UUID userId) {
