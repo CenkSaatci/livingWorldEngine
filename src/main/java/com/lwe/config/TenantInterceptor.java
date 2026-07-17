@@ -39,9 +39,9 @@ public class TenantInterceptor implements Filter {
                 .getContext().getAuthentication();
             if (auth != null && auth.getPrincipal() instanceof com.lwe.core.domain.User user) {
                 entityManager.createNativeQuery(
-                    "SET LOCAL app.tenant_id = ?1"
+                    "SELECT set_config('app.tenant_id', ?1, true)"
                 ).setParameter(1, user.getId().toString())
-                 .executeUpdate();
+                 .getSingleResult();
             }
         }
 

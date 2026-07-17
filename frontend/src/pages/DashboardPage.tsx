@@ -224,31 +224,36 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            {worlds.map((w) => (
-              <button
+            {worlds.map((w) => {
+              const dateStr = w.created_at
+                ? new Date(w.created_at).toLocaleDateString(currentLocale)
+                : '';
+              return (
+              <div
                 key={w.id}
                 onClick={() => handleEnter(w)}
-                className="rounded-lg border border-bg-elevated bg-bg-surface p-4 text-left
+                className="cursor-pointer rounded-lg border border-bg-elevated bg-bg-surface p-4 text-left
                            transition hover:border-accent/50 hover:bg-bg-elevated/50"
               >
                 <div className="flex items-center justify-between">
                   <h3 className="font-heading text-text-primary">{w.name}</h3>
-                  <button
+                  <span
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(`/worlds/${w.id}/edit`);
                     }}
-                    className="text-text-secondary hover:text-accent"
+                    className="cursor-pointer text-text-secondary hover:text-accent"
                     aria-label="Edit world settings"
                   >
                     <Settings size={14} />
-                  </button>
+                  </span>
                 </div>
                 <p className="mt-1 text-xs text-text-secondary">
-                  {new Date(w.created_at).toLocaleDateString(currentLocale)}
+                  {dateStr}
                 </p>
-              </button>
-            ))}
+              </div>
+              );
+            })}
           </div>
         )}
         {hasMore && !loadingWorlds && (

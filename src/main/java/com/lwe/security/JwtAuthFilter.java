@@ -14,10 +14,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Extrahiert JWT aus {@code Authorization: Bearer}-Header, validiert und setzt
- * {@link org.springframework.security.core.context.SecurityContext}.
- */
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 

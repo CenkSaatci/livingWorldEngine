@@ -44,7 +44,7 @@ public class GameSystemController {
             gs.getId(), gs.getName(), gs.getVersion(), gs.getRulesJson(), gs.isActive()));
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<GameSystemInfoResponse> update(@PathVariable UUID id,
                                                           @Valid @RequestBody CreateRequest req) {
         var gs = service.update(id, req.name(), req.version(), req.rulesJson());
@@ -63,6 +63,12 @@ public class GameSystemController {
     public ResponseEntity<GameSystemInfoResponse> clone(@PathVariable UUID id) {
         var gs = service.clone(id);
         return ResponseEntity.ok(GameSystemInfoResponse.from(gs));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        service.delete(id);
+        return ResponseEntity.noContent().build();
     }
 
     public record CreateRequest(@NotBlank String name, @Positive int version, String rulesJson, String schemaJson) {}

@@ -50,7 +50,7 @@ public class World {
         this.name = name;
         this.ownerId = ownerId;
         this.gameSystemId = gameSystemId;
-        this.settingsJson = settingsJson;
+        this.settingsJson = settingsJson != null ? settingsJson : "{}";
     }
 
     @PreUpdate void onUpdate() { this.updatedAt = Instant.now(); }

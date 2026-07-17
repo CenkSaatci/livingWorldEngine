@@ -21,20 +21,6 @@ public class StompController {
         this.messaging = messaging;
     }
 
-    @MessageMapping("/chat/{worldId}")
-    public void handleChat(@DestinationVariable String worldId,
-                           @Payload Map<String, String> payload) {
-        var message = Map.of(
-            "sender", payload.getOrDefault("sender", "unknown"),
-            "text", payload.getOrDefault("text", ""),
-            "timestamp", Instant.now().toString()
-        );
-        messaging.convertAndSend("/topic/world/" + worldId, Map.of(
-            "event_type", "CHAT_MESSAGE",
-            "payload", message
-        ));
-    }
-
     @MessageMapping("/token/move/{mapId}")
     public void handleTokenMove(@DestinationVariable String mapId,
                                 @Payload Map<String, Object> payload) {

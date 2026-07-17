@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import * as PIXI from 'pixi.js';
 
-/**
- * Erzeugt und steuert eine PIXI.Application (v7) innerhalb eines Containers.
- * Berücksichtigt DPR (Retina), Resize, Zoom und Pan.
- */
 export function usePixiApp(containerRef: React.RefObject<HTMLDivElement | null>) {
   const appRef = useRef<PIXI.Application | null>(null);
   const viewportRef = useRef({ x: 0, y: 0, zoom: 1 });
@@ -27,35 +23,37 @@ export function usePixiApp(containerRef: React.RefObject<HTMLDivElement | null>)
     el.appendChild(app.view as unknown as HTMLElement);
     appRef.current = app;
 
-    // Zoom (Mausrad) — cursor-following
+    const observer = new ResizeObserver(() => {
+      if (!el || !appRef.current) return;
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        appRef.current.renderer.resize(r.width, r.height);
+      }
+    });
+    observer.observe(el);
+
     const view = app.view as HTMLCanvasElement;
-    view.addEventListener(
-      'wheel',
-      (e: WheelEvent) => {
-        e.preventDefault();
-        const rect = view.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
+    view.addEventListener('wheel', (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = view.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
 
-        const oldZoom = viewportRef.current.zoom;
-        const factor = e.deltaY > 0 ? 0.9 : 1.1;
-        const newZoom = Math.min(4, Math.max(0.25, oldZoom * factor));
+      const oldZoom = viewportRef.current.zoom;
+      const factor = e.deltaY > 0 ? 0.9 : 1.1;
+      const newZoom = Math.min(4, Math.max(0.25, oldZoom * factor));
 
-        // Weltpunkt unter Maus fixieren
-        const worldX = (mouseX - viewportRef.current.x) / oldZoom;
-        const worldY = (mouseY - viewportRef.current.y) / oldZoom;
+      const worldX = (mouseX - viewportRef.current.x) / oldZoom;
+      const worldY = (mouseY - viewportRef.current.y) / oldZoom;
 
-        viewportRef.current.zoom = newZoom;
-        viewportRef.current.x = mouseX - worldX * newZoom;
-        viewportRef.current.y = mouseY - worldY * newZoom;
+      viewportRef.current.zoom = newZoom;
+      viewportRef.current.x = mouseX - worldX * newZoom;
+      viewportRef.current.y = mouseY - worldY * newZoom;
 
-        app.stage.scale.set(newZoom);
-        app.stage.position.set(viewportRef.current.x, viewportRef.current.y);
-      },
-      { passive: false },
-    );
+      app.stage.scale.set(newZoom);
+      app.stage.position.set(viewportRef.current.x, viewportRef.current.y);
+    }, { passive: false });
 
-    // Pan (Drag im leeren Bereich)
     let panning = false;
     let panStart = { x: 0, y: 0 };
     let viewStart = { x: 0, y: 0 };
@@ -81,7 +79,6 @@ export function usePixiApp(containerRef: React.RefObject<HTMLDivElement | null>)
       view.style.cursor = 'default';
     });
 
-    // Touch: start panning
     view.addEventListener('touchstart', (e: TouchEvent) => {
       if (e.touches.length === 0) return;
       panning = true;
@@ -115,8 +112,8 @@ export function usePixiApp(containerRef: React.RefObject<HTMLDivElement | null>)
     };
   }, [initApp]);
 
-  const getApp = () => appRef.current;
-  const getViewport = () => viewportRef.current;
+  const getApp = useCallback(() => appRef.current, []);
+  const getViewport = useCallback(() => viewportRef.current, []);
 
   return { getApp, getViewport };
 }

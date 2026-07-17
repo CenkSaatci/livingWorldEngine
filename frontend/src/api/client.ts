@@ -12,7 +12,6 @@ const REFRESH_URL = `${API_BASE_URL}/auth/refresh`;
  */
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  headers: { 'Content-Type': 'application/json' },
 });
 
 // Lade Tokens aus localStorage (Seite-Reload)

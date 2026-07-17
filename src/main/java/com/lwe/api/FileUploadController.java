@@ -53,7 +53,7 @@ public class FileUploadController {
 
             var filename = "map" + ext;
             var targetPath = targetDir.resolve(filename);
-            file.transferTo(targetPath.toFile());
+            Files.write(targetPath, file.getBytes());
 
             var map = worldMapRepo.findByWorldId(worldId)
                 .orElseGet(() -> {

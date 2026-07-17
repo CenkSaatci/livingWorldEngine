@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+
+const routerFuture = { v7_startTransition: true } as const;
 import { useAuthStore } from './store/authStore';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -39,7 +41,7 @@ export default function App() {
   }, [restoreSession]);
 
   return (
-    <BrowserRouter>
+    <BrowserRouter future={routerFuture}>
       <ErrorBoundary>
         <Routes>
           <Route

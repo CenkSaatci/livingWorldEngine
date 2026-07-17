@@ -85,6 +85,13 @@ public class LocationService {
         repo.delete(loc);
     }
 
+    @Transactional
+    public void updatePosition(UUID locationId, UUID userId, String positionJson) {
+        var loc = getById(locationId, userId);
+        loc.setPositionJson(positionJson);
+        repo.save(loc);
+    }
+
     private void requireAccess(UUID regionId, UUID userId) {
         var region = regionRepo.findById(regionId)
             .orElseThrow(() -> new LocationException("REGION_NOT_FOUND", "Region not found"));

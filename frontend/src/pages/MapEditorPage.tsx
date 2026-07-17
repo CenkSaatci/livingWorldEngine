@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Upload } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { ArrowLeft, Save, Upload, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as PIXI from 'pixi.js';
 import { usePixiApp } from '../components/map/usePixiApp';
 import { drawGrid } from '../components/map/Grid';
@@ -13,7 +13,7 @@ const ROWS = 15;
 const TILE = 48;
 
 const POLY_COLORS = [
-  0x4a90d9, 0x50b86c, 0xd9a84a, 0x9b59b6, 0xe67e22, 0x1abc9c, 0xe74c3c, 0x3498db,
+  0x3b82f6, 0x22c55e, 0xf59e0b, 0xa855f7, 0xef4444, 0x06b6d4, 0x84cc16, 0xf97316,
 ];
 
 interface Region {
@@ -24,8 +24,13 @@ interface Region {
 
 interface Location {
   id: string;
+  regionId?: string;
   name: string;
-  position_json?: string;
+  type?: string;
+  description?: string;
+  population?: number;
+  wealth?: number;
+  positionJson?: string;
 }
 
 export default function MapEditorPage() {
@@ -39,10 +44,20 @@ export default function MapEditorPage() {
   const [regions, setRegions] = useState<Region[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [drawingPoints, setDrawingPoints] = useState<{ x: number; y: number }[]>([]);
-  const [mode, setMode] = useState<'view' | 'draw'>('view');
+  const [mode, setMode] = useState<'view' | 'draw' | 'place'>('view');
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
+  const [renderTick, setRenderTick] = useState(0);
+  const redraw = useCallback(() => {
+    setRenderTick(t => t + 1);
+  }, []);
   const [loading, setLoading] = useState(true);
+  const [showLocModal, setShowLocModal] = useState<'create' | 'info' | null>(null);
+  const [infoLocation, setInfoLocation] = useState<Location | null>(null);
+  const [locForm, setLocForm] = useState({ name: '', type: 'village', regionName: '', description: '', population: 0, wealth: 5 });
+
+  const LOCATION_TYPES = ['village', 'town', 'city', 'hamlet', 'fortress', 'ruin', 'dungeon', 'tower', 'shrine', 'camp', 'mine', 'farm', 'inn', 'harbor', 'bridge'];
 
   const regionsLayerRef = useRef<PIXI.Graphics | null>(null);
   const locationsLayerRef = useRef<PIXI.Container | null>(null);
@@ -53,9 +68,17 @@ export default function MapEditorPage() {
     if (!id) return;
     const fetchData = async () => {
       try {
-        const regionsRes = await apiClient.get(`/worlds/${id}/regions`);
+        const [regionsRes, mapRes] = await Promise.all([
+          apiClient.get(`/worlds/${id}/regions`),
+          apiClient.get(`/worlds/${id}/map`),
+        ]);
         const regions = regionsRes.data ?? [];
         setRegions(regions);
+        if (mapRes.data?.imageUrl) {
+          setBackgroundImage(
+            (import.meta.env.VITE_API_URL ?? 'http://localhost:8080') + mapRes.data.imageUrl,
+          );
+        }
         const locPromises = regions.map((r: Region) => apiClient.get(`/regions/${r.id}/locations`));
         const locResults = await Promise.all(locPromises);
         setLocations(locResults.flatMap((r) => r.data ?? []));
@@ -66,7 +89,7 @@ export default function MapEditorPage() {
       }
     };
     fetchData();
-  }, [id, toast]);
+  }, [id]);
 
   useEffect(() => {
     const app = getApp();
@@ -84,16 +107,16 @@ export default function MapEditorPage() {
     if (!app) return;
 
     if (bgLayerRef.current) {
-      app.stage.removeChild(bgLayerRef.current);
-      bgLayerRef.current.destroy(true);
+      try {
+        app.stage.removeChild(bgLayerRef.current);
+        bgLayerRef.current.destroy(true);
+      } catch { /* already destroyed */ }
       bgLayerRef.current = null;
     }
 
     if (backgroundImage) {
       const texture = PIXI.Texture.from(backgroundImage);
       const sprite = new PIXI.Sprite(texture);
-      sprite.width = COLS * TILE;
-      sprite.height = ROWS * TILE;
       app.stage.addChildAt(sprite, 0);
       bgLayerRef.current = sprite;
     }
@@ -104,8 +127,10 @@ export default function MapEditorPage() {
     if (!app) return;
 
     if (regionsLayerRef.current) {
-      app.stage.removeChild(regionsLayerRef.current);
-      regionsLayerRef.current.destroy(true);
+      try {
+        app.stage.removeChild(regionsLayerRef.current);
+        regionsLayerRef.current.destroy(true);
+      } catch { /* already destroyed */ }
       regionsLayerRef.current = null;
     }
 
@@ -116,16 +141,16 @@ export default function MapEditorPage() {
         const pts = JSON.parse(region.polygon_points) as { x: number; y: number }[];
         if (pts.length < 3) return;
         const color = POLY_COLORS[index % POLY_COLORS.length];
-        regionsGfx.beginFill(color, 0.2);
-        regionsGfx.lineStyle(2, color, 0.8);
+        regionsGfx.beginFill(color, 0.25);
+        regionsGfx.lineStyle(3, color, 0.9);
         regionsGfx.moveTo(pts[0].x, pts[0].y);
         for (let i = 1; i < pts.length; i++) {
           regionsGfx.lineTo(pts[i].x, pts[i].y);
         }
         regionsGfx.closePath();
         regionsGfx.endFill();
-      } catch {
-        /* skip invalid polygons */
+      } catch (e) {
+        console.warn('Polygon draw error:', e);
       }
     });
 
@@ -133,16 +158,18 @@ export default function MapEditorPage() {
     regionsLayerRef.current = regionsGfx;
 
     if (locationsLayerRef.current) {
-      app.stage.removeChild(locationsLayerRef.current);
-      locationsLayerRef.current.destroy(true);
+      try {
+        app.stage.removeChild(locationsLayerRef.current);
+        locationsLayerRef.current.destroy(true);
+      } catch { /* already destroyed */ }
       locationsLayerRef.current = null;
     }
 
     const locsContainer = new PIXI.Container();
     locations.forEach((loc) => {
-      if (!loc.position_json) return;
+      if (!loc.positionJson) return;
       try {
-        const pos = JSON.parse(loc.position_json) as { x: number; y: number };
+        const pos = JSON.parse(loc.positionJson) as { x: number; y: number };
         const circle = new PIXI.Graphics();
         circle.beginFill(0xe74c3c);
         circle.drawCircle(0, 0, 6);
@@ -153,7 +180,8 @@ export default function MapEditorPage() {
         circle.eventMode = 'static';
         circle.cursor = 'pointer';
         circle.on('pointerdown', () => {
-          toast.info(`Location: ${loc.name}`);
+          setInfoLocation(loc);
+          setShowLocModal('info');
         });
         locsContainer.addChild(circle);
 
@@ -167,8 +195,8 @@ export default function MapEditorPage() {
         text.anchor.set(0.5, 1);
         text.position.set(pos.x, pos.y - 10);
         locsContainer.addChild(text);
-      } catch {
-        /* skip */
+      } catch (e) {
+        console.warn('Location draw error:', e);
       }
     });
 
@@ -176,8 +204,10 @@ export default function MapEditorPage() {
     locationsLayerRef.current = locsContainer;
 
     if (drawingLayerRef.current) {
-      app.stage.removeChild(drawingLayerRef.current);
-      drawingLayerRef.current.destroy(true);
+      try {
+        app.stage.removeChild(drawingLayerRef.current);
+        drawingLayerRef.current.destroy(true);
+      } catch { /* already destroyed */ }
       drawingLayerRef.current = null;
     }
 
@@ -202,10 +232,9 @@ export default function MapEditorPage() {
 
     app.stage.addChild(drawingGfx);
     drawingLayerRef.current = drawingGfx;
-  }, [getApp, regions, locations, drawingPoints, toast]);
+  }, [getApp, regions, locations, drawingPoints, renderTick]);
 
   const handleCanvasClick = (e: React.MouseEvent) => {
-    if (mode !== 'draw') return;
     const canvas = containerRef.current?.querySelector('canvas');
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -214,12 +243,43 @@ export default function MapEditorPage() {
     const vp = getViewport();
     const worldX = (mouseX - vp.x) / vp.zoom;
     const worldY = (mouseY - vp.y) / vp.zoom;
-    setDrawingPoints((prev) => [...prev, { x: worldX, y: worldY }]);
+
+    if (mode === 'draw') {
+      setDrawingPoints((prev) => [...prev, { x: worldX, y: worldY }]);
+    } else if (mode === 'place' && selectedLocation) {
+      saveLocationPosition(selectedLocation, worldX, worldY);
+    }
   };
 
-  const handleRightClick = (e: React.MouseEvent) => {
+  const saveLocationPosition = async (locationId: string, x: number, y: number) => {
+    if (!id) return;
+    const loc = locations.find(l => l.id === locationId);
+    console.log('Place:', { loc, x, y });
+    if (!loc?.regionId) { toast.error('Location has no region'); return; }
+    try {
+      const patchRes = await apiClient.patch(`/regions/${loc.regionId}/locations/${locationId}`, {
+        positionJson: JSON.stringify({ x, y }),
+      });
+      console.log('PATCH response:', patchRes.status, patchRes.data);
+      const locPromises = regions.map((r) => apiClient.get(`/regions/${r.id}/locations`));
+      const locResults = await Promise.all(locPromises);
+      setLocations(locResults.flatMap((r) => r.data ?? []));
+      toast.success('Location placed');
+      setMode('view');
+      setSelectedLocation(null);
+    } catch {
+      toast.error('Failed to place location');
+    }
+  };
+
+  const handleRightClick = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if (mode !== 'draw' || drawingPoints.length < 3) return;
+    if (mode !== 'draw') return;
+    if (drawingPoints.length >= 3) {
+      await handleSavePolygon();
+    }
+    setDrawingPoints([]);
+    setSelectedRegion(null);
     setMode('view');
   };
 
@@ -237,6 +297,7 @@ export default function MapEditorPage() {
       setSelectedRegion(null);
       setMode('view');
       const res = await apiClient.get(`/worlds/${id}/regions`);
+      console.log('Regions after save:', res.data);
       setRegions(res.data ?? []);
     } catch {
       toast.error('Failed to save polygon');
@@ -260,31 +321,24 @@ export default function MapEditorPage() {
     if (!file || !id) return;
     const formData = new FormData();
     formData.append('file', file);
+    setBackgroundImage(URL.createObjectURL(file));
     try {
-      const res = await apiClient.post(`/worlds/${id}/map/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const res = await apiClient.post(`/worlds/${id}/map/upload`, formData);
       setBackgroundImage(
-        (import.meta.env.VITE_API_URL ?? 'http://localhost:8080') + res.data.image_url,
+        (import.meta.env.VITE_API_URL ?? 'http://localhost:8080') + res.data.imageUrl,
       );
-    } catch {
-      // keep local preview as fallback
-      const reader = new FileReader();
-      reader.onload = (ev) => setBackgroundImage(ev.target?.result as string);
-      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Upload failed:', err);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-bg-primary">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-screen flex-col bg-bg-primary">
+    <div className="flex h-screen flex-col bg-bg-primary">
+      {loading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-bg-primary/80">
+          <LoadingSpinner />
+        </div>
+      )}
       <header className="flex items-center justify-between border-b border-bg-elevated bg-bg-surface px-6 py-3">
         <div className="flex items-center gap-3">
           <button
@@ -294,9 +348,9 @@ export default function MapEditorPage() {
             <ArrowLeft size={20} />
           </button>
           <h1 className="text-lg font-heading text-text-primary">Map Editor</h1>
-          {mode === 'draw' && (
+          {(mode === 'draw' || mode === 'place') && (
             <span className="rounded bg-accent/20 px-2 py-0.5 text-xs text-accent">
-              Drawing mode
+              {mode === 'draw' ? 'Drawing mode' : 'Place mode'}
             </span>
           )}
         </div>
@@ -320,8 +374,8 @@ export default function MapEditorPage() {
         </div>
       </header>
 
-      <div className="flex flex-1">
-        <aside className="flex w-64 flex-col gap-4 border-r border-bg-elevated bg-bg-surface p-4">
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="flex w-64 flex-col gap-4 overflow-y-auto border-r border-bg-elevated bg-bg-surface p-4">
           {/* Upload */}
           <div>
             <label className="mb-1 block text-xs text-text-secondary">Map Image</label>
@@ -336,27 +390,22 @@ export default function MapEditorPage() {
           {/* Mode toggle */}
           <div>
             <label className="mb-1 block text-xs text-text-secondary">Mode</label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setMode('view');
-                  setDrawingPoints([]);
-                  setSelectedRegion(null);
-                }}
-                className={`flex-1 rounded px-3 py-1.5 text-xs ${
-                  mode === 'view' ? 'bg-accent text-white' : 'bg-bg-elevated text-text-secondary'
-                }`}
-              >
-                View
-              </button>
-              <button
-                onClick={() => setMode('draw')}
-                className={`flex-1 rounded px-3 py-1.5 text-xs ${
-                  mode === 'draw' ? 'bg-accent text-white' : 'bg-bg-elevated text-text-secondary'
-                }`}
-              >
-                Draw
-              </button>
+            <div className="flex gap-1">
+              {(['view', 'draw', 'place'] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => {
+                    setMode(m);
+                    if (m !== 'draw') setDrawingPoints([]);
+                    if (m !== 'place') setSelectedLocation(null);
+                  }}
+                  className={`flex-1 rounded px-3 py-1.5 text-xs ${
+                    mode === m ? 'bg-accent text-white' : 'bg-bg-elevated text-text-secondary'
+                  }`}
+                >
+                  {m === 'view' ? 'View' : m === 'draw' ? 'Draw' : 'Place'}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -367,14 +416,22 @@ export default function MapEditorPage() {
             </h3>
             <div className="space-y-1">
               {regions.length === 0 && <p className="text-xs text-text-secondary">No regions</p>}
-              {regions.map((region) => (
+              {regions.map((region, idx) => {
+                const color = POLY_COLORS[idx % POLY_COLORS.length];
+                return (
                 <div
                   key={region.id}
                   className={`flex items-center justify-between rounded px-2 py-1 hover:bg-bg-elevated/50 ${
                     selectedRegion === region.id ? 'bg-accent/10' : ''
                   }`}
                 >
-                  <span className="text-sm text-text-primary">{region.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: `#${color.toString(16).padStart(6, '0')}` }}
+                    />
+                    <span className="text-sm text-text-primary">{region.name}</span>
+                  </div>
                   <button
                     onClick={() => handleStartDraw(region.id)}
                     className="text-xs text-accent hover:text-accent/80"
@@ -382,7 +439,22 @@ export default function MapEditorPage() {
                     {region.polygon_points ? 'Redraw' : 'Draw'}
                   </button>
                 </div>
-              ))}
+                );
+              })}
+              <button
+                onClick={async () => {
+                  const name = prompt('Region name:');
+                  if (!name || !id) return;
+                  try {
+                    await apiClient.post(`/worlds/${id}/regions`, { name, dangerLevel: 5 });
+                    const res = await apiClient.get(`/worlds/${id}/regions`);
+                    setRegions(res.data ?? []);
+                  } catch { toast.error('Failed to create region'); }
+                }}
+                className="w-full rounded border border-dashed border-bg-elevated py-1 text-xs text-text-secondary hover:text-accent hover:border-accent/50"
+              >
+                + Create Region
+              </button>
             </div>
           </div>
 
@@ -396,21 +468,58 @@ export default function MapEditorPage() {
                 <p className="text-xs text-text-secondary">No locations</p>
               )}
               {locations.map((loc) => (
-                <div key={loc.id} className="rounded px-2 py-1 text-sm text-text-primary">
-                  {loc.name}
-                  {loc.position_json && (
-                    <span className="ml-1 text-xs text-text-secondary">{'\u2713'}</span>
+                <div
+                  key={loc.id}
+                  onClick={() => {
+                    if (mode === 'place') {
+                      setSelectedLocation(loc.id);
+                      toast.info(`Click on map to place "${loc.name}"`);
+                    }
+                  }}
+                  className={`flex items-center justify-between rounded px-2 py-1 text-sm ${
+                    selectedLocation === loc.id
+                      ? 'bg-accent/20 text-accent'
+                      : 'text-text-primary hover:bg-bg-elevated/50'
+                  } ${mode === 'place' ? 'cursor-pointer' : ''}`}
+                >
+                  <span>{loc.name}</span>
+                  {loc.positionJson && (
+                    <span className="text-xs text-text-secondary">{'\u2713'}</span>
                   )}
                 </div>
               ))}
+              <button
+                onClick={() => {
+                  setLocForm({ name: '', type: 'village', regionName: regions[0]?.name ?? '', description: '', population: 0, wealth: 5 });
+                  setShowLocModal('create');
+                }}
+                className="w-full rounded border border-dashed border-bg-elevated py-1 text-xs text-text-secondary hover:text-accent hover:border-accent/50"
+              >
+                + Create Location
+              </button>
             </div>
           </div>
 
           {/* Instructions */}
+          <button
+            onClick={redraw}
+            className="w-full rounded border border-bg-elevated py-1.5 text-xs text-text-secondary hover:text-accent hover:border-accent/50"
+          >
+            Refresh Map ({regions.length}r / {locations.length}l / {backgroundImage ? 'bg' : 'no bg'})
+          </button>
           {mode === 'draw' && (
             <div className="mt-auto rounded bg-accent/10 p-3">
               <p className="text-xs text-text-secondary">
-                Click on the map to add vertices. Right-click to close the polygon.
+                Linksklick = Punkt setzen, Rechtsklick = Polygon schließen
+              </p>
+            </div>
+          )}
+          {mode === 'place' && (
+            <div className="mt-auto rounded bg-accent/10 p-3">
+              <p className="text-xs text-text-secondary">
+                {selectedLocation
+                  ? 'Auf die Karte klicken um den Ort zu platzieren'
+                  : 'Ort in der Liste auswählen, dann auf Karte klicken'}
               </p>
             </div>
           )}
@@ -420,7 +529,7 @@ export default function MapEditorPage() {
         <main className="relative flex-1 overflow-hidden">
           <div className="relative h-full w-full">
             <div ref={containerRef} className="h-full w-full" style={{ minHeight: 400 }} />
-            {mode === 'draw' && (
+            {(mode === 'draw' || mode === 'place') && (
               <div
                 className="absolute inset-0 z-10 cursor-crosshair"
                 onClick={handleCanvasClick}
@@ -430,6 +539,95 @@ export default function MapEditorPage() {
           </div>
         </main>
       </div>
+
+      {/* Create Location Modal */}
+      {showLocModal === 'create' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="w-80 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-heading text-text-primary">Create Location</h3>
+              <button onClick={() => setShowLocModal(null)} className="text-text-secondary hover:text-text-primary"><X size={16} /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">Name</label>
+                <input value={locForm.name} onChange={(e) => setLocForm(f => ({ ...f, name: e.target.value }))}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" />
+              </div>
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">Type</label>
+                <select value={locForm.type} onChange={(e) => setLocForm(f => ({ ...f, type: e.target.value }))}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent">
+                  {LOCATION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">Region</label>
+                <select value={locForm.regionName} onChange={(e) => setLocForm(f => ({ ...f, regionName: e.target.value }))}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent">
+                  {regions.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">Description</label>
+                <textarea value={locForm.description} onChange={(e) => setLocForm(f => ({ ...f, description: e.target.value }))} rows={2}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs text-text-secondary mb-1">Population</label>
+                  <input type="number" min={0} value={locForm.population} onChange={(e) => setLocForm(f => ({ ...f, population: Number(e.target.value) }))}
+                    className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" />
+                </div>
+                <div>
+                  <label className="block text-xs text-text-secondary mb-1">Wealth (1-10)</label>
+                  <input type="number" min={1} max={10} value={locForm.wealth} onChange={(e) => setLocForm(f => ({ ...f, wealth: Number(e.target.value) }))}
+                    className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" />
+                </div>
+              </div>
+              <button onClick={async () => {
+                if (!locForm.name || !locForm.regionName) return;
+                const region = regions.find(r => r.name === locForm.regionName);
+                if (!region) { toast.error('Region not found'); return; }
+                try {
+                  await apiClient.post(`/regions/${region.id}/locations`, {
+                    name: locForm.name, type: locForm.type, description: locForm.description || undefined,
+                    population: locForm.population, wealth: locForm.wealth,
+                  });
+                  const locPromises = regions.map((r) => apiClient.get(`/regions/${r.id}/locations`));
+                  const locResults = await Promise.all(locPromises);
+                  setLocations(locResults.flatMap((r) => r.data ?? []));
+                  setShowLocModal(null);
+                  toast.success('Location created');
+                } catch { toast.error('Failed to create location'); }
+              }}
+                className="w-full rounded bg-accent py-2 text-sm text-white hover:bg-accent/80">
+                Create
+              </button>
+              <button onClick={() => setShowLocModal(null)}
+                className="w-full rounded border border-bg-elevated py-2 text-sm text-text-secondary hover:text-text-primary">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Location Info Modal */}
+      {showLocModal === 'info' && infoLocation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="w-72 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-heading text-text-primary">{infoLocation.name}</h3>
+              <button onClick={() => { setShowLocModal(null); setInfoLocation(null); }} className="text-text-secondary hover:text-text-primary"><X size={16} /></button>
+            </div>
+            <p className="text-xs text-text-secondary mb-2">Type: {infoLocation.type}</p>
+            {infoLocation.description && <p className="text-sm text-text-primary mb-2">{infoLocation.description}</p>}
+            <p className="text-xs text-text-secondary">Population: {infoLocation.population} · Wealth: {infoLocation.wealth}/10</p>
+            {infoLocation.positionJson && <p className="text-xs text-text-secondary mt-1">✓ Placed on map</p>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

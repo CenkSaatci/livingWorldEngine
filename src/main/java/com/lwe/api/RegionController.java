@@ -81,7 +81,7 @@ public class RegionController {
         m.put("resources", r.getResources());
         m.put("factions", r.getFactions());
         m.put("population", r.getPopulation());
-        m.put("polygon_points", r.getPolygonPoints() != null ? r.getPolygonPoints() : "");
+        m.put("polygon_points", r.getPolygonPoints() != null ? r.getPolygonPoints() : null);
         m.put("created_at", r.getCreatedAt().toString());
         return m;
     }

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, X, Check, Dice1 as Dice, ArrowLeft, ArrowRight, Save } from 'lucide-react';
+import { useState, useImperativeHandle, forwardRef } from 'react';
+import { Plus, X, Check, Dice1 as Dice, ArrowLeft, ArrowRight, Save, Trash2 } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useToast } from '../../hooks/useToast';
 
@@ -13,7 +13,7 @@ interface AttributeDef {
 
 interface SkillDef {
   name: string;
-  attribute: string;
+  attributes: string[];
   bonus: number;
 }
 
@@ -23,7 +23,7 @@ interface DiceCombat {
   actionPoints: { standard: number; max: number };
 }
 
-interface WizardData {
+export interface WizardData {
   name: string;
   version: number;
   description: string;
@@ -35,6 +35,12 @@ interface WizardData {
 }
 
 const STEPS = ['Basic', 'Attributes', 'Skills', 'Dice', 'Review'];
+
+const DICE_PRESETS = [
+  { v: '1d2', l: '1d2' }, { v: '1d3', l: '1d3' }, { v: '1d4', l: '1d4' }, { v: '1d6', l: '1d6' },
+  { v: '1d8', l: '1d8' }, { v: '1d10', l: '1d10' }, { v: '1d12', l: '1d12' }, { v: '1d20', l: '1d20' },
+  { v: '1d100', l: '1d100' }, { v: '2d6', l: '2d6' }, { v: '3d6', l: '3d6' }, { v: '4dF', l: '4dF' },
+];
 
 const INITIAL: WizardData = {
   name: '',
@@ -51,16 +57,24 @@ const INITIAL: WizardData = {
   },
 };
 
+export interface SystemWizardHandle {
+  buildRulesJson: () => string;
+}
+
 interface Props {
   onSaved: () => void;
   onClose: () => void;
+  initialData?: WizardData;
+  systemId?: string;
 }
 
-export function SystemWizard({ onSaved, onClose }: Props) {
+export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function SystemWizard({ onSaved, onClose, initialData, systemId }, ref) {
   const [step, setStep] = useState(0);
-  const [data, setData] = useState<WizardData>(INITIAL);
+  const [data, setData] = useState<WizardData>(() => initialData ?? INITIAL);
   const [saving, setSaving] = useState(false);
   const toast = useToast();
+
+  useImperativeHandle(ref, () => ({ buildRulesJson }), [data]);
 
   const update = <K extends keyof WizardData>(key: K, val: WizardData[K]) =>
     setData((prev) => ({ ...prev, [key]: val }));
@@ -86,16 +100,25 @@ export function SystemWizard({ onSaved, onClose }: Props) {
     if (!data.name.trim()) return;
     setSaving(true);
     try {
-      await apiClient.post('/game-systems', {
-        name: data.name.trim(),
-        version: data.version,
-        rulesJson: buildRulesJson(),
-        schemaJson: '{}',
-      });
-      toast.success('System created');
+      if (systemId) {
+        await apiClient.patch(`/game-systems/${systemId}`, {
+          name: data.name.trim(),
+          version: data.version,
+          rulesJson: buildRulesJson(),
+        });
+        toast.success('System updated');
+      } else {
+        await apiClient.post('/game-systems', {
+          name: data.name.trim(),
+          version: data.version,
+          rulesJson: buildRulesJson(),
+          schemaJson: '{}',
+        });
+        toast.success('System created');
+      }
       onSaved();
     } catch {
-      toast.error('Failed to create');
+      toast.error(systemId ? 'Failed to update' : 'Failed to create');
     } finally {
       setSaving(false);
     }
@@ -159,9 +182,9 @@ export function SystemWizard({ onSaved, onClose }: Props) {
 
       {step === 1 && (
         <div className="space-y-4">
-          <h3 className="font-heading text-text-primary">Attributes</h3>
+          <h3 className="font-heading text-text-primary">Attribute</h3>
           <p className="text-xs text-text-secondary">
-            Define the core attributes for your system (e.g., strength, dexterity).
+            Definiere die Kerneigenschaften deines Systems (z.B. <em>Stärke</em>, <em>Geschicklichkeit</em>). Attributnamen werden <strong>klein</strong> geschrieben (z.B. <code>staerke</code>) und später in Würfelausdrücken wie <code>1d20+staerke</code> verwendet.
           </p>
           {data.attributes.map((attr, i) => (
             <div key={i} className="flex items-center gap-2 rounded bg-bg-primary/50 p-2">
@@ -250,12 +273,12 @@ export function SystemWizard({ onSaved, onClose }: Props) {
 
       {step === 2 && (
         <div className="space-y-4">
-          <h3 className="font-heading text-text-primary">Skills</h3>
+          <h3 className="font-heading text-text-primary">Fertigkeiten</h3>
           <p className="text-xs text-text-secondary">
-            Skills are linked to attributes. Each skill uses an attribute for rolls.
+            Fertigkeiten (Skills) werden an Attribute gekoppelt. Wähle <strong>ein oder mehrere</strong> Attribute pro Fertigkeit aus — die Reihenfolge bestimmt die Gewichtung. Mit <em>+ Attribut</em> fügst du weitere hinzu.
           </p>
           {data.skills.map((skill, i) => (
-            <div key={i} className="flex items-center gap-2 rounded bg-bg-primary/50 p-2">
+            <div key={i} className="flex items-start gap-2 rounded bg-bg-primary/50 p-2">
               <input
                 value={skill.name}
                 onChange={(e) => {
@@ -263,52 +286,75 @@ export function SystemWizard({ onSaved, onClose }: Props) {
                   s[i] = { ...s[i], name: e.target.value };
                   update('skills', s);
                 }}
-                className="w-28 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                placeholder="Skill name"
+                className="w-20 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                placeholder="Fertigkeit"
               />
-              <select
-                value={skill.attribute}
-                onChange={(e) => {
-                  const s = [...data.skills];
-                  s[i] = { ...s[i], attribute: e.target.value };
-                  update('skills', s);
-                }}
-                className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-              >
-                <option value="">— Attribute —</option>
-                {data.attributes.map((a) => (
-                  <option key={a.name} value={a.name}>
-                    {a.name}
-                  </option>
+              <div className="flex-1 space-y-1">
+                {skill.attributes.map((attrName, ai) => (
+                  <div key={ai} className="flex items-center gap-1">
+                    <select
+                      value={attrName}
+                      onChange={(e) => {
+                        const s = [...data.skills];
+                        s[i].attributes[ai] = e.target.value;
+                        update('skills', s);
+                      }}
+                      className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    >
+                      <option value="">— Attribut —</option>
+                      {data.attributes.map((a) => (
+                        <option key={a.name} value={a.name}>{a.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => {
+                        const s = [...data.skills];
+                        s[i].attributes = skill.attributes.filter((_, j) => j !== ai);
+                        update('skills', s);
+                      }}
+                      className="text-danger/60 hover:text-danger"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
                 ))}
-              </select>
-              <span className="text-xs text-text-secondary">Bonus</span>
-              <input
-                type="number"
-                value={skill.bonus}
-                onChange={(e) => {
-                  const s = [...data.skills];
-                  s[i] = { ...s[i], bonus: Number(e.target.value) };
-                  update('skills', s);
-                }}
-                className="w-14 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-              />
+                <button
+                  onClick={() => {
+                    const s = [...data.skills];
+                    s[i].attributes = [...skill.attributes, ''];
+                    update('skills', s);
+                  }}
+                  className="text-[11px] text-accent hover:text-accent/80"
+                >
+                  + Attribut
+                </button>
+              </div>
+              <div>
+                <label className="block text-[10px] text-text-secondary mb-1">Bonus</label>
+                <input
+                  type="number"
+                  value={skill.bonus}
+                  onChange={(e) => {
+                    const s = [...data.skills];
+                    s[i] = { ...s[i], bonus: Number(e.target.value) };
+                    update('skills', s);
+                  }}
+                  className="w-14 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                />
+              </div>
               <button
                 onClick={() =>
-                  update(
-                    'skills',
-                    data.skills.filter((_, j) => j !== i),
-                  )
+                  update('skills', data.skills.filter((_, j) => j !== i))
                 }
-                className="text-danger hover:text-danger/80"
+                className="mt-4 text-danger hover:text-danger/80"
               >
-                <X size={14} />
+                <Trash2 size={14} />
               </button>
             </div>
           ))}
           <button
             onClick={() =>
-              update('skills', [...data.skills, { name: '', attribute: '', bonus: 0 }])
+              update('skills', [...data.skills, { name: '', attributes: [], bonus: 0 }])
             }
             className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
           >
@@ -319,7 +365,10 @@ export function SystemWizard({ onSaved, onClose }: Props) {
 
       {step === 3 && (
         <div className="space-y-4">
-          <h3 className="font-heading text-text-primary">Dice Mechanics</h3>
+          <h3 className="font-heading text-text-primary">Würfelmechanik</h3>
+          <div className="rounded bg-bg-primary/30 p-3 text-xs text-text-secondary">
+            <p><strong>Probe (Probe Expression):</strong> Der Würfelausdruck für Fertigkeitsproben, z.B. <code>1d20+mod</code> (1W20 + Modifikator), <code>2d6+mod</code> (2W6), <code>4dF</code> (Fudge-Würfel). <code>mod</code> wird später durch den Fertigkeitswert des Charakters ersetzt. Statt <code>mod</code> kann auch ein Attributsname stehen wie <code>1d20+staerke</code>.</p>
+          </div>
           <div>
             <label className="block text-xs text-text-secondary mb-1">Probe Expression</label>
             <div className="flex gap-2">
@@ -358,61 +407,38 @@ export function SystemWizard({ onSaved, onClose }: Props) {
           </div>
           {data.enableCombat && (
             <div className="space-y-3 pl-4 border-l-2 border-accent/30">
-              <div>
-                <label className="block text-xs text-text-secondary mb-1">Initiative</label>
-                <div className="flex gap-2">
-                  <input
-                    value={data.combat.initiative}
-                    onChange={(e) =>
-                      update('combat', { ...data.combat, initiative: e.target.value })
-                    }
-                    className="flex-1 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm font-mono text-text-primary outline-none focus:border-accent"
-                  />
-                  <button
-                    onClick={async () => {
-                      try {
-                        const r = await apiClient.post('/rolls/free', {
-                          expression: data.combat.initiative,
-                        });
-                        toast.success(`Initiative: ${r.data.total}`);
-                      } catch {
-                        toast.error('Invalid');
-                      }
-                    }}
-                    className="rounded bg-bg-elevated px-3 py-2 text-xs text-text-secondary hover:text-accent"
-                  >
-                    <Dice size={14} />
-                  </button>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs text-text-secondary mb-1">Damage</label>
-                <div className="flex gap-2">
-                  <input
-                    value={data.combat.damage}
-                    onChange={(e) => update('combat', { ...data.combat, damage: e.target.value })}
-                    className="flex-1 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm font-mono text-text-primary outline-none focus:border-accent"
-                  />
-                  <button
-                    onClick={async () => {
-                      try {
-                        const r = await apiClient.post('/rolls/free', {
-                          expression: data.combat.damage,
-                        });
-                        toast.success(`Damage: ${r.data.total}`);
-                      } catch {
-                        toast.error('Invalid');
-                      }
-                    }}
-                    className="rounded bg-bg-elevated px-3 py-2 text-xs text-text-secondary hover:text-accent"
-                  >
-                    <Dice size={14} />
-                  </button>
-                </div>
+              <CombatExpressionRow
+                label="Initiative"
+                value={data.combat.initiative}
+                attributes={data.attributes}
+                diceOptions={DICE_PRESETS}
+                onChange={(v) => update('combat', { ...data.combat, initiative: v })}
+                onRoll={async (expr) => {
+                  try {
+                    const r = await apiClient.post('/rolls/free', { expression: expr });
+                    toast.success(`Initiative: ${r.data.total}`);
+                  } catch { toast.error('Invalid'); }
+                }}
+              />
+              <CombatExpressionRow
+                label="Damage"
+                value={data.combat.damage}
+                attributes={data.attributes}
+                diceOptions={DICE_PRESETS}
+                onChange={(v) => update('combat', { ...data.combat, damage: v })}
+                onRoll={async (expr) => {
+                  try {
+                    const r = await apiClient.post('/rolls/free', { expression: expr });
+                    toast.success(`Damage: ${r.data.total}`);
+                  } catch { toast.error('Invalid'); }
+                }}
+              />
+              <div className="col-span-2 rounded bg-bg-primary/30 p-3 text-xs text-text-secondary mb-2">
+                <strong>AP (Aktionspunkte):</strong> Jede Aktion im Kampf kostet AP. <em>AP Standard</em> = AP pro Runde, <em>AP Max</em> = maximal speicherbare AP (z.B. für Aufsparen). Typisch: 2 Standard / 4 Max.
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-text-secondary mb-1">AP Standard</label>
+                  <label className="block text-xs text-text-secondary mb-1">AP pro Runde</label>
                   <input
                     type="number"
                     min={1}
@@ -430,7 +456,7 @@ export function SystemWizard({ onSaved, onClose }: Props) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-text-secondary mb-1">AP Max</label>
+                  <label className="block text-xs text-text-secondary mb-1">AP Max (Pool)</label>
                   <input
                     type="number"
                     min={1}
@@ -452,24 +478,76 @@ export function SystemWizard({ onSaved, onClose }: Props) {
 
       {step === 4 && (
         <div className="space-y-4">
-          <h3 className="font-heading text-text-primary">Review & Save</h3>
-          <div className="text-sm text-text-primary space-y-1">
-            <p>
-              <span className="text-text-secondary">System:</span> {data.name || 'Unnamed'} v
-              {data.version}
-            </p>
-            <p>
-              <span className="text-text-secondary">Attributes:</span> {data.attributes.length} ·{' '}
-              <span className="text-text-secondary">Skills:</span> {data.skills.length}
-            </p>
-            <p>
-              <span className="text-text-secondary">Dice:</span> {data.probe}
-              {data.enableCombat ? ` · Combat: ${data.combat.initiative}` : ''}
-            </p>
+          <h3 className="font-heading text-text-primary">Übersicht & Speichern</h3>
+
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="rounded bg-bg-primary/50 p-3">
+              <p className="text-[10px] text-text-secondary uppercase tracking-wider">System</p>
+              <p className="text-text-primary font-medium mt-1">{data.name || 'Unnamed'}</p>
+              <p className="text-text-secondary text-xs">Version {data.version}</p>
+              {data.description && (
+                <p className="text-text-secondary text-xs mt-1">{data.description}</p>
+              )}
+            </div>
+            <div className="rounded bg-bg-primary/50 p-3">
+              <p className="text-[10px] text-text-secondary uppercase tracking-wider">Würfel</p>
+              <p className="text-text-primary font-mono mt-1">{data.probe}</p>
+              {data.enableCombat && (
+                <p className="text-text-secondary text-xs mt-1">
+                  Initiative: {data.combat.initiative} · Damage: {data.combat.damage}
+                </p>
+              )}
+            </div>
           </div>
-          <pre className="max-h-48 overflow-y-auto rounded border border-bg-elevated bg-bg-primary p-3 text-xs font-mono text-text-secondary">
-            {buildRulesJson()}
-          </pre>
+
+          <div className="rounded bg-bg-primary/50 p-3">
+            <p className="text-[10px] text-text-secondary uppercase tracking-wider mb-2">
+              Attribute ({data.attributes.length})
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {data.attributes.map((a) => (
+                <span key={a.name} className="rounded bg-bg-elevated px-2 py-0.5 text-xs text-text-primary">
+                  {a.name} ({a.min}–{a.max}, Ø{a.default})
+                </span>
+              ))}
+              {data.attributes.length === 0 && (
+                <span className="text-xs text-text-secondary">Keine Attribute definiert</span>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded bg-bg-primary/50 p-3">
+            <p className="text-[10px] text-text-secondary uppercase tracking-wider mb-2">
+              Fertigkeiten ({data.skills.length})
+            </p>
+            <div className="space-y-1">
+              {data.skills.map((s, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  <span className="text-text-primary w-20 truncate">{s.name}</span>
+                  <span className="text-text-secondary">
+                    {s.attributes.length > 0
+                      ? s.attributes.join(', ')
+                      : '—'}
+                  </span>
+                  {s.bonus !== 0 && (
+                    <span className="text-accent">+{s.bonus}</span>
+                  )}
+                </div>
+              ))}
+              {data.skills.length === 0 && (
+                <span className="text-xs text-text-secondary">Keine Fertigkeiten definiert</span>
+              )}
+            </div>
+          </div>
+
+          <details className="group">
+            <summary className="cursor-pointer text-xs text-text-secondary hover:text-text-primary">
+              Rules JSON anzeigen
+            </summary>
+            <pre className="mt-2 max-h-48 overflow-y-auto rounded border border-bg-elevated bg-bg-primary p-3 text-xs font-mono text-text-secondary">
+              {buildRulesJson()}
+            </pre>
+          </details>
         </div>
       )}
 
@@ -497,6 +575,78 @@ export function SystemWizard({ onSaved, onClose }: Props) {
             <Save size={14} /> {saving ? 'Creating…' : 'Save System'}
           </button>
         )}
+      </div>
+    </div>
+  );
+});
+
+function CombatExpressionRow({
+  label, value, attributes, diceOptions, onChange, onRoll,
+}: {
+  label: string;
+  value: string;
+  attributes: AttributeDef[];
+  diceOptions: { v: string; l: string }[];
+  onChange: (v: string) => void;
+  onRoll: (expr: string) => Promise<void>;
+}) {
+  const diceList = diceOptions.map((d) => d.v);
+  const [selectedDice, setSelectedDice] = useState(() => {
+    const m = value.match(/^(\d+d\d+)/);
+    return m && diceList.includes(m[1]) ? m[1] : '1d20';
+  });
+  const [selectedAttr, setSelectedAttr] = useState(() => {
+    const m = value.match(/\+(\w+)$/);
+    return m && attributes.some((a) => a.name === m[1]) ? m[1] : '';
+  });
+
+  const rebuild = (dice: string, attr: string) => {
+    const expr = attr ? `${dice}+${attr}` : dice;
+    onChange(expr);
+  };
+
+  return (
+    <div>
+      <label className="block text-xs text-text-secondary mb-1">{label}</label>
+      <div className="flex gap-2">
+        <select
+          value={selectedDice}
+          onChange={(e) => {
+            setSelectedDice(e.target.value);
+            rebuild(e.target.value, selectedAttr);
+          }}
+          className="rounded border border-bg-elevated bg-bg-primary px-2 py-2 text-sm text-text-primary outline-none focus:border-accent"
+        >
+          {diceOptions.map((d) => (
+            <option key={d.v} value={d.v}>{d.l}</option>
+          ))}
+        </select>
+        <span className="self-center text-text-secondary text-sm">+</span>
+        <select
+          value={selectedAttr}
+          onChange={(e) => {
+            setSelectedAttr(e.target.value);
+            rebuild(selectedDice, e.target.value);
+          }}
+          className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-2 text-sm text-text-primary outline-none focus:border-accent"
+        >
+          <option value="">— Attribute —</option>
+          {attributes.map((a) => (
+            <option key={a.name} value={a.name}>{a.name}</option>
+          ))}
+        </select>
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-28 rounded border border-bg-elevated bg-bg-primary px-2 py-2 text-sm font-mono text-text-primary outline-none focus:border-accent"
+          placeholder="1d20+mod"
+        />
+        <button
+          onClick={() => onRoll(value)}
+          className="rounded bg-bg-elevated px-3 py-2 text-xs text-text-secondary hover:text-accent"
+        >
+          <Dice size={14} />
+        </button>
       </div>
     </div>
   );

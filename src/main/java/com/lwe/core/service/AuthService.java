@@ -52,9 +52,7 @@ public class AuthService {
         var hash = passwordEncoder.encode(password);
         var user = new User(email, username, hash, "USER", locale != null ? locale : "de");
 
-        var token = HexFormat.of().formatHex(new SecureRandom().generateSeed(32));
-        user.setVerificationToken(token);
-        user.setVerificationTokenExpiresAt(Instant.now().plus(Duration.ofHours(24)));
+        user.setEmailVerifiedAt(Instant.now());
 
         user = userRepo.save(user);
 

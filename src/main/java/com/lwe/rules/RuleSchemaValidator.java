@@ -57,11 +57,16 @@ public class RuleSchemaValidator {
             },
             "skill": {
               "type": "object",
-              "required": ["name", "attribute"],
+              "required": ["name"],
+              "anyOf": [
+                { "required": ["attribute"] },
+                { "required": ["attributes"] }
+              ],
               "properties": {
-                "name":      { "type": "string" },
-                "attribute": { "type": "string", "description": "Referenz auf Attribut #/properties/attributes/items/properties/name" },
-                "bonus":     { "type": "integer", "default": 0 }
+                "name":       { "type": "string" },
+                "attribute":  { "type": "string", "description": "Legacy single attribute reference" },
+                "attributes": { "type": "array", "items": { "type": "string" }, "description": "Multi-attribute reference" },
+                "bonus":      { "type": "integer", "default": 0 }
               }
             },
             "combat": {
@@ -82,8 +87,8 @@ public class RuleSchemaValidator {
             },
             "diceExpression": {
               "type": "string",
-              "pattern": "^[0-9]+d[0-9]+([+-][a-z_0-9]+)([+-][0-9]+)?$",
-              "description": "Ausdr\u00fccke wie '1d20+mod', '2d6+intelligenz', '1d8+st\u00e4rke'"
+              "pattern": "^[0-9]+d[0-9]+([+-][a-z_0-9]+)?$",
+              "description": "Ausdr\u00fccke wie '1d20+mod', '2d6+intelligenz', '1d8+st\u00e4rke', '1d20'"
             }
           }
         }

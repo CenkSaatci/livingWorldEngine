@@ -3,6 +3,12 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:dev}
   application:
     name: lwe-backend
+  cache:
+    type: simple
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:lwe}
     username: ${DB_USER:admin}
@@ -51,7 +57,7 @@ lwe:
   time:
     tick-check-interval-ms: 1000
   rate-limit:
-    default: 100
+    default-max: 1000
     default-window-seconds: 60
     paths:
       - pattern: /api/v1/auth/login
@@ -69,6 +75,15 @@ lwe:
         window-seconds: 60
       - pattern: /api/v1/chat/*
         max: 20
+        window-seconds: 60
+      - pattern: /api/v1/worlds/*/regions
+        max: 2000
+        window-seconds: 60
+      - pattern: /api/v1/npc-intents
+        max: 600
+        window-seconds: 60
+      - pattern: /api/v1/worlds/*/sessions
+        max: 600
         window-seconds: 60
 
 logging:

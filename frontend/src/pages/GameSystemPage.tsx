@@ -7,16 +7,17 @@ import {
   X,
   Loader,
   FileText,
-  Copy,
+  Code,
   Trash2,
   Pencil,
   Download,
   Upload,
+  Copy,
 } from 'lucide-react';
 import { SyntaxHighlightedTextarea } from '../components/ui/SyntaxHighlightedTextarea';
 import { apiClient } from '../api/client';
 import { useToast } from '../hooks/useToast';
-import { SystemWizard } from '../components/game/SystemWizard';
+import { SystemWizard, type SystemWizardHandle, type WizardData } from '../components/game/SystemWizard';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 interface GameSystem {
@@ -27,7 +28,8 @@ interface GameSystem {
 }
 
 interface GameSystemDetail extends GameSystem {
-  rules_json: string;
+  rulesJson: string;
+  active: boolean;
 }
 
 const TEMPLATES: Record<string, string> = {
@@ -130,7 +132,57 @@ export default function GameSystemPage() {
   const [validating, setValidating] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [editorMode, setEditorMode] = useState<'wizard' | 'json'>('wizard');
+  const [wizardData, setWizardData] = useState<WizardData | null>(null);
+  const wizardRef = useRef<SystemWizardHandle | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const parseRulesToWizard = (json: string): WizardData | null => {
+    try {
+      const parsed = JSON.parse(json);
+      const attrs: WizardData['attributes'] = (parsed.attributes ?? []).map(
+        (a: Record<string, unknown>) => ({
+          name: (a.name as string) ?? '',
+          type: (['INT', 'STRING', 'BOOL'].includes(a.type as string) ? a.type : 'INT') as 'INT' | 'STRING' | 'BOOL',
+          min: (a.min as number) ?? 1,
+          max: (a.max as number) ?? 20,
+          default: (a.default as number) ?? 10,
+        })
+      );
+      const skills: WizardData['skills'] = (parsed.skills ?? []).map(
+        (s: Record<string, unknown>) => ({
+          name: (s.name as string) ?? '',
+          attributes: (s.attributes as string[]) ?? ((s.attribute as string) ? [s.attribute as string] : []),
+          bonus: (s.bonus as number) ?? 0,
+        })
+      );
+      const dice = parsed.dice_mechanics ?? {};
+      const combat = dice.combat ?? {};
+      return {
+        name: parsed.name ?? '',
+        version: parsed.version ?? 1,
+        description: parsed.description ?? '',
+        attributes: attrs,
+        skills,
+        probe: dice.probe ?? '1d20+mod',
+        enableCombat: !!dice.combat,
+        combat: {
+          initiative: combat.initiative ?? '1d20+geschick',
+          damage: combat.damage ?? '1d8+staerke',
+          actionPoints: {
+            standard: combat.action_points?.standard ?? 1,
+            max: combat.action_points?.max ?? 2,
+          },
+        },
+      };
+    } catch { return null; }
+  };
+
+  const switchToJson = () => {
+    if (wizardRef.current) {
+      setRulesJson(wizardRef.current.buildRulesJson());
+    }
+    setEditorMode('json');
+  };
 
   const handleClone = async (id: string) => {
     try {
@@ -166,7 +218,7 @@ export default function GameSystemPage() {
       await apiClient.post('/game-systems', {
         name: data.name ?? 'Imported System',
         version: data.version ?? 1,
-        rulesJson: data.rules_json ?? '{}',
+        rulesJson: data.rulesJson ?? data.rules_json ?? '{}',
         schemaJson: '{}',
       });
       toast.success('System imported');
@@ -253,8 +305,15 @@ export default function GameSystemPage() {
       setEditingId(detail.id);
       setName(detail.name);
       setVersion(detail.version);
-      setRulesJson(detail.rules_json);
+      setRulesJson(detail.rulesJson ?? '');
+      const parsed = parseRulesToWizard(detail.rulesJson);
+      if (parsed) {
+        parsed.name = detail.name;
+        parsed.version = detail.version;
+      }
+      setWizardData(parsed);
       setValidation(null);
+      setEditorMode('wizard');
       setShowEditor(true);
     } catch {
       toast.error('Failed to load game system details');
@@ -277,6 +336,7 @@ export default function GameSystemPage() {
     setEditingId(null);
     setName('');
     setRulesJson('');
+    setWizardData(null);
     setValidation(null);
   };
 
@@ -301,6 +361,7 @@ export default function GameSystemPage() {
             setEditingId(null);
             setName('');
             setVersion(1);
+            setWizardData(null);
           }}
           className="flex items-center gap-1 rounded bg-accent px-3 py-1.5 text-xs text-white hover:bg-accent/80"
         >
@@ -392,22 +453,28 @@ export default function GameSystemPage() {
                     Wizard
                   </button>
                   <button
-                    onClick={() => setEditorMode('json')}
+                    onClick={switchToJson}
                     className={`rounded px-3 py-1 text-xs ${editorMode === 'json' ? 'bg-accent text-white' : 'text-text-secondary hover:text-text-primary'}`}
                   >
+                    <Code size={12} className="inline mr-1" />
                     JSON
                   </button>
                 </div>
               )}
             </div>
 
-            {editorMode === 'wizard' && !editingId ? (
+            {editorMode === 'wizard' ? (
               <SystemWizard
+                ref={wizardRef}
+                initialData={wizardData as WizardData | undefined}
+                systemId={editingId ?? undefined}
                 onSaved={() => {
                   setShowEditor(false);
+                  setEditingId(null);
+                  setWizardData(null);
                   fetchSystems();
                 }}
-                onClose={() => setShowEditor(false)}
+                onClose={() => { setShowEditor(false); setEditingId(null); setWizardData(null); }}
               />
             ) : (
               <>
@@ -516,7 +583,7 @@ export default function GameSystemPage() {
                   </button>
                   <button
                     onClick={handleSave}
-                    disabled={!name.trim() || !rulesJson.trim()}
+                    disabled={!name?.trim() || !rulesJson?.trim()}
                     className="rounded bg-accent px-4 py-2 text-xs text-white hover:bg-accent/80 disabled:opacity-40"
                   >
                     {editingId ? 'Update System' : 'Save System'}

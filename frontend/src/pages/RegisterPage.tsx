@@ -6,6 +6,19 @@ import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import { AuthForm } from '../components/auth/AuthForm';
 
+interface FieldIssue {
+  field: string;
+  issue: string;
+}
+
+interface ApiErrorBody {
+  error?: {
+    code?: string;
+    message?: string;
+    details?: FieldIssue[];
+  };
+}
+
 export default function RegisterPage() {
   const { t } = useTranslation('auth');
   const navigate = useNavigate();
@@ -34,12 +47,19 @@ export default function RegisterPage() {
       });
       navigate('/welcome');
     } catch (err: unknown) {
-      const axiosErr = err as AxiosError<{ error?: { code?: string } }>;
-      const code = axiosErr.response?.data?.error?.code;
-      if (code === 'AUTH_EMAIL_TAKEN' || code === 'AUTH_USERNAME_TAKEN') {
-        setError(t('register.error_generic') + ' (' + code + ')');
+      const axiosErr = err as AxiosError<ApiErrorBody>;
+      const body = axiosErr.response?.data;
+      const errorObj = body?.error;
+      const code = errorObj?.code;
+
+      if (errorObj?.details && errorObj.details.length > 0) {
+        setError(errorObj.details.map((d) => `${d.field}: ${d.issue}`).join(', '));
+      } else if (code === 'AUTH_EMAIL_TAKEN' || code === 'AUTH_USERNAME_TAKEN') {
+        setError(errorObj?.message ?? t('register.error_generic'));
+      } else if (axiosErr.response?.status === 403) {
+        setError('Server connection issue – please check API URL');
       } else {
-        setError(t('register.error_generic'));
+        setError(errorObj?.message ?? t('register.error_generic'));
       }
     }
   };

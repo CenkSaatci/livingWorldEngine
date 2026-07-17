@@ -1,6 +1,8 @@
 package com.lwe.core.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -39,6 +41,7 @@ public class SubscriptionPlan {
     @Column(name = "ai_mode_allowed", nullable = false)
     private boolean aiModeAllowed;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "features_json", nullable = false)
     private String featuresJson = "{}";
 

@@ -3,6 +3,8 @@ package com.lwe.config;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 @Order(1)
 public class RateLimitingFilter implements Filter {
+
+    private static final Logger log = LoggerFactory.getLogger(RateLimitingFilter.class);
 
     private final RateLimitProperties properties;
     private final Map<String, MutableWindow> attempts = new ConcurrentHashMap<>();
@@ -43,6 +47,8 @@ public class RateLimitingFilter implements Filter {
             w.count++;
             return w;
         });
+
+        log.debug("RATE: {} {} key={} count={} max={}", method, path, key, window.count, limit.max);
 
         if (window.count > limit.max) {
             var httpRes = (HttpServletResponse) response;

@@ -13,6 +13,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -57,6 +58,19 @@ public class LocationController {
                                         @AuthenticationPrincipal User user) {
         service.delete(locationId, user.getId());
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{locationId}")
+    public ResponseEntity<LocationResponse> updatePosition(@PathVariable UUID regionId,
+                                                            @PathVariable UUID locationId,
+                                                            @RequestBody Map<String, String> body,
+                                                            @AuthenticationPrincipal User user) {
+        var positionJson = body.get("positionJson");
+        if (positionJson != null) {
+            service.updatePosition(locationId, user.getId(), positionJson);
+        }
+        var loc = service.getById(locationId, user.getId());
+        return ResponseEntity.ok(LocationResponse.from(loc));
     }
 
     public record CreateRequest(
