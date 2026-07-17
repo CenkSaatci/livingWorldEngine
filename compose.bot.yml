@@ -1,0 +1,52 @@
+# Podman-Compose für den lokalen AI-Bot.
+# Der Bot läuft bei dir ZUHAUSE und verbindet sich OUTBOUND mit dem LWE-Server.
+# Der GDX Spark (vLLM) läuft ebenfalls lokal unter "gdx-spark".
+#
+# Starten: podman-compose -f compose.bot.yml up -d
+# Logs:    podman-compose -f compose.bot.yml logs -f
+
+services:
+  ai-bot:
+    build:
+      context: ./ai-bot
+      dockerfile: Containerfile
+    container_name: lwe-ai-bot
+    restart: unless-stopped
+    depends_on:
+      - gdx-spark
+    environment:
+      # Verbindung zum LWE-Server (deine Cloud-Instanz)
+      - LWE_API_URL=https://dein-server.com/api/v1
+      - LWE_API_KEY=${LWE_API_KEY:?Set LWE_API_KEY}
+      # Lokaler vLLM/GDX Spark
+      - AI_BOT_LLM_TYPE=vllm
+      - AI_BOT_LLM_URL=http://gdx-spark:8000
+      - AI_BOT_LLM_MODEL=${AI_BOT_LLM_MODEL:-gemma-2b}
+      # Poll-Intervall
+      - AI_BOT_POLL_INTERVAL_S=5
+    networks:
+      - lwe-bot-net
+
+  gdx-spark:
+    image: docker.io/vllm/vllm-openai:latest
+    container_name: lwe-gdx-spark
+    restart: unless-stopped
+    command: >
+      --model ${AI_BOT_LLM_MODEL:-gemma-2b}
+      --port 8000
+      --host 0.0.0.0
+      --max-model-len 4096
+      --gpu-memory-utilization 0.9
+    ports:
+      - "8000:8000"
+    volumes:
+      - gdx-models:/root/.cache/huggingface
+    networks:
+      - lwe-bot-net
+
+volumes:
+  gdx-models:
+
+networks:
+  lwe-bot-net:
+    driver: bridge
