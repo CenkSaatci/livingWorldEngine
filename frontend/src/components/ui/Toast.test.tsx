@@ -15,7 +15,7 @@ describe('ToastContainer', () => {
 
   it('renders toast messages', () => {
     useToastStore.setState({
-      toasts: [{ id: '1', message: 'Hello', type: 'info' as const }],
+      toasts: [{ id: '1', message: 'Hello', type: 'info' as const, timeout: 3000 }],
     });
     render(<ToastContainer />);
     expect(screen.getByText('Hello')).toBeInTheDocument();
@@ -24,8 +24,8 @@ describe('ToastContainer', () => {
   it('renders multiple toasts', () => {
     useToastStore.setState({
       toasts: [
-        { id: '1', message: 'First', type: 'info' as const },
-        { id: '2', message: 'Second', type: 'error' as const },
+        { id: '1', message: 'First', type: 'info' as const, timeout: 3000 },
+        { id: '2', message: 'Second', type: 'error' as const, timeout: 5000 },
       ],
     });
     render(<ToastContainer />);
