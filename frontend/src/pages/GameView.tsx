@@ -16,6 +16,7 @@ import { WorldMapView } from '../components/world/WorldMapView';
 import { QuestLog } from '../components/world/QuestLog';
 import { RightPanel } from '../components/world/RightPanel';
 import { DmQueuePanel } from '../components/dm/DmQueuePanel';
+import { LiveAdventurePanel } from '../components/dm/LiveAdventurePanel';
 import { StatusBar } from '../components/ui/StatusBar';
 import { SessionManager } from '../components/session/SessionManager';
 import { EntityCreateModal } from '../components/world/EntityCreateModal';
@@ -145,6 +146,11 @@ export default function GameView() {
             {/* DM-Queue */}
             <div className="border-t border-bg-elevated p-2">
               <DmQueuePanel worldId={worldId} />
+            </div>
+
+            {/* Live Adventures (DM Override) */}
+            <div className="border-t border-bg-elevated p-2">
+              <LiveAdventurePanel worldId={worldId} />
             </div>
 
             {/* Entity-Übersicht Link */}
