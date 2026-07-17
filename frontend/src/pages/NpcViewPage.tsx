@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Briefcase, Heart, HeartOff, Swords, Handshake, Minus } from 'lucide-react';
@@ -6,6 +7,8 @@ import { useApiGet } from '../hooks/useApiGet';
 import { useLazyApiGet } from '../hooks/useLazyApiGet';
 import { EntityTimeline } from '../components/world/EntityTimeline';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { useToast } from '../hooks/useToast';
+import { useAuthStore } from '../store/authStore';
 
 interface FactionSummary {
   id: string;
@@ -56,6 +59,9 @@ export default function NpcViewPage() {
   const { id, npcId } = useParams<{ id: string; npcId: string }>();
   const navigate = useNavigate();
   const worldId = id ?? '';
+  const toast = useToast();
+  const user = useAuthStore((s) => s.user);
+  const isDm = user?.role === 'ADMIN';
 
   const { data: npc, loading, refetch } = useApiGet<NpcData>(`/entities/${npcId}`, [npcId]);
   const { data: faction } = useApiGet<FactionData>(
@@ -66,6 +72,8 @@ export default function NpcViewPage() {
 
   const [editing, setEditing] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [xpAmount, setXpAmount] = useState(50);
+  const [granting, setGranting] = useState(false);
   const [editName, setEditName] = useState('');
   const [editAge, setEditAge] = useState<number | undefined>(undefined);
   const [editExperienceLevel, setEditExperienceLevel] = useState('');
@@ -80,10 +88,20 @@ export default function NpcViewPage() {
 
   const [factions, setFactions] = useState<FactionSummary[]>([]);
   const [factionLocations, setFactionLocations] = useState<LocationSummary[]>([]);
+  const [npcAdventures, setNpcAdventures] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     if (faction?.id) fetchRelations(`/factions/${faction.id}/relations`);
   }, [faction?.id, fetchRelations]);
+
+  useEffect(() => {
+    if (npc) {
+      apiClient
+        .get(`/adventures/by-giver/${npc.id}`)
+        .then((r) => setNpcAdventures(r.data as any))
+        .catch(() => {});
+    }
+  }, [npc]);
 
   useEffect(() => {
     if (!worldId || !editing) return;
@@ -187,6 +205,20 @@ export default function NpcViewPage() {
     }
   };
 
+  const handleGrantXp = async () => {
+    if (!npc) return;
+    setGranting(true);
+    try {
+      await apiClient.post(`/entities/${npc.id}/xp`, { amount: xpAmount });
+      toast.success(`${xpAmount} XP granted`);
+      refetch();
+    } catch {
+      toast.error('Failed to grant XP');
+    } finally {
+      setGranting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-bg-primary">
       <header className="flex items-center gap-3 border-b border-bg-elevated bg-bg-surface px-6 py-3">
@@ -202,6 +234,24 @@ export default function NpcViewPage() {
         <button onClick={openEdit} className="text-xs text-accent hover:text-accent/60 ml-auto">
           Edit
         </button>
+        {isDm && (
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              min={1}
+              value={xpAmount}
+              onChange={(e) => setXpAmount(Number(e.target.value))}
+              className="w-14 rounded border border-bg-elevated bg-bg-primary px-1.5 py-1 text-xs text-text-primary outline-none focus:border-accent"
+            />
+            <button
+              onClick={handleGrantXp}
+              disabled={granting}
+              className="text-xs text-warning hover:text-warning/60 disabled:opacity-40"
+            >
+              +XP
+            </button>
+          </div>
+        )}
         <button
           onClick={() => setShowDelete(true)}
           className="text-xs text-danger hover:text-danger/60"
@@ -337,6 +387,26 @@ export default function NpcViewPage() {
                     <span className="text-text-primary">{id.slice(0, 12)}…</span>
                     <span className="text-text-secondary">{rel}</span>
                   </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* NPC Adventures */}
+          {npcAdventures.length > 0 && (
+            <section className="rounded-lg border border-accent/20 bg-accent/5 p-5">
+              <h3 className="mb-3 flex items-center gap-2 font-heading text-text-primary">
+                <span>🗺️</span> Adventures
+              </h3>
+              <div className="space-y-2">
+                {npcAdventures.map((adv) => (
+                  <button
+                    key={adv.id}
+                    onClick={() => navigate(`/worlds/${worldId}/adventures/${adv.id}`)}
+                    className="w-full rounded border border-accent/20 bg-bg-surface px-4 py-2 text-left text-sm text-text-primary hover:border-accent"
+                  >
+                    {adv.name}
+                  </button>
                 ))}
               </div>
             </section>

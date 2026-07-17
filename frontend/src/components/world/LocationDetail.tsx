@@ -1,10 +1,12 @@
-import { useEffect, useRef } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Users, ScrollText, Coins, ShoppingCart, Briefcase } from 'lucide-react';
+import { MapPin, Users, ScrollText, Coins, ShoppingCart, Briefcase, Swords } from 'lucide-react';
 import { useApiGet } from '../../hooks/useApiGet';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { PriceTag } from '../ui/PriceTag';
+import { apiClient } from '../../api/client';
 
 export interface LocationData {
   id: string;
@@ -64,10 +66,22 @@ export function LocationDetail({ locationId, worldId, onSelectNpc, onLocationLoa
   );
   const { data: market } = useApiGet<MarketItem[]>(`/locations/${locationId}/market`, [locationId]);
 
+  const [adventures, setAdventures] = useState<{ id: string; name: string; description: string }[]>(
+    [],
+  );
+
   const onLocationLoadRef = useRef(onLocationLoad);
   onLocationLoadRef.current = onLocationLoad;
   useEffect(() => {
     if (loc && onLocationLoadRef.current) onLocationLoadRef.current(loc);
+  }, [loc]);
+
+  useEffect(() => {
+    if (!loc) return;
+    apiClient
+      .get(`/adventures/by-location/${loc.id}`)
+      .then((r: any) => setAdventures(r.data as any[]))
+      .catch(() => {});
   }, [loc]);
 
   if (locLoading || npcsLoading) {
@@ -133,6 +147,31 @@ export function LocationDetail({ locationId, worldId, onSelectNpc, onLocationLoa
             <ScrollText size={16} /> {t('locationDetail.history')}
           </h3>
           <p className="text-sm text-text-secondary">{loc.history}</p>
+        </div>
+      )}
+
+      {/* Adventures at this location */}
+      {adventures.length > 0 && (
+        <div className="rounded-lg border border-accent/20 bg-accent/5 p-4">
+          <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-text-primary">
+            <Swords size={16} className="text-warning" /> Available Adventures
+          </h3>
+          <div className="space-y-2">
+            {adventures.map((adv) => (
+              <button
+                key={adv.id}
+                onClick={() => navigate(`/worlds/${worldId}/adventures/${adv.id}`)}
+                className="w-full rounded border border-accent/20 bg-bg-surface px-4 py-3 text-left transition hover:border-accent hover:bg-accent/5"
+              >
+                <div className="text-sm font-medium text-text-primary">{adv.name}</div>
+                {adv.description && (
+                  <div className="mt-0.5 text-xs text-text-secondary line-clamp-2">
+                    {adv.description}
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
