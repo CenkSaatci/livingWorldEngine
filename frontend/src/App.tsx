@@ -19,6 +19,7 @@ import RegionViewPage from './pages/RegionViewPage';
 import LocationViewPage from './pages/LocationViewPage';
 import GameSystemPage from './pages/GameSystemPage';
 import MapEditorPage from './pages/MapEditorPage';
+import AdventureEditorPage from './pages/AdventureEditorPage';
 import EntityListPage from './pages/EntityListPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import WelcomePage from './pages/WelcomePage';
@@ -108,6 +109,10 @@ export default function App() {
           <Route
             path="/worlds/:id/map"
             element={isAuthenticated ? <MapEditorPage /> : <Navigate to="/login" replace />}
+          />
+          <Route
+            path="/worlds/:id/adventures"
+            element={isAuthenticated ? <AdventureEditorPage /> : <Navigate to="/login" replace />}
           />
           <Route
             path="/worlds/:id/entities"
