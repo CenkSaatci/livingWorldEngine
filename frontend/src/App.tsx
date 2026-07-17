@@ -20,6 +20,7 @@ import LocationViewPage from './pages/LocationViewPage';
 import GameSystemPage from './pages/GameSystemPage';
 import MapEditorPage from './pages/MapEditorPage';
 import AdventureEditorPage from './pages/AdventureEditorPage';
+import AdventurePlayPage from './pages/AdventurePlayPage';
 import EntityListPage from './pages/EntityListPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import WelcomePage from './pages/WelcomePage';
@@ -113,6 +114,10 @@ export default function App() {
           <Route
             path="/worlds/:id/adventures"
             element={isAuthenticated ? <AdventureEditorPage /> : <Navigate to="/login" replace />}
+          />
+          <Route
+            path="/worlds/:worldId/adventures/:adventureId"
+            element={isAuthenticated ? <AdventurePlayPage /> : <Navigate to="/login" replace />}
           />
           <Route
             path="/worlds/:id/entities"
