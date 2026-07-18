@@ -33,32 +33,27 @@ export function MapCanvas({ cols = 20, rows = 15, tileSize = 48, worldId = '', m
 
   // Fetch map data
   useEffect(() => {
-    console.log('MapCanvas: worldId=', worldId, 'mapId=', mapId);
     if (!worldId) return;
     let cancelled = false;
-    const id = mapId;
-    if (id) {
-      apiClient.get(`/maps/${id}`)
-        .then((r) => { if (!cancelled) setBgUrl((r.data as MapData).imageUrl); })
-        .catch(() => {});
-    } else {
-      apiClient.get(`/worlds/${worldId}/map`)
-        .then((r) => { if (!cancelled) setBgUrl((r.data as MapData).imageUrl); })
-        .catch((e) => console.error('MapCanvas fetch error:', e));
-    }
+    const doFetch = async () => {
+      try {
+        const url = mapId ? `/maps/${mapId}` : `/worlds/${worldId}/map`;
+        const r = await apiClient.get(url);
+        if (!cancelled) setBgUrl((r.data as MapData).imageUrl);
+      } catch (e) {
+        console.error('MapCanvas fetch error:', e);
+      }
+    };
+    doFetch();
     return () => { cancelled = true; };
   }, [worldId, mapId]);
 
   // Draw background image
   useEffect(() => {
     const app = getApp();
-    console.log('MapCanvas: draw bg effect, app=', !!app, 'bgUrl=', bgUrl);
     if (!app || !bgUrl) return;
     const fullUrl = BACKEND_ORIGIN + bgUrl;
-    console.log('MapCanvas: loading texture from', fullUrl);
-    const texture = PIXI.Texture.from(fullUrl);
-    console.log('MapCanvas: texture created, size=', texture.width, 'x', texture.height);
-    const sprite = new PIXI.Sprite(texture);
+    const sprite = PIXI.Sprite.from(fullUrl);
     app.stage.addChildAt(sprite, 0);
     bgSpriteRef.current = sprite;
     return () => {
@@ -81,11 +76,24 @@ export function MapCanvas({ cols = 20, rows = 15, tileSize = 48, worldId = '', m
     drawGrid(grid, cols, rows, tileSize);
     app.stage.addChild(grid);
 
+    // Debug: red square to verify rendering works
+    const debug = new PIXI.Graphics();
+    debug.beginFill(0xff0000);
+    debug.drawRect(50, 50, 200, 200);
+    debug.endFill();
+    app.stage.addChild(debug);
+
+    console.log('MapCanvas: grid added, canvas size=', app.renderer.width, 'x', app.renderer.height);
+
     const tokens = new PIXI.Container();
     app.stage.addChild(tokens);
     tokenLayerRef.current = tokens;
 
     gridDrawn.current = true;
+
+    return () => {
+      gridDrawn.current = false;
+    };
   }, [getApp, cols, rows, tileSize]);
 
   useTokenLayer(tokenLayerRef.current, worldId);
