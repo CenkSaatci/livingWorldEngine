@@ -3,6 +3,9 @@ import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api/v1';
 const REFRESH_URL = `${API_BASE_URL}/auth/refresh`;
 
+/** Backend-Origin für absolute URLs (Bilder, Uploads) — ohne /api/v1 */
+export const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
+
 /**
  * Axios-Client für LWE-Backend.
  *

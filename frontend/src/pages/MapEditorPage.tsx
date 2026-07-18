@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import * as PIXI from 'pixi.js';
 import { usePixiApp } from '../components/map/usePixiApp';
 import { drawGrid } from '../components/map/Grid';
-import { apiClient } from '../api/client';
+import { apiClient, BACKEND_ORIGIN } from '../api/client';
 import { useToast } from '../hooks/useToast';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
@@ -76,7 +76,7 @@ export default function MapEditorPage() {
         setRegions(regions);
         if (mapRes.data?.imageUrl) {
           setBackgroundImage(
-            (import.meta.env.VITE_API_URL ?? 'http://localhost:8080') + mapRes.data.imageUrl,
+           BACKEND_ORIGIN + mapRes.data.imageUrl,
           );
         }
         const locPromises = regions.map((r: Region) => apiClient.get(`/regions/${r.id}/locations`));
@@ -325,7 +325,7 @@ export default function MapEditorPage() {
     try {
       const res = await apiClient.post(`/worlds/${id}/map/upload`, formData);
       setBackgroundImage(
-        (import.meta.env.VITE_API_URL ?? 'http://localhost:8080') + res.data.imageUrl,
+      BACKEND_ORIGIN + res.data.imageUrl,
       );
     } catch (err) {
       console.error('Upload failed:', err);
