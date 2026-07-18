@@ -1087,6 +1087,42 @@
 
 ---
 
+## Phase 15: System-Wizard & Map-Editor UX
+
+Ziel: Den System-Wizard und Map-Editor produktiv und benutzerfreundlich machen.
+
+### P15-T01: Map-Editor Layout fix
+- **Status:** 📋
+- **Aufwand:** 1,0 Tag
+- **Beschreibung:** RightPanel wird durch Karte weggedrückt. Layout so umbauen, dass Map + RightPanel nebeneinander passen und overflow korrekt funktioniert.
+
+### P15-T02: Map lädt Kartenbild im GameView
+- **Status:** 📋
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** MapCanvas im GameView-Kontext lädt `/worlds/{worldId}/map` nicht. PixiJS zeigt nur schwarzen Hintergrund.
+
+### P15-T03: Formel-Editor für Würfelausdrücke
+- **Status:** 📋
+- **Aufwand:** 2,0 Tage
+- **Beschreibung:** Konditionale Boni („wenn Attribut > X dann +Y"). Für DSA, Splittermond etc.
+
+### P15-T04: Regeneration im System-Wizard
+- **Status:** 📋
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** HP/AP-Regeneration als eigener Step im Wizard.
+
+### P15-T05: i18n für Wizard & Editor
+- **Status:** 📋
+- **Aufwand:** 1,0 Tag
+- **Beschreibung:** SystemWizard, MapEditor, WorldSettings übersetzbar (DE/EN).
+
+### P15-T06: Diverse UX-Fixes
+- **Status:** 📋
+- **Aufwand:** 1,0 Tag
+- **Beschreibung:** 1d2-1d100 Dropdown, Region-Farben speicherbar, Location verschiebbar, mehrere Schadensattribute.
+
+---
+
 ## Statistik
 
 | Phase | Tasks | Sum Aufwand |
