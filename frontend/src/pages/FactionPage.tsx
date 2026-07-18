@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Swords, Handshake, Minus, Check, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { apiClient } from '../api/client';
 import { useFactionStore, type Faction, type FactionRelation } from '../store/factionStore';
 import { useApiGet } from '../hooks/useApiGet';
@@ -24,6 +25,7 @@ function nextStatus(current: string): string {
 }
 
 export default function FactionPage() {
+  const { t } = useTranslation('common');
   const { worldId } = useParams<{ worldId: string }>();
   const navigate = useNavigate();
   const [showCreate, setShowCreate] = useState(false);
@@ -280,7 +282,7 @@ export default function FactionPage() {
                   )}
 
                   <p className="mb-2 text-xs font-semibold text-text-secondary uppercase tracking-wide">
-                    Diplomatie
+                    {t('diplomacy')}
                   </p>
 
                   {factions

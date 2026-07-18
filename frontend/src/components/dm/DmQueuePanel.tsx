@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Check, X, Bot } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../api/client';
-import { useToast } from '../../hooks/useToast';
 
 interface NpcIntent {
   id: string;
@@ -18,7 +18,7 @@ interface Props {
 }
 
 export function DmQueuePanel({ worldId }: Props) {
-  const toast = useToast();
+  const { t } = useTranslation('dm');
   const [intents, setIntents] = useState<NpcIntent[]>([]);
 
   const fetchIntents = useCallback(async () => {
@@ -43,7 +43,7 @@ export function DmQueuePanel({ worldId }: Props) {
       await apiClient.post(`/npc-intents/${id}/${action}`);
       setIntents((prev) => prev.filter((i) => i.id !== id));
     } catch {
-      toast.error('Failed to approve/reject intent');
+      /* ignore */
     }
   };
 
@@ -52,7 +52,7 @@ export function DmQueuePanel({ worldId }: Props) {
   return (
     <div className="rounded-lg border border-accent/20 bg-accent/5 p-3">
       <h3 className="flex items-center gap-1.5 text-xs font-semibold text-accent uppercase tracking-wide mb-2">
-        <Bot size={14} /> KI-Intents ({intents.length})
+        <Bot size={14} /> {t('queue.title')} ({intents.length})
       </h3>
 
       <div className="space-y-2">

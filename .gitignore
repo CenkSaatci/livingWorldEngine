@@ -77,3 +77,4 @@ out/
 # ============================================================
 compose.override.yml
 docker-compose.override.ymlscripts/
+uploads/

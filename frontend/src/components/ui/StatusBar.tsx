@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Play, Eye, SkipForward } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useWorldStore } from '../../store/worldStore';
 import { useSessionStore } from '../../store/sessionStore';
 import { useCombatStore } from '../../store/combatStore';
@@ -32,6 +33,7 @@ function dayPhase(iso: string | null): string {
 }
 
 export function StatusBar() {
+  const { t } = useTranslation('common');
   const world = useWorldStore((s) => s.currentWorld);
   const activeSession = useSessionStore((s) => s.activeSession);
   const combatSession = useCombatStore((s) => s.session);
@@ -81,9 +83,9 @@ export function StatusBar() {
         {/* Session */}
         <span className="flex items-center gap-1" aria-live="polite">
           {activeSession ? (
-            <span className="text-success">● Session aktiv</span>
+            <span className="text-success">● {t('session_active')}</span>
           ) : (
-            <span>○ Keine Session</span>
+            <span>○ {t('no_session')}</span>
           )}
         </span>
 

@@ -85,7 +85,8 @@
     "personality": "Personality",
     "knowledge": "Knowledge (tags)",
     "goals": "Goals",
-    "backstory": "Backstory"
+    "backstory": "Backstory",
+    "backstory_placeholder": "e.g. orphaned by goblin raid…"
   },
   "faction": {
     "create": "Create Faction",
@@ -153,5 +154,9 @@
     "create": "Create",
     "done": "✓ Done!",
     "start": "Start Exploring →"
-  }
+  },
+  "session_active": "Session active",
+  "no_session": "No session",
+  "diplomacy": "Diplomacy",
+  "close": "Close"
 }

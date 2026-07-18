@@ -10,5 +10,10 @@
   "token": {
     "drag": "Token ziehen",
     "select": "Token auswählen"
+  },
+  "editor": {
+    "draw_help": "Linksklick = Punkt setzen, Rechtsklick = Polygon schließen",
+    "place_help_selected": "Auf die Karte klicken um den Ort zu platzieren",
+    "place_help_empty": "Ort in der Liste auswählen, dann auf Karte klicken"
   }
 }

@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Upload, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as PIXI from 'pixi.js';
 import { usePixiApp } from '../components/map/usePixiApp';
 import { drawGrid } from '../components/map/Grid';
@@ -34,6 +35,7 @@ interface Location {
 }
 
 export default function MapEditorPage() {
+  const { t } = useTranslation('map');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const toast = useToast();
@@ -510,7 +512,7 @@ export default function MapEditorPage() {
           {mode === 'draw' && (
             <div className="mt-auto rounded bg-accent/10 p-3">
               <p className="text-xs text-text-secondary">
-                Linksklick = Punkt setzen, Rechtsklick = Polygon schließen
+                {t('editor.draw_help')}
               </p>
             </div>
           )}
@@ -518,8 +520,8 @@ export default function MapEditorPage() {
             <div className="mt-auto rounded bg-accent/10 p-3">
               <p className="text-xs text-text-secondary">
                 {selectedLocation
-                  ? 'Auf die Karte klicken um den Ort zu platzieren'
-                  : 'Ort in der Liste auswählen, dann auf Karte klicken'}
+                  ? t('editor.place_help_selected')
+                  : t('editor.place_help_empty')}
               </p>
             </div>
           )}

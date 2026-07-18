@@ -85,7 +85,8 @@
     "personality": "Persönlichkeit",
     "knowledge": "Wissen (Tags)",
     "goals": "Ziele",
-    "backstory": "Hintergrund"
+    "backstory": "Hintergrund",
+    "backstory_placeholder": "z.B. Verlor Eltern bei Goblin-Überfall…"
   },
   "faction": {
     "create": "Fraktion erstellen",
@@ -153,5 +154,9 @@
     "create": "Erstellen",
     "done": "✓ Erledigt!",
     "start": "Los geht's →"
-  }
+  },
+  "session_active": "Session aktiv",
+  "no_session": "Keine Session",
+  "diplomacy": "Diplomatie",
+  "close": "Schließen"
 }

@@ -10,5 +10,10 @@
   "token": {
     "drag": "Drag token",
     "select": "Select token"
+  },
+  "editor": {
+    "draw_help": "Left-click to add points, right-click to close polygon",
+    "place_help_selected": "Click on the map to place the location",
+    "place_help_empty": "Select a location from the list, then click the map"
   }
 }

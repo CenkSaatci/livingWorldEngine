@@ -288,7 +288,7 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
               onChange={(e) => setBackstory(e.target.value)}
               rows={3}
               className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none"
-              placeholder="Verlor Eltern bei Goblin-Überfall…"
+              placeholder={t('entity.backstory_placeholder')}
             />
           </div>
 
