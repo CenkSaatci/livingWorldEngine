@@ -167,7 +167,7 @@ export function WorldMapView({
 
   return (
     <div className={`relative h-full w-full ${weatherOverlayClass(dominantWeather)}`}>
-      <MapCanvas cols={cols} rows={rows} tileSize={tileSize} />
+      <MapCanvas worldId={worldId} cols={cols} rows={rows} tileSize={tileSize} />
 
       {/* Location Markers */}
       {locations.map((loc) => (

@@ -42,7 +42,7 @@ export function MapCanvas({ cols = 20, rows = 15, tileSize = 48, worldId = '', m
     } else {
       apiClient.get(`/worlds/${worldId}/map`)
         .then((r) => { if (!cancelled) setBgUrl((r.data as MapData).imageUrl); })
-        .catch(() => {});
+        .catch((e) => console.error('MapCanvas fetch error:', e));
     }
     return () => { cancelled = true; };
   }, [worldId, mapId]);
