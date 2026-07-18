@@ -1,13 +1,11 @@
 import { useCallback, useRef, useState } from 'react';
 import { apiClient } from '../api/client';
-import { useToast } from './useToast';
 
 export function useLazyApiGet<T>() {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
-  const toast = useToast();
 
   const fetch = useCallback(
     async (url: string) => {
@@ -28,11 +26,10 @@ export function useLazyApiGet<T>() {
           'Anfrage fehlgeschlagen';
         setError(msg);
         setLoading(false);
-        toast.error(msg);
         return null;
       }
     },
-    [toast],
+    [],
   );
 
   return { data, loading, error, fetch };
