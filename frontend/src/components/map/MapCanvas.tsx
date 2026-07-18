@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as PIXI from 'pixi.js';
 import { usePixiApp } from './usePixiApp';
 import { drawGrid } from './Grid';
 import { useTokenLayer } from './useTokenLayer';
 import { useFogLayer } from './useFogLayer';
-import { apiClient } from '../../api/client';
+import { apiClient, BACKEND_ORIGIN } from '../../api/client';
 
 interface Props {
   cols?: number;
@@ -16,7 +16,7 @@ interface Props {
 
 interface MapData {
   id: string;
-  image_url: string | null;
+  imageUrl: string | null;
   width: number;
   height: number;
 }
@@ -27,25 +27,41 @@ export function MapCanvas({ cols = 20, rows = 15, tileSize = 48, worldId = '', m
   const tokenLayerRef = useRef<PIXI.Container | null>(null);
   const gridDrawn = useRef(false);
   const stageRef = useRef<PIXI.Container | null>(null);
-  const mapDataRef = useRef<MapData | null>(null);
+  const bgSpriteRef = useRef<PIXI.Sprite | null>(null);
+  const [bgUrl, setBgUrl] = useState<string | null>(null);
 
-  // Fetch map data when mapId changes
+  // Fetch map data
   useEffect(() => {
-    if (!mapId) {
-      mapDataRef.current = null;
-      return;
-    }
+    if (!worldId) return;
     let cancelled = false;
-    apiClient
-      .get(`/maps/${mapId}`)
-      .then((r) => {
-        if (!cancelled) mapDataRef.current = r.data as MapData;
-      })
-      .catch(() => {});
+    const id = mapId;
+    if (id) {
+      apiClient.get(`/maps/${id}`)
+        .then((r) => { if (!cancelled) setBgUrl((r.data as MapData).imageUrl); })
+        .catch(() => {});
+    } else {
+      apiClient.get(`/worlds/${worldId}/map`)
+        .then((r) => { if (!cancelled) setBgUrl((r.data as MapData).imageUrl); })
+        .catch(() => {});
+    }
+    return () => { cancelled = true; };
+  }, [worldId, mapId]);
+
+  // Draw background image
+  useEffect(() => {
+    const app = getApp();
+    if (!app || !bgUrl) return;
+    const texture = PIXI.Texture.from(BACKEND_ORIGIN + bgUrl);
+    const sprite = new PIXI.Sprite(texture);
+    app.stage.addChildAt(sprite, 0);
+    bgSpriteRef.current = sprite;
     return () => {
-      cancelled = true;
+      if (bgSpriteRef.current) {
+        try { app.stage.removeChild(bgSpriteRef.current); bgSpriteRef.current.destroy(true); } catch {}
+        bgSpriteRef.current = null;
+      }
     };
-  }, [mapId]);
+  }, [getApp, bgUrl]);
 
   useEffect(() => {
     const app = getApp();
