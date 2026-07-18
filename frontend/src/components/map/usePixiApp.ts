@@ -18,6 +18,7 @@ export function usePixiApp(containerRef: React.RefObject<HTMLDivElement | null>)
       antialias: true,
       resolution: window.devicePixelRatio || 1,
       autoDensity: true,
+      forceCanvas: true,
     });
 
     el.appendChild(app.view as unknown as HTMLElement);
