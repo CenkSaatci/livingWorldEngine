@@ -237,21 +237,23 @@ export default function WorldEditorPage() {
         </div>
         <div className="flex items-center gap-2">
           {dirty && (
-            <>
-              <button
-                onClick={() => setInitialized(false)}
-                className="flex items-center gap-1 rounded border border-bg-elevated px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary"
-              >
-                <RotateCcw size={14} /> Reset
-              </button>
-              <button
-                onClick={handleSave}
-                className="flex items-center gap-1 rounded bg-accent px-3 py-1.5 text-xs text-white hover:bg-accent/80"
-              >
-                <Save size={14} /> Save
-              </button>
-            </>
+            <button
+              onClick={() => setInitialized(false)}
+              className="flex items-center gap-1 rounded border border-bg-elevated px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary"
+            >
+              <RotateCcw size={14} /> Reset
+            </button>
           )}
+          <button
+            onClick={handleSave}
+            className={`flex items-center gap-1 rounded px-3 py-1.5 text-xs ${
+              dirty
+                ? 'bg-accent text-white hover:bg-accent/80'
+                : 'border border-bg-elevated text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            <Save size={14} /> {dirty ? 'Save *' : 'Save'}
+          </button>
         </div>
       </header>
 
