@@ -8,9 +8,9 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import type { WorldSummary } from '../store/worldStore';
 
 interface WorldDetail extends WorldSummary {
-  owner_id: string;
-  settings_json: string;
-  game_system_id: string | null;
+  ownerId: string;
+  settingsJson: string;
+  gameSystemId: string | null;
 }
 
 interface GameSystem {
@@ -103,9 +103,9 @@ export default function WorldEditorPage() {
   // Sync API data → local state when loaded
   const initFromWorld = useCallback((w: WorldDetail) => {
     setName(w.name);
-    setGameSystemId(w.game_system_id ?? '');
+    setGameSystemId(w.gameSystemId ?? '');
     try {
-      const parsed = JSON.parse(w.settings_json) as Record<string, unknown>;
+      const parsed = JSON.parse(w.settingsJson) as Record<string, unknown>;
       setDescription((parsed.description as string) ?? '');
       delete parsed.description;
       setSettings(parsed as WorldSettings);
