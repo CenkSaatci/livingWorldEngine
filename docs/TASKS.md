@@ -1096,10 +1096,20 @@ Ziel: Den System-Wizard und Map-Editor produktiv und benutzerfreundlich machen.
 - **Aufwand:** 1,0 Tag
 - **Beschreibung:** RightPanel wird durch Karte weggedrückt. Layout so umbauen, dass Map + RightPanel nebeneinander passen und overflow korrekt funktioniert.
 
-### P15-T02: Map lädt Kartenbild im GameView
+### P15-T02: GameView-Karte via HTML/CSS statt PixiJS
 - **Status:** 📋
-- **Aufwand:** 0,5 Tage
-- **Beschreibung:** MapCanvas im GameView-Kontext lädt `/worlds/{worldId}/map` nicht. PixiJS zeigt nur schwarzen Hintergrund.
+- **Aufwand:** 1,0 Tag
+- **Analyse:**
+  - **MapEditorPage** funktioniert: `usePixiApp` + `containerRef` + eigener Background-Layer → Karte sichtbar ✅
+  - **WorldMapView/GameView** schwarzer Bildschirm: Grid, Red-Square, Background-Sprite werden korrekt auf `app.stage` gelegt (children=3, canvas=1110×763, image loaded 1754×2481) → PIXI-Renderer zeigt trotzdem nur Schwarz ❌
+  - **Verdacht:** WebGL/Canvas2D-Kompatibilitätsproblem im GameView-Kontext (Tab-Hintergrund, Browser-Erweiterung, GPU-Treiber). `forceCanvas` existiert nicht in PixiJS v7.
+  - `PIXI.Sprite.from(url)` + `PIXI.Texture.from(url)` → texture size=1×1 (async nicht abgewartet)
+  - `Image`-Element mit `onload` → PIXI.Texture.from(img) → Sprite hinzugefügt → trotzdem schwarz
+- **Lösungsansatz:**
+  1. **PixiJS nur für Grid/Overlays** (transparent canvas), Hintergrund als `<img>` im CSS `background-image` des Container-Divs → kein PixiJS-Bild-Rendering nötig
+  2. **Oder:** `WorldMapView` komplett ohne PixiJS → HTML/CSS-Grid + Positionierte Overlays + CSS-Hintergrundbild
+  3. **Oder:** PixiJS-Renderer manuell initialisieren mit `new PIXI.CanvasRenderer()` (falls WebGL fehlschlägt)
+- **Akzeptanzkriterien:** Karte wird im GameView sichtbar. Grid und Token-Overlays bleiben funktionsfähig.
 
 ### P15-T03: Formel-Editor für Würfelausdrücke
 - **Status:** 📋
