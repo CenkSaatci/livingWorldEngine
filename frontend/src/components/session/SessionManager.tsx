@@ -23,8 +23,8 @@ export function SessionManager({ worldId }: Props) {
     apiClient
       .get(`/worlds/${worldId}/sessions`)
       .then((r) => setSessions(r.data))
-      .catch(() => toast.error(t('session.load_error')));
-  }, [worldId, setSessions, toast, t]);
+      .catch(() => {});
+  }, [worldId]);
 
   const handleStart = async () => {
     try {
