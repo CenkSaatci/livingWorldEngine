@@ -28,9 +28,9 @@ export function DmQueuePanel({ worldId }: Props) {
       });
       setIntents(res.data ?? []);
     } catch {
-      toast.error('Failed to fetch intents');
+      /* poll will retry */
     }
-  }, [worldId, toast]);
+  }, [worldId]);
 
   useEffect(() => {
     fetchIntents();
