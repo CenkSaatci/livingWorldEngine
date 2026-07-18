@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Copy, Users, Trash2, Save, RotateCcw } from 'lucide-react';
 import { useApiGet } from '../hooks/useApiGet';
@@ -114,12 +114,9 @@ export default function WorldEditorPage() {
     }
   }, []);
 
-  // Set initial values when world loads
-  const [initialized, setInitialized] = useState(false);
-  if (world && !initialized) {
-    initFromWorld(world);
-    setInitialized(true);
-  }
+  useEffect(() => {
+    if (world) initFromWorld(world);
+  }, [world]);
 
   const updateSetting = (path: string[], value: unknown) => {
     setSettings((prev) => {
@@ -238,7 +235,7 @@ export default function WorldEditorPage() {
         <div className="flex items-center gap-2">
           {dirty && (
             <button
-              onClick={() => setInitialized(false)}
+              onClick={() => refetch()}
               className="flex items-center gap-1 rounded border border-bg-elevated px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary"
             >
               <RotateCcw size={14} /> Reset
