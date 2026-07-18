@@ -29,9 +29,11 @@ export function MapCanvas({ cols = 20, rows = 15, tileSize = 48, worldId = '', m
   const stageRef = useRef<PIXI.Container | null>(null);
   const bgSpriteRef = useRef<PIXI.Sprite | null>(null);
   const [bgUrl, setBgUrl] = useState<string | null>(null);
+  const renderCount = useRef(0);
 
   // Fetch map data
   useEffect(() => {
+    console.log('MapCanvas: worldId=', worldId, 'mapId=', mapId);
     if (!worldId) return;
     let cancelled = false;
     const id = mapId;
@@ -50,8 +52,12 @@ export function MapCanvas({ cols = 20, rows = 15, tileSize = 48, worldId = '', m
   // Draw background image
   useEffect(() => {
     const app = getApp();
+    console.log('MapCanvas: draw bg effect, app=', !!app, 'bgUrl=', bgUrl);
     if (!app || !bgUrl) return;
-    const texture = PIXI.Texture.from(BACKEND_ORIGIN + bgUrl);
+    const fullUrl = BACKEND_ORIGIN + bgUrl;
+    console.log('MapCanvas: loading texture from', fullUrl);
+    const texture = PIXI.Texture.from(fullUrl);
+    console.log('MapCanvas: texture created, size=', texture.width, 'x', texture.height);
     const sprite = new PIXI.Sprite(texture);
     app.stage.addChildAt(sprite, 0);
     bgSpriteRef.current = sprite;
@@ -64,7 +70,9 @@ export function MapCanvas({ cols = 20, rows = 15, tileSize = 48, worldId = '', m
   }, [getApp, bgUrl]);
 
   useEffect(() => {
+    renderCount.current++;
     const app = getApp();
+    console.log('MapCanvas: grid effect #' + renderCount.current + ', app=', !!app, 'gridDrawn=', gridDrawn.current);
     if (!app || gridDrawn.current) return;
 
     stageRef.current = app.stage;
