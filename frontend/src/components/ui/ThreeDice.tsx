@@ -57,19 +57,19 @@ export function ThreeDice({ results, modifier, total }: Props) {
     scene: THREE.Scene;
     camera: THREE.PerspectiveCamera;
     renderer: THREE.WebGLRenderer;
-    dice: { mesh: THREE.Mesh; value: number; targetRotation: THREE.Euler }[];
+    dice: { mesh: THREE.Mesh; value: number; sides: number; targetRotation: THREE.Euler }[];
     animId: number;
   } | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
     const el = containerRef.current;
-    const w = el.clientWidth || 300;
-    const h = el.clientHeight || 200;
+    const w = el.clientWidth || 400;
+    const h = el.clientHeight || 300;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
-    camera.position.set(0, 2, 6);
+    const camera = new THREE.PerspectiveCamera(35, w / h, 0.1, 100);
+    camera.position.set(0, 1.5, 7);
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
@@ -83,7 +83,7 @@ export function ThreeDice({ results, modifier, total }: Props) {
     directional.position.set(2, 5, 3);
     scene.add(directional);
 
-    const diceData: { mesh: THREE.Mesh; value: number; targetRotation: THREE.Euler }[] = [];
+    const diceData: { mesh: THREE.Mesh; value: number; sides: number; targetRotation: THREE.Euler }[] = [];
 
     results.forEach((r, i) => {
       const size = 0.8;
@@ -109,14 +109,14 @@ export function ThreeDice({ results, modifier, total }: Props) {
       const targetRotation = new THREE.Euler(
         Math.random() * Math.PI * 2,
         Math.random() * Math.PI * 2,
-        (r.value * (Math.PI * 2)) / 6,
+        (r.value * (Math.PI * 2)) / r.sides,
       );
       mesh.rotation.set(
         Math.random() * Math.PI * 4,
         Math.random() * Math.PI * 4,
         Math.random() * Math.PI * 4,
       );
-      diceData.push({ mesh, value: r.value, targetRotation });
+      diceData.push({ mesh, value: r.value, sides: r.sides, targetRotation });
     });
 
     const startTime = Date.now();
@@ -153,7 +153,7 @@ export function ThreeDice({ results, modifier, total }: Props) {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div ref={containerRef} className="h-48 w-full max-w-xs" />
+      <div ref={containerRef} className="h-64 w-full max-w-sm" />
       <p className="text-2xl font-heading text-text-primary">
         = {total}{' '}
         {modifier !== 0 && (
