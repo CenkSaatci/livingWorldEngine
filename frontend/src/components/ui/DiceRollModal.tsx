@@ -38,7 +38,7 @@ export function DiceRollModal({ label, dice, modifier, total, onClose }: Props) 
       onClick={onClose}
     >
       <div
-        className="relative rounded-xl border border-bg-elevated bg-bg-surface p-8 shadow-2xl"
+        className="relative rounded-xl border border-bg-elevated bg-bg-surface p-8 shadow-2xl min-w-[360px]"
         onClick={(e) => e.stopPropagation()}
       >
         <button

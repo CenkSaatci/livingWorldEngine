@@ -153,7 +153,7 @@ export function ThreeDice({ results, modifier, total }: Props) {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div ref={containerRef} className="h-64 w-full max-w-sm" />
+      <div ref={containerRef} className="h-64 w-full" />
       <p className="text-2xl font-heading text-text-primary">
         = {total}{' '}
         {modifier !== 0 && (
