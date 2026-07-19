@@ -13,8 +13,6 @@ public class DiceExpression {
         "^(\\d+)d(\\d+)([+-]\\d+)?$", Pattern.CASE_INSENSITIVE
     );
 
-    private static final Pattern MODIFIER_PATTERN = Pattern.compile("[+-]\\w+");
-
     private final int count;
     private final int sides;
     private final int modifier;
@@ -22,8 +20,7 @@ public class DiceExpression {
     private final int total;
 
     public DiceExpression(String expression) {
-        var cleaned = MODIFIER_PATTERN.matcher(expression.strip()).replaceAll("+0");
-        var m = EXPR_PATTERN.matcher(cleaned);
+        var m = EXPR_PATTERN.matcher(expression.strip());
         if (!m.matches())
             throw new IllegalArgumentException("Invalid dice expression: " + expression);
 

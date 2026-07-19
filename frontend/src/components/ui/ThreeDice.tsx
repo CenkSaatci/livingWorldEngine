@@ -101,9 +101,9 @@ export function ThreeDice({ results, modifier, total }: Props) {
       }
     };
 
-    animate();
-
     sceneRef.current = { scene, camera, renderer, dice: diceData, animId: 0 };
+
+    animate();
 
     return () => {
       if (sceneRef.current) {
