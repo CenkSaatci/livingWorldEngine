@@ -1,11 +1,11 @@
 {
   "sheet": {
     "title": "Character sheet",
-    "attributes": "Attributes",
-    "skills": "Skills",
+    "attributes": "Attributs",
+    "skills": "Compétences",
     "inventory": "Inventory",
     "roll_button": "Roll",
-    "save": "Save",
+    "save": "Enregistrer",
     "saving": "Saving…",
     "saved": "Saved",
     "save_error": "Failed to save"

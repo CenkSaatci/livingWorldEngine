@@ -1,11 +1,11 @@
 {
   "sheet": {
     "title": "Character sheet",
-    "attributes": "Attributes",
-    "skills": "Skills",
+    "attributes": "Nitelikler",
+    "skills": "Beceriler",
     "inventory": "Inventory",
     "roll_button": "Roll",
-    "save": "Save",
+    "save": "Kaydet",
     "saving": "Saving…",
     "saved": "Saved",
     "save_error": "Failed to save"
