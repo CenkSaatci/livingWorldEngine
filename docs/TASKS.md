@@ -1087,49 +1087,71 @@
 
 ---
 
-## Phase 15: System-Wizard & Map-Editor UX
-
-Ziel: Den System-Wizard und Map-Editor produktiv und benutzerfreundlich machen.
+## Phase 15: System-Wizard 2.0 & Map-Editor UX
 
 ### P15-T01: Map-Editor Layout fix
 - **Status:** 📋
 - **Aufwand:** 1,0 Tag
-- **Beschreibung:** RightPanel wird durch Karte weggedrückt. Layout so umbauen, dass Map + RightPanel nebeneinander passen und overflow korrekt funktioniert.
+- **Beschreibung:** RightPanel wird durch Karte weggedrückt. Layout so umbauen, dass Map + RightPanel nebeneinander passen.
 
 ### P15-T02: GameView-Karte via HTML/CSS statt PixiJS
 - **Status:** 📋
 - **Aufwand:** 1,0 Tag
-- **Analyse:**
-  - **MapEditorPage** funktioniert: `usePixiApp` + `containerRef` + eigener Background-Layer → Karte sichtbar ✅
-  - **WorldMapView/GameView** schwarzer Bildschirm: Grid, Red-Square, Background-Sprite werden korrekt auf `app.stage` gelegt (children=3, canvas=1110×763, image loaded 1754×2481) → PIXI-Renderer zeigt trotzdem nur Schwarz ❌
-  - **Verdacht:** WebGL/Canvas2D-Kompatibilitätsproblem im GameView-Kontext (Tab-Hintergrund, Browser-Erweiterung, GPU-Treiber). `forceCanvas` existiert nicht in PixiJS v7.
-  - `PIXI.Sprite.from(url)` + `PIXI.Texture.from(url)` → texture size=1×1 (async nicht abgewartet)
-  - `Image`-Element mit `onload` → PIXI.Texture.from(img) → Sprite hinzugefügt → trotzdem schwarz
-- **Lösungsansatz:**
-  1. **PixiJS nur für Grid/Overlays** (transparent canvas), Hintergrund als `<img>` im CSS `background-image` des Container-Divs → kein PixiJS-Bild-Rendering nötig
-  2. **Oder:** `WorldMapView` komplett ohne PixiJS → HTML/CSS-Grid + Positionierte Overlays + CSS-Hintergrundbild
-  3. **Oder:** PixiJS-Renderer manuell initialisieren mit `new PIXI.CanvasRenderer()` (falls WebGL fehlschlägt)
-- **Akzeptanzkriterien:** Karte wird im GameView sichtbar. Grid und Token-Overlays bleiben funktionsfähig.
+- **Analyse:** PIXI-Renderer zeigt trotz korrekt geladener Daten nur Schwarz. Lösung: Hintergrund als CSS `<img>`, PixiJS nur für Grid/Overlays.
+- **Akzeptanzkriterien:** Karte sichtbar im GameView. Grid + Overlays funktionsfähig.
 
-### P15-T03: Formel-Editor für Würfelausdrücke
+### P15-T03: Wizard Step 0 — System-Charakter
+- **Status:** 📋
+- **Aufwand:** 1,5 Tage
+- **Beschreibung:** Neuer Step 0 mit Progression-Typ (Level/XP/Steigerung) + Checkboxen für Optionen (Magie, Psionik, Fernkampf, krit. Treffer, Rüstungs-Erschwernis). Auswahl steuert spätere Steps conditional.
+- **Abhängigkeiten:** —
+- **Akzeptanzkriterien:** Nutzer wählt Progression-Typ → entsprechende UI in Step 5 erscheint. Optionen blenden Step 6 (Specials) ein/aus.
+
+### P15-T04: Wizard Step 2 — Derived Values
+- **Status:** 📋
+- **Aufwand:** 1,0 Tag
+- **Beschreibung:** Neuer Step nach Attributen. Formel-Baukasten für abgeleitete Werte (HP, AP, MP, etc.). Dropdown für Attribut + Operator + Zahl/Feld.
+- **Abhängigkeiten:** Step 1 (Attribute) muss vorher kommen
+- **Akzeptanzkriterien:** Attribut aus Dropdown wählbar, Formel wird gespeichert und im Review angezeigt.
+
+### P15-T05: Wizard Step 5 — Abilities
 - **Status:** 📋
 - **Aufwand:** 2,0 Tage
-- **Beschreibung:** Konditionale Boni („wenn Attribut > X dann +Y"). Für DSA, Splittermond etc.
+- **Beschreibung:** Neuer Step für aktive/passive Fähigkeiten. Aktive: Name, Kosten (AP/MP), Würfelausdruck, Effekt. Passive: Name, Bonus (z.B. RK+1). Talent-Typ abhängig von Step 0 (Class-Feature/Talent).
+- **Abhängigkeiten:** Step 0 (für Talent-Typ)
+- **Akzeptanzkriterien:** Fähigkeiten werden gespeichert, im Review gelistet, später im Character-Sheet nutzbar.
 
-### P15-T04: Regeneration im System-Wizard
-- **Status:** 📋
-- **Aufwand:** 0,5 Tage
-- **Beschreibung:** HP/AP-Regeneration als eigener Step im Wizard.
-
-### P15-T05: i18n für Wizard & Editor
+### P15-T06: Wizard Step 6 — Progression (conditional)
 - **Status:** 📋
 - **Aufwand:** 1,0 Tag
-- **Beschreibung:** SystemWizard, MapEditor, WorldSettings übersetzbar (DE/EN).
+- **Beschreibung:** Step 5 wird je nach Step-0-Auswahl unterschiedlich dargestellt: Level-Tabelle (D&D), XP-Kosten (DSA), Steigerungswürfel (CoC).
+- **Abhängigkeiten:** Step 0
+- **Akzeptanzkriterien:** Je nach gewähltem Progression-Typ erscheint die passende UI.
 
-### P15-T06: Diverse UX-Fixes
+### P15-T07: Wizard Step 7 — Specials (conditional)
+- **Status:** 📋
+- **Aufwand:** 1,5 Tage
+- **Beschreibung:** Magie/Psionik-Sektion, nur sichtbar wenn in Step 0 aktiviert. Zauber pro Stufe, Mana-Formel, Schulen/Domänen.
+- **Abhängigkeiten:** Step 0
+- **Akzeptanzkriterien:** Bei ☑ Magie erscheint der Magie-Step, sonst nicht.
+
+### P15-T08: Conditionals-Engine
+- **Status:** 📋
+- **Aufwand:** 2,0 Tage
+- **Beschreibung:** Formel-Editor für konditionale Boni in Würfelausdrücken („wenn Stärke > 15 dann +2 auf Schaden"). Paradebeispiel DSA: „jeder Punkt Intuition über 8 gibt +1 auf Initiative".
+- **Akzeptanzkriterien:** Bedingungen wie `if(attribut>X, +bonus, 0)` werden geparst und gespeichert. Später in der RuleEngine auswertbar.
+
+### P15-T09: i18n für Wizard & Editor
 - **Status:** 📋
 - **Aufwand:** 1,0 Tag
-- **Beschreibung:** 1d2-1d100 Dropdown, Region-Farben speicherbar, Location verschiebbar, mehrere Schadensattribute.
+- **Beschreibung:** SystemWizard-Komponente vollständig übersetzen (DE/EN). MapEditor + WorldSettings ergänzen.
+- **Akzeptanzkriterien:** Sprachwechsel übersetzt alle Wizard-Texte.
+
+### P15-T10: Diverse UX-Fixes
+- **Status:** 📋
+- **Aufwand:** 1,0 Tag
+- **Beschreibung:** 1d2-1d100 Dropdown, Region-Farben speicherbar, Location verschiebbar, Wizard-Beschreibungen verbessern.
+- **Akzeptanzkriterien:** Alle UX-Punkte aus dem Feedback umgesetzt.
 
 ---
 
