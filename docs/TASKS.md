@@ -1090,13 +1090,15 @@
 ## Phase 15: System-Wizard 2.0 & Map-Editor UX
 
 ### P15-T01: Map-Editor Layout fix
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 1,0 Tag
+- **Erledigt:** 2026-07-19
 - **Beschreibung:** RightPanel wird durch Karte weggedrückt. Layout so umbauen, dass Map + RightPanel nebeneinander passen.
 
 ### P15-T02: GameView-Karte via HTML/CSS statt PixiJS
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 1,0 Tag
+- **Erledigt:** 2026-07-19
 - **Analyse:** PIXI-Renderer zeigt trotz korrekt geladener Daten nur Schwarz. Lösung: Hintergrund als CSS `<img>`, PixiJS nur für Grid/Overlays.
 - **Akzeptanzkriterien:** Karte sichtbar im GameView. Grid + Overlays funktionsfähig.
 
