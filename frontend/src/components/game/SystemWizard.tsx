@@ -368,6 +368,18 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           <h3 className="font-heading text-text-primary">{t('sdv_title')}</h3>
           <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('sdv_hint') }} />
 
+          {data.attributes.length > 0 && (
+            <div className="rounded bg-bg-primary/30 p-2 text-xs text-text-secondary">
+              <span className="font-semibold text-text-primary">Verfügbare Attribute: </span>
+              {data.attributes.map((a, i) => (
+                <span key={a.name}>
+                  {i > 0 && <span className="mx-1">·</span>}
+                  <code className="text-accent">{a.name}</code> ({a.min}–{a.max})
+                </span>
+              ))}
+            </div>
+          )}
+
           <div className="flex items-center gap-2 px-2 text-[10px] text-text-secondary uppercase tracking-wider">
             <span className="flex-1">{t('sdv_header_name')}</span>
             <span className="flex-[2]">{t('sdv_header_formula')}</span>
