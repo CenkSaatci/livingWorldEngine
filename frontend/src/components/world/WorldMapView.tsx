@@ -110,6 +110,7 @@ export function WorldMapView({
   const [weather, setWeather] = useState<Record<string, WeatherData>>({});
   const [selected, setSelected] = useState<string | null>(null);
   const [mapUrl, setMapUrl] = useState<string | null>(null);
+  const [naturalSize, setNaturalSize] = useState({ w: 1754, h: 2481 });
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -219,7 +220,17 @@ export function WorldMapView({
       >
         {/* Map image */}
         {mapUrl ? (
-          <img src={mapUrl} alt="Map" className="block" draggable={false} />
+          <img
+            src={mapUrl}
+            alt="Map"
+            className="block max-w-none"
+            draggable={false}
+            onLoad={(e) => {
+              const img = e.currentTarget;
+              setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
+            }}
+            style={{ width: naturalSize.w + 'px' }}
+          />
         ) : (
           <div className="w-[960px] h-[720px]" />
         )}
