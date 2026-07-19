@@ -1155,8 +1155,9 @@
 - **Akzeptanzkriterien:** Sprachwechsel übersetzt alle Wizard-Texte.
 
 ### P15-T10: Diverse UX-Fixes
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 1,0 Tag
+- **Erledigt:** 2026-07-19
 - **Beschreibung:** 1d2-1d100 Dropdown, Region-Farben speicherbar, Location verschiebbar, Wizard-Beschreibungen verbessern.
 - **Akzeptanzkriterien:** Alle UX-Punkte aus dem Feedback umgesetzt.
 
