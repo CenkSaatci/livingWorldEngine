@@ -1,0 +1,19 @@
+{
+  "queue": {
+    "title": "AI intent queue",
+    "approve": "Approve",
+    "reject": "Reject",
+    "empty": "No pending intents"
+  },
+  "time": {
+    "pause": "Pause time",
+    "resume": "Resume time",
+    "advance": "Advance time",
+    "advance_one_hour": "+1 hour",
+    "advance_six_hours": "+6 hours",
+    "advance_one_day": "+1 day — \"the day is over\"",
+    "advance_to_dawn": "Until dawn",
+    "advance_to_dusk": "Until dusk",
+    "set": "Set time"
+  }
+}
