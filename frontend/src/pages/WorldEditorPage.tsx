@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Copy, Users, Trash2, Save, RotateCcw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useApiGet } from '../hooks/useApiGet';
 import { apiClient } from '../api/client';
 import { useToast } from '../hooks/useToast';
@@ -54,6 +55,7 @@ export default function WorldEditorPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const toast = useToast();
+  const { t } = useTranslation('common');
   const [newMemberId, setNewMemberId] = useState('');
   const [searchResults, setSearchResults] = useState<
     { id: string; username: string; email: string }[]
@@ -144,11 +146,11 @@ export default function WorldEditorPage() {
         gameSystemId: gameSystemId || null,
         settingsJson: JSON.stringify(mergedSettings),
       });
-      toast.success('World settings saved');
+      toast.success(t('worldEditor.saved'));
       setDirty(false);
       refetch();
     } catch {
-      toast.error('Failed to save');
+      toast.error(t('worldEditor.saveFailed'));
     }
   };
 
@@ -156,10 +158,10 @@ export default function WorldEditorPage() {
     if (!id) return;
     try {
       await apiClient.delete(`/worlds/${id}`);
-      toast.success('World deleted');
+      toast.success(t('worldEditor.deleted'));
       navigate('/dashboard');
     } catch {
-      toast.error('Failed to delete');
+      toast.error(t('worldEditor.deleteFailed'));
     }
   };
 
@@ -170,7 +172,7 @@ export default function WorldEditorPage() {
       toast.success(`Cloned as "${res.data.name}"`);
       navigate(`/worlds/${res.data.id}/edit`);
     } catch {
-      toast.error('Failed to clone');
+      toast.error(t('worldEditor.cloneFailed'));
     }
   };
 
@@ -181,7 +183,7 @@ export default function WorldEditorPage() {
       const res = await apiClient.post(`/worlds/${id}/invites`, { maxUses: 1 });
       setInviteLink(res.data.url);
     } catch {
-      toast.error('Failed to generate invite');
+      toast.error(t('worldEditor.inviteFailed'));
     } finally {
       setGenerating(false);
     }
@@ -196,9 +198,9 @@ export default function WorldEditorPage() {
       });
       setNewMemberId('');
       refetchMembers();
-      toast.success('Member added');
+      toast.success(t('worldEditor.memberAdded'));
     } catch {
-      toast.error('Failed to add member');
+      toast.error(t('worldEditor.memberAddFailed'));
     }
   };
 
@@ -207,9 +209,9 @@ export default function WorldEditorPage() {
     try {
       await apiClient.delete(`/worlds/${id}/members/${memberId}`);
       refetchMembers();
-      toast.success('Member removed');
+      toast.success(t('worldEditor.memberRemoved'));
     } catch {
-      toast.error('Failed to remove member');
+      toast.error(t('worldEditor.memberRemoveFailed'));
     }
   };
 
@@ -230,7 +232,7 @@ export default function WorldEditorPage() {
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-lg font-heading text-text-primary">World Settings</h1>
+          <h1 className="text-lg font-heading text-text-primary">{t('worldEditor.title')}</h1>
         </div>
         <div className="flex items-center gap-2">
           {dirty && (
@@ -257,7 +259,7 @@ export default function WorldEditorPage() {
       <main className="mx-auto max-w-3xl space-y-6 p-6">
         {/* General */}
         <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
-          <h2 className="mb-4 font-heading text-text-primary">General</h2>
+          <h2 className="mb-4 font-heading text-text-primary">{t('worldEditor.general')}</h2>
           <div className="space-y-4">
             <div>
               <label className="block text-xs text-text-secondary mb-1">World Name</label>
@@ -305,7 +307,7 @@ export default function WorldEditorPage() {
 
         {/* AI Mode */}
         <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
-          <h2 className="mb-4 font-heading text-text-primary">AI Mode</h2>
+          <h2 className="mb-4 font-heading text-text-primary">{t('worldEditor.aiMode')}</h2>
           <div className="grid gap-3 sm:grid-cols-3">
             {AI_MODES.map((mode) => (
               <button
@@ -326,7 +328,7 @@ export default function WorldEditorPage() {
 
         {/* Time Settings */}
         <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
-          <h2 className="mb-4 font-heading text-text-primary">Time</h2>
+          <h2 className="mb-4 font-heading text-text-primary">{t('worldEditor.time')}</h2>
           <div className="space-y-4">
             <div>
               <label className="block text-xs text-text-secondary mb-1">Mode</label>
@@ -390,7 +392,7 @@ export default function WorldEditorPage() {
 
         {/* Event Archiving */}
         <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
-          <h2 className="mb-3 font-heading text-text-primary">Combat Chat Log</h2>
+          <h2 className="mb-3 font-heading text-text-primary">{t('worldEditor.combatChatLog')}</h2>
           <p className="mb-3 text-xs text-text-secondary">
             When enabled, all combat actions are posted as chat messages so all players can see what
             happens.
@@ -402,13 +404,13 @@ export default function WorldEditorPage() {
               onChange={(e) => updateSetting(['combat_chat_log'], e.target.checked)}
               className="accent-accent h-4 w-4"
             />
-            <span className="text-sm text-text-primary">Combat Chat Log</span>
+            <span className="text-sm text-text-primary">{t('worldEditor.combatChatLog')}</span>
           </label>
         </section>
 
         {/* Event Archiving */}
         <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
-          <h2 className="mb-3 font-heading text-text-primary">Event Archiving</h2>
+          <h2 className="mb-3 font-heading text-text-primary">{t('worldEditor.eventArchiving')}</h2>
           <p className="mb-3 text-xs text-text-secondary">
             Events older than this many real-world days are archived (moved to archive table).
             Worlds with AI bot enabled may want a shorter interval.
@@ -513,7 +515,7 @@ export default function WorldEditorPage() {
         <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-heading text-text-primary">Map</h2>
+              <h2 className="font-heading text-text-primary">{t('worldEditor.map')}</h2>
               <p className="mt-1 text-xs text-text-secondary">
                 Edit world map regions and locations
               </p>
@@ -531,7 +533,7 @@ export default function WorldEditorPage() {
         <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-heading text-text-primary">Clone</h2>
+              <h2 className="font-heading text-text-primary">{t('worldEditor.clone')}</h2>
               <p className="mt-1 text-xs text-text-secondary">
                 Create a copy of this world including regions, locations, NPCs and factions
               </p>
@@ -547,7 +549,7 @@ export default function WorldEditorPage() {
 
         {/* Invites */}
         <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
-          <h2 className="mb-3 font-heading text-text-primary">Invites</h2>
+          <h2 className="mb-3 font-heading text-text-primary">{t('worldEditor.invites')}</h2>
           <p className="text-xs text-text-secondary mb-3">
             Generate single-use invite links for your players. Each link works once.
           </p>
@@ -582,7 +584,7 @@ export default function WorldEditorPage() {
 
         {/* Danger Zone */}
         <section className="rounded-lg border border-danger/20 bg-danger/5 p-5">
-          <h2 className="mb-2 font-heading text-danger">Danger Zone</h2>
+          <h2 className="mb-2 font-heading text-danger">{t('worldEditor.dangerZone')}</h2>
           <p className="text-xs text-text-secondary mb-3">
             Permanently deletes this world and all its data. This cannot be undone.
           </p>

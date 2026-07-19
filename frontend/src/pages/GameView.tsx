@@ -180,7 +180,7 @@ export default function GameView() {
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="text-text-secondary hover:text-accent"
-              aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+              aria-label={sidebarOpen ? tc('gameView.closeSidebar') : tc('gameView.openSidebar')}
             >
               {sidebarOpen ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
             </button>
@@ -189,7 +189,7 @@ export default function GameView() {
               <button
                 onClick={() => setShowCreateMenu(!showCreateMenu)}
                 className="rounded p-1 text-text-secondary hover:text-accent hover:bg-bg-elevated"
-                aria-label="Create"
+                aria-label={tc('gameView.create')}
               >
                 <Plus size={16} />
               </button>
@@ -202,7 +202,7 @@ export default function GameView() {
                     }}
                     className="w-full px-3 py-1.5 text-left text-sm text-text-primary hover:bg-bg-elevated/50"
                   >
-                    👤 NPC / Character
+                    {tc('gameView.createNpc')}
                   </button>
                   <button
                     onClick={() => {
@@ -211,7 +211,7 @@ export default function GameView() {
                     }}
                     className="w-full px-3 py-1.5 text-left text-sm text-text-primary hover:bg-bg-elevated/50"
                   >
-                    🌍 Region
+                    {tc('gameView.createRegion')}
                   </button>
                   <button
                     onClick={() => {
@@ -220,7 +220,7 @@ export default function GameView() {
                     }}
                     className="w-full px-3 py-1.5 text-left text-sm text-text-primary hover:bg-bg-elevated/50"
                   >
-                    📍 Location
+                    {tc('gameView.createLocation')}
                   </button>
                 </div>
               )}
@@ -235,7 +235,7 @@ export default function GameView() {
                     setSelectedNpc(null);
                   }}
                   className="text-text-secondary hover:text-accent"
-                  aria-label="Close location"
+                  aria-label={tc('gameView.closeLocation')}
                 >
                   ✕
                 </button>
