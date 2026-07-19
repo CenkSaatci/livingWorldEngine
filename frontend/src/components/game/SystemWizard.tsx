@@ -60,7 +60,10 @@ interface XpCostEntry {
 
 interface ImprovementEntry {
   name: string;
+  count: number;
   dice: string;
+  comparison: 'gte' | 'lte';
+  target: number;
 }
 
 export interface WizardData {
@@ -108,7 +111,7 @@ const INITIAL: WizardData = {
   progression: {
     levels: [{ level: 1, xpRequired: 0, features: '' }, { level: 2, xpRequired: 300, features: '' }, { level: 3, xpRequired: 900, features: '' }],
     xpCosts: [{ name: '', cost: 0 }],
-    improvements: [{ name: '', dice: '1d6' }],
+    improvements: [{ name: '', count: 1, dice: '1d100', comparison: 'gte', target: 0 }],
   },
   attributes: [],
   skills: [],
@@ -195,9 +198,9 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
   };
 
   return (
-    <div className="rounded-lg border border-accent/20 bg-bg-surface p-5">
+    <div className="rounded-lg border border-accent/20 bg-bg-surface p-5 max-h-[90vh] flex flex-col">
       {/* Steps indicator */}
-      <div className="flex items-center gap-2 mb-6">
+      <div className="flex items-center gap-2 mb-4 shrink-0 overflow-x-auto pb-1">
         {STEPS.map((s, i) => (
           <div
             key={s}
@@ -215,7 +218,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         ))}
       </div>
 
-      {/* Step 0: System-Charakter */}
+      <div className="flex-1 overflow-y-auto min-h-0">
       {step === 0 && (
         <div className="space-y-5">
           <h3 className="font-heading text-text-primary">{t('s0_title')}</h3>
@@ -819,8 +822,11 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
               <p className="text-xs font-semibold text-text-primary">{t('s6_imp_title')}</p>
               <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s6_imp_hint') }} />
               <div className="flex items-center gap-2 px-2 text-[10px] text-text-secondary uppercase tracking-wider">
-                <span className="flex-1">{t('s6_imp_header_name')}</span>
-                <span className="w-20">{t('s6_imp_header_dice')}</span>
+                <span className="w-24">{t('s6_imp_header_name')}</span>
+                <span className="w-12">{t('s6_imp_header_count')}</span>
+                <span className="w-16">{t('s6_imp_header_dice')}</span>
+                <span className="w-12">{t('s6_imp_header_comparison')}</span>
+                <span className="w-16">{t('s6_imp_header_target')}</span>
                 <span className="w-4" />
               </div>
               {data.progression.improvements.map((imp, i) => (
@@ -832,7 +838,16 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                       a[i] = { ...a[i], name: e.target.value };
                       update('progression', { ...data.progression, improvements: a });
                     }}
-                    className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    className="w-24 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                  <input
+                    type="number" min={1} value={imp.count}
+                    onChange={(e) => {
+                      const a = [...data.progression.improvements];
+                      a[i] = { ...a[i], count: Number(e.target.value) };
+                      update('progression', { ...data.progression, improvements: a });
+                    }}
+                    className="w-12 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
                   />
                   <select
                     value={imp.dice}
@@ -841,12 +856,33 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                       a[i] = { ...a[i], dice: e.target.value };
                       update('progression', { ...data.progression, improvements: a });
                     }}
-                    className="w-20 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
                   >
                     {DICE_PRESETS.map((d) => (
                       <option key={d.v} value={d.v}>{d.l}</option>
                     ))}
                   </select>
+                  <select
+                    value={imp.comparison}
+                    onChange={(e) => {
+                      const a = [...data.progression.improvements];
+                      a[i] = { ...a[i], comparison: e.target.value as 'gte' | 'lte' };
+                      update('progression', { ...data.progression, improvements: a });
+                    }}
+                    className="w-12 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  >
+                    <option value="gte">≥</option>
+                    <option value="lte">≤</option>
+                  </select>
+                  <input
+                    type="number" min={0} value={imp.target}
+                    onChange={(e) => {
+                      const a = [...data.progression.improvements];
+                      a[i] = { ...a[i], target: Number(e.target.value) };
+                      update('progression', { ...data.progression, improvements: a });
+                    }}
+                    className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
                   <button
                     onClick={() =>
                       update('progression', {
@@ -864,7 +900,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 onClick={() =>
                   update('progression', {
                     ...data.progression,
-                    improvements: [...data.progression.improvements, { name: '', dice: '1d6' }],
+                    improvements: [...data.progression.improvements, { name: '', count: 1, dice: '1d100', comparison: 'gte', target: 0 }],
                   })
                 }
                 className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
@@ -1136,8 +1172,10 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         </div>
       )}
 
+      </div>
+
       {/* Navigation */}
-      <div className="flex items-center justify-between mt-6 pt-4 border-t border-bg-elevated">
+      <div className="shrink-0 flex items-center justify-between mt-4 pt-4 border-t border-bg-elevated">
         <button
           onClick={step === 0 ? onClose : () => setStep(step - 1)}
           className="flex items-center gap-1 text-xs text-text-secondary hover:text-text-primary"

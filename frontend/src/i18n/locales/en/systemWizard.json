@@ -86,6 +86,9 @@
   "s6_imp_hint": "Define skills improved by rolling for progress.",
   "s6_imp_header_name": "Skill",
   "s6_imp_header_dice": "Dice",
+  "s6_imp_header_count": "Count",
+  "s6_imp_header_comparison": "Cmp",
+  "s6_imp_header_target": "Target",
   "s6_imp_add": "Add Entry",
 
   "s3_title": "Skills",

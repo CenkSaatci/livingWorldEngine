@@ -86,6 +86,9 @@
   "s6_imp_hint": "Definiere Fertigkeiten, die durch Steigerungswürfe verbessert werden.",
   "s6_imp_header_name": "Fertigkeit",
   "s6_imp_header_dice": "Würfel",
+  "s6_imp_header_count": "Anzahl",
+  "s6_imp_header_comparison": "Vgl",
+  "s6_imp_header_target": "Ziel",
   "s6_imp_add": "Eintrag hinzufügen",
 
   "s3_title": "Fertigkeiten",

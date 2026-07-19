@@ -200,7 +200,10 @@ export default function GameSystemPage() {
           })),
           improvements: ((parsed.progression?.improvements as Record<string, unknown>[]) ?? []).map((imp: Record<string, unknown>) => ({
             name: (imp.name as string) ?? '',
+            count: (imp.count as number) ?? 1,
             dice: (imp.dice as string) ?? '1d6',
+            comparison: (imp.comparison as 'gte' | 'lte') ?? 'gte',
+            target: (imp.target as number) ?? 0,
           })),
         },
       };
