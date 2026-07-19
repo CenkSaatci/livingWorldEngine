@@ -71,3 +71,25 @@ body {
 .page-enter {
   animation: fadeIn 0.2s ease-out;
 }
+
+/* Dark-Mode Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #1a2733;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a3640;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a4650;
+}
+
+/* Firefox dark scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a3640 #1a2733;
+}
