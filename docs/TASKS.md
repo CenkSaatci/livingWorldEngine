@@ -1141,8 +1141,9 @@
 - **Akzeptanzkriterien:** Bei ☑ Magie erscheint der Magie-Step, sonst nicht.
 
 ### P15-T08: Conditionals-Engine
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 2,0 Tage
+- **Erledigt:** 2026-07-19
 - **Beschreibung:** Formel-Editor für konditionale Boni in Würfelausdrücken („wenn Stärke > 15 dann +2 auf Schaden"). Paradebeispiel DSA: „jeder Punkt Intuition über 8 gibt +1 auf Initiative".
 - **Akzeptanzkriterien:** Bedingungen wie `if(attribut>X, +bonus, 0)` werden geparst und gespeichert. Später in der RuleEngine auswertbar.
 
