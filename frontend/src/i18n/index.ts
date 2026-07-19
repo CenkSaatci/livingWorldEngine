@@ -9,6 +9,7 @@ import deCommon from './locales/de/common.json';
 import deDm from './locales/de/dm.json';
 import deErrors from './locales/de/errors.json';
 import deMap from './locales/de/map.json';
+import deSystemWizard from './locales/de/systemWizard.json';
 
 import enAuth from './locales/en/auth.json';
 import enCharacter from './locales/en/character.json';
@@ -17,6 +18,7 @@ import enCommon from './locales/en/common.json';
 import enDm from './locales/en/dm.json';
 import enErrors from './locales/en/errors.json';
 import enMap from './locales/en/map.json';
+import enSystemWizard from './locales/en/systemWizard.json';
 
 export const SUPPORTED_LOCALES = ['de', 'en'] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -32,6 +34,7 @@ export const I18N_NAMESPACES = [
   'chat',
   'dm',
   'errors',
+  'systemWizard',
 ] as const;
 export type I18nNamespace = (typeof I18N_NAMESPACES)[number];
 
@@ -53,6 +56,7 @@ void i18n
         chat: deChat,
         dm: deDm,
         errors: deErrors,
+        systemWizard: deSystemWizard,
       },
       en: {
         common: enCommon,
@@ -62,6 +66,7 @@ void i18n
         chat: enChat,
         dm: enDm,
         errors: enErrors,
+        systemWizard: enSystemWizard,
       },
     },
     interpolation: {
