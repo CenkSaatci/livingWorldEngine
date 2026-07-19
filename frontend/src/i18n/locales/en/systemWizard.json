@@ -6,6 +6,7 @@
   "step_label_3": "Skills",
   "step_label_5a": "Abilities",
   "step_label_6": "Progression",
+  "step_label_7": "Specials",
   "step_label_4": "Dice",
   "step_label_5": "Review",
 
@@ -90,6 +91,17 @@
   "s6_imp_header_comparison": "Cmp",
   "s6_imp_header_target": "Target",
   "s6_imp_add": "Add Entry",
+
+  "s7_title": "Specials",
+  "s7_magic_title": "Magic",
+  "s7_magic_hint": "Define the basics of your magic system.",
+  "s7_mana_formula": "Mana formula (e.g. 5+intelligence)",
+  "s7_spell_slots": "Spell slots per level (e.g. 3/2/1)",
+  "s7_schools": "Schools / Domains",
+  "s7_psionics_title": "Psionics",
+  "s7_psionics_hint": "Define the basics of your psionics system.",
+  "s7_power_points": "Power point formula (e.g. 3+willpower)",
+  "s7_disciplines": "Disciplines",
 
   "s3_title": "Skills",
   "s3_hint": "Skills are linked to attributes. Select <strong>one or more</strong> attributes per skill — the order determines weighting. Use <em>+ Attribute</em> to add more.",

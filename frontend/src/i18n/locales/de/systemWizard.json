@@ -6,6 +6,7 @@
   "step_label_3": "Fertigkeiten",
   "step_label_5a": "Fähigkeiten",
   "step_label_6": "Aufstieg",
+  "step_label_7": "Specials",
   "step_label_4": "Würfel",
   "step_label_5": "Übersicht",
 
@@ -90,6 +91,17 @@
   "s6_imp_header_comparison": "Vgl",
   "s6_imp_header_target": "Ziel",
   "s6_imp_add": "Eintrag hinzufügen",
+
+  "s7_title": "Specials",
+  "s7_magic_title": "Magie",
+  "s7_magic_hint": "Definiere die Grundlagen deines Magiesystems.",
+  "s7_mana_formula": "Mana-Formel (z.B. 5+intelligenz)",
+  "s7_spell_slots": "Zauber pro Stufe (z.B. 3/2/1)",
+  "s7_schools": "Schulen / Domänen",
+  "s7_psionics_title": "Psionik",
+  "s7_psionics_hint": "Definiere die Grundlagen deines Psionik-Systems.",
+  "s7_power_points": "Psipunkte-Formel (z.B. 3+willenskraft)",
+  "s7_disciplines": "Disziplinen",
 
   "s3_title": "Fertigkeiten",
   "s3_hint": "Fertigkeiten (Skills) werden an Attribute gekoppelt. Wähle <strong>ein oder mehrere</strong> Attribute pro Fertigkeit aus — die Reihenfolge bestimmt die Gewichtung. Mit <em>+ Attribut</em> fügst du weitere hinzu.",

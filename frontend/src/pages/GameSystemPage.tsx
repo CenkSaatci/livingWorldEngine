@@ -206,6 +206,15 @@ export default function GameSystemPage() {
             target: (imp.target as number) ?? 0,
           })),
         },
+        magic: {
+          manaFormula: ((parsed.magic as Record<string, unknown>)?.manaFormula as string) ?? '',
+          spellSlots: ((parsed.magic as Record<string, unknown>)?.spellSlots as string) ?? '',
+          schools: ((parsed.magic as Record<string, unknown>)?.schools as string) ?? '',
+        },
+        psionics: {
+          powerPoints: ((parsed.psionics as Record<string, unknown>)?.powerPoints as string) ?? '',
+          disciplines: ((parsed.psionics as Record<string, unknown>)?.disciplines as string) ?? '',
+        },
       };
     } catch { return null; }
   };

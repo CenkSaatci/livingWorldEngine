@@ -66,6 +66,17 @@ interface ImprovementEntry {
   target: number;
 }
 
+interface MagicSystem {
+  manaFormula: string;
+  spellSlots: string;
+  schools: string;
+}
+
+interface PsionicsSystem {
+  powerPoints: string;
+  disciplines: string;
+}
+
 export interface WizardData {
   name: string;
   version: number;
@@ -79,6 +90,8 @@ export interface WizardData {
     xpCosts: XpCostEntry[];
     improvements: ImprovementEntry[];
   };
+  magic: MagicSystem;
+  psionics: PsionicsSystem;
   attributes: AttributeDef[];
   skills: SkillDef[];
   probe: string;
@@ -86,7 +99,7 @@ export interface WizardData {
   combat: DiceCombat;
 }
 
-const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_dv', 'step_label_3', 'step_label_5a', 'step_label_6', 'step_label_4', 'step_label_5'];
+const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_dv', 'step_label_3', 'step_label_5a', 'step_label_6', 'step_label_7', 'step_label_4', 'step_label_5'];
 
 const DICE_PRESETS = [
   { v: '1d2', l: '1d2' }, { v: '1d3', l: '1d3' }, { v: '1d4', l: '1d4' }, { v: '1d6', l: '1d6' },
@@ -113,6 +126,8 @@ const INITIAL: WizardData = {
     xpCosts: [{ name: '', cost: 0 }],
     improvements: [{ name: '', count: 1, dice: '1d100', comparison: 'gte', target: 0 }],
   },
+  magic: { manaFormula: '', spellSlots: '', schools: '' },
+  psionics: { powerPoints: '', disciplines: '' },
   attributes: [],
   skills: [],
   probe: '1d20+mod',
@@ -155,6 +170,8 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
       derived_values: data.derivedValues,
       abilities: data.abilities,
       progression: data.progression,
+      magic: data.magic,
+      psionics: data.psionics,
       attributes: data.attributes,
       skills: data.skills,
       dice_mechanics: { probe: data.probe },
@@ -916,7 +933,77 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         </div>
       )}
 
+      {/* Step 7: Specials */}
       {step === 7 && (
+        <div className="space-y-4">
+          <h3 className="font-heading text-text-primary">{t('s7_title')}</h3>
+
+          {data.features.magic && (
+            <div className="space-y-3 rounded border border-accent/20 bg-bg-primary/30 p-3">
+              <p className="text-xs font-semibold text-text-primary">{t('s7_magic_title')}</p>
+              <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s7_magic_hint') }} />
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">{t('s7_mana_formula')}</label>
+                <input
+                  value={data.magic.manaFormula}
+                  onChange={(e) => update('magic', { ...data.magic, manaFormula: e.target.value })}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm font-mono text-text-primary outline-none focus:border-accent"
+                  placeholder="z.B. 5+intelligenz"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">{t('s7_spell_slots')}</label>
+                <input
+                  value={data.magic.spellSlots}
+                  onChange={(e) => update('magic', { ...data.magic, spellSlots: e.target.value })}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                  placeholder="z.B. 3/2/1"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">{t('s7_schools')}</label>
+                <input
+                  value={data.magic.schools}
+                  onChange={(e) => update('magic', { ...data.magic, schools: e.target.value })}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                  placeholder="z.B. Feuer, Eis, Illusion"
+                />
+              </div>
+            </div>
+          )}
+
+          {data.features.psionics && (
+            <div className="space-y-3 rounded border border-accent/20 bg-bg-primary/30 p-3">
+              <p className="text-xs font-semibold text-text-primary">{t('s7_psionics_title')}</p>
+              <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s7_psionics_hint') }} />
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">{t('s7_power_points')}</label>
+                <input
+                  value={data.psionics.powerPoints}
+                  onChange={(e) => update('psionics', { ...data.psionics, powerPoints: e.target.value })}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm font-mono text-text-primary outline-none focus:border-accent"
+                  placeholder="z.B. 3+willenskraft"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">{t('s7_disciplines')}</label>
+                <input
+                  value={data.psionics.disciplines}
+                  onChange={(e) => update('psionics', { ...data.psionics, disciplines: e.target.value })}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                  placeholder="z.B. Telepathie, Telekinese"
+                />
+              </div>
+            </div>
+          )}
+
+          {!data.features.magic && !data.features.psionics && (
+            <p className="text-xs text-text-secondary">Aktiviere Magie oder Psionik unter System-Charakter (Step 0), um hier Einstellungen vorzunehmen.</p>
+          )}
+        </div>
+      )}
+
+      {step === 8 && (
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s4_title')}</h3>
           <div className="rounded bg-bg-primary/30 p-3 text-xs text-text-secondary">
@@ -1029,7 +1116,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         </div>
       )}
 
-      {step === 8 && (
+      {step === 9 && (
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s5_title')}</h3>
 
