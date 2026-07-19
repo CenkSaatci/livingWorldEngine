@@ -85,7 +85,7 @@ export default function MapEditorPage() {
         const locResults = await Promise.all(locPromises);
         setLocations(locResults.flatMap((r) => r.data ?? []));
       } catch {
-        toast.error('Failed to load map data');
+        toast.error(t("editor.failed_load_map"));
       } finally {
         setLoading(false);
       }
@@ -257,7 +257,7 @@ export default function MapEditorPage() {
     if (!id) return;
     const loc = locations.find(l => l.id === locationId);
     console.log('Place:', { loc, x, y });
-    if (!loc?.regionId) { toast.error('Location has no region'); return; }
+    if (!loc?.regionId) { toast.error(t("editor.location_no_region")); return; }
     try {
       const patchRes = await apiClient.patch(`/regions/${loc.regionId}/locations/${locationId}`, {
         positionJson: JSON.stringify({ x, y }),
@@ -266,11 +266,11 @@ export default function MapEditorPage() {
       const locPromises = regions.map((r) => apiClient.get(`/regions/${r.id}/locations`));
       const locResults = await Promise.all(locPromises);
       setLocations(locResults.flatMap((r) => r.data ?? []));
-      toast.success('Location placed');
+      toast.success(t("editor.location_placed"));
       setMode('view');
       setSelectedLocation(null);
     } catch {
-      toast.error('Failed to place location');
+      toast.error(t("editor.failed_place_location"));
     }
   };
 
@@ -287,14 +287,14 @@ export default function MapEditorPage() {
 
   const handleSavePolygon = async () => {
     if (!id || !selectedRegion || drawingPoints.length < 3) {
-      toast.error('Select a region and draw at least 3 points');
+      toast.error(t("editor.select_region_draw"));
       return;
     }
     try {
       await apiClient.patch(`/worlds/${id}/regions/${selectedRegion}`, {
         polygonPoints: JSON.stringify(drawingPoints),
       });
-      toast.success('Polygon saved');
+      toast.success(t("editor.polygon_saved"));
       setDrawingPoints([]);
       setSelectedRegion(null);
       setMode('view');
@@ -302,7 +302,7 @@ export default function MapEditorPage() {
       console.log('Regions after save:', res.data);
       setRegions(res.data ?? []);
     } catch {
-      toast.error('Failed to save polygon');
+      toast.error(t("editor.failed_save_polygon"));
     }
   };
 
@@ -349,10 +349,10 @@ export default function MapEditorPage() {
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-lg font-heading text-text-primary">Map Editor</h1>
+          <h1 className="text-lg font-heading text-text-primary">{t("editor.heading")}</h1>
           {(mode === 'draw' || mode === 'place') && (
             <span className="rounded bg-accent/20 px-2 py-0.5 text-xs text-accent">
-              {mode === 'draw' ? 'Drawing mode' : 'Place mode'}
+              {mode === 'draw' ? t("editor.mode_drawing") : t("editor.mode_placing")}
             </span>
           )}
         </div>
@@ -380,7 +380,7 @@ export default function MapEditorPage() {
         <aside className="flex w-64 flex-col gap-4 overflow-y-auto border-r border-bg-elevated bg-bg-surface p-4">
           {/* Upload */}
           <div>
-            <label className="mb-1 block text-xs text-text-secondary">Map Image</label>
+            <label className="mb-1 block text-xs text-text-secondary">{t("editor.map_image")}</label>
             <label className="flex cursor-pointer items-center gap-2 rounded border border-bg-elevated px-3 py-2 text-sm text-text-secondary hover:text-text-primary">
               <Upload size={14} />
               Upload
@@ -391,7 +391,7 @@ export default function MapEditorPage() {
 
           {/* Mode toggle */}
           <div>
-            <label className="mb-1 block text-xs text-text-secondary">Mode</label>
+            <label className="mb-1 block text-xs text-text-secondary">{t("editor.mode")}</label>
             <div className="flex gap-1">
               {(['view', 'draw', 'place'] as const).map((m) => (
                 <button
@@ -405,7 +405,7 @@ export default function MapEditorPage() {
                     mode === m ? 'bg-accent text-white' : 'bg-bg-elevated text-text-secondary'
                   }`}
                 >
-                  {m === 'view' ? 'View' : m === 'draw' ? 'Draw' : 'Place'}
+                  {m === 'view' ? t('editor.mode_view') : m === 'draw' ? t('editor.mode_draw') : t('editor.mode_place')}
                 </button>
               ))}
             </div>
@@ -417,7 +417,7 @@ export default function MapEditorPage() {
               Regions
             </h3>
             <div className="space-y-1">
-              {regions.length === 0 && <p className="text-xs text-text-secondary">No regions</p>}
+              {regions.length === 0 && <p className="text-xs text-text-secondary">{t("editor.no_regions")}</p>}
               {regions.map((region, idx) => {
                 const color = POLY_COLORS[idx % POLY_COLORS.length];
                 return (
@@ -438,20 +438,20 @@ export default function MapEditorPage() {
                     onClick={() => handleStartDraw(region.id)}
                     className="text-xs text-accent hover:text-accent/80"
                   >
-                    {region.polygon_points ? 'Redraw' : 'Draw'}
+                    {region.polygon_points ? t("editor.redraw_polygon") : t("editor.draw_polygon")}
                   </button>
                 </div>
                 );
               })}
               <button
                 onClick={async () => {
-                  const name = prompt('Region name:');
+                  const name = prompt(t("editor.region_name_prompt"));
                   if (!name || !id) return;
                   try {
                     await apiClient.post(`/worlds/${id}/regions`, { name, dangerLevel: 5 });
                     const res = await apiClient.get(`/worlds/${id}/regions`);
                     setRegions(res.data ?? []);
-                  } catch { toast.error('Failed to create region'); }
+                  } catch { toast.error(t("editor.failed_create_region")); }
                 }}
                 className="w-full rounded border border-dashed border-bg-elevated py-1 text-xs text-text-secondary hover:text-accent hover:border-accent/50"
               >
@@ -467,7 +467,7 @@ export default function MapEditorPage() {
             </h3>
             <div className="space-y-1">
               {locations.length === 0 && (
-                <p className="text-xs text-text-secondary">No locations</p>
+                <p className="text-xs text-text-secondary">{t("editor.no_locations")}</p>
               )}
               {locations.map((loc) => (
                 <div
@@ -547,7 +547,7 @@ export default function MapEditorPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="w-80 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-heading text-text-primary">Create Location</h3>
+              <h3 className="font-heading text-text-primary">{t("editor.create_location_title")}</h3>
               <button onClick={() => setShowLocModal(null)} className="text-text-secondary hover:text-text-primary"><X size={16} /></button>
             </div>
             <div className="space-y-3">
@@ -590,7 +590,7 @@ export default function MapEditorPage() {
               <button onClick={async () => {
                 if (!locForm.name || !locForm.regionName) return;
                 const region = regions.find(r => r.name === locForm.regionName);
-                if (!region) { toast.error('Region not found'); return; }
+                if (!region) { toast.error(t("editor.region_not_found")); return; }
                 try {
                   await apiClient.post(`/regions/${region.id}/locations`, {
                     name: locForm.name, type: locForm.type, description: locForm.description || undefined,
@@ -600,8 +600,8 @@ export default function MapEditorPage() {
                   const locResults = await Promise.all(locPromises);
                   setLocations(locResults.flatMap((r) => r.data ?? []));
                   setShowLocModal(null);
-                  toast.success('Location created');
-                } catch { toast.error('Failed to create location'); }
+                  toast.success(t("editor.location_created"));
+                } catch { toast.error(t("editor.failed_create_location")); }
               }}
                 className="w-full rounded bg-accent py-2 text-sm text-white hover:bg-accent/80">
                 Create
@@ -626,7 +626,7 @@ export default function MapEditorPage() {
             <p className="text-xs text-text-secondary mb-2">Type: {infoLocation.type}</p>
             {infoLocation.description && <p className="text-sm text-text-primary mb-2">{infoLocation.description}</p>}
             <p className="text-xs text-text-secondary">Population: {infoLocation.population} · Wealth: {infoLocation.wealth}/10</p>
-            {infoLocation.positionJson && <p className="text-xs text-text-secondary mt-1">✓ Placed on map</p>}
+            {infoLocation.positionJson && <p className="text-xs text-text-secondary mt-1">{t('editor.placed_on_map')}</p>}
           </div>
         </div>
       )}
