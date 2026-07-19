@@ -215,6 +215,14 @@ export default function GameSystemPage() {
           powerPoints: ((parsed.psionics as Record<string, unknown>)?.powerPoints as string) ?? '',
           disciplines: ((parsed.psionics as Record<string, unknown>)?.disciplines as string) ?? '',
         },
+        conditionals: (parsed.conditionals ?? []).map((c: Record<string, unknown>) => ({
+          name: (c.name as string) ?? '',
+          attribute: (c.attribute as string) ?? '',
+          operator: (c.operator as 'gt' | 'gte' | 'lt' | 'lte' | 'eq' | 'per_point') ?? 'gte',
+          value: (c.value as number) ?? 0,
+          bonus: (c.bonus as string) ?? '',
+          target: (c.target as string) ?? '',
+        })),
       };
     } catch { return null; }
   };

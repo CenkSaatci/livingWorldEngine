@@ -77,6 +77,15 @@ interface PsionicsSystem {
   disciplines: string;
 }
 
+interface ConditionalDef {
+  name: string;
+  attribute: string;
+  operator: 'gt' | 'gte' | 'lt' | 'lte' | 'eq' | 'per_point';
+  value: number;
+  bonus: string;
+  target: string;
+}
+
 export interface WizardData {
   name: string;
   version: number;
@@ -92,6 +101,7 @@ export interface WizardData {
   };
   magic: MagicSystem;
   psionics: PsionicsSystem;
+  conditionals: ConditionalDef[];
   attributes: AttributeDef[];
   skills: SkillDef[];
   probe: string;
@@ -99,7 +109,7 @@ export interface WizardData {
   combat: DiceCombat;
 }
 
-const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_dv', 'step_label_3', 'step_label_5a', 'step_label_6', 'step_label_7', 'step_label_4', 'step_label_5'];
+const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_dv', 'step_label_3', 'step_label_5a', 'step_label_6', 'step_label_7', 'step_label_8', 'step_label_4', 'step_label_5'];
 
 const DICE_PRESETS = [
   { v: '1d2', l: '1d2' }, { v: '1d3', l: '1d3' }, { v: '1d4', l: '1d4' }, { v: '1d6', l: '1d6' },
@@ -128,6 +138,7 @@ const INITIAL: WizardData = {
   },
   magic: { manaFormula: '', spellSlots: '', schools: '' },
   psionics: { powerPoints: '', disciplines: '' },
+  conditionals: [],
   attributes: [],
   skills: [],
   probe: '1d20+mod',
@@ -172,6 +183,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
       progression: data.progression,
       magic: data.magic,
       psionics: data.psionics,
+      conditionals: data.conditionals,
       attributes: data.attributes,
       skills: data.skills,
       dice_mechanics: { probe: data.probe },
@@ -1003,7 +1015,102 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         </div>
       )}
 
+      {/* Step 8: Conditions */}
       {step === 8 && (
+        <div className="space-y-4">
+          <h3 className="font-heading text-text-primary">{t('s8_title')}</h3>
+          <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s8_hint') }} />
+
+          {data.attributes.length > 0 && (
+            <div className="rounded bg-bg-primary/30 p-2 text-xs text-text-secondary">
+              <span className="font-semibold text-text-primary">Verfügbare Attribute: </span>
+              {data.attributes.map((a, i) => (
+                <span key={a.name}>
+                  {i > 0 && <span className="mx-1">·</span>}
+                  <code className="text-accent">{a.name}</code> ({a.min}–{a.max})
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 px-2 text-[10px] text-text-secondary uppercase tracking-wider">
+            <span className="w-20">{t('s8_header_name')}</span>
+            <span className="w-16">{t('s8_header_attr')}</span>
+            <span className="w-14">{t('s8_header_op')}</span>
+            <span className="w-14">{t('s8_header_val')}</span>
+            <span className="w-14">{t('s8_header_bonus')}</span>
+            <span className="flex-1">{t('s8_header_target')}</span>
+            <span className="w-4" />
+          </div>
+
+          {data.conditionals.map((c, i) => (
+            <div key={i} className="flex items-center gap-2 rounded bg-bg-primary/50 p-2">
+              <input
+                value={c.name} onChange={(e) => {
+                  const a = [...data.conditionals]; a[i] = { ...a[i], name: e.target.value }; update('conditionals', a);
+                }}
+                className="w-20 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                placeholder={t('s8_header_name')}
+              />
+              <select
+                value={c.attribute} onChange={(e) => {
+                  const a = [...data.conditionals]; a[i] = { ...a[i], attribute: e.target.value }; update('conditionals', a);
+                }}
+                className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+              >
+                <option value="">—</option>
+                {data.attributes.map((a) => (
+                  <option key={a.name} value={a.name}>{a.name}</option>
+                ))}
+              </select>
+              <select
+                value={c.operator} onChange={(e) => {
+                  const a = [...data.conditionals]; a[i] = { ...a[i], operator: e.target.value as ConditionalDef['operator'] }; update('conditionals', a);
+                }}
+                className="w-14 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+              >
+                <option value="gt">{t('s8_op_gt')}</option>
+                <option value="gte">{t('s8_op_gte')}</option>
+                <option value="lt">{t('s8_op_lt')}</option>
+                <option value="lte">{t('s8_op_lte')}</option>
+                <option value="eq">{t('s8_op_eq')}</option>
+                <option value="per_point">{t('s8_op_per_point')}</option>
+              </select>
+              <input
+                type="number" value={c.value} onChange={(e) => {
+                  const a = [...data.conditionals]; a[i] = { ...a[i], value: Number(e.target.value) }; update('conditionals', a);
+                }}
+                className="w-14 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+              />
+              <input
+                value={c.bonus} onChange={(e) => {
+                  const a = [...data.conditionals]; a[i] = { ...a[i], bonus: e.target.value }; update('conditionals', a);
+                }}
+                className="w-14 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                placeholder={t('s8_bonus_placeholder')}
+              />
+              <input
+                value={c.target} onChange={(e) => {
+                  const a = [...data.conditionals]; a[i] = { ...a[i], target: e.target.value }; update('conditionals', a);
+                }}
+                className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                placeholder={t('s8_target_placeholder')}
+              />
+              <button onClick={() => update('conditionals', data.conditionals.filter((_, j) => j !== i))}
+                className="text-danger hover:text-danger/80"><X size={14} /></button>
+            </div>
+          ))}
+
+          <button
+            onClick={() => update('conditionals', [...data.conditionals, { name: '', attribute: '', operator: 'gte', value: 0, bonus: '', target: '' }])}
+            className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+          >
+            <Plus size={14} /> {t('s8_add')}
+          </button>
+        </div>
+      )}
+
+      {step === 9 && (
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s4_title')}</h3>
           <div className="rounded bg-bg-primary/30 p-3 text-xs text-text-secondary">
@@ -1116,7 +1223,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         </div>
       )}
 
-      {step === 9 && (
+      {step === 10 && (
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s5_title')}</h3>
 
@@ -1199,6 +1306,22 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 ))}
               </div>
             )}
+          </div>
+          )}
+
+          {data.conditionals.length > 0 && (
+          <div className="rounded bg-bg-primary/50 p-3">
+            <p className="text-[10px] text-text-secondary uppercase tracking-wider mb-2">
+              Bedingungen ({data.conditionals.length})
+            </p>
+            <div className="space-y-1">
+              {data.conditionals.map((c, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  <span className="text-text-primary w-20 truncate">{c.name || '—'}</span>
+                  <span className="text-text-secondary">{c.attribute} {c.operator} {c.value} → {c.bonus} auf {c.target}</span>
+                </div>
+              ))}
+            </div>
           </div>
           )}
 
