@@ -158,5 +158,31 @@
   "session_active": "Session active",
   "no_session": "No session",
   "diplomacy": "Diplomacy",
-  "close": "Close"
+  "close": "Close",
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "diceAnimation": "Dice Animation",
+    "diceAnimationDesc": "CSS = lightweight, no dependencies. 3D = three.js rendered dice.",
+    "diceCss": "🎲 CSS",
+    "dice3d": "🧊 3D",
+    "theme": "Theme",
+    "themeDark": "🌙 Dark",
+    "themeLight": "☀️ Light",
+    "themeCyber": "🤖 Cyber",
+    "account": "Account",
+    "username": "Username",
+    "role": "Role",
+    "locale": "Locale",
+    "sound": "Sound",
+    "soundOn": "On",
+    "soundOff": "Off",
+    "changePassword": "Change Password",
+    "currentPassword": "Current password",
+    "newPassword": "New password (min 6 chars)",
+    "passwordChanged": "Password changed",
+    "passwordTooShort": "Password too short",
+    "fillBothFields": "Fill both fields",
+    "failedChangePassword": "Failed to change password"
+  }
 }

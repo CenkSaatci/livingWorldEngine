@@ -158,5 +158,31 @@
   "session_active": "Session aktiv",
   "no_session": "Keine Session",
   "diplomacy": "Diplomatie",
-  "close": "Schließen"
+  "close": "Schließen",
+  "settings": {
+    "title": "Einstellungen",
+    "language": "Sprache",
+    "diceAnimation": "Würfel-Animation",
+    "diceAnimationDesc": "CSS = leichtgewichtig, keine Abhängigkeiten. 3D = three.js-Würfel.",
+    "diceCss": "🎲 CSS",
+    "dice3d": "🧊 3D",
+    "theme": "Design",
+    "themeDark": "🌙 Dunkel",
+    "themeLight": "☀️ Hell",
+    "themeCyber": "🤖 Cyber",
+    "account": "Konto",
+    "username": "Benutzername",
+    "role": "Rolle",
+    "locale": "Sprache",
+    "sound": "Sound",
+    "soundOn": "An",
+    "soundOff": "Aus",
+    "changePassword": "Passwort ändern",
+    "currentPassword": "Aktuelles Passwort",
+    "newPassword": "Neues Passwort (min. 6 Zeichen)",
+    "passwordChanged": "Passwort geändert",
+    "passwordTooShort": "Passwort zu kurz",
+    "fillBothFields": "Fülle beide Felder aus",
+    "failedChangePassword": "Passwort konnte nicht geändert werden"
+  }
 }
