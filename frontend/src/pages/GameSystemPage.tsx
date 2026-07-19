@@ -173,6 +173,8 @@ export default function GameSystemPage() {
             max: combat.action_points?.max ?? 2,
           },
         },
+        progressionType: null,
+        features: { magic: false, psionics: false, rangedCombat: false, criticalHits: false, armorPenalty: false },
       };
     } catch { return null; }
   };

@@ -1,5 +1,6 @@
 import { useState, useImperativeHandle, forwardRef } from 'react';
 import { Plus, X, Check, Dice1 as Dice, ArrowLeft, ArrowRight, Save, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../api/client';
 import { useToast } from '../../hooks/useToast';
 
@@ -23,10 +24,20 @@ interface DiceCombat {
   actionPoints: { standard: number; max: number };
 }
 
+interface SystemFeatures {
+  magic: boolean;
+  psionics: boolean;
+  rangedCombat: boolean;
+  criticalHits: boolean;
+  armorPenalty: boolean;
+}
+
 export interface WizardData {
   name: string;
   version: number;
   description: string;
+  progressionType: 'level' | 'xp' | 'improvement' | null;
+  features: SystemFeatures;
   attributes: AttributeDef[];
   skills: SkillDef[];
   probe: string;
@@ -34,7 +45,7 @@ export interface WizardData {
   combat: DiceCombat;
 }
 
-const STEPS = ['Basic', 'Attributes', 'Skills', 'Dice', 'Review'];
+const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_3', 'step_label_4', 'step_label_5'];
 
 const DICE_PRESETS = [
   { v: '1d2', l: '1d2' }, { v: '1d3', l: '1d3' }, { v: '1d4', l: '1d4' }, { v: '1d6', l: '1d6' },
@@ -46,6 +57,14 @@ const INITIAL: WizardData = {
   name: '',
   version: 1,
   description: '',
+  progressionType: null,
+  features: {
+    magic: false,
+    psionics: false,
+    rangedCombat: false,
+    criticalHits: false,
+    armorPenalty: false,
+  },
   attributes: [],
   skills: [],
   probe: '1d20+mod',
@@ -69,6 +88,7 @@ interface Props {
 }
 
 export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function SystemWizard({ onSaved, onClose, initialData, systemId }, ref) {
+  const { t } = useTranslation('systemWizard');
   const [step, setStep] = useState(0);
   const [data, setData] = useState<WizardData>(() => initialData ?? INITIAL);
   const [saving, setSaving] = useState(false);
@@ -139,17 +159,69 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
             >
               {i < step ? <Check size={10} /> : i + 1}
             </span>
-            {s}
+            {t(s)}
             {i < STEPS.length - 1 && <span className="w-4 border-t border-bg-elevated" />}
           </div>
         ))}
       </div>
 
+      {/* Step 0: System-Charakter */}
       {step === 0 && (
-        <div className="space-y-4">
-          <h3 className="font-heading text-text-primary">Basic Information</h3>
+        <div className="space-y-5">
+          <h3 className="font-heading text-text-primary">{t('s0_title')}</h3>
+
           <div>
-            <label className="block text-xs text-text-secondary mb-1">System Name *</label>
+            <label className="block text-sm font-medium text-text-secondary mb-2">{t('s0_progression_type')}</label>
+            <div className="flex flex-wrap gap-3">
+              {(['level', 'xp', 'improvement'] as const).map((type) => (
+                <label key={type} className={`flex cursor-pointer items-center gap-2 rounded border px-4 py-3 text-sm transition-colors ${
+                  data.progressionType === type
+                    ? 'border-accent bg-accent/10 text-accent'
+                    : 'border-bg-elevated bg-bg-primary text-text-secondary hover:border-accent/50'
+                }`}>
+                  <input
+                    type="radio"
+                    name="progressionType"
+                    checked={data.progressionType === type}
+                    onChange={() => update('progressionType', type)}
+                    className="accent-accent"
+                  />
+                  {t(`s0_${type}`)}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">{t('s0_features')}</label>
+            <div className="grid grid-cols-2 gap-2">
+              {(['magic', 'psionics', 'rangedCombat', 'criticalHits', 'armorPenalty'] as const).map((feat) => (
+                <label key={feat} className="flex cursor-pointer items-center gap-2 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-secondary hover:border-accent/50">
+                  <input
+                    type="checkbox"
+                    checked={data.features[feat]}
+                    onChange={(e) =>
+                      setData((prev) => ({
+                        ...prev,
+                        features: { ...prev.features, [feat]: e.target.checked },
+                      }))
+                    }
+                    className="accent-accent"
+                  />
+                  {t(`s0_${feat}`)}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 1: Basic Information */}
+      {step === 1 && (
+        <div className="space-y-4">
+          <h3 className="font-heading text-text-primary">{t('s1_title')}</h3>
+          <div>
+            <label className="block text-xs text-text-secondary mb-1">{t('s1_name')}</label>
             <input
               value={data.name}
               onChange={(e) => update('name', e.target.value)}
@@ -158,7 +230,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-text-secondary mb-1">Version</label>
+              <label className="block text-xs text-text-secondary mb-1">{t('s1_version')}</label>
               <input
                 type="number"
                 min={1}
@@ -169,7 +241,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
             </div>
           </div>
           <div>
-            <label className="block text-xs text-text-secondary mb-1">Description</label>
+            <label className="block text-xs text-text-secondary mb-1">{t('s1_description')}</label>
             <textarea
               value={data.description}
               onChange={(e) => update('description', e.target.value)}
@@ -180,12 +252,10 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         </div>
       )}
 
-      {step === 1 && (
+      {step === 2 && (
         <div className="space-y-4">
-          <h3 className="font-heading text-text-primary">Attribute</h3>
-          <p className="text-xs text-text-secondary">
-            Definiere die Kerneigenschaften deines Systems (z.B. <em>Stärke</em>, <em>Geschicklichkeit</em>). Attributnamen werden <strong>klein</strong> geschrieben (z.B. <code>staerke</code>) und später in Würfelausdrücken wie <code>1d20+staerke</code> verwendet.
-          </p>
+          <h3 className="font-heading text-text-primary">{t('s2_title')}</h3>
+          <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s2_hint') }} />
           {data.attributes.map((attr, i) => (
             <div key={i} className="flex items-center gap-2 rounded bg-bg-primary/50 p-2">
               <input
@@ -196,7 +266,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   update('attributes', a);
                 }}
                 className="w-24 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                placeholder="Name"
+                placeholder={t('s3_placeholder')}
               />
               <select
                 value={attr.type}
@@ -271,7 +341,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         </div>
       )}
 
-      {step === 2 && (
+      {step === 3 && (
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">Fertigkeiten</h3>
           <p className="text-xs text-text-secondary">
@@ -363,11 +433,11 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         </div>
       )}
 
-      {step === 3 && (
+      {step === 4 && (
         <div className="space-y-4">
-          <h3 className="font-heading text-text-primary">Würfelmechanik</h3>
+          <h3 className="font-heading text-text-primary">{t('s4_title')}</h3>
           <div className="rounded bg-bg-primary/30 p-3 text-xs text-text-secondary">
-            <p><strong>Probe (Probe Expression):</strong> Der Würfelausdruck für Fertigkeitsproben, z.B. <code>1d20+mod</code> (1W20 + Modifikator), <code>2d6+mod</code> (2W6), <code>4dF</code> (Fudge-Würfel). <code>mod</code> wird später durch den Fertigkeitswert des Charakters ersetzt. Statt <code>mod</code> kann auch ein Attributsname stehen wie <code>1d20+staerke</code>.</p>
+            <p dangerouslySetInnerHTML={{ __html: t('s4_probe_hint') }} />
           </div>
           <div>
             <label className="block text-xs text-text-secondary mb-1">Probe Expression</label>
@@ -476,9 +546,9 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         </div>
       )}
 
-      {step === 4 && (
+      {step === 5 && (
         <div className="space-y-4">
-          <h3 className="font-heading text-text-primary">Übersicht & Speichern</h3>
+          <h3 className="font-heading text-text-primary">{t('s5_title')}</h3>
 
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="rounded bg-bg-primary/50 p-3">
@@ -557,14 +627,14 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           onClick={step === 0 ? onClose : () => setStep(step - 1)}
           className="flex items-center gap-1 text-xs text-text-secondary hover:text-text-primary"
         >
-          <ArrowLeft size={14} /> {step === 0 ? 'Cancel' : 'Back'}
+          <ArrowLeft size={14} /> {step === 0 ? t('nav_cancel') : t('nav_back')}
         </button>
         {step < STEPS.length - 1 ? (
           <button
             onClick={() => setStep(step + 1)}
             className="flex items-center gap-1 rounded bg-accent px-4 py-2 text-xs text-white hover:bg-accent/80"
           >
-            Next <ArrowRight size={14} />
+            {t('nav_next')} <ArrowRight size={14} />
           </button>
         ) : (
           <button
@@ -572,7 +642,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
             disabled={saving || !data.name.trim()}
             className="flex items-center gap-1 rounded bg-accent px-4 py-2 text-xs text-white hover:bg-accent/80 disabled:opacity-40"
           >
-            <Save size={14} /> {saving ? 'Creating…' : 'Save System'}
+            <Save size={14} /> {saving ? t('nav_saving') : t('nav_save')}
           </button>
         )}
       </div>
