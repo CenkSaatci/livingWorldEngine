@@ -1125,8 +1125,9 @@
 - **Akzeptanzkriterien:** Fähigkeiten werden gespeichert, im Review gelistet, später im Character-Sheet nutzbar.
 
 ### P15-T06: Wizard Step 6 — Progression (conditional)
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 1,0 Tag
+- **Erledigt:** 2026-07-19
 - **Beschreibung:** Step 5 wird je nach Step-0-Auswahl unterschiedlich dargestellt: Level-Tabelle (D&D), XP-Kosten (DSA), Steigerungswürfel (CoC).
 - **Abhängigkeiten:** Step 0
 - **Akzeptanzkriterien:** Je nach gewähltem Progression-Typ erscheint die passende UI.
