@@ -1,6 +1,34 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
+function valueSprite(value: number): THREE.Sprite {
+  const s = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = s;
+  canvas.height = s;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.beginPath();
+  ctx.arc(s / 2, s / 2, s / 2 - 4, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  ctx.strokeStyle = '#ccc';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.fillStyle = '#1a1a2e';
+  ctx.font = 'bold 64px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(value), s / 2, s / 2);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(1, 1, 1);
+  return sprite;
+}
+
 function dotPositions(n: number): [number, number][] {
   switch (n) {
     case 1: return [[0.5, 0.5]];
@@ -13,25 +41,21 @@ function dotPositions(n: number): [number, number][] {
   }
 }
 
-function faceTexture(value: number, sides: number, color: string): THREE.CanvasTexture {
+function faceTexture(value: number, sides: number): THREE.CanvasTexture {
   const s = 256;
   const canvas = document.createElement('canvas');
   canvas.width = s;
   canvas.height = s;
   const ctx = canvas.getContext('2d')!;
-
-  ctx.fillStyle = color;
+  ctx.fillStyle = '#f8f4f0';
   ctx.fillRect(0, 0, s, s);
-  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(2, 2, s - 4, s - 4);
 
   ctx.fillStyle = '#1a1a2e';
   if (sides === 6 && value >= 1 && value <= 6) {
     const dots = dotPositions(value);
     for (const [px, py] of dots) {
       ctx.beginPath();
-      ctx.arc(px * s, py * s, 12, 0, Math.PI * 2);
+      ctx.arc(px * s, py * s, 14, 0, Math.PI * 2);
       ctx.fill();
     }
   } else {
@@ -43,60 +67,22 @@ function faceTexture(value: number, sides: number, color: string): THREE.CanvasT
   return new THREE.CanvasTexture(canvas);
 }
 
-function createDie(value: number, sides: number, color: string): THREE.Mesh {
-  switch (sides) {
-    case 4: return createTetrahedron(value, color);
-    case 6: return createCube(value, color);
-    case 8: return createOctahedron(sides, color);
-    case 10: return createPentagonalTrap(value, color);
-    case 12: return createDodecahedron(sides, color);
-    case 20: return createIcosahedron(sides, color);
-    default: return createCube(value, color);
-  }
+function createColoredMat(color: string): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial({ color, roughness: 0.4, metalness: 0.05 });
 }
 
-function createCube(value: number, color: string) {
-  const geo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
-  const tex = faceTexture(value, 6, color);
-  const mats = Array.from({ length: 6 }, () => new THREE.MeshStandardMaterial({
-    map: tex, roughness: 0.4, metalness: 0.05,
-  }));
-  return new THREE.Mesh(geo, mats);
+interface DieResult {
+  mesh: THREE.Mesh;
+  value: number;
+  targetRotation: THREE.Euler;
 }
 
-function createTetrahedron(value: number, color: string) {
-  const geo = new THREE.TetrahedronGeometry(0.6);
-  const tex = faceTexture(value, 4, color);
-  const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.4, metalness: 0.05 });
-  return new THREE.Mesh(geo, mat);
-}
-
-function createOctahedron(sides: number, color: string) {
-  const geo = new THREE.OctahedronGeometry(0.6);
-  const tex = faceTexture(1, sides, color);
-  const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.4, metalness: 0.05 });
-  return new THREE.Mesh(geo, mat);
-}
-
-function createDodecahedron(sides: number, color: string) {
-  const geo = new THREE.DodecahedronGeometry(0.6);
-  const tex = faceTexture(1, sides, color);
-  const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.4, metalness: 0.05 });
-  return new THREE.Mesh(geo, mat);
-}
-
-function createIcosahedron(sides: number, color: string) {
-  const geo = new THREE.IcosahedronGeometry(0.6);
-  const tex = faceTexture(1, sides, color);
-  const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.4, metalness: 0.05 });
-  return new THREE.Mesh(geo, mat);
-}
-
-function createPentagonalTrap(value: number, color: string) {
-  const geo = new THREE.CylinderGeometry(0.5, 0.35, 0.8, 5, 1);
-  const tex = faceTexture(value, 10, color);
-  const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.4, metalness: 0.05 });
-  return new THREE.Mesh(geo, mat);
+interface SceneState {
+  scene: THREE.Scene;
+  camera: THREE.PerspectiveCamera;
+  renderer: THREE.WebGLRenderer;
+  dice: DieResult[];
+  animId: number;
 }
 
 interface ThreeDiceResult {
@@ -113,15 +99,64 @@ interface Props {
 const COLORS = [0x5bb8c5, 0xe0556b, 0x7ac784, 0xf2a65a, 0xa78bfa];
 const COLOR_STRS = ['#5bb8c5', '#e0556b', '#7ac784', '#f2a65a', '#a78bfa'];
 
+function buildDie(value: number, sides: number, color: string): { mesh: THREE.Mesh; sprite: THREE.Sprite } {
+  const mat = createColoredMat(color);
+  let mesh: THREE.Mesh;
+
+  switch (sides) {
+    case 4: {
+      const geo = new THREE.TetrahedronGeometry(0.55);
+      mesh = new THREE.Mesh(geo, mat);
+      break;
+    }
+    case 6: {
+      const tex = faceTexture(value, 6);
+      const mats = Array.from({ length: 6 }, () => new THREE.MeshStandardMaterial({
+        map: tex, roughness: 0.4, metalness: 0.05,
+      }));
+      const geo = new THREE.BoxGeometry(0.75, 0.75, 0.75);
+      mesh = new THREE.Mesh(geo, mats);
+      break;
+    }
+    case 8: {
+      const geo = new THREE.OctahedronGeometry(0.55);
+      mesh = new THREE.Mesh(geo, mat);
+      break;
+    }
+    case 10: {
+      const geo = new THREE.CylinderGeometry(0.45, 0.3, 0.75, 5, 1);
+      mesh = new THREE.Mesh(geo, mat);
+      break;
+    }
+    case 12: {
+      const geo = new THREE.DodecahedronGeometry(0.55);
+      mesh = new THREE.Mesh(geo, mat);
+      break;
+    }
+    case 20: {
+      const geo = new THREE.IcosahedronGeometry(0.55);
+      mesh = new THREE.Mesh(geo, mat);
+      break;
+    }
+    default: {
+      const geo = new THREE.BoxGeometry(0.75, 0.75, 0.75);
+      const tex = faceTexture(value, sides);
+      const mats = Array.from({ length: 6 }, () => new THREE.MeshStandardMaterial({
+        map: tex, roughness: 0.4, metalness: 0.05,
+      }));
+      mesh = new THREE.Mesh(geo, mats);
+    }
+  }
+
+  const sprite = valueSprite(value);
+  sprite.position.y = 0.7;
+
+  return { mesh, sprite };
+}
+
 export function ThreeDice({ results, modifier, total }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const sceneRef = useRef<{
-    scene: THREE.Scene;
-    camera: THREE.PerspectiveCamera;
-    renderer: THREE.WebGLRenderer;
-    dice: { mesh: THREE.Mesh; value: number; targetRotation: THREE.Euler }[];
-    animId: number;
-  } | null>(null);
+  const sceneRef = useRef<SceneState | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -145,13 +180,15 @@ export function ThreeDice({ results, modifier, total }: Props) {
     directional.position.set(2, 5, 3);
     scene.add(directional);
 
-    const diceData: { mesh: THREE.Mesh; value: number; targetRotation: THREE.Euler }[] = [];
+    const dice: DieResult[] = [];
 
     results.forEach((r, i) => {
-      const mesh = createDie(r.value, r.sides, COLOR_STRS[i % COLORS.length]);
-      const offset = (results.length - 1) * 0.7;
-      mesh.position.set(i * 1.4 - offset, 0, 0);
+      const { mesh, sprite } = buildDie(r.value, r.sides, COLOR_STRS[i % COLORS.length]);
+      const offset = (results.length - 1) * 0.75;
+      mesh.position.set(i * 1.5 - offset, 0, 0);
+      sprite.position.set(i * 1.5 - offset, 0.7, 0);
       scene.add(mesh);
+      scene.add(sprite);
 
       const targetRotation = new THREE.Euler(
         Math.random() * Math.PI * 2,
@@ -163,7 +200,7 @@ export function ThreeDice({ results, modifier, total }: Props) {
         Math.random() * Math.PI * 4,
         Math.random() * Math.PI * 4,
       );
-      diceData.push({ mesh, value: r.value, targetRotation });
+      dice.push({ mesh, value: r.value, targetRotation });
     });
 
     const startTime = Date.now();
@@ -173,7 +210,7 @@ export function ThreeDice({ results, modifier, total }: Props) {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / duration, 1);
 
-      for (const d of diceData) {
+      for (const d of dice) {
         d.mesh.rotation.x += (d.targetRotation.x - d.mesh.rotation.x) * 0.08;
         d.mesh.rotation.y += (d.targetRotation.y - d.mesh.rotation.y) * 0.08;
         d.mesh.rotation.z += (d.targetRotation.z - d.mesh.rotation.z) * 0.08;
@@ -185,7 +222,7 @@ export function ThreeDice({ results, modifier, total }: Props) {
       }
     };
 
-    sceneRef.current = { scene, camera, renderer, dice: diceData, animId: 0 };
+    sceneRef.current = { scene, camera, renderer, dice, animId: 0 };
     animate();
 
     return () => {
