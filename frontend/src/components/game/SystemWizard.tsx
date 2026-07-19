@@ -37,6 +37,16 @@ interface DerivedValue {
   formula: string;
 }
 
+interface AbilityDef {
+  name: string;
+  type: 'active' | 'passive';
+  costType: 'AP' | 'MP' | '';
+  cost: number;
+  diceExpression: string;
+  effect: string;
+  bonus: string;
+}
+
 export interface WizardData {
   name: string;
   version: number;
@@ -44,6 +54,7 @@ export interface WizardData {
   progressionType: 'level' | 'xp' | 'improvement' | null;
   features: SystemFeatures;
   derivedValues: DerivedValue[];
+  abilities: AbilityDef[];
   attributes: AttributeDef[];
   skills: SkillDef[];
   probe: string;
@@ -51,7 +62,7 @@ export interface WizardData {
   combat: DiceCombat;
 }
 
-const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_dv', 'step_label_3', 'step_label_4', 'step_label_5'];
+const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_dv', 'step_label_3', 'step_label_5a', 'step_label_4', 'step_label_5'];
 
 const DICE_PRESETS = [
   { v: '1d2', l: '1d2' }, { v: '1d3', l: '1d3' }, { v: '1d4', l: '1d4' }, { v: '1d6', l: '1d6' },
@@ -72,6 +83,7 @@ const INITIAL: WizardData = {
     armorPenalty: false,
   },
   derivedValues: [],
+  abilities: [],
   attributes: [],
   skills: [],
   probe: '1d20+mod',
@@ -112,6 +124,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
       progressionType: data.progressionType,
       features: data.features,
       derived_values: data.derivedValues,
+      abilities: data.abilities,
       attributes: data.attributes,
       skills: data.skills,
       dice_mechanics: { probe: data.probe },
@@ -432,9 +445,8 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
 
       {step === 4 && (
         <div className="space-y-4">
-          <h3 className="font-heading text-text-primary">Fertigkeiten</h3>
-          <p className="text-xs text-text-secondary">
-            Fertigkeiten (Skills) werden an Attribute gekoppelt. Wähle <strong>ein oder mehrere</strong> Attribute pro Fertigkeit aus — die Reihenfolge bestimmt die Gewichtung. Mit <em>+ Attribut</em> fügst du weitere hinzu.
+          <h3 className="font-heading text-text-primary">{t('s3_title')}</h3>
+          <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s3_hint') }} />
           </p>
           {data.skills.map((skill, i) => (
             <div key={i} className="flex items-start gap-2 rounded bg-bg-primary/50 p-2">
@@ -446,7 +458,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   update('skills', s);
                 }}
                 className="w-20 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                placeholder="Fertigkeit"
+                placeholder={t('s3_placeholder')}
               />
               <div className="flex-1 space-y-1">
                 {skill.attributes.map((attrName, ai) => (
@@ -517,12 +529,143 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
             }
             className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
           >
-            <Plus size={14} /> Add Skill
+            <Plus size={14} /> {t('s3_add_skill')}
           </button>
         </div>
       )}
 
+      {/* Step 5: Abilities */}
       {step === 5 && (
+        <div className="space-y-4">
+          <h3 className="font-heading text-text-primary">{t('s5a_title')}</h3>
+          <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s5a_hint') }} />
+
+          <div className="flex items-center gap-2 px-2 text-[10px] text-text-secondary uppercase tracking-wider">
+            <span className="w-24">{t('s5a_header_name')}</span>
+            <span className="w-14">{t('s5a_header_type')}</span>
+            <span className="w-20">{t('s5a_header_cost')}</span>
+            <span className="w-28">{t('s5a_header_dice')}</span>
+            <span className="flex-1">{t('s5a_header_effect')}</span>
+            <span className="w-4" />
+          </div>
+
+          {data.abilities.map((ability, i) => (
+            <div key={i} className="flex items-start gap-2 rounded bg-bg-primary/50 p-2">
+              <input
+                value={ability.name}
+                onChange={(e) => {
+                  const a = [...data.abilities];
+                  a[i] = { ...a[i], name: e.target.value };
+                  update('abilities', a);
+                }}
+                className="w-24 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                placeholder={t('s5a_name_placeholder')}
+              />
+              <select
+                value={ability.type}
+                onChange={(e) => {
+                  const a = [...data.abilities];
+                  a[i] = { ...a[i], type: e.target.value as 'active' | 'passive' };
+                  update('abilities', a);
+                }}
+                className="w-14 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+              >
+                <option value="active">{t('s5a_active')}</option>
+                <option value="passive">{t('s5a_passive')}</option>
+              </select>
+
+              {ability.type === 'active' ? (
+                <>
+                  <div className="flex w-20 gap-1">
+                    <input
+                      type="number"
+                      min={0}
+                      value={ability.cost}
+                      onChange={(e) => {
+                        const a = [...data.abilities];
+                        a[i] = { ...a[i], cost: Number(e.target.value) };
+                        update('abilities', a);
+                      }}
+                      className="w-10 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    />
+                    <select
+                      value={ability.costType}
+                      onChange={(e) => {
+                        const a = [...data.abilities];
+                        a[i] = { ...a[i], costType: e.target.value as 'AP' | 'MP' | '' };
+                        update('abilities', a);
+                      }}
+                      className="w-10 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    >
+                      <option value="">-</option>
+                      <option value="AP">{t('s5a_cost_ap')}</option>
+                      <option value="MP">{t('s5a_cost_mp')}</option>
+                    </select>
+                  </div>
+                  <input
+                    value={ability.diceExpression}
+                    onChange={(e) => {
+                      const a = [...data.abilities];
+                      a[i] = { ...a[i], diceExpression: e.target.value };
+                      update('abilities', a);
+                    }}
+                    className="w-28 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs font-mono text-text-primary outline-none focus:border-accent"
+                    placeholder={t('s5a_dice_placeholder')}
+                  />
+                  <input
+                    value={ability.effect}
+                    onChange={(e) => {
+                      const a = [...data.abilities];
+                      a[i] = { ...a[i], effect: e.target.value };
+                      update('abilities', a);
+                    }}
+                    className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    placeholder={t('s5a_effect_placeholder')}
+                  />
+                </>
+              ) : (
+                <>
+                  <div className="w-20" />
+                  <div className="w-28" />
+                  <input
+                    value={ability.bonus}
+                    onChange={(e) => {
+                      const a = [...data.abilities];
+                      a[i] = { ...a[i], bonus: e.target.value };
+                      update('abilities', a);
+                    }}
+                    className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    placeholder={t('s5a_bonus_placeholder')}
+                  />
+                </>
+              )}
+
+              <button
+                onClick={() =>
+                  update('abilities', data.abilities.filter((_, j) => j !== i))
+                }
+                className="text-danger hover:text-danger/80"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+
+          <button
+            onClick={() =>
+              update('abilities', [
+                ...data.abilities,
+                { name: '', type: 'active', costType: 'AP', cost: 1, diceExpression: '', effect: '', bonus: '' },
+              ])
+            }
+            className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+          >
+            <Plus size={14} /> {t('s5a_add')}
+          </button>
+        </div>
+      )}
+
+      {step === 6 && (
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s4_title')}</h3>
           <div className="rounded bg-bg-primary/30 p-3 text-xs text-text-secondary">
@@ -635,7 +778,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         </div>
       )}
 
-      {step === 6 && (
+      {step === 7 && (
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s5_title')}</h3>
 
@@ -689,6 +832,28 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
               )}
             </div>
           </div>
+
+          {data.abilities.length > 0 && (
+          <div className="rounded bg-bg-primary/50 p-3">
+            <p className="text-[10px] text-text-secondary uppercase tracking-wider mb-2">
+              Fähigkeiten ({data.abilities.length})
+            </p>
+            <div className="space-y-1">
+              {data.abilities.map((a, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  <span className="text-text-primary w-20 truncate">{a.name}</span>
+                  {a.type === 'active' ? (
+                    <span className="text-text-secondary">
+                      {a.cost > 0 ? `${a.cost} ${a.costType}` : '—'} · {a.diceExpression || '—'} · {a.effect || '—'}
+                    </span>
+                  ) : (
+                    <span className="text-accent">passiv: {a.bonus || '—'}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          )}
 
           <div className="rounded bg-bg-primary/50 p-3">
             <p className="text-[10px] text-text-secondary uppercase tracking-wider mb-2">

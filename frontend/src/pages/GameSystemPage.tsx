@@ -179,6 +179,15 @@ export default function GameSystemPage() {
           name: (dv.name as string) ?? '',
           formula: (dv.formula as string) ?? '',
         })),
+        abilities: (parsed.abilities ?? []).map((a: Record<string, unknown>) => ({
+          name: (a.name as string) ?? '',
+          type: (a.type as 'active' | 'passive') ?? 'active',
+          costType: (a.costType as 'AP' | 'MP' | '') ?? 'AP',
+          cost: (a.cost as number) ?? 0,
+          diceExpression: (a.diceExpression as string) ?? '',
+          effect: (a.effect as string) ?? '',
+          bonus: (a.bonus as string) ?? '',
+        })),
       };
     } catch { return null; }
   };
