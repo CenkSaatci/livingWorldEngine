@@ -13,6 +13,6 @@ public interface GameEntityRepository extends JpaRepository<GameEntity, UUID> {
     List<GameEntity> findByWorldIdAndEntityTypeAndActiveTrue(UUID worldId, String entityType);
     long countByWorldIdAndActiveTrue(UUID worldId);
 
-    @Query(value = "SELECT * FROM entities WHERE metadata_json @> :jsonFilter AND active = true", nativeQuery = true)
+    @Query(value = "SELECT * FROM entities WHERE metadata_json @> CAST(:jsonFilter AS jsonb) AND active = true", nativeQuery = true)
     List<GameEntity> findByMetadataJsonFilter(@Param("jsonFilter") String jsonFilter);
 }

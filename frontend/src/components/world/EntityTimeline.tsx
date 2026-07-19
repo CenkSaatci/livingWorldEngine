@@ -17,26 +17,20 @@ interface Props {
   entityId: string;
 }
 
-function eventIcon(eventType: string) {
-  if (eventType.includes('RAID') || eventType.includes('ATTACK') || eventType.includes('DISASTER'))
+function eventIcon(eventType: string | undefined) {
+  const t = eventType ?? '';
+  if (t.includes('RAID') || t.includes('ATTACK') || t.includes('DISASTER'))
     return <AlertTriangle size={14} className="text-danger" />;
-  if (
-    eventType.includes('COMPLETED') ||
-    eventType.includes('CREATED') ||
-    eventType.includes('VISIT')
-  )
+  if (t.includes('COMPLETED') || t.includes('CREATED') || t.includes('VISIT'))
     return <CheckCircle size={14} className="text-success" />;
   return <Info size={14} className="text-accent" />;
 }
 
-function eventBg(eventType: string) {
-  if (eventType.includes('RAID') || eventType.includes('ATTACK') || eventType.includes('DISASTER'))
+function eventBg(eventType: string | undefined) {
+  const t = eventType ?? '';
+  if (t.includes('RAID') || t.includes('ATTACK') || t.includes('DISASTER'))
     return 'bg-danger/10 border-danger/20';
-  if (
-    eventType.includes('COMPLETED') ||
-    eventType.includes('CREATED') ||
-    eventType.includes('VISIT')
-  )
+  if (t.includes('COMPLETED') || t.includes('CREATED') || t.includes('VISIT'))
     return 'bg-success/10 border-success/20';
   return 'bg-accent/5 border-bg-elevated';
 }
