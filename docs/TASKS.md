@@ -1148,8 +1148,9 @@
 - **Akzeptanzkriterien:** Bedingungen wie `if(attribut>X, +bonus, 0)` werden geparst und gespeichert. Später in der RuleEngine auswertbar.
 
 ### P15-T09: i18n für Wizard & Editor
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 1,0 Tag
+- **Erledigt:** 2026-07-19
 - **Beschreibung:** SystemWizard-Komponente vollständig übersetzen (DE/EN). MapEditor + WorldSettings ergänzen.
 - **Akzeptanzkriterien:** Sprachwechsel übersetzt alle Wizard-Texte.
 
