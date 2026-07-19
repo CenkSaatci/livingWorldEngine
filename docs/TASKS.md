@@ -1103,10 +1103,10 @@
 - **Akzeptanzkriterien:** Karte sichtbar im GameView. Grid + Overlays funktionsfähig.
 
 ### P15-T03: Wizard Step 0 — System-Charakter
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 1,5 Tage
+- **Erledigt:** 2026-07-19
 - **Beschreibung:** Neuer Step 0 mit Progression-Typ (Level/XP/Steigerung) + Checkboxen für Optionen (Magie, Psionik, Fernkampf, krit. Treffer, Rüstungs-Erschwernis). Auswahl steuert spätere Steps conditional.
-- **Abhängigkeiten:** —
 - **Akzeptanzkriterien:** Nutzer wählt Progression-Typ → entsprechende UI in Step 5 erscheint. Optionen blenden Step 6 (Specials) ein/aus.
 
 ### P15-T04: Wizard Step 2 — Derived Values
