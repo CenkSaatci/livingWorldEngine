@@ -2,6 +2,7 @@
   "step_label_0": "System",
   "step_label_1": "Basic",
   "step_label_2": "Attributes",
+  "step_label_dv": "Values",
   "step_label_3": "Skills",
   "step_label_4": "Dice",
   "step_label_5": "Review",
@@ -40,6 +41,14 @@
   "s2_header_default": "Start",
   "s2_header_actions": "",
   "s2_add": "Add Attribute",
+
+  "sdv_title": "Derived Values",
+  "sdv_hint": "Define values calculated from attributes (e.g. <em>Hit Points = 10 + Strength × 2</em>). These formulas will be evaluated automatically.",
+  "sdv_name_placeholder": "Name (e.g. hp)",
+  "sdv_formula_placeholder": "e.g. 10+strength*2",
+  "sdv_add": "Add Value",
+  "sdv_header_name": "Name",
+  "sdv_header_formula": "Formula",
 
   "s3_title": "Skills",
   "s3_hint": "Skills are linked to attributes. Select <strong>one or more</strong> attributes per skill — the order determines weighting. Use <em>+ Attribute</em> to add more.",

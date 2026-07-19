@@ -32,12 +32,18 @@ interface SystemFeatures {
   armorPenalty: boolean;
 }
 
+interface DerivedValue {
+  name: string;
+  formula: string;
+}
+
 export interface WizardData {
   name: string;
   version: number;
   description: string;
   progressionType: 'level' | 'xp' | 'improvement' | null;
   features: SystemFeatures;
+  derivedValues: DerivedValue[];
   attributes: AttributeDef[];
   skills: SkillDef[];
   probe: string;
@@ -45,7 +51,7 @@ export interface WizardData {
   combat: DiceCombat;
 }
 
-const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_3', 'step_label_4', 'step_label_5'];
+const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_dv', 'step_label_3', 'step_label_4', 'step_label_5'];
 
 const DICE_PRESETS = [
   { v: '1d2', l: '1d2' }, { v: '1d3', l: '1d3' }, { v: '1d4', l: '1d4' }, { v: '1d6', l: '1d6' },
@@ -65,6 +71,7 @@ const INITIAL: WizardData = {
     criticalHits: false,
     armorPenalty: false,
   },
+  derivedValues: [],
   attributes: [],
   skills: [],
   probe: '1d20+mod',
@@ -102,6 +109,9 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
   const buildRulesJson = () => {
     const rules: Record<string, unknown> = {
       version: data.version,
+      progressionType: data.progressionType,
+      features: data.features,
+      derived_values: data.derivedValues,
       attributes: data.attributes,
       skills: data.skills,
       dice_mechanics: { probe: data.probe },
@@ -352,7 +362,63 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         </div>
       )}
 
+      {/* Step 3: Derived Values */}
       {step === 3 && (
+        <div className="space-y-4">
+          <h3 className="font-heading text-text-primary">{t('sdv_title')}</h3>
+          <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('sdv_hint') }} />
+
+          <div className="flex items-center gap-2 px-2 text-[10px] text-text-secondary uppercase tracking-wider">
+            <span className="flex-1">{t('sdv_header_name')}</span>
+            <span className="flex-[2]">{t('sdv_header_formula')}</span>
+            <span className="w-4" />
+          </div>
+
+          {data.derivedValues.map((dv, i) => (
+            <div key={i} className="flex items-center gap-2 rounded bg-bg-primary/50 p-2">
+              <input
+                value={dv.name}
+                onChange={(e) => {
+                  const a = [...data.derivedValues];
+                  a[i] = { ...a[i], name: e.target.value };
+                  update('derivedValues', a);
+                }}
+                className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                placeholder={t('sdv_name_placeholder')}
+              />
+              <input
+                value={dv.formula}
+                onChange={(e) => {
+                  const a = [...data.derivedValues];
+                  a[i] = { ...a[i], formula: e.target.value };
+                  update('derivedValues', a);
+                }}
+                className="flex-[2] rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs font-mono text-text-primary outline-none focus:border-accent"
+                placeholder={t('sdv_formula_placeholder')}
+              />
+              <button
+                onClick={() =>
+                  update('derivedValues', data.derivedValues.filter((_, j) => j !== i))
+                }
+                className="text-danger hover:text-danger/80"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+
+          <button
+            onClick={() =>
+              update('derivedValues', [...data.derivedValues, { name: '', formula: '' }])
+            }
+            className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+          >
+            <Plus size={14} /> {t('sdv_add')}
+          </button>
+        </div>
+      )}
+
+      {step === 4 && (
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">Fertigkeiten</h3>
           <p className="text-xs text-text-secondary">
@@ -444,7 +510,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         </div>
       )}
 
-      {step === 4 && (
+      {step === 5 && (
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s4_title')}</h3>
           <div className="rounded bg-bg-primary/30 p-3 text-xs text-text-secondary">
@@ -557,7 +623,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         </div>
       )}
 
-      {step === 5 && (
+      {step === 6 && (
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s5_title')}</h3>
 
@@ -580,6 +646,21 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
               )}
             </div>
           </div>
+
+          {data.derivedValues.length > 0 && (
+          <div className="rounded bg-bg-primary/50 p-3">
+            <p className="text-[10px] text-text-secondary uppercase tracking-wider mb-2">
+              Derived Values ({data.derivedValues.length})
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {data.derivedValues.map((dv) => (
+                <span key={dv.name} className="rounded bg-bg-elevated px-2 py-0.5 text-xs text-text-primary">
+                  {dv.name} = {dv.formula}
+                </span>
+              ))}
+            </div>
+          </div>
+          )}
 
           <div className="rounded bg-bg-primary/50 p-3">
             <p className="text-[10px] text-text-secondary uppercase tracking-wider mb-2">

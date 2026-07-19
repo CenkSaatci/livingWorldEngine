@@ -2,6 +2,7 @@
   "step_label_0": "System",
   "step_label_1": "Basic",
   "step_label_2": "Attribute",
+  "step_label_dv": "Werte",
   "step_label_3": "Fertigkeiten",
   "step_label_4": "Würfel",
   "step_label_5": "Übersicht",
@@ -40,6 +41,14 @@
   "s2_header_default": "Start",
   "s2_header_actions": "",
   "s2_add": "Attribut hinzufügen",
+
+  "sdv_title": "Abgeleitete Werte",
+  "sdv_hint": "Definiere Werte, die sich aus Attributen berechnen (z.B. <em>Trefferpunkte = 10 + Stärke × 2</em>). Diese Formeln werden später automatisch ausgewertet.",
+  "sdv_name_placeholder": "Name (z.B. hp)",
+  "sdv_formula_placeholder": "z.B. 10+staerke*2",
+  "sdv_add": "Wert hinzufügen",
+  "sdv_header_name": "Name",
+  "sdv_header_formula": "Formel",
 
   "s3_title": "Fertigkeiten",
   "s3_hint": "Fertigkeiten (Skills) werden an Attribute gekoppelt. Wähle <strong>ein oder mehrere</strong> Attribute pro Fertigkeit aus — die Reihenfolge bestimmt die Gewichtung. Mit <em>+ Attribut</em> fügst du weitere hinzu.",

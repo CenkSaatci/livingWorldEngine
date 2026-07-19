@@ -173,8 +173,12 @@ export default function GameSystemPage() {
             max: combat.action_points?.max ?? 2,
           },
         },
-        progressionType: null,
-        features: { magic: false, psionics: false, rangedCombat: false, criticalHits: false, armorPenalty: false },
+        progressionType: parsed.progressionType ?? null,
+        features: parsed.features ?? { magic: false, psionics: false, rangedCombat: false, criticalHits: false, armorPenalty: false },
+        derivedValues: (parsed.derived_values ?? []).map((dv: Record<string, unknown>) => ({
+          name: (dv.name as string) ?? '',
+          formula: (dv.formula as string) ?? '',
+        })),
       };
     } catch { return null; }
   };
