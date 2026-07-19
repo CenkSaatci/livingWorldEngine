@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { setTokens, clearTokens, getAccessToken } from '../api/client';
+import i18n from '../i18n';
 
 export interface AuthUser {
   id: string;
@@ -41,7 +42,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: ({ user, accessToken, refreshToken }) => {
     setTokens(accessToken, refreshToken);
     localStorage.setItem('lwe:user', JSON.stringify(user));
-    set({ user, locale: user.locale ?? DEFAULT_LOCALE, isAuthenticated: true });
+    const locale = user.locale ?? DEFAULT_LOCALE;
+    i18n.changeLanguage(locale);
+    set({ user, locale, isAuthenticated: true });
   },
 
   setSession: ({ user, accessToken, refreshToken }) => {
@@ -49,13 +52,16 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('lwe:user', JSON.stringify(user));
     }
-    set({ user, locale: user.locale ?? DEFAULT_LOCALE, isAuthenticated: true });
+    const locale = user.locale ?? DEFAULT_LOCALE;
+    i18n.changeLanguage(locale);
+    set({ user, locale, isAuthenticated: true });
   },
 
   setLocale: (locale) => {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('lwe:locale', locale);
     }
+    i18n.changeLanguage(locale);
     set({ locale });
   },
 
@@ -71,7 +77,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     const user = restoreUserFromStorage();
     const token = getAccessToken();
     if (user && token) {
-      set({ user, locale: user.locale ?? DEFAULT_LOCALE, isAuthenticated: true });
+      const locale = user.locale ?? DEFAULT_LOCALE;
+      i18n.changeLanguage(locale);
+      set({ user, locale, isAuthenticated: true });
       return true;
     }
     return false;

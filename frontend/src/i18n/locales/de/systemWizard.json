@@ -152,6 +152,7 @@
   "s5_skills": "Fertigkeiten ({{count}})",
   "s5_no_attributes": "Keine Attribute definiert",
   "s5_no_skills": "Keine Fertigkeiten definiert",
+  "s5_progression": "Aufstieg",
   "s5_show_json": "Rules JSON anzeigen",
 
   "nav_cancel": "Abbrechen",

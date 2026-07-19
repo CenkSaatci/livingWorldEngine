@@ -208,7 +208,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           version: data.version,
           rulesJson: buildRulesJson(),
         });
-        toast.success('System updated');
+        toast.success(t('msg_updated'));
       } else {
         await apiClient.post('/game-systems', {
           name: data.name.trim(),
@@ -216,11 +216,11 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           rulesJson: buildRulesJson(),
           schemaJson: '{}',
         });
-        toast.success('System created');
+        toast.success(t('msg_created'));
       }
       onSaved();
     } catch {
-      toast.error(systemId ? 'Failed to update' : 'Failed to create');
+      toast.error(systemId ? t('msg_update_failed') : t('msg_create_failed'));
     } finally {
       setSaving(false);
     }
@@ -1117,21 +1117,21 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
             <p dangerouslySetInnerHTML={{ __html: t('s4_probe_hint') }} />
           </div>
           <div>
-            <label className="block text-xs text-text-secondary mb-1">Probe Expression</label>
+            <label className="block text-xs text-text-secondary mb-1">{t('s4_probe_label')}</label>
             <div className="flex gap-2">
               <input
                 value={data.probe}
                 onChange={(e) => update('probe', e.target.value)}
                 className="flex-1 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm font-mono text-text-primary outline-none focus:border-accent"
-                placeholder="1d20+mod"
+                placeholder={t('s4_probe_placeholder')}
               />
               <button
                 onClick={async () => {
                   try {
                     const r = await apiClient.post('/rolls/free', { expression: data.probe });
-                    toast.success(`Test: ${r.data.total}`);
+                    toast.success(`${t('s4_test_result')} ${r.data.total}`);
                   } catch {
-                    toast.error('Invalid expression');
+                    toast.error(t('s4_invalid'));
                   }
                 }}
                 className="rounded bg-bg-elevated px-3 py-2 text-xs text-text-secondary hover:text-accent"
@@ -1149,13 +1149,13 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
               className="accent-accent"
             />
             <label htmlFor="enableCombat" className="text-sm text-text-primary">
-              Enable combat rules
+              {t('s4_enable_combat')}
             </label>
           </div>
           {data.enableCombat && (
             <div className="space-y-3 pl-4 border-l-2 border-accent/30">
               <CombatExpressionRow
-                label="Initiative"
+                label={t('s4_initiative')}
                 value={data.combat.initiative}
                 attributes={data.attributes}
                 diceOptions={DICE_PRESETS}
@@ -1163,12 +1163,12 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 onRoll={async (expr) => {
                   try {
                     const r = await apiClient.post('/rolls/free', { expression: expr });
-                    toast.success(`Initiative: ${r.data.total}`);
-                  } catch { toast.error('Invalid'); }
+                    toast.success(`${t('s4_initiative')}: ${r.data.total}`);
+                  } catch { toast.error(t('s4_invalid')); }
                 }}
               />
               <CombatExpressionRow
-                label="Damage"
+                label={t('s4_damage')}
                 value={data.combat.damage}
                 attributes={data.attributes}
                 diceOptions={DICE_PRESETS}
@@ -1176,16 +1176,16 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 onRoll={async (expr) => {
                   try {
                     const r = await apiClient.post('/rolls/free', { expression: expr });
-                    toast.success(`Damage: ${r.data.total}`);
-                  } catch { toast.error('Invalid'); }
+                    toast.success(`${t('s4_damage')}: ${r.data.total}`);
+                  } catch { toast.error(t('s4_invalid')); }
                 }}
               />
-              <div className="col-span-2 rounded bg-bg-primary/30 p-3 text-xs text-text-secondary mb-2">
-                <strong>AP (Aktionspunkte):</strong> Jede Aktion im Kampf kostet AP. <em>AP Standard</em> = AP pro Runde, <em>AP Max</em> = maximal speicherbare AP (z.B. für Aufsparen). Typisch: 2 Standard / 4 Max.
+              <div className="rounded bg-bg-primary/30 p-3 text-xs text-text-secondary mb-2">
+                <p dangerouslySetInnerHTML={{ __html: t('s4_ap_hint') }} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-text-secondary mb-1">AP pro Runde</label>
+                  <label className="block text-xs text-text-secondary mb-1">{t('s4_ap_per_round')}</label>
                   <input
                     type="number"
                     min={1}
@@ -1203,7 +1203,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-text-secondary mb-1">AP Max (Pool)</label>
+                  <label className="block text-xs text-text-secondary mb-1">{t('s4_ap_max')}</label>
                   <input
                     type="number"
                     min={1}
@@ -1229,19 +1229,19 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
 
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="rounded bg-bg-primary/50 p-3">
-              <p className="text-[10px] text-text-secondary uppercase tracking-wider">System</p>
-              <p className="text-text-primary font-medium mt-1">{data.name || 'Unnamed'}</p>
-              <p className="text-text-secondary text-xs">Version {data.version}</p>
+              <p className="text-[10px] text-text-secondary uppercase tracking-wider">{t('s5_system')}</p>
+              <p className="text-text-primary font-medium mt-1">{data.name || t('s1_unnamed')}</p>
+              <p className="text-text-secondary text-xs">{t('s1_version')} {data.version}</p>
               {data.description && (
                 <p className="text-text-secondary text-xs mt-1">{data.description}</p>
               )}
             </div>
             <div className="rounded bg-bg-primary/50 p-3">
-              <p className="text-[10px] text-text-secondary uppercase tracking-wider">Würfel</p>
+              <p className="text-[10px] text-text-secondary uppercase tracking-wider">{t('s5_dice')}</p>
               <p className="text-text-primary font-mono mt-1">{data.probe}</p>
               {data.enableCombat && (
                 <p className="text-text-secondary text-xs mt-1">
-                  Initiative: {data.combat.initiative} · Damage: {data.combat.damage}
+                  {t('s4_initiative')}: {data.combat.initiative} · {t('s4_damage')}: {data.combat.damage}
                 </p>
               )}
             </div>
@@ -1250,7 +1250,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           {data.derivedValues.length > 0 && (
           <div className="rounded bg-bg-primary/50 p-3">
             <p className="text-[10px] text-text-secondary uppercase tracking-wider mb-2">
-              Derived Values ({data.derivedValues.length})
+              {t('sdv_title')} ({data.derivedValues.length})
             </p>
             <div className="flex flex-wrap gap-1">
               {data.derivedValues.map((dv) => (
@@ -1264,7 +1264,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
 
           <div className="rounded bg-bg-primary/50 p-3">
             <p className="text-[10px] text-text-secondary uppercase tracking-wider mb-2">
-              Attribute ({data.attributes.length})
+              {t('s5_attributes', { count: data.attributes.length })}
             </p>
             <div className="flex flex-wrap gap-1">
               {data.attributes.map((a) => (
@@ -1273,7 +1273,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 </span>
               ))}
               {data.attributes.length === 0 && (
-                <span className="text-xs text-text-secondary">Keine Attribute definiert</span>
+                <span className="text-xs text-text-secondary">{t('s5_no_attributes')}</span>
               )}
             </div>
           </div>
@@ -1281,7 +1281,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           {data.progressionType && (
           <div className="rounded bg-bg-primary/50 p-3">
             <p className="text-[10px] text-text-secondary uppercase tracking-wider mb-2">
-              Aufstieg ({data.progressionType})
+              {t('s5_progression')} ({data.progressionType})
             </p>
             {data.progressionType === 'level' && (
               <div className="flex flex-wrap gap-1">
@@ -1349,7 +1349,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
 
           <div className="rounded bg-bg-primary/50 p-3">
             <p className="text-[10px] text-text-secondary uppercase tracking-wider mb-2">
-              Fertigkeiten ({data.skills.length})
+              {t('s5_skills', { count: data.skills.length })}
             </p>
             <div className="space-y-1">
               {data.skills.map((s, i) => (
@@ -1366,7 +1366,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 </div>
               ))}
               {data.skills.length === 0 && (
-                <span className="text-xs text-text-secondary">Keine Fertigkeiten definiert</span>
+                <span className="text-xs text-text-secondary">{t('s5_no_skills')}</span>
               )}
             </div>
           </div>
