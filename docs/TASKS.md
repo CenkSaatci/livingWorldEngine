@@ -1118,11 +1118,10 @@
 - **Akzeptanzkriterien:** Attribut aus Dropdown wählbar, Formel wird gespeichert und im Review angezeigt.
 
 ### P15-T05: Wizard Step 5 — Abilities
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 2,0 Tage
+- **Erledigt:** 2026-07-19
 - **Beschreibung:** Neuer Step für aktive/passive Fähigkeiten. Aktive: Name, Kosten (AP/MP), Würfelausdruck, Effekt. Passive: Name, Bonus (z.B. RK+1). Talent-Typ abhängig von Step 0 (Class-Feature/Talent).
-- **Abhängigkeiten:** Step 0 (für Talent-Typ)
-- **Akzeptanzkriterien:** Fähigkeiten werden gespeichert, im Review gelistet, später im Character-Sheet nutzbar.
 
 ### P15-T06: Wizard Step 6 — Progression (conditional)
 - **Status:** ✅
