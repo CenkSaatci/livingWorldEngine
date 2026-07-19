@@ -36,15 +36,15 @@ import { ErrorBoundary } from './components/ui/ErrorBoundary';
 export default function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const restoreSession = useAuthStore((s) => s.restoreSession);
+  const theme = useSettingsStore((s) => s.theme);
 
   useEffect(() => {
     restoreSession();
   }, [restoreSession]);
 
   useEffect(() => {
-    const theme = useSettingsStore.getState().theme;
     document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, []);
+  }, [theme]);
 
   return (
     <BrowserRouter future={routerFuture}>
