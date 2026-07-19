@@ -1133,8 +1133,9 @@
 - **Akzeptanzkriterien:** Je nach gewähltem Progression-Typ erscheint die passende UI.
 
 ### P15-T07: Wizard Step 7 — Specials (conditional)
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 1,5 Tage
+- **Erledigt:** 2026-07-19
 - **Beschreibung:** Magie/Psionik-Sektion, nur sichtbar wenn in Step 0 aktiviert. Zauber pro Stufe, Mana-Formel, Schulen/Domänen.
 - **Abhängigkeiten:** Step 0
 - **Akzeptanzkriterien:** Bei ☑ Magie erscheint der Magie-Step, sonst nicht.
