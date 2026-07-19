@@ -4,29 +4,29 @@
 
 /* Globale Styles — Dark Mode Default, siehe docs/UI-UX.md Abschnitt 10 */
 :root {
-  --color-bg-primary: #f4f6f8;
-  --color-bg-surface: #ffffff;
-  --color-bg-elevated: #e2e6ea;
-  --color-text-primary: #1a1d21;
-  --color-text-secondary: #6c757d;
-  --color-accent: #5bb8c5;
-  --color-danger: #e0556b;
-  --color-success: #7ac784;
-  --color-warning: #f2a65a;
+  --color-bg-primary-rgb: 244 246 248;
+  --color-bg-surface-rgb: 255 255 255;
+  --color-bg-elevated-rgb: 226 230 234;
+  --color-text-primary-rgb: 26 29 33;
+  --color-text-secondary-rgb: 108 117 125;
+  --color-accent-rgb: 91 184 197;
+  --color-danger-rgb: 224 85 107;
+  --color-success-rgb: 122 199 132;
+  --color-warning-rgb: 242 166 90;
 }
 
 .dark {
-  --color-bg-primary: #0f1419;
-  --color-bg-surface: #1a2128;
-  --color-bg-elevated: #232c36;
-  --color-text-primary: #e8edf2;
-  --color-text-secondary: #8b98a5;
+  --color-bg-primary-rgb: 15 20 25;
+  --color-bg-surface-rgb: 26 33 40;
+  --color-bg-elevated-rgb: 35 44 54;
+  --color-text-primary-rgb: 232 237 242;
+  --color-text-secondary-rgb: 139 152 165;
 }
 
 body {
   margin: 0;
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
+  background-color: rgb(var(--color-bg-primary-rgb));
+  color: rgb(var(--color-text-primary-rgb));
   font-family: Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -98,18 +98,18 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-bg-primary);
+  background: rgb(var(--color-bg-primary-rgb));
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-bg-elevated);
+  background: rgb(var(--color-bg-elevated-rgb));
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-secondary);
+  background: rgb(var(--color-text-secondary-rgb));
 }
 
 /* Firefox dark scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-bg-elevated) var(--color-bg-primary);
+  scrollbar-color: rgb(var(--color-bg-elevated-rgb)) rgb(var(--color-bg-primary-rgb));
 }
