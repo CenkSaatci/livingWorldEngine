@@ -13,9 +13,10 @@ import {
   Wind,
   Thermometer,
 } from 'lucide-react';
-import { apiClient } from '../../api/client';
-import { MapCanvas } from '../map/MapCanvas';
+import { apiClient, BACKEND_ORIGIN } from '../../api/client';
 import { useApiGet } from '../../hooks/useApiGet';
+
+const TILE = 48;
 
 interface Region {
   id: string;
@@ -28,8 +29,11 @@ interface Location {
   id: string;
   name: string;
   type: string;
-  x?: number;
-  y?: number;
+  positionJson?: string;
+}
+
+interface MapData {
+  imageUrl: string | null;
 }
 
 interface WeatherData {
@@ -44,7 +48,6 @@ interface Props {
   worldId: string;
   cols?: number;
   rows?: number;
-  tileSize?: number;
   onSelectLocation?: (id: string) => void;
 }
 
@@ -103,20 +106,31 @@ function weatherOverlayClass(weatherType?: string) {
 
 export function WorldMapView({
   worldId,
-  cols = 24,
-  rows = 18,
-  tileSize = 48,
   onSelectLocation,
 }: Props) {
   const [locations, setLocations] = useState<Location[]>([]);
   const [weather, setWeather] = useState<Record<string, WeatherData>>({});
   const [selected, setSelected] = useState<string | null>(null);
+  const [mapUrl, setMapUrl] = useState<string | null>(null);
 
   const { data: regions } = useApiGet<Region[]>(`/worlds/${worldId}/regions`, [worldId]);
 
+  // Fetch map image + locations + weather
   useEffect(() => {
-    if (!worldId || !regions || regions.length === 0) return;
+    if (!worldId || !regions) return;
     let cancelled = false;
+    const load = async () => {
+      try {
+        const [mapRes] = await Promise.all([
+          apiClient.get<MapData>(`/worlds/${worldId}/map`),
+        ]);
+        if (cancelled) return;
+        if (mapRes.data?.imageUrl) {
+          setMapUrl(BACKEND_ORIGIN + mapRes.data.imageUrl);
+        }
+      } catch {}
+    };
+    load();
 
     Promise.all([
       Promise.allSettled(
@@ -145,32 +159,47 @@ export function WorldMapView({
       const allLocs: Location[] = [];
       for (const result of locationResults) {
         if (result.status === 'fulfilled') {
-          allLocs.push(
-            ...result.value.data.map((l) => ({
-              ...l,
-              x: Math.random() * cols * tileSize,
-              y: Math.random() * rows * tileSize,
-            })),
-          );
+          allLocs.push(...result.value.data);
         }
       }
       setLocations(allLocs);
     });
 
-    return () => {
-      cancelled = true;
-    };
-  }, [worldId, regions, cols, rows, tileSize]);
+    return () => { cancelled = true; };
+  }, [worldId, regions]);
 
-  // Dominantes Wetter für Fullscreen-Overlay
   const dominantWeather = Object.values(weather)[0]?.weatherType;
 
+  const gridBg = `linear-gradient(rgba(42,54,64,0.5) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(42,54,64,0.5) 1px, transparent 1px)`;
+  const gridSize = `${TILE}px ${TILE}px`;
+
   return (
-    <div className={`relative h-full w-full ${weatherOverlayClass(dominantWeather)}`}>
-      <MapCanvas worldId={worldId} cols={cols} rows={rows} tileSize={tileSize} />
+    <div className={`relative h-full w-full overflow-hidden ${weatherOverlayClass(dominantWeather)}`}>
+      {/* Map image */}
+      {mapUrl && (
+        <img
+          src={mapUrl}
+          alt="Map"
+          className="absolute inset-0 w-full h-full object-contain"
+          style={{ imageRendering: 'pixelated' }}
+        />
+      )}
+
+      {/* Grid overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: gridBg,
+          backgroundSize: gridSize,
+        }}
+      />
 
       {/* Location Markers */}
-      {locations.map((loc) => (
+      {locations.map((loc) => {
+        const pos = loc.positionJson ? (() => { try { return JSON.parse(loc.positionJson) as { x: number; y: number }; } catch { return null; } })() : null;
+        if (!pos) return null;
+        return (
         <button
           key={loc.id}
           onClick={() => {
@@ -183,8 +212,8 @@ export function WorldMapView({
               : 'bg-bg-surface/80 text-text-secondary hover:bg-accent/20 hover:text-accent'
           }`}
           style={{
-            left: loc.x ?? 0,
-            top: loc.y ?? 0,
+            left: pos.x,
+            top: pos.y,
             transform: 'translate(-50%, -50%)',
           }}
           title={loc.name}
@@ -192,7 +221,8 @@ export function WorldMapView({
           {locationIcon(loc.type)}
           <span className="hidden sm:inline">{loc.name}</span>
         </button>
-      ))}
+        );
+      })}
 
       {/* Region + Weather Legend */}
       {regions && regions.length > 0 && (

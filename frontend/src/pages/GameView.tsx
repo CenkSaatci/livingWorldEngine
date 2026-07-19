@@ -256,7 +256,7 @@ export default function GameView() {
 
           {/* Content */}
           <div className="flex flex-1 overflow-hidden">
-            <div className="flex-1 overflow-hidden p-4 min-w-0">
+            <div className="flex-1 overflow-hidden">
               {selectedLocation ? (
                 <LocationDetail
                   locationId={selectedLocation}
