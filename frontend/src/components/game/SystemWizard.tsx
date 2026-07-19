@@ -447,7 +447,6 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s3_title')}</h3>
           <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s3_hint') }} />
-          </p>
           {data.skills.map((skill, i) => (
             <div key={i} className="flex items-start gap-2 rounded bg-bg-primary/50 p-2">
               <input
