@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 export type DiceMode = 'css' | '3d';
-export type ThemeMode = 'dark' | 'light';
+export type ThemeMode = 'dark' | 'light' | 'cyber';
 
 interface SettingsState {
   diceMode: DiceMode;
@@ -13,7 +13,7 @@ interface SettingsState {
 const storedTheme = (() => {
   try {
     const v = localStorage.getItem('lwe:theme');
-    if (v === 'light' || v === 'dark') return v;
+    if (v === 'light' || v === 'dark' || v === 'cyber') return v;
   } catch {}
   return 'dark';
 })();
@@ -29,7 +29,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
 
   setTheme: (theme) => {
     localStorage.setItem('lwe:theme', theme);
-    document.documentElement.classList.toggle('dark', theme === 'dark');
+    const html = document.documentElement;
+    html.classList.remove('dark', 'theme-cyber');
+    if (theme === 'dark') html.classList.add('dark');
+    else if (theme === 'cyber') html.classList.add('theme-cyber');
     set({ theme });
   },
 }));

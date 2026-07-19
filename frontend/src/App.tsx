@@ -43,7 +43,10 @@ export default function App() {
   }, [restoreSession]);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
+    const html = document.documentElement;
+    html.classList.remove('dark', 'theme-cyber');
+    if (theme === 'dark') html.classList.add('dark');
+    else if (theme === 'cyber') html.classList.add('theme-cyber');
   }, [theme]);
 
   return (

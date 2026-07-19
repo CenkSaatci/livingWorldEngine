@@ -113,6 +113,7 @@ export default function SettingsPage() {
           >
             <option value="dark">🌙 Dark</option>
             <option value="light">☀️ Light</option>
+            <option value="cyber">🤖 Cyber</option>
           </select>
         </section>
 

@@ -23,6 +23,18 @@
   --color-text-secondary-rgb: 139 152 165;
 }
 
+.theme-cyber {
+  --color-bg-primary-rgb: 5 5 15;
+  --color-bg-surface-rgb: 10 10 25;
+  --color-bg-elevated-rgb: 20 18 40;
+  --color-text-primary-rgb: 180 230 255;
+  --color-text-secondary-rgb: 100 130 180;
+  --color-accent-rgb: 0 210 255;
+  --color-danger-rgb: 255 40 120;
+  --color-success-rgb: 0 230 150;
+  --color-warning-rgb: 255 180 50;
+}
+
 body {
   margin: 0;
   background-color: rgb(var(--color-bg-primary-rgb));
