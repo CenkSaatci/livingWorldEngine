@@ -42,7 +42,7 @@ export function ChatPanel({ worldId }: { worldId: string }) {
       setMessages((prev) => [
         ...prev.slice(-99),
         {
-          id: String(last.id),
+          id: `${Date.now()}-${last.event_type}-${Math.random().toString(36).slice(2, 6)}`,
           sender: last.event_type,
           text: JSON.stringify(last.payload),
           timestamp: last.created_at,

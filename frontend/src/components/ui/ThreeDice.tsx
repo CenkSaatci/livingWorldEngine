@@ -1,8 +1,48 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
+const DOT_POSITIONS: Record<number, [number, number][]> = {
+  1: [[0.5, 0.5]],
+  2: [[0.25, 0.25], [0.75, 0.75]],
+  3: [[0.25, 0.25], [0.5, 0.5], [0.75, 0.75]],
+  4: [[0.25, 0.25], [0.75, 0.25], [0.25, 0.75], [0.75, 0.75]],
+  5: [[0.25, 0.25], [0.75, 0.25], [0.5, 0.5], [0.25, 0.75], [0.75, 0.75]],
+  6: [[0.25, 0.2], [0.75, 0.2], [0.25, 0.5], [0.75, 0.5], [0.25, 0.8], [0.75, 0.8]],
+};
+
+function dieFaceTexture(value: number, sides: number): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d')!;
+  const s = 128;
+  ctx.fillStyle = '#f8f4f0';
+  ctx.fillRect(0, 0, s, s);
+  ctx.strokeStyle = '#ccc';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(2, 2, s - 4, s - 4);
+
+  if (sides === 6 && value >= 1 && value <= 6) {
+    ctx.fillStyle = '#222';
+    const dots = DOT_POSITIONS[value];
+    for (const [px, py] of dots) {
+      ctx.beginPath();
+      ctx.arc(px * s, py * s, 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else {
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 48px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(value), s / 2, s / 2);
+  }
+  return new THREE.CanvasTexture(canvas);
+}
+
 interface ThreeDiceResult {
   value: number;
+  sides: number;
 }
 
 interface Props {
@@ -11,11 +51,6 @@ interface Props {
   total: number;
 }
 
-/**
- * 3D-Würfel mit three.js.
- * Mehrere Würfel als Box-Geometrien mit animierter Rotation.
- * Nach ~1.5s landen sie auf dem Ergebnis und zeigen die Augenzahl als Label.
- */
 export function ThreeDice({ results, modifier, total }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const sceneRef = useRef<{
@@ -42,31 +77,35 @@ export function ThreeDice({ results, modifier, total }: Props) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     el.appendChild(renderer.domElement);
 
-    // Licht
     const ambient = new THREE.AmbientLight(0x404060);
     scene.add(ambient);
     const directional = new THREE.DirectionalLight(0xffffff, 1);
     directional.position.set(2, 5, 3);
     scene.add(directional);
 
-    // Würfel erstellen
     const diceData: { mesh: THREE.Mesh; value: number; targetRotation: THREE.Euler }[] = [];
-    const colors = [0x5bb8c5, 0xe0556b, 0x7ac784, 0xf2a65a, 0xa78bfa];
 
     results.forEach((r, i) => {
       const size = 0.8;
       const geo = new THREE.BoxGeometry(size, size, size);
-      const mat = new THREE.MeshStandardMaterial({
-        color: colors[i % colors.length],
-        roughness: 0.3,
-        metalness: 0.1,
-      });
-      const mesh = new THREE.Mesh(geo, mat);
+
+      const textures = [
+        dieFaceTexture(r.value, r.sides),
+        dieFaceTexture(r.value, r.sides),
+        dieFaceTexture(r.value, r.sides),
+        dieFaceTexture(r.value, r.sides),
+        dieFaceTexture(r.value, r.sides),
+        dieFaceTexture(r.value, r.sides),
+      ];
+      const materials = textures.map((t) => new THREE.MeshStandardMaterial({
+        map: t, roughness: 0.4, metalness: 0.05,
+      }));
+
+      const mesh = new THREE.Mesh(geo, materials);
       const offset = (results.length - 1) * 0.6;
       mesh.position.set(i * 1.2 - offset, 0, 0);
       scene.add(mesh);
 
-      // Zielrotation zufällig basierend auf Wert
       const targetRotation = new THREE.Euler(
         Math.random() * Math.PI * 2,
         Math.random() * Math.PI * 2,
@@ -80,14 +119,12 @@ export function ThreeDice({ results, modifier, total }: Props) {
       diceData.push({ mesh, value: r.value, targetRotation });
     });
 
-    // Animation
     const startTime = Date.now();
     const duration = 1500;
 
     const animate = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // easeOutCubic — value used implicitly via progress // eslint-disable-line @typescript-eslint/no-unused-vars
 
       for (const d of diceData) {
         d.mesh.rotation.x += (d.targetRotation.x - d.mesh.rotation.x) * 0.08;

@@ -50,7 +50,7 @@ export function DiceRollModal({ label, dice, modifier, total, onClose }: Props) 
 
         {diceMode === '3d' ? (
           <ThreeDice
-            results={dice.map((d) => ({ value: d.value }))}
+            results={dice.map((d) => ({ value: d.value, sides: d.sides }))}
             modifier={modifier}
             total={total}
           />
