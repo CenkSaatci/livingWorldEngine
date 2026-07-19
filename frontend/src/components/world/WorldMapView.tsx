@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   MapPin,
   Castle,
@@ -118,12 +118,19 @@ export function WorldMapView({
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
 
   const { data: regions } = useApiGet<Region[]>(`/worlds/${worldId}/regions`, [worldId]);
+  const mapLayerRef = useRef<HTMLDivElement>(null);
 
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const factor = e.deltaY > 0 ? 0.9 : 1.1;
-    setZoom((z) => Math.min(4, Math.max(0.25, z * factor)));
-  };
+  useEffect(() => {
+    const el = mapLayerRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      const factor = e.deltaY > 0 ? 0.9 : 1.1;
+      setZoom((z) => Math.min(4, Math.max(0.25, z * factor)));
+    };
+    el.addEventListener('wheel', handler, { passive: false });
+    return () => el.removeEventListener('wheel', handler);
+  }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
@@ -210,9 +217,9 @@ export function WorldMapView({
 
       {/* Map + markers layer */}
       <div
+        ref={mapLayerRef}
         className="absolute inset-0"
         style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '0 0' }}
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

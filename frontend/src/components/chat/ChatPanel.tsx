@@ -39,12 +39,19 @@ export function ChatPanel({ worldId }: { worldId: string }) {
   useEffect(() => {
     const last = worldEvents[worldEvents.length - 1];
     if (last && last.event_type) {
+      const payload = last.payload as Record<string, unknown> ?? {};
+      const sender =
+        (payload.sender as string) ||
+        (last.event_type === 'CHAT_MESSAGE' ? 'System' : last.event_type);
+      const text =
+        (payload.text as string) ||
+        JSON.stringify(last.payload);
       setMessages((prev) => [
         ...prev.slice(-99),
         {
           id: `${Date.now()}-${last.event_type}-${Math.random().toString(36).slice(2, 6)}`,
-          sender: last.event_type,
-          text: JSON.stringify(last.payload),
+          sender,
+          text,
           timestamp: last.created_at,
         },
       ]);
