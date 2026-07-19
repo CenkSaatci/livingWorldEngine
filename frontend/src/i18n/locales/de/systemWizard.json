@@ -14,9 +14,9 @@
   "s0_features": "Optionen",
   "s0_magic": "Magie",
   "s0_psionics": "Psionik",
-  "s0_ranged_combat": "Fernkampf",
-  "s0_critical_hits": "Kritische Treffer",
-  "s0_armor_penalty": "Rüstungs-Erschwernis",
+  "s0_rangedCombat": "Fernkampf",
+  "s0_criticalHits": "Kritische Treffer",
+  "s0_armorPenalty": "Rüstungs-Erschwernis",
 
   "s1_title": "Basic Information",
   "s1_name": "System-Name *",

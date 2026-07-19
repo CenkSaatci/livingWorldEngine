@@ -14,9 +14,9 @@
   "s0_features": "Features",
   "s0_magic": "Magic",
   "s0_psionics": "Psionics",
-  "s0_ranged_combat": "Ranged Combat",
-  "s0_critical_hits": "Critical Hits",
-  "s0_armor_penalty": "Armor Penalty",
+  "s0_rangedCombat": "Ranged Combat",
+  "s0_criticalHits": "Critical Hits",
+  "s0_armorPenalty": "Armor Penalty",
 
   "s1_title": "Basic Information",
   "s1_name": "System Name *",
