@@ -47,6 +47,22 @@ interface AbilityDef {
   bonus: string;
 }
 
+interface LevelEntry {
+  level: number;
+  xpRequired: number;
+  features: string;
+}
+
+interface XpCostEntry {
+  name: string;
+  cost: number;
+}
+
+interface ImprovementEntry {
+  name: string;
+  dice: string;
+}
+
 export interface WizardData {
   name: string;
   version: number;
@@ -55,6 +71,11 @@ export interface WizardData {
   features: SystemFeatures;
   derivedValues: DerivedValue[];
   abilities: AbilityDef[];
+  progression: {
+    levels: LevelEntry[];
+    xpCosts: XpCostEntry[];
+    improvements: ImprovementEntry[];
+  };
   attributes: AttributeDef[];
   skills: SkillDef[];
   probe: string;
@@ -62,7 +83,7 @@ export interface WizardData {
   combat: DiceCombat;
 }
 
-const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_dv', 'step_label_3', 'step_label_5a', 'step_label_4', 'step_label_5'];
+const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_dv', 'step_label_3', 'step_label_5a', 'step_label_6', 'step_label_4', 'step_label_5'];
 
 const DICE_PRESETS = [
   { v: '1d2', l: '1d2' }, { v: '1d3', l: '1d3' }, { v: '1d4', l: '1d4' }, { v: '1d6', l: '1d6' },
@@ -84,6 +105,11 @@ const INITIAL: WizardData = {
   },
   derivedValues: [],
   abilities: [],
+  progression: {
+    levels: [{ level: 1, xpRequired: 0, features: '' }, { level: 2, xpRequired: 300, features: '' }, { level: 3, xpRequired: 900, features: '' }],
+    xpCosts: [{ name: '', cost: 0 }],
+    improvements: [{ name: '', dice: '1d6' }],
+  },
   attributes: [],
   skills: [],
   probe: '1d20+mod',
@@ -125,6 +151,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
       features: data.features,
       derived_values: data.derivedValues,
       abilities: data.abilities,
+      progression: data.progression,
       attributes: data.attributes,
       skills: data.skills,
       dice_mechanics: { probe: data.probe },
@@ -664,7 +691,196 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         </div>
       )}
 
+      {/* Step 6: Progression */}
       {step === 6 && (
+        <div className="space-y-4">
+          <h3 className="font-heading text-text-primary">{t('s6_title')}</h3>
+          <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s6_hint') }} />
+
+          {data.progressionType === 'level' && (
+            <>
+              <p className="text-xs font-semibold text-text-primary">{t('s6_level_title')}</p>
+              <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s6_level_hint') }} />
+              <div className="flex items-center gap-2 px-2 text-[10px] text-text-secondary uppercase tracking-wider">
+                <span className="w-12">{t('s6_level_header_level')}</span>
+                <span className="w-20">{t('s6_level_header_xp')}</span>
+                <span className="flex-1">{t('s6_level_header_features')}</span>
+                <span className="w-4" />
+              </div>
+              {data.progression.levels.map((lv, i) => (
+                <div key={i} className="flex items-center gap-2 rounded bg-bg-primary/50 p-2">
+                  <span className="w-12 text-xs text-text-primary">{lv.level}</span>
+                  <input
+                    type="number" min={0}
+                    value={lv.xpRequired}
+                    onChange={(e) => {
+                      const a = [...data.progression.levels];
+                      a[i] = { ...a[i], xpRequired: Number(e.target.value) };
+                      update('progression', { ...data.progression, levels: a });
+                    }}
+                    className="w-20 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                  <input
+                    value={lv.features}
+                    onChange={(e) => {
+                      const a = [...data.progression.levels];
+                      a[i] = { ...a[i], features: e.target.value };
+                      update('progression', { ...data.progression, levels: a });
+                    }}
+                    className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    placeholder="z.B. Feat, ASI"
+                  />
+                  <button
+                    onClick={() =>
+                      update('progression', {
+                        ...data.progression,
+                        levels: data.progression.levels.filter((_, j) => j !== i),
+                      })
+                    }
+                    className="text-danger hover:text-danger/80"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={() =>
+                  update('progression', {
+                    ...data.progression,
+                    levels: [...data.progression.levels, { level: data.progression.levels.length + 1, xpRequired: 0, features: '' }],
+                  })
+                }
+                className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+              >
+                <Plus size={14} /> {t('s6_level_add')}
+              </button>
+            </>
+          )}
+
+          {data.progressionType === 'xp' && (
+            <>
+              <p className="text-xs font-semibold text-text-primary">{t('s6_xp_title')}</p>
+              <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s6_xp_hint') }} />
+              <div className="flex items-center gap-2 px-2 text-[10px] text-text-secondary uppercase tracking-wider">
+                <span className="flex-1">{t('s6_xp_header_name')}</span>
+                <span className="w-20">{t('s6_xp_header_cost')}</span>
+                <span className="w-4" />
+              </div>
+              {data.progression.xpCosts.map((xc, i) => (
+                <div key={i} className="flex items-center gap-2 rounded bg-bg-primary/50 p-2">
+                  <input
+                    value={xc.name}
+                    onChange={(e) => {
+                      const a = [...data.progression.xpCosts];
+                      a[i] = { ...a[i], name: e.target.value };
+                      update('progression', { ...data.progression, xpCosts: a });
+                    }}
+                    className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                  <input
+                    type="number" min={0}
+                    value={xc.cost}
+                    onChange={(e) => {
+                      const a = [...data.progression.xpCosts];
+                      a[i] = { ...a[i], cost: Number(e.target.value) };
+                      update('progression', { ...data.progression, xpCosts: a });
+                    }}
+                    className="w-20 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                  <button
+                    onClick={() =>
+                      update('progression', {
+                        ...data.progression,
+                        xpCosts: data.progression.xpCosts.filter((_, j) => j !== i),
+                      })
+                    }
+                    className="text-danger hover:text-danger/80"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={() =>
+                  update('progression', {
+                    ...data.progression,
+                    xpCosts: [...data.progression.xpCosts, { name: '', cost: 0 }],
+                  })
+                }
+                className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+              >
+                <Plus size={14} /> {t('s6_xp_add')}
+              </button>
+            </>
+          )}
+
+          {data.progressionType === 'improvement' && (
+            <>
+              <p className="text-xs font-semibold text-text-primary">{t('s6_imp_title')}</p>
+              <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s6_imp_hint') }} />
+              <div className="flex items-center gap-2 px-2 text-[10px] text-text-secondary uppercase tracking-wider">
+                <span className="flex-1">{t('s6_imp_header_name')}</span>
+                <span className="w-20">{t('s6_imp_header_dice')}</span>
+                <span className="w-4" />
+              </div>
+              {data.progression.improvements.map((imp, i) => (
+                <div key={i} className="flex items-center gap-2 rounded bg-bg-primary/50 p-2">
+                  <input
+                    value={imp.name}
+                    onChange={(e) => {
+                      const a = [...data.progression.improvements];
+                      a[i] = { ...a[i], name: e.target.value };
+                      update('progression', { ...data.progression, improvements: a });
+                    }}
+                    className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                  <select
+                    value={imp.dice}
+                    onChange={(e) => {
+                      const a = [...data.progression.improvements];
+                      a[i] = { ...a[i], dice: e.target.value };
+                      update('progression', { ...data.progression, improvements: a });
+                    }}
+                    className="w-20 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  >
+                    {DICE_PRESETS.map((d) => (
+                      <option key={d.v} value={d.v}>{d.l}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() =>
+                      update('progression', {
+                        ...data.progression,
+                        improvements: data.progression.improvements.filter((_, j) => j !== i),
+                      })
+                    }
+                    className="text-danger hover:text-danger/80"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={() =>
+                  update('progression', {
+                    ...data.progression,
+                    improvements: [...data.progression.improvements, { name: '', dice: '1d6' }],
+                  })
+                }
+                className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+              >
+                <Plus size={14} /> {t('s6_imp_add')}
+              </button>
+            </>
+          )}
+
+          {!data.progressionType && (
+            <p className="text-xs text-text-secondary">Bitte wähle zuerst unter System-Charakter einen Aufstiegs-Typ.</p>
+          )}
+        </div>
+      )}
+
+      {step === 7 && (
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s4_title')}</h3>
           <div className="rounded bg-bg-primary/30 p-3 text-xs text-text-secondary">
@@ -777,7 +993,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         </div>
       )}
 
-      {step === 7 && (
+      {step === 8 && (
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s5_title')}</h3>
 
@@ -831,6 +1047,37 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
               )}
             </div>
           </div>
+
+          {data.progressionType && (
+          <div className="rounded bg-bg-primary/50 p-3">
+            <p className="text-[10px] text-text-secondary uppercase tracking-wider mb-2">
+              Aufstieg ({data.progressionType})
+            </p>
+            {data.progressionType === 'level' && (
+              <div className="flex flex-wrap gap-1">
+                {data.progression.levels.map((lv) => (
+                  <span key={lv.level} className="rounded bg-bg-elevated px-2 py-0.5 text-xs text-text-primary">
+                    Lv.{lv.level} — {lv.xpRequired} XP
+                  </span>
+                ))}
+              </div>
+            )}
+            {data.progressionType === 'xp' && (
+              <div className="space-y-1">
+                {data.progression.xpCosts.map((xc, i) => (
+                  <div key={i} className="text-xs text-text-secondary">{xc.name || '—'}: {xc.cost} XP</div>
+                ))}
+              </div>
+            )}
+            {data.progressionType === 'improvement' && (
+              <div className="space-y-1">
+                {data.progression.improvements.map((imp, i) => (
+                  <div key={i} className="text-xs text-text-secondary">{imp.name || '—'} ({imp.dice})</div>
+                ))}
+              </div>
+            )}
+          </div>
+          )}
 
           {data.abilities.length > 0 && (
           <div className="rounded bg-bg-primary/50 p-3">

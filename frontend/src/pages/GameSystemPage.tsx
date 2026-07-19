@@ -188,6 +188,21 @@ export default function GameSystemPage() {
           effect: (a.effect as string) ?? '',
           bonus: (a.bonus as string) ?? '',
         })),
+        progression: {
+          levels: ((parsed.progression?.levels as Record<string, unknown>[]) ?? []).map((lv: Record<string, unknown>) => ({
+            level: (lv.level as number) ?? 0,
+            xpRequired: (lv.xpRequired as number) ?? 0,
+            features: (lv.features as string) ?? '',
+          })),
+          xpCosts: ((parsed.progression?.xpCosts as Record<string, unknown>[]) ?? []).map((xc: Record<string, unknown>) => ({
+            name: (xc.name as string) ?? '',
+            cost: (xc.cost as number) ?? 0,
+          })),
+          improvements: ((parsed.progression?.improvements as Record<string, unknown>[]) ?? []).map((imp: Record<string, unknown>) => ({
+            name: (imp.name as string) ?? '',
+            dice: (imp.dice as string) ?? '1d6',
+          })),
+        },
       };
     } catch { return null; }
   };
