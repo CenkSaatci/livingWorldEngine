@@ -18,6 +18,8 @@ const storedTheme = (() => {
   return 'dark';
 })();
 
+document.documentElement.classList.toggle('dark', storedTheme === 'dark');
+
 export const useSettingsStore = create<SettingsState>((set) => ({
   diceMode: (localStorage.getItem('lwe:diceMode') as DiceMode) ?? 'css',
   theme: storedTheme,
