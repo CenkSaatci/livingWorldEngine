@@ -3,10 +3,30 @@
 @tailwind utilities;
 
 /* Globale Styles — Dark Mode Default, siehe docs/UI-UX.md Abschnitt 10 */
+:root {
+  --color-bg-primary: #f4f6f8;
+  --color-bg-surface: #ffffff;
+  --color-bg-elevated: #e2e6ea;
+  --color-text-primary: #1a1d21;
+  --color-text-secondary: #6c757d;
+  --color-accent: #5bb8c5;
+  --color-danger: #e0556b;
+  --color-success: #7ac784;
+  --color-warning: #f2a65a;
+}
+
+.dark {
+  --color-bg-primary: #0f1419;
+  --color-bg-surface: #1a2128;
+  --color-bg-elevated: #232c36;
+  --color-text-primary: #e8edf2;
+  --color-text-secondary: #8b98a5;
+}
+
 body {
   margin: 0;
-  background-color: #0f1419;
-  color: #e8edf2;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
   font-family: Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -78,18 +98,18 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #1a2733;
+  background: var(--color-bg-primary);
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a3640;
+  background: var(--color-bg-elevated);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a4650;
+  background: var(--color-text-secondary);
 }
 
 /* Firefox dark scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #2a3640 #1a2733;
+  scrollbar-color: var(--color-bg-elevated) var(--color-bg-primary);
 }

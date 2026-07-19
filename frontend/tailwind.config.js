@@ -7,18 +7,18 @@ export default {
       // LWE Design Tokens — siehe docs/UI-UX.md Abschnitt 10
       colors: {
         bg: {
-          primary: '#0F1419',
-          surface: '#1A2128',
-          elevated: '#232C36',
+          primary: 'var(--color-bg-primary)',
+          surface: 'var(--color-bg-surface)',
+          elevated: 'var(--color-bg-elevated)',
         },
         text: {
-          primary: '#E8EDF2',
-          secondary: '#8B98A5',
+          primary: 'var(--color-text-primary)',
+          secondary: 'var(--color-text-secondary)',
         },
-        accent: '#5BB8C5',
-        danger: '#E0556B',
-        success: '#7AC784',
-        warning: '#F2A65A',
+        accent: 'var(--color-accent)',
+        danger: 'var(--color-danger)',
+        success: 'var(--color-success)',
+        warning: 'var(--color-warning)',
       },
       fontFamily: {
         heading: ['Inter', 'system-ui', 'sans-serif'],

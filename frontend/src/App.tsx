@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 const routerFuture = { v7_startTransition: true } as const;
 import { useAuthStore } from './store/authStore';
+import { useSettingsStore } from './store/settingsStore';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
@@ -39,6 +40,11 @@ export default function App() {
   useEffect(() => {
     restoreSession();
   }, [restoreSession]);
+
+  useEffect(() => {
+    const theme = useSettingsStore.getState().theme;
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, []);
 
   return (
     <BrowserRouter future={routerFuture}>

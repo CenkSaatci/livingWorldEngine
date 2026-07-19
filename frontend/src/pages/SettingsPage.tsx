@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Monitor, Volume2, VolumeX } from 'lucide-react';
-import { useSettingsStore, type DiceMode } from '../store/settingsStore';
+import { ArrowLeft, Monitor, Volume2, VolumeX, Sun, Moon } from 'lucide-react';
+import { useSettingsStore, type DiceMode, type ThemeMode } from '../store/settingsStore';
 import { useAuthStore } from '../store/authStore';
 import { apiClient } from '../api/client';
 import { isSoundEnabled, setSoundEnabled } from '../utils/sound';
@@ -12,6 +12,8 @@ export default function SettingsPage() {
   const { i18n } = useTranslation('common');
   const diceMode = useSettingsStore((s) => s.diceMode);
   const setDiceMode = useSettingsStore((s) => s.setDiceMode);
+  const theme = useSettingsStore((s) => s.theme);
+  const setTheme = useSettingsStore((s) => s.setTheme);
   const user = useAuthStore((s) => s.user);
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -96,6 +98,27 @@ export default function SettingsPage() {
                 }`}
               >
                 {mode === 'css' ? '🎲 CSS Dice' : '🧊 3D Dice'}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Theme */}
+        <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
+          <h2 className="mb-4 font-heading text-text-primary">Theme</h2>
+          <div className="flex gap-2">
+            {(['dark', 'light'] as ThemeMode[]).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setTheme(mode)}
+                className={`flex items-center gap-2 rounded px-4 py-2 text-sm ${
+                  theme === mode
+                    ? 'bg-accent text-white'
+                    : 'bg-bg-elevated text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                {mode === 'dark' ? <Moon size={16} /> : <Sun size={16} />}
+                {mode === 'dark' ? 'Dark' : 'Light'}
               </button>
             ))}
           </div>
