@@ -1,23 +1,15 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
-function valueSprite(value: number): THREE.Sprite {
-  const s = 128;
+function valueLabel(value: number): THREE.Sprite {
+  const s = 64;
   const canvas = document.createElement('canvas');
   canvas.width = s;
   canvas.height = s;
   const ctx = canvas.getContext('2d')!;
 
-  ctx.beginPath();
-  ctx.arc(s / 2, s / 2, s / 2 - 4, 0, Math.PI * 2);
-  ctx.fillStyle = '#fff';
-  ctx.fill();
-  ctx.strokeStyle = '#ccc';
-  ctx.lineWidth = 3;
-  ctx.stroke();
-
   ctx.fillStyle = '#1a1a2e';
-  ctx.font = 'bold 64px sans-serif';
+  ctx.font = 'bold 48px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(String(value), s / 2, s / 2);
@@ -25,7 +17,7 @@ function valueSprite(value: number): THREE.Sprite {
   const tex = new THREE.CanvasTexture(canvas);
   const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
   const sprite = new THREE.Sprite(mat);
-  sprite.scale.set(1, 1, 1);
+  sprite.scale.set(0.5, 0.5, 0.5);
   return sprite;
 }
 
@@ -73,6 +65,7 @@ function createColoredMat(color: string): THREE.MeshStandardMaterial {
 
 interface DieResult {
   mesh: THREE.Mesh;
+  edges: THREE.LineSegments;
   value: number;
   targetRotation: THREE.Euler;
 }
@@ -99,7 +92,7 @@ interface Props {
 const COLORS = [0x5bb8c5, 0xe0556b, 0x7ac784, 0xf2a65a, 0xa78bfa];
 const COLOR_STRS = ['#5bb8c5', '#e0556b', '#7ac784', '#f2a65a', '#a78bfa'];
 
-function buildDie(value: number, sides: number, color: string): { mesh: THREE.Mesh; sprite: THREE.Sprite } {
+function buildDie(value: number, sides: number, color: string): { mesh: THREE.Mesh; label: THREE.Sprite; edges: THREE.LineSegments } {
   const mat = createColoredMat(color);
   let mesh: THREE.Mesh;
 
@@ -124,7 +117,7 @@ function buildDie(value: number, sides: number, color: string): { mesh: THREE.Me
       break;
     }
     case 10: {
-      const geo = new THREE.CylinderGeometry(0.45, 0.3, 0.75, 5, 1);
+      const geo = new THREE.CylinderGeometry(0.35, 0.35, 0.8, 5, 1);
       mesh = new THREE.Mesh(geo, mat);
       break;
     }
@@ -148,10 +141,12 @@ function buildDie(value: number, sides: number, color: string): { mesh: THREE.Me
     }
   }
 
-  const sprite = valueSprite(value);
-  sprite.position.y = 0.7;
+  const edgeGeo = new THREE.EdgesGeometry(mesh.geometry);
+  const edgeMat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 });
+  const edges = new THREE.LineSegments(edgeGeo, edgeMat);
 
-  return { mesh, sprite };
+  const label = valueLabel(value);
+  return { mesh, label, edges };
 }
 
 export function ThreeDice({ results, modifier, total }: Props) {
@@ -183,12 +178,15 @@ export function ThreeDice({ results, modifier, total }: Props) {
     const dice: DieResult[] = [];
 
     results.forEach((r, i) => {
-      const { mesh, sprite } = buildDie(r.value, r.sides, COLOR_STRS[i % COLORS.length]);
+      const { mesh, label, edges } = buildDie(r.value, r.sides, COLOR_STRS[i % COLORS.length]);
       const offset = (results.length - 1) * 0.75;
-      mesh.position.set(i * 1.5 - offset, 0, 0);
-      sprite.position.set(i * 1.5 - offset, 0.7, 0);
+      const xPos = i * 1.5 - offset;
+      mesh.position.set(xPos, 0, 0);
+      label.position.set(xPos, 0, 0.1);
+      edges.position.set(xPos, 0, 0);
       scene.add(mesh);
-      scene.add(sprite);
+      scene.add(label);
+      scene.add(edges);
 
       const targetRotation = new THREE.Euler(
         Math.random() * Math.PI * 2,
@@ -200,7 +198,8 @@ export function ThreeDice({ results, modifier, total }: Props) {
         Math.random() * Math.PI * 4,
         Math.random() * Math.PI * 4,
       );
-      dice.push({ mesh, value: r.value, targetRotation });
+      edges.rotation.copy(mesh.rotation);
+      dice.push({ mesh, edges, value: r.value, targetRotation });
     });
 
     const startTime = Date.now();
@@ -214,6 +213,7 @@ export function ThreeDice({ results, modifier, total }: Props) {
         d.mesh.rotation.x += (d.targetRotation.x - d.mesh.rotation.x) * 0.08;
         d.mesh.rotation.y += (d.targetRotation.y - d.mesh.rotation.y) * 0.08;
         d.mesh.rotation.z += (d.targetRotation.z - d.mesh.rotation.z) * 0.08;
+        d.edges.rotation.copy(d.mesh.rotation);
       }
 
       renderer.render(scene, camera);
