@@ -256,6 +256,17 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s2_title')}</h3>
           <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s2_hint') }} />
+
+          {/* Header */}
+          <div className="flex items-center gap-2 px-2 text-[10px] text-text-secondary uppercase tracking-wider">
+            <span className="w-24">{t('s2_header_name')}</span>
+            <span className="w-[88px]">{t('s2_header_type')}</span>
+            <span className="w-14 text-center">{t('s2_header_min')}</span>
+            <span className="w-14 text-center">{t('s2_header_max')}</span>
+            <span className="w-14 text-center">{t('s2_header_default')}</span>
+            <span className="w-4">{t('s2_header_actions')}</span>
+          </div>
+
           {data.attributes.map((attr, i) => (
             <div key={i} className="flex items-center gap-2 rounded bg-bg-primary/50 p-2">
               <input
@@ -266,7 +277,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   update('attributes', a);
                 }}
                 className="w-24 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                placeholder={t('s3_placeholder')}
+                placeholder={t('s2_name_placeholder')}
               />
               <select
                 value={attr.type}
@@ -275,11 +286,11 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   a[i] = { ...a[i], type: e.target.value as 'INT' | 'STRING' | 'BOOL' };
                   update('attributes', a);
                 }}
-                className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                className="w-[88px] rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
               >
-                <option value="INT">INT</option>
-                <option value="STRING">STRING</option>
-                <option value="BOOL">BOOL</option>
+                <option value="INT">{t('s2_type_int')}</option>
+                <option value="STRING">{t('s2_type_string')}</option>
+                <option value="BOOL">{t('s2_type_bool')}</option>
               </select>
               <input
                 type="number"
@@ -290,7 +301,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   update('attributes', a);
                 }}
                 className="w-14 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                placeholder="Min"
+                placeholder={t('s2_min')}
               />
               <input
                 type="number"
@@ -301,7 +312,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   update('attributes', a);
                 }}
                 className="w-14 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                placeholder="Max"
+                placeholder={t('s2_max')}
               />
               <input
                 type="number"
@@ -312,7 +323,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   update('attributes', a);
                 }}
                 className="w-14 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                placeholder="Default"
+                placeholder={t('s2_default')}
               />
               <button
                 onClick={() =>
@@ -336,7 +347,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
             }
             className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
           >
-            <Plus size={14} /> Add Attribute
+            <Plus size={14} /> {t('s2_add')}
           </button>
         </div>
       )}
