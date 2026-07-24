@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -64,6 +65,25 @@ public class EntityController {
             req.name(), req.attributesJson(), req.inventoryJson(),
             req.positionJson(), req.metadataJson(),
             req.backstory(), req.age(), req.experienceLevel(), req.socialStanding());
+        return ResponseEntity.ok(EntityResponse.from(entity));
+    }
+
+    @PatchMapping("/{entityId}/attributes")
+    public ResponseEntity<EntityResponse> updateAttributes(@PathVariable UUID worldId,
+                                                          @PathVariable UUID entityId,
+                                                          @RequestBody Map<String, Integer> attrs,
+                                                          @AuthenticationPrincipal User user) {
+        var entity = entityService.updateAttributes(entityId, user.getId(), attrs);
+        return ResponseEntity.ok(EntityResponse.from(entity));
+    }
+
+    @PatchMapping("/{entityId}/progression")
+    public ResponseEntity<EntityResponse> updateProgression(@PathVariable UUID worldId,
+                                                            @PathVariable UUID entityId,
+                                                            @RequestBody Map<String, Object> body,
+                                                            @AuthenticationPrincipal User user) {
+        var xp = ((Number) body.getOrDefault("experience_points", 0)).intValue();
+        var entity = entityService.updateProgression(entityId, user.getId(), xp, null);
         return ResponseEntity.ok(EntityResponse.from(entity));
     }
 

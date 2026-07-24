@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Heart, Shield, Zap, Sparkles } from 'lucide-react';
+import { Heart, Shield, Zap, Sparkles, Check, X } from 'lucide-react';
+import { apiClient } from '../../api/client';
 import { useSheet } from '../../hooks/useSheet';
 import { ProbeRoller } from './ProbeRoller';
 
@@ -11,6 +12,44 @@ const VALUE_ICONS: Record<string, React.ReactNode> = {
   sanity: <Sparkles size={16} className="text-purple-400" />,
 };
 
+function AttrInput({ name, value, entityId, onSaved }: { name: string; value: number; entityId: string; onSaved: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [editVal, setEditVal] = useState(String(value));
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    const newVal = parseInt(editVal, 10);
+    if (isNaN(newVal) || newVal === value) { setEditing(false); return; }
+    setSaving(true);
+    try {
+      await apiClient.patch(`/entities/${entityId}/attributes`, { [name]: newVal });
+      onSaved();
+      setEditing(false);
+    } catch { setEditVal(String(value)); setEditing(false); }
+    finally { setSaving(false); }
+  };
+
+  const cancel = () => { setEditVal(String(value)); setEditing(false); };
+
+  return editing ? (
+    <div className="flex items-center justify-center gap-1">
+      <input
+        type="number" value={editVal} autoFocus
+        onChange={(e) => setEditVal(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel(); }}
+        className="w-16 rounded border border-accent bg-bg-primary px-1 py-0.5 text-lg font-heading text-center text-text-primary outline-none"
+        disabled={saving}
+      />
+      <button onClick={save} className="text-success hover:text-success/60" disabled={saving}><Check size={14} /></button>
+      <button onClick={cancel} className="text-danger hover:text-danger/60"><X size={14} /></button>
+    </div>
+  ) : (
+    <button onClick={() => setEditing(true)} className="w-full text-center hover:bg-bg-elevated/30 rounded transition-colors">
+      <p className="text-lg font-heading text-text-primary">{value}</p>
+    </button>
+  );
+}
+
 interface Props {
   entityId: string;
   worldId: string;
@@ -18,7 +57,7 @@ interface Props {
 
 export function CharacterSheet({ entityId }: Props) {
   const { t } = useTranslation('character');
-  const { data, loading, error } = useSheet(entityId);
+  const { data, loading, error, refetch } = useSheet(entityId);
   const [skillFilter, setSkillFilter] = useState('');
 
   if (loading) return <div className="p-4 text-sm text-text-secondary">{t('sheet.loading')}</div>;
@@ -46,7 +85,7 @@ export function CharacterSheet({ entityId }: Props) {
           {data.attributes.map((attr) => (
             <div key={attr.name} className="rounded bg-bg-primary/50 p-2 text-center">
               <p className="text-[10px] text-text-secondary uppercase">{attr.name}</p>
-              <p className="text-lg font-heading text-text-primary">{attr.value}</p>
+              <AttrInput name={attr.name} value={attr.value} entityId={entityId} onSaved={refetch} />
               {attr.modifier !== 0 && (
                 <p className="text-xs text-accent">
                   {attr.modifier > 0 ? '+' : ''}{Math.round(attr.modifier * 10) / 10}

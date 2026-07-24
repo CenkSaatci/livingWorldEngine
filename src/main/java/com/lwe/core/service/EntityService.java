@@ -7,7 +7,10 @@ import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -15,6 +18,8 @@ public class EntityService {
 
     private final GameEntityRepository entityRepo;
     private final WorldAccess worldAccess;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private static final TypeReference<Map<String, Integer>> ATTR_MAP = new TypeReference<>() {};
 
     public EntityService(GameEntityRepository entityRepo, WorldAccess worldAccess) {
         this.entityRepo = entityRepo;
@@ -73,6 +78,26 @@ public class EntityService {
         if (age != null) entity.setAge(age);
         if (experienceLevel != null) entity.setExperienceLevel(experienceLevel);
         if (socialStanding != null) entity.setSocialStanding(socialStanding);
+        return entityRepo.save(entity);
+    }
+
+    @Transactional
+    public GameEntity updateAttributes(UUID entityId, UUID userId, Map<String, Integer> newAttrs) {
+        var entity = getById(entityId, userId);
+        try {
+            var current = objectMapper.readValue(entity.getAttributesJson(), ATTR_MAP);
+            current.putAll(newAttrs);
+            entity.setAttributesJson(objectMapper.writeValueAsString(current));
+            return entityRepo.save(entity);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update attributes", e);
+        }
+    }
+
+    @Transactional
+    public GameEntity updateProgression(UUID entityId, UUID userId, int experiencePoints, Integer level) {
+        var entity = getById(entityId, userId);
+        entity.setExperiencePoints(experiencePoints);
         return entityRepo.save(entity);
     }
 
