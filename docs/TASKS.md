@@ -1427,11 +1427,13 @@ Nach dem Read-Only-Sheet (P16-T07) folgen Editieren, Inventory und Kampf.
 
 ### P17-T02: Inventory API
 - **Aufwand:** 2,0 Tage
-- **Status:** 📋
+- **Status:** ✅
+- **Erledigt:** 2026-07-24
 
 ### P17-T03: Inventory UI
 - **Aufwand:** 2,0 Tage
-- **Status:** 📋
+- **Status:** ✅
+- **Erledigt:** 2026-07-24
 
 ### P17-T04: Kampf-UI verbessern
 - **Aufwand:** 2,0 Tage
