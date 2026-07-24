@@ -1285,9 +1285,9 @@ Drei Zielsysteme (D&D 5e, CoC 7e, DSA 5) haben stark unterschiedliche Regelmecha
 - **Qualitäts-Check:** TDD, UI/UX-Review
 
 ### P16-T05: Modifier-Engine (Backend)
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 2,0 Tage
-- **Abhängigkeiten:** P16-T01
+- **Erledigt:** 2026-07-24
 - **Beschreibung:** Automatische Modifier-Berechnung für Systeme die das unterstützen:
   - `modifierFormula: '(value - 10) / 2'` (D&D) → wird auf jedes Attribut angewendet
   - `derivedValueFormula` in Conditionals auswerten:
