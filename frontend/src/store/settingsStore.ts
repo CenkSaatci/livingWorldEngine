@@ -5,8 +5,10 @@ export type ThemeMode = 'dark' | 'light' | 'cyber';
 
 interface SettingsState {
   diceMode: DiceMode;
+  diceSkin: string;
   theme: ThemeMode;
   setDiceMode: (mode: DiceMode) => void;
+  setDiceSkin: (skin: string) => void;
   setTheme: (theme: ThemeMode) => void;
 }
 
@@ -20,11 +22,17 @@ const storedTheme = (() => {
 
 export const useSettingsStore = create<SettingsState>((set) => ({
   diceMode: (localStorage.getItem('lwe:diceMode') as DiceMode) ?? 'css',
+  diceSkin: localStorage.getItem('lwe:diceSkin') ?? 'classic',
   theme: storedTheme,
 
   setDiceMode: (mode) => {
     localStorage.setItem('lwe:diceMode', mode);
     set({ diceMode: mode });
+  },
+
+  setDiceSkin: (skin) => {
+    localStorage.setItem('lwe:diceSkin', skin);
+    set({ diceSkin: skin });
   },
 
   setTheme: (theme) => {

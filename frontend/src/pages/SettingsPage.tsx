@@ -12,6 +12,8 @@ export default function SettingsPage() {
   const { i18n, t } = useTranslation('common');
   const diceMode = useSettingsStore((s) => s.diceMode);
   const setDiceMode = useSettingsStore((s) => s.setDiceMode);
+  const diceSkin = useSettingsStore((s) => s.diceSkin);
+  const setDiceSkin = useSettingsStore((s) => s.setDiceSkin);
   const theme = useSettingsStore((s) => s.theme);
   const setTheme = useSettingsStore((s) => s.setTheme);
   const user = useAuthStore((s) => s.user);
@@ -98,6 +100,21 @@ export default function SettingsPage() {
               </button>
             ))}
           </div>
+          {diceMode === '3d' && (
+            <div className="mt-3">
+              <label className="block text-xs text-text-secondary mb-1">Skin</label>
+              <select
+                value={diceSkin}
+                onChange={(e) => setDiceSkin(e.target.value)}
+                className="rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+              >
+                <option value="classic">🎲 Classic</option>
+                <option value="cyber">💠 Cyber</option>
+                <option value="metal">⚙️ Metal</option>
+                <option value="wood">🪵 Wood</option>
+              </select>
+            </div>
+          )}
         </section>
 
         {/* Theme */}

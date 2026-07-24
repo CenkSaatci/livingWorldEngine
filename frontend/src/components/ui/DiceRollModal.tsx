@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { CssDice } from './CssDice';
-import { ThreeDice } from './ThreeDice';
+import { ThreeDice, DICE_SKINS } from './ThreeDice';
 
 interface DieRoll {
   sides: number;
@@ -19,6 +19,7 @@ interface Props {
 
 export function DiceRollModal({ label, dice, modifier, total, onClose }: Props) {
   const diceMode = useSettingsStore((s) => s.diceMode);
+  const diceSkin = useSettingsStore((s) => s.diceSkin);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -53,6 +54,7 @@ export function DiceRollModal({ label, dice, modifier, total, onClose }: Props) 
             results={dice.map((d) => ({ value: d.value, sides: d.sides }))}
             modifier={modifier}
             total={total}
+            skin={DICE_SKINS.find((s) => s.name === diceSkin) ?? DICE_SKINS[0]}
           />
         ) : (
           <CssDice
