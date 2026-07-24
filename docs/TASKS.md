@@ -1192,7 +1192,7 @@
 | 13 (Campaign-Features) | 5 | 12,0 Tage |
 | 14 (Adventure Editor) | 4 | 9,5 Tage |
 | 15 (Wizard 2.0 & Editor UX) | 11 | 14,5 Tage |
-| 16 (Multi-System & RuleEngine) | 10 | 20,0 Tage |
+| **16 (Multi-System & RuleEngine)** | **10** | **20,0 Tage** |
 | **Summe** | **123 (1 cancelled)** | **225,5 Tage** |
 
 ---
@@ -1384,9 +1384,9 @@ Drei Zielsysteme (D&D 5e, CoC 7e, DSA 5) haben stark unterschiedliche Regelmecha
 - **Qualitäts-Check:** Funktionaler Test, UI/UX-Review, i18n
 
 ### P16-T10: Qualitätssicherung + Bugfixes
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 2,0 Tage
-- **Abhängigkeiten:** Alle P16-Tasks
+- **Erledigt:** 2026-07-24
 - **Beschreibung:** 
   - Bug-Hunting-Session: Edge-Cases in allen 3 Systemen testen
   - Code-Qualität: Prüfe auf die bekannten Muster (keine raw Maps, Exception-Handler konsistent, i18n vollständig)
