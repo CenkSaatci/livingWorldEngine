@@ -1268,9 +1268,9 @@ Drei Zielsysteme (D&D 5e, CoC 7e, DSA 5) haben stark unterschiedliche Regelmecha
 - **Qualitäts-Check:** TDD, Datenmodell-Review, i18n
 
 ### P16-T04: Ability-Tags + Vor-/Nachteile
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 1,5 Tage
-- **Abhängigkeiten:** P16-T01
+- **Erledigt:** 2026-07-19
 - **Beschreibung:** Abilities bekommen Tags für bessere Filterung im Kampf-UI:
   - `tags: string[]` (z.B. `["attack", "ranged", "magic"]`, `["defensive", "concentration"]`)
   - Vor-/Nachteile (DSA) / Feats (D&D) / Perks (CoC) als spezielle Abilities:
