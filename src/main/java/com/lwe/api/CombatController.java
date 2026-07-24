@@ -1,6 +1,7 @@
 package com.lwe.api;
 
 import com.lwe.api.dto.CombatSessionResponse;
+import com.lwe.api.dto.ParticipantResponse;
 import com.lwe.core.domain.User;
 import com.lwe.core.service.CombatService;
 import jakarta.validation.Valid;
@@ -102,5 +103,5 @@ public class CombatController {
                                               int apRemaining, boolean success) {}
 
     public record CombatSessionWithParticipants(CombatSessionResponse session,
-                                                  List<Map<String, Object>> participants) {}
+                                                  List<ParticipantResponse> participants) {}
 }

@@ -20,6 +20,7 @@ describe('InitiativeList', () => {
     useCombatStore.setState({
       session: {
         id: 's1',
+          name: "Test",
         world_id: 'w1',
         status: 'ACTIVE',
         round: 3,
@@ -29,6 +30,7 @@ describe('InitiativeList', () => {
       participants: [
         {
           id: 'p1',
+          name: "Test",
           entity_id: 'e1',
           initiative: 20,
           ap_current: 1,
@@ -39,6 +41,7 @@ describe('InitiativeList', () => {
         },
         {
           id: 'p2',
+          name: "Test",
           entity_id: 'e2',
           initiative: 15,
           ap_current: 2,
@@ -59,6 +62,7 @@ describe('InitiativeList', () => {
     useCombatStore.setState({
       session: {
         id: 's1',
+          name: "Test",
         world_id: 'w1',
         status: 'ACTIVE',
         round: 1,
@@ -68,6 +72,7 @@ describe('InitiativeList', () => {
       participants: [
         {
           id: 'p1',
+          name: "Test",
           entity_id: 'e1',
           initiative: 20,
           ap_current: 0,

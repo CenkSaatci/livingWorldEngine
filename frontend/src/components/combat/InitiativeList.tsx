@@ -29,7 +29,7 @@ export function InitiativeList() {
             }`}
           >
             <span className="w-5 text-center text-[10px] text-text-secondary">{idx + 1}.</span>
-            <span className="flex-1 truncate">{p.entity_id.slice(0, 12)}…</span>
+            <span className="flex-1 truncate">{p.name ?? p.entity_id.slice(0, 12)}</span>
             <span className="text-text-secondary">{p.initiative}</span>
             <span
               className={`text-[10px] ${(p.hp_current ?? 10) > 0 ? 'text-success' : 'text-danger'}`}

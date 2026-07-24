@@ -105,7 +105,7 @@ export function ActionBar({ worldId }: Props) {
                 onClick={() => setTargetEntityId(t.entity_id === targetEntityId ? null : t.entity_id)}
                 className={`rounded px-2 py-1 text-xs ${t.entity_id === targetEntityId ? 'bg-danger text-white' : 'bg-bg-elevated text-text-secondary hover:text-text-primary'}`}
               >
-                {t.entity_id.slice(0, 8)}…
+                {t.name ?? t.entity_id.slice(0, 8)}
               </button>
             ))}
           </div>

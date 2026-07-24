@@ -26,6 +26,7 @@ describe('ApBar', () => {
       participants: [
         {
           id: 'p1',
+          name: 'Hero',
           entity_id: 'e1',
           initiative: 20,
           ap_current: 1,

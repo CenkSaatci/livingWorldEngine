@@ -3,6 +3,7 @@ import { create } from 'zustand';
 export interface CombatParticipant {
   id: string;
   entity_id: string;
+  name: string;
   initiative: number;
   ap_current: number;
   ap_max: number;

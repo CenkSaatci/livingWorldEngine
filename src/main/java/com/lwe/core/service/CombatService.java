@@ -1,6 +1,7 @@
 package com.lwe.core.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lwe.api.dto.ParticipantResponse;
 import com.lwe.core.domain.*;
 import com.lwe.core.repository.*;
 import com.lwe.rules.DiceExpressionParser;
@@ -332,19 +333,15 @@ public class CombatService {
         return session;
     }
 
-    public List<Map<String, Object>> getParticipants(UUID sessionId) {
+    public List<ParticipantResponse> getParticipants(UUID sessionId) {
         return participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId).stream()
             .map(p -> {
-                Map<String, Object> m = new java.util.HashMap<>();
-                m.put("id", p.getId());
-                m.put("entity_id", p.getEntityId());
-                m.put("initiative", p.getInitiative());
-                m.put("ap_current", p.getApCurrent());
-                m.put("ap_max", p.getApMax());
-                m.put("hp_current", p.getHpCurrent());
-                m.put("hp_max", p.getHpMax());
-                m.put("side", p.getSide());
-                return m;
+                var name = entityRepo.findById(p.getEntityId())
+                    .map(e -> e.getName())
+                    .orElse(p.getEntityId().toString().substring(0, 8));
+                return new ParticipantResponse(
+                    p.getId(), p.getEntityId(), name, p.getInitiative(),
+                    p.getApCurrent(), p.getApMax(), p.getHpCurrent(), p.getHpMax(), p.getSide());
             })
             .toList();
     }
