@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -22,6 +23,16 @@ public class CharacterSheetController {
     @GetMapping("/{entityId}/sheet")
     public ResponseEntity<SheetResponse> getSheet(@PathVariable UUID entityId,
                                                     @AuthenticationPrincipal User user) {
+        var sheet = sheetService.getSheet(entityId, user.getId());
+        return ResponseEntity.ok(sheet);
+    }
+
+    @PatchMapping("/{entityId}/progression")
+    public ResponseEntity<SheetResponse> updateProgression(@PathVariable UUID entityId,
+                                                            @RequestBody Map<String, Object> body,
+                                                            @AuthenticationPrincipal User user) {
+        var xp = ((Number) body.getOrDefault("experience_points", 0)).intValue();
+        sheetService.updateProgression(entityId, user.getId(), xp);
         var sheet = sheetService.getSheet(entityId, user.getId());
         return ResponseEntity.ok(sheet);
     }

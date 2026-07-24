@@ -7,6 +7,7 @@ import com.lwe.core.domain.*;
 import com.lwe.core.repository.*;
 import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -106,6 +107,15 @@ public class CharacterSheetService {
             new SheetResponse.EntityInfo(entity.getId().toString(), entity.getName(), entity.getEntityType()),
             entity.getExperiencePoints(), 0, attributes, derivedValues, skills, conditionals
         );
+    }
+
+    @Transactional
+    public void updateProgression(UUID entityId, UUID userId, int experiencePoints) {
+        var entity = entityRepo.findById(entityId)
+            .orElseThrow(() -> new RuntimeException("ENTITY_NOT_FOUND"));
+        worldAccess.requireAccess(entity.getWorldId(), userId);
+        entity.setExperiencePoints(experiencePoints);
+        entityRepo.save(entity);
     }
 
     private Map<String, Object> parseRules(World world) {
