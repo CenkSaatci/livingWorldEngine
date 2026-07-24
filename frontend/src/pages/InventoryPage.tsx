@@ -81,7 +81,7 @@ export default function InventoryPage() {
         <main className="mx-auto max-w-3xl space-y-6 p-6">
           {/* Equip Slots */}
           <section className="rounded-lg bg-bg-surface p-5">
-            <h2 className="mb-3 font-heading text-text-primary">Equipped</h2>
+            <h2 className="mb-3 font-heading text-text-primary">{t("sheet.equipped")}</h2>
             <div className="grid grid-cols-2 gap-3">
               {SLOTS.map((slot) => {
                 const item = equippedBySlot[slot];
@@ -103,7 +103,7 @@ export default function InventoryPage() {
           {/* Bonuses */}
           {Object.keys(bonuses).length > 0 && (
             <section className="rounded-lg bg-bg-surface p-5">
-              <h2 className="mb-3 font-heading text-text-primary">Active Bonuses</h2>
+              <h2 className="mb-3 font-heading text-text-primary">{t("sheet.activeBonuses")}</h2>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(bonuses).map(([key, val]) => (
                   <span key={key} className="rounded bg-accent/15 px-2 py-1 text-xs text-accent">
@@ -116,9 +116,9 @@ export default function InventoryPage() {
 
           {/* Backpack */}
           <section className="rounded-lg bg-bg-surface p-5">
-            <h2 className="mb-3 font-heading text-text-primary">Inventory ({backpack.length})</h2>
+            <h2 className="mb-3 font-heading text-text-primary">{t("sheet.inventoryCount", { count: backpack.length })}</h2>
             {backpack.length === 0 ? (
-              <p className="text-sm text-text-secondary">Empty</p>
+              <p className="text-sm text-text-secondary">{t("sheet.empty")}</p>
             ) : (
               <ul className="space-y-2" role="list" aria-label="Backpack items">
                 {backpack.map((item) => (

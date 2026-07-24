@@ -15,6 +15,11 @@
     "conditionals": "Conditionals",
     "abilities": "Abilities",
     "abilitiesComingSoon": "Abilities UI coming soon",
+    "equipped": "Equipped",
+    "activeBonuses": "Active Bonuses",
+    "inventoryCount": "Inventory ({{count}})",
+    "empty": "Empty",
+    "export": "Export",
     "rollProbe": "Roll probe",
     "level": "Level"
   },

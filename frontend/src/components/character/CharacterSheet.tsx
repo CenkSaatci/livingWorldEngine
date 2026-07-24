@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Heart, Shield, Zap, Sparkles, Check, X } from 'lucide-react';
+import { Heart, Shield, Zap, Sparkles, Check, X, Loader2 } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useSheet } from '../../hooks/useSheet';
 import { ProbeRoller } from './ProbeRoller';
@@ -42,7 +42,9 @@ function AttrInput({ name, value, min, max, entityId, onSaved }: { name: string;
         className="w-16 rounded border border-accent bg-bg-primary px-1 py-0.5 text-lg font-heading text-center text-text-primary outline-none"
         disabled={saving}
       />
-      <button onClick={save} className="text-success hover:text-success/60" disabled={saving}><Check size={14} /></button>
+      <button onClick={save} className="text-success hover:text-success/60" disabled={saving}>
+        {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+      </button>
       <button onClick={cancel} className="text-danger hover:text-danger/60"><X size={14} /></button>
     </div>
   ) : (
@@ -82,7 +84,9 @@ function XpInput({ value, entityId, onSaved }: { value: number; entityId: string
         className="w-20 rounded border border-accent bg-bg-primary px-1 py-0.5 text-xs text-text-primary text-right outline-none"
         disabled={saving}
       />
-      <button onClick={save} className="text-success" disabled={saving}><Check size={12} /></button>
+      <button onClick={save} className="text-success" disabled={saving}>
+        {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+      </button>
       <button onClick={() => { setEditVal(String(value)); setEditing(false); }} className="text-danger"><X size={12} /></button>
     </div>
   ) : (

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { SkipForward, LogOut, Shield, Zap } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useCombatStore } from '../../store/combatStore';
+import { useToast } from '../../hooks/useToast';
 import { playCombatHit } from '../../utils/sound';
 
 const ACTION_ICONS: Record<string, React.ReactNode> = {
@@ -32,6 +33,7 @@ export function ActionBar({ worldId }: Props) {
   const [actionTypes, setActionTypes] = useState<string[]>(['action']);
   const [actionsPerTurn, setActionsPerTurn] = useState<Record<string, number>>({ action: 1 });
   const [usedActions, setUsedActions] = useState<Record<string, number>>({});
+  const toast = useToast();
 
   const currentActor = participants.find((p) => p.entity_id === session?.current_turn_entity_id);
 
@@ -88,7 +90,7 @@ export function ActionBar({ worldId }: Props) {
       setUsedActions((prev) => ({ ...prev, [type]: (prev[type] ?? 0) + 1 }));
       if (!abilityId) playCombatHit();
       useCombatStore.getState().updateParticipantAp(currentActor?.entity_id ?? '', 0);
-    } catch { /* */ }
+    } catch { toast.error('Action failed'); }
   };
 
   const isAvailable = (type: string) => (usedActions[type] ?? 0) < (actionsPerTurn[type] ?? 1);
@@ -146,11 +148,11 @@ export function ActionBar({ worldId }: Props) {
         ))}
 
         {/* Turn Controls */}
-        <button onClick={async () => { try { await apiClient.post(`/combat/${session.id}/next-turn`); } catch {} }}
-          className="flex items-center gap-1 rounded bg-bg-elevated px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary ml-auto">
+          <button onClick={async () => { try { await apiClient.post(`/combat/${session.id}/next-turn`); } catch { toast.error('Next turn failed'); } }}
+            className="flex items-center gap-1 rounded bg-bg-elevated px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary ml-auto">
           <SkipForward size={14} /> {t('combat.nextTurn')}
         </button>
-        <button onClick={async () => { try { await apiClient.post(`/combat/${session.id}/end`); } catch {} }}
+        <button onClick={async () => { try { await apiClient.post(`/combat/${session.id}/end`); } catch { toast.error('Failed to end combat'); } }}
           className="flex items-center gap-1 rounded bg-danger/20 px-3 py-1.5 text-xs text-danger hover:bg-danger/30">
           <LogOut size={14} /> {t('combat.end')}
         </button>

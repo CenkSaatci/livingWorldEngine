@@ -15,6 +15,11 @@
     "conditionals": "Bedingungen",
     "abilities": "Fähigkeiten",
     "abilitiesComingSoon": "Fähigkeiten-UI folgt in Kürze",
+    "equipped": "Ausgerüstet",
+    "activeBonuses": "Aktive Boni",
+    "inventoryCount": "Inventar ({{count}})",
+    "empty": "Leer",
+    "export": "Exportieren",
     "rollProbe": "Probe würfeln",
     "level": "Stufe"
   },
