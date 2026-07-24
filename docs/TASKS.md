@@ -1345,9 +1345,9 @@ Drei Zielsysteme (D&D 5e, CoC 7e, DSA 5) haben stark unterschiedliche Regelmecha
 - **Qualitäts-Check:** TDD, UI/UX-Review, i18n, Responsive-Test
 
 ### P16-T08: RuleEngine — Conditionals auswerten + Roll-API v2
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 2,0 Tage
-- **Abhängigkeiten:** P16-T05, P16-T06
+- **Erledigt:** 2026-07-24
 - **Beschreibung:** Backend wertet `conditionals` aus `rulesJson` aus und erweitert die Würfel-API:
   - `ConditionEvaluator` wendet Bedingungen auf Proben an:
     - `gt/gte/lt/lte/eq`: einfache Vergleiche → Bonus/Malus
