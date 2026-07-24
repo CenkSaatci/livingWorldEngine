@@ -1,6 +1,6 @@
 {
   "sheet": {
-    "title": "Character sheet",
+    "title": "Character Sheet",
     "attributes": "Attributes",
     "skills": "Skills",
     "inventory": "Inventory",
@@ -8,7 +8,14 @@
     "save": "Save",
     "saving": "Saving…",
     "saved": "Saved",
-    "save_error": "Failed to save"
+    "save_error": "Failed to save",
+    "loading": "Loading character…",
+    "searchSkills": "Search…",
+    "noSkills": "No skills",
+    "conditionals": "Conditionals",
+    "abilities": "Abilities",
+    "abilitiesComingSoon": "Abilities UI coming soon",
+    "rollProbe": "Roll probe"
   },
   "attribute": {
     "modifier": "Modifier"

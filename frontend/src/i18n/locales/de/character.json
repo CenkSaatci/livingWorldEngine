@@ -8,7 +8,14 @@
     "save": "Speichern",
     "saving": "Speichert…",
     "saved": "Gespeichert",
-    "save_error": "Fehler beim Speichern"
+    "save_error": "Fehler beim Speichern",
+    "loading": "Lade Charakter…",
+    "searchSkills": "Suchen…",
+    "noSkills": "Keine Fertigkeiten",
+    "conditionals": "Bedingungen",
+    "abilities": "Fähigkeiten",
+    "abilitiesComingSoon": "Fähigkeiten-UI folgt in Kürze",
+    "rollProbe": "Probe würfeln"
   },
   "attribute": {
     "modifier": "Modifikator"

@@ -1,0 +1,36 @@
+import { useState, useEffect, useCallback } from 'react';
+import { apiClient } from '../api/client';
+
+export interface SheetData {
+  entity: { id: string; name: string; entityType: string };
+  attributes: { name: string; value: number; modifier: number }[];
+  derivedValues: { name: string; value: number }[];
+  skills: { name: string; total: number }[];
+  conditionals: { name: string; active: boolean; description: string }[];
+}
+
+export function useSheet(entityId: string | undefined) {
+  const [data, setData] = useState<SheetData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSheet = useCallback(async () => {
+    if (!entityId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await apiClient.get<SheetData>(`/entities/${entityId}/sheet`);
+      setData(res.data);
+    } catch {
+      setError('Failed to load character sheet');
+    } finally {
+      setLoading(false);
+    }
+  }, [entityId]);
+
+  useEffect(() => {
+    fetchSheet();
+  }, [fetchSheet]);
+
+  return { data, loading, error, refetch: fetchSheet };
+}
