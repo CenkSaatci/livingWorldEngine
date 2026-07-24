@@ -15,8 +15,8 @@
     "conditionals": "Bedingungen",
     "abilities": "Fähigkeiten",
     "abilitiesComingSoon": "Fähigkeiten-UI folgt in Kürze",
-    "rollProbe",
-    "level": "Stufe": "Probe würfeln"
+    "rollProbe": "Probe würfeln",
+    "level": "Stufe"
   },
   "attribute": {
     "modifier": "Modifikator"
