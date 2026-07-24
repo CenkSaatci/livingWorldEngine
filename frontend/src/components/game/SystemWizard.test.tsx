@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import { SystemWizard, type WizardData } from './SystemWizard';
-import { apiClient } from '../../api/client';
 
 vi.mock('../../api/client', () => ({
   apiClient: { post: vi.fn().mockResolvedValue({ data: { id: 'gs1' } }), patch: vi.fn() },

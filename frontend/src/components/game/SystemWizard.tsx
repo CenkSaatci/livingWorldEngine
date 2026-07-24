@@ -3,6 +3,7 @@ import { Plus, X, Check, Dice1 as Dice, ArrowLeft, ArrowRight, Save, Trash2 } fr
 import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../api/client';
 import { useToast } from '../../hooks/useToast';
+import { FormulaBuilder } from '../ui/FormulaBuilder';
 
 interface AttributeDef {
   name: string;
@@ -486,16 +487,18 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
                 placeholder={t('sdv_name_placeholder')}
               />
-              <input
-                value={dv.formula}
-                onChange={(e) => {
-                  const a = [...data.derivedValues];
-                  a[i] = { ...a[i], formula: e.target.value };
-                  update('derivedValues', a);
-                }}
-                className="flex-[2] rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs font-mono text-text-primary outline-none focus:border-accent"
-                placeholder={t('sdv_formula_placeholder')}
-              />
+              <div className="flex-[2]">
+                <label className="block text-[10px] text-text-secondary mb-1">{t('sdv_header_formula')}</label>
+                <FormulaBuilder
+                  value={dv.formula}
+                  onChange={(v) => {
+                    const a = [...data.derivedValues];
+                    a[i] = { ...a[i], formula: v };
+                    update('derivedValues', a);
+                  }}
+                  attributes={data.attributes}
+                />
+              </div>
               <button
                 onClick={() =>
                   update('derivedValues', data.derivedValues.filter((_, j) => j !== i))
