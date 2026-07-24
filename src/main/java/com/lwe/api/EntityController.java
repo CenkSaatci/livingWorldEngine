@@ -1,5 +1,6 @@
 package com.lwe.api;
 
+import com.lwe.api.dto.EntityResponse;
 import com.lwe.api.dto.ApiResponse;
 import com.lwe.api.dto.ErrorResponse;
 import com.lwe.core.domain.User;
@@ -13,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -29,14 +29,14 @@ public class EntityController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@PathVariable UUID worldId,
-                                    @Valid @RequestBody CreateRequest req,
-                                    @AuthenticationPrincipal User user) {
+    public ResponseEntity<EntityResponse> create(@PathVariable UUID worldId,
+                                                 @Valid @RequestBody CreateRequest req,
+                                                 @AuthenticationPrincipal User user) {
         var entity = entityService.create(worldId, user.getId(), req.entityType(),
             req.name(), req.attributesJson(), req.inventoryJson(),
             req.positionJson(), req.metadataJson(), req.factionId(),
             req.backstory(), req.age(), req.experienceLevel(), req.socialStanding());
-        return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(entity));
+        return ResponseEntity.status(HttpStatus.CREATED).body(EntityResponse.from(entity));
     }
 
     @GetMapping
@@ -44,33 +44,33 @@ public class EntityController {
                                   @RequestParam(required = false) String type,
                                   @AuthenticationPrincipal User user) {
         var entities = entityService.list(worldId, user.getId(), type)
-            .stream().map(this::toResponse).toList();
+            .stream().map(EntityResponse::from).toList();
         return ResponseEntity.ok(entities);
     }
 
     @GetMapping("/{entityId}")
-    public ResponseEntity<?> getById(@PathVariable UUID worldId,
-                                     @PathVariable UUID entityId,
-                                     @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(toResponse(entityService.getById(entityId, user.getId())));
+    public ResponseEntity<EntityResponse> getById(@PathVariable UUID worldId,
+                                                   @PathVariable UUID entityId,
+                                                   @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(EntityResponse.from(entityService.getById(entityId, user.getId())));
     }
 
     @PatchMapping("/{entityId}")
-    public ResponseEntity<?> update(@PathVariable UUID worldId,
-                                    @PathVariable UUID entityId,
-                                    @RequestBody UpdateRequest req,
-                                    @AuthenticationPrincipal User user) {
+    public ResponseEntity<EntityResponse> update(@PathVariable UUID worldId,
+                                                  @PathVariable UUID entityId,
+                                                  @RequestBody UpdateRequest req,
+                                                  @AuthenticationPrincipal User user) {
         var entity = entityService.update(entityId, user.getId(),
             req.name(), req.attributesJson(), req.inventoryJson(),
             req.positionJson(), req.metadataJson(),
             req.backstory(), req.age(), req.experienceLevel(), req.socialStanding());
-        return ResponseEntity.ok(toResponse(entity));
+        return ResponseEntity.ok(EntityResponse.from(entity));
     }
 
     @DeleteMapping("/{entityId}")
-    public ResponseEntity<?> delete(@PathVariable UUID worldId,
-                                    @PathVariable UUID entityId,
-                                    @AuthenticationPrincipal User user) {
+    public ResponseEntity<Void> delete(@PathVariable UUID worldId,
+                                       @PathVariable UUID entityId,
+                                       @AuthenticationPrincipal User user) {
         entityService.delete(entityId, user.getId());
         return ResponseEntity.noContent().build();
     }
@@ -82,29 +82,8 @@ public class EntityController {
         return ResponseEntity.ok(new ApiResponse("Rast durchgeführt"));
     }
 
-    private Map<String, Object> toResponse(com.lwe.core.domain.GameEntity e) {
-        var m = new java.util.HashMap<String, Object>();
-        m.put("id", e.getId());
-        m.put("world_id", e.getWorldId());
-        m.put("entity_type", e.getEntityType());
-        m.put("name", e.getName());
-        m.put("attributes_json", e.getAttributesJson());
-        m.put("inventory_json", e.getInventoryJson());
-        m.put("position_json", e.getPositionJson() != null ? e.getPositionJson() : "");
-        m.put("metadata_json", e.getMetadataJson());
-        m.put("faction_id", e.getFactionId() != null ? e.getFactionId().toString() : "");
-        m.put("backstory", e.getBackstory() != null ? e.getBackstory() : "");
-        m.put("age", e.getAge());
-        m.put("experience_level", e.getExperienceLevel());
-        m.put("social_standing", e.getSocialStanding());
-        m.put("experience_points", e.getExperiencePoints());
-        m.put("unspent_attribute_points", e.getUnspentAttributePoints());
-        m.put("hp_current", e.getHpCurrent());
-        m.put("hp_max", e.getHpMax());
-        m.put("ap_current", e.getApCurrent());
-        m.put("ap_max", e.getApMax());
-        m.put("created_at", e.getCreatedAt().toString());
-        return m;
+    private EntityResponse toResponse(com.lwe.core.domain.GameEntity e) {
+        return EntityResponse.from(e);
     }
 
     public record CreateRequest(
