@@ -1406,8 +1406,9 @@ Drei Zielsysteme (D&D 5e, CoC 7e, DSA 5) haben stark unterschiedliche Regelmecha
 Nach dem Read-Only-Sheet (P16-T07) folgen Editieren, Inventory und Kampf.
 
 ### P17-T01: Character Edit API + UI
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 2,0 Tage
+- **Erledigt:** 2026-07-24
 - **Beschreibung:** Attribut-Werte editierbar machen + XP/Level bearbeiten + Formel-Overrides:
   - `PATCH /entities/{entityId}/attributes` — einzelne Attribut-Werte setzen (merged in attributesJson)
   - `PATCH /entities/{entityId}/progression` — XP/Level/Talentstufen setzen
