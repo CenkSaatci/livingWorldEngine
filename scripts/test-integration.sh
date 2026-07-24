@@ -22,10 +22,17 @@ test_system() {
   echo "=== Testing: $NAME ($FILE) ==="
 
   # 1. Create game system from JSON
-  local RULES=$(cat "$FILE")
+  local RULES_STR=$(python3 -c "
+import sys,json
+d=json.load(open('$FILE'))
+for key in ['_comment', '_gaps']:
+    d.pop(key, None)
+print(json.dumps(d))
+")
+  # Create via API: rulesJson as inline JSON string
   local RES=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $TOKEN" \
     -H 'Content-Type: application/json' \
-    -d "{\"name\":\"$NAME\",\"version\":1,\"rulesJson\":$(echo "$RULES" | jq -c . | jq -R -s -c .),\"schemaJson\":\"{}\"}" \
+    -d "{\"name\":\"$NAME\",\"version\":1,\"rulesJson\":$(echo "$RULES_STR" | python3 -c "import sys,json;print(json.dumps(sys.stdin.read()))"),\"schemaJson\":\"{}\"}" \
     "$BASE/game-systems")
   local HTTP=$(echo "$RES" | tail -1)
   local BODY=$(echo "$RES" | head -n -1)

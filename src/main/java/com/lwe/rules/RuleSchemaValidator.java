@@ -24,7 +24,17 @@ public class RuleSchemaValidator {
           "required": ["version", "attributes", "dice_mechanics"],
           "additionalProperties": false,
           "properties": {
-            "version": { "type": "integer", "minimum": 1 },
+            "version":          { "type": "integer", "minimum": 1 },
+            "probeType":        { "type": "string", "enum": ["d20_target", "d100_threshold", "d20_3attr"] },
+            "progressionType":  { "type": "string" },
+            "features":         { "type": "object" },
+            "modifierFormula":  { "type": "string" },
+            "derived_values":   { "type": "array", "items": { "type": "object" } },
+            "abilities":        { "type": "array", "items": { "type": "object" } },
+            "progression":      { "type": "object" },
+            "magic":            { "type": "object" },
+            "psionics":         { "type": "object" },
+            "conditionals":     { "type": "array", "items": { "type": "object" } },
             "attributes": {
               "type": "array",
               "minItems": 1,
@@ -38,7 +48,7 @@ public class RuleSchemaValidator {
               "type": "object",
               "required": ["probe"],
               "properties": {
-                "probe":        { "type": "string", "$ref": "#/$defs/diceExpression" },
+                "probe":        { "type": "string" },
                 "combat":       { "$ref": "#/$defs/combat" }
               }
             }
@@ -73,9 +83,11 @@ public class RuleSchemaValidator {
               "type": "object",
               "required": ["initiative", "damage"],
               "properties": {
-                "initiative":     { "$ref": "#/$defs/diceExpression" },
-                "damage":         { "$ref": "#/$defs/diceExpression" },
-                "action_points":  { "$ref": "#/$defs/actionPoints" }
+                "initiative":       { "type": "string" },
+                "damage":           { "type": "string" },
+                "action_points":    { "$ref": "#/$defs/actionPoints" },
+                "action_types":     { "type": "array", "items": { "type": "string" } },
+                "actions_per_turn": { "type": "object" }
               }
             },
             "actionPoints": {
