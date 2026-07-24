@@ -1214,8 +1214,9 @@ Drei Zielsysteme (D&D 5e, CoC 7e, DSA 5) haben stark unterschiedliche Regelmecha
 | Kampf | Multi-Attack, AC, HP | Wunden, Manöver | AT/PA, DP, Rüstung |
 
 ### P16-T01: System-Analyse + Beispiel-JSONs als Living Spec
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 1,0 Tag
+- **Erledigt:** 2026-07-19
 - **Beschreibung:** Erstelle 3 vollständige `rulesJson`-Konfigurationen für D&D 5e, CoC 7e und DSA 5 als **Living Spec** für alle Folgetasks. Jede Konfiguration wird manuell erstellt (nicht via Wizard) und deckt alle relevanten Regelmechaniken ab. Die Configs dienen als:
   - **Akzeptanzkriterien** für den Wizard (muss diese Felder produzieren können)
   - **Testdaten** für die Sheet-API und RuleEngine
