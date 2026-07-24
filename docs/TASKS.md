@@ -1230,9 +1230,9 @@ Drei Zielsysteme (D&D 5e, CoC 7e, DSA 5) haben stark unterschiedliche Regelmecha
 - **Qualitäts-Check:** Dokumentation + Datenmodell-Review
 
 ### P16-T02: Wizard Step 5 erweitern — Probentyp + DSA-3er-Proben
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 2,0 Tage
-- **Abhängigkeiten:** P16-T01
+- **Erledigt:** 2026-07-19
 - **Beschreibung:** Skills aktuell an ein Attribut gekoppelt. Für DSA brauchen Skills **drei** Attribute. Ausserdem muss der **Probentyp** konfigurierbar sein:
   - `d20_target` (D&D): d20 + Mod ≥ Zielwert
   - `d100_threshold` (CoC): d100 ≤ Fertigkeit
