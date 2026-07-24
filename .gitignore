@@ -76,5 +76,5 @@ out/
 # Podman / Compose (lokale Overrides, nicht committen)
 # ============================================================
 compose.override.yml
-docker-compose.override.ymlscripts/
+docker-compose.override.yml
 uploads/
