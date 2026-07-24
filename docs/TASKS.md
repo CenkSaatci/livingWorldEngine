@@ -1401,11 +1401,56 @@ Drei Zielsysteme (D&D 5e, CoC 7e, DSA 5) haben stark unterschiedliche Regelmecha
 
 ---
 
-## Phase 16 Statistik
+## Phase 17: Character-Edit, Inventory & Kampf-UI
+
+Nach dem Read-Only-Sheet (P16-T07) folgen Editieren, Inventory und Kampf.
+
+### P17-T01: Character Edit API + UI
+- **Status:** 📋
+- **Aufwand:** 2,0 Tage
+- **Beschreibung:** Attribut-Werte editierbar machen + XP/Level bearbeiten + Formel-Overrides:
+  - `PATCH /entities/{entityId}/attributes` — einzelne Attribut-Werte setzen (merged in attributesJson)
+  - `PATCH /entities/{entityId}/progression` — XP/Level/Talentstufen setzen
+  - `PATCH /entities/{entityId}/override` — Formel-Overrides (z.B. "Tough-Feat: HP+2")
+  - Frontend: Inline-Edit für Attribut-Werte, XP-Balken editierbar
+  - Validation gegen `rulesJson.attributes[].min/max`
+  - Nur Character-Besitzer + DM dürfen editieren
+  - Sheet-API aktualisiert sich nach Speichern (refetch)
+- **Akzeptanzkriterien:**
+  - Attribut-Wert klickbar → editierbar → gespeichert
+  - Validation: min/max aus rulesJson
+  - XP/Level editierbar → Derived Values passen sich an
+  - Formel-Override möglich (optional)
+  - Frontend-Tests + TypeScript
+- **Qualitäts-Check:** TDD, Security (Access-Check), i18n
+
+### P17-T02: Inventory API
+- **Aufwand:** 2,0 Tage
+- **Status:** 📋
+
+### P17-T03: Inventory UI
+- **Aufwand:** 2,0 Tage
+- **Status:** 📋
+
+### P17-T04: Kampf-UI verbessern
+- **Aufwand:** 2,0 Tage
+- **Status:** 📋
+
+### P17-T05: Character Export/Import
+- **Aufwand:** 1,0 Tag
+- **Status:** 📋
+
+### P17-T06: Qualitätssicherung
+- **Aufwand:** 2,0 Tage
+- **Status:** 📋
+
+---
+
+## Phase 17 Statistik
 | Phase | Tasks | Sum Aufwand |
 |---|---|---|
-| 16 (Multi-System & RuleEngine) | 10 | 20,0 Tage |
+| 17 (Character-Edit & Kampf) | 6 | 11,0 Tage |
 
-Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das ~1 Monat (vollzeit).
+Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das bei Vollzeit ~5,5 Monaten gesamt.
 
 ---
