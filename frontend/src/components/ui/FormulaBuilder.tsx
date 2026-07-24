@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface AttributeRef {
   name: string;
@@ -23,6 +24,7 @@ const OPERATORS = [
 const FUNCTIONS = ['min(', 'max(', 'floor('];
 
 export function FormulaBuilder({ value, onChange, attributes, preview }: Props) {
+  const { t } = useTranslation('systemWizard');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const insertAtCursor = (text: string) => {
@@ -49,13 +51,13 @@ export function FormulaBuilder({ value, onChange, attributes, preview }: Props) 
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm font-mono text-text-primary outline-none focus:border-accent"
-        placeholder="z.B. (@{konstitution}+@{koerperkraft})/2+5"
+        placeholder={t('fb_placeholder')}
       />
 
       {/* Attribute buttons */}
       {attributes.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          <span className="text-[10px] text-text-secondary self-center mr-1">Attribute:</span>
+          <span className="text-[10px] text-text-secondary self-center mr-1">{t('fb_attributes')}:</span>
           {attributes.map((a) => (
             <button
               key={a.name}
@@ -71,7 +73,7 @@ export function FormulaBuilder({ value, onChange, attributes, preview }: Props) 
 
       {/* Operator buttons */}
       <div className="flex flex-wrap gap-1">
-        <span className="text-[10px] text-text-secondary self-center mr-1">Operatoren:</span>
+        <span className="text-[10px] text-text-secondary self-center mr-1">{t('fb_operators')}:</span>
         {OPERATORS.map((op) => (
           <button
             key={op.value}
@@ -95,7 +97,7 @@ export function FormulaBuilder({ value, onChange, attributes, preview }: Props) 
       {/* Preview */}
       {preview !== undefined && (
         <p className="text-[10px] text-text-secondary">
-          Vorschau: <span className="font-mono text-text-primary">{preview}</span>
+          {t('fb_preview')}: <span className="font-mono text-text-primary">{preview}</span>
         </p>
       )}
     </div>

@@ -49,6 +49,10 @@
   "sdv_title": "Derived Values",
   "sdv_hint": "Define values calculated from attributes (e.g. <em>Hit Points = 10 + Strength × 2</em>). These formulas will be evaluated automatically.",
   "sdv_name_placeholder": "Name (e.g. hp)",
+  "fb_placeholder": "e.g. (@{constitution}+@{strength})/2+5",
+  "fb_attributes": "Attributes",
+  "fb_operators": "Operators",
+  "fb_preview": "Preview"
   "sdv_formula_placeholder": "e.g. 10+strength*2",
   "sdv_add": "Add Value",
   "sdv_header_name": "Name",
