@@ -1328,9 +1328,9 @@ Drei Zielsysteme (D&D 5e, CoC 7e, DSA 5) haben stark unterschiedliche Regelmecha
 - **Qualitäts-Check:** TDD, Architektur-Review
 
 ### P16-T07: Character-Sheet UI (Frontend) — Read-Only first
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 3,0 Tage
-- **Abhängigkeiten:** P16-T06
+- **Erledigt:** 2026-07-24
 - **Beschreibung:** Dynamisches Character-Sheet — **zunächst Read-Only**. Editieren kommt in einer späteren Iteration:
   - Ruft `GET /entities/{id}/sheet` ab
   - Zeigt alle berechneten Werte: Attribute (mit Modifiern), Skills, Abilities, Derived Values
