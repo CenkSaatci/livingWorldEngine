@@ -52,7 +52,7 @@
   "fb_placeholder": "e.g. (@{constitution}+@{strength})/2+5",
   "fb_attributes": "Attributes",
   "fb_operators": "Operators",
-  "fb_preview": "Preview"
+  "fb_preview": "Preview",
   "sdv_formula_placeholder": "e.g. 10+strength*2",
   "sdv_add": "Add Value",
   "sdv_header_name": "Name",

@@ -52,7 +52,7 @@
   "fb_placeholder": "z.B. (@{konstitution}+@{koerperkraft})/2+5",
   "fb_attributes": "Attribute",
   "fb_operators": "Operatoren",
-  "fb_preview": "Vorschau"
+  "fb_preview": "Vorschau",
   "sdv_formula_placeholder": "z.B. 10+staerke*2",
   "sdv_add": "Wert hinzufügen",
   "sdv_header_name": "Name",
