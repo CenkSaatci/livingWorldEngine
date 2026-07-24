@@ -1447,7 +1447,8 @@ Nach dem Read-Only-Sheet (P16-T07) folgen Editieren, Inventory und Kampf.
 
 ### P17-T06: Qualitätssicherung
 - **Aufwand:** 2,0 Tage
-- **Status:** 📋
+- **Status:** ✅
+- **Erledigt:** 2026-07-24
 
 ---
 

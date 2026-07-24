@@ -12,7 +12,8 @@ const mockSession = {
 const mockParticipants = [
   {
     id: 'p1',
-    entity_id: 'e1',
+        entity_id: 'e1',
+        name: 'Hero',
     initiative: 20,
     ap_current: 2,
     ap_max: 2,

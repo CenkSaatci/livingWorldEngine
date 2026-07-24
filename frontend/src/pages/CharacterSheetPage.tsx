@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Download, Upload } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import { CharacterSheet } from '../components/character/CharacterSheet';
 import { apiClient } from '../api/client';
 import { useToast } from '../hooks/useToast';
