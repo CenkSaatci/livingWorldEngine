@@ -20,7 +20,6 @@ describe('InitiativeList', () => {
     useCombatStore.setState({
       session: {
         id: 's1',
-          name: "Test",
         world_id: 'w1',
         status: 'ACTIVE',
         round: 3,
@@ -62,7 +61,6 @@ describe('InitiativeList', () => {
     useCombatStore.setState({
       session: {
         id: 's1',
-          name: "Test",
         world_id: 'w1',
         status: 'ACTIVE',
         round: 1,
