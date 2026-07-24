@@ -22,6 +22,8 @@ interface DiceCombat {
   initiative: string;
   damage: string;
   actionPoints: { standard: number; max: number };
+  actionTypes: string[];
+  actionsPerTurn: Record<string, number>;
 }
 
 interface SystemFeatures {
@@ -45,6 +47,10 @@ interface AbilityDef {
   diceExpression: string;
   effect: string;
   bonus: string;
+  tags?: string[];
+  category?: string;
+  actionCost?: { type: string; amount: number };
+  multiAttack?: number;
 }
 
 interface LevelEntry {
@@ -149,6 +155,8 @@ const INITIAL: WizardData = {
     initiative: '1d20+geschick',
     damage: '1d8+staerke',
     actionPoints: { standard: 1, max: 2 },
+    actionTypes: ['action'],
+    actionsPerTurn: { action: 1 },
   },
 };
 
@@ -199,6 +207,8 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         initiative: data.combat.initiative,
         damage: data.combat.damage,
         action_points: data.combat.actionPoints,
+        action_types: data.combat.actionTypes,
+        actions_per_turn: data.combat.actionsPerTurn,
       };
     }
     return JSON.stringify(rules, null, 2);
@@ -619,6 +629,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
             <span className="w-24">{t('s5a_header_name')}</span>
             <span className="w-14">{t('s5a_header_type')}</span>
             <span className="w-20">{t('s5a_header_cost')}</span>
+            {data.combat.actionTypes.length > 0 && <span className="w-16">{t('s5a_header_action')}</span>}
             <span className="w-28">{t('s5a_header_dice')}</span>
             <span className="flex-1">{t('s5a_header_effect')}</span>
             <span className="w-4" />
@@ -677,6 +688,22 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                       <option value="MP">{t('s5a_cost_mp')}</option>
                     </select>
                   </div>
+                  {data.combat.actionTypes.length > 0 && (
+                    <select
+                      value={ability.actionCost?.type ?? ''}
+                      onChange={(e) => {
+                        const a = [...data.abilities];
+                        a[i] = { ...a[i], actionCost: { ...(a[i].actionCost ?? { type: '', amount: 0 }), type: e.target.value } };
+                        update('abilities', a);
+                      }}
+                      className="w-16 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    >
+                      <option value="">-</option>
+                      {data.combat.actionTypes.map((at) => (
+                        <option key={at} value={at}>{t(`s4_action_${at}`)}</option>
+                      ))}
+                    </select>
+                  )}
                   <input
                     value={ability.diceExpression}
                     onChange={(e) => {
@@ -1250,6 +1277,53 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                     className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
                   />
                 </div>
+              </div>
+
+              {/* Action Types */}
+              <div>
+                <label className="block text-xs text-text-secondary mb-2">{t('s4_action_types')}</label>
+                <div className="flex flex-wrap gap-2">
+                  {['action', 'bonus_action', 'reaction'].map((at) => (
+                    <label key={at} className="flex cursor-pointer items-center gap-1.5 rounded border border-bg-elevated bg-bg-primary px-3 py-1.5 text-xs text-text-secondary hover:border-accent/50">
+                      <input
+                        type="checkbox"
+                        checked={data.combat.actionTypes.includes(at)}
+                        onChange={(e) => {
+                          const types = e.target.checked
+                            ? [...data.combat.actionTypes, at]
+                            : data.combat.actionTypes.filter((t) => t !== at);
+                          const perTurn = { ...data.combat.actionsPerTurn };
+                          if (!types.includes(at)) delete perTurn[at];
+                          update('combat', { ...data.combat, actionTypes: types, actionsPerTurn: perTurn });
+                        }}
+                        className="accent-accent"
+                      />
+                      {t(`s4_action_${at}`)}
+                    </label>
+                  ))}
+                </div>
+                {data.combat.actionTypes.length > 0 && (
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {data.combat.actionTypes.map((at) => (
+                      <div key={at}>
+                        <label className="block text-[10px] text-text-secondary mb-0.5">
+                          {t(`s4_action_${at}`)} {t('s4_action_per_turn')}
+                        </label>
+                        <input
+                          type="number" min={0} max={10}
+                          value={data.combat.actionsPerTurn[at] ?? 0}
+                          onChange={(e) =>
+                            update('combat', {
+                              ...data.combat,
+                              actionsPerTurn: { ...data.combat.actionsPerTurn, [at]: Number(e.target.value) },
+                            })
+                          }
+                          className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

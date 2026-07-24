@@ -173,6 +173,8 @@ export default function GameSystemPage() {
             standard: combat.action_points?.standard ?? 1,
             max: combat.action_points?.max ?? 2,
           },
+        actionTypes: combat.action_types ?? ["action"],
+        actionsPerTurn: combat.actions_per_turn ?? { action: 1 },
         },
         progressionType: parsed.progressionType ?? null,
         features: parsed.features ?? { magic: false, psionics: false, rangedCombat: false, criticalHits: false, armorPenalty: false },
