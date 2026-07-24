@@ -60,9 +60,23 @@ public class CharacterSheetService {
             ? (String) rules.get("modifierFormula") : "";
         var modifiers = modifierService.calculateModifiers(modifierFormula, attributeValues);
 
-        // Attribute mit Modifiern
+        // Attribut-Min/Max aus rulesJson
+        var rulesAttrs = (List<Map<String, Object>>) rules.getOrDefault("attributes", List.of());
+        var attrMinMax = rulesAttrs.stream().collect(Collectors.toMap(
+            a -> (String) a.get("name"),
+            a -> Map.entry(
+                ((Number) a.getOrDefault("min", 1)).intValue(),
+                ((Number) a.getOrDefault("max", 99)).intValue()
+            )
+        ));
+
+        // Attribute mit Modifiern + Min/Max
         var attributes = attributeValues.entrySet().stream()
-            .map(e -> new SheetResponse.AttributeInfo(e.getKey(), e.getValue(), modifiers.getOrDefault(e.getKey(), 0.0)))
+            .map(e -> {
+                var mm = attrMinMax.getOrDefault(e.getKey(), Map.entry(1, 99));
+                return new SheetResponse.AttributeInfo(e.getKey(), e.getValue(),
+                    modifiers.getOrDefault(e.getKey(), 0.0), mm.getKey(), mm.getValue());
+            })
             .collect(Collectors.toList());
 
         // Derived Values
@@ -90,7 +104,7 @@ public class CharacterSheetService {
 
         return new SheetResponse(
             new SheetResponse.EntityInfo(entity.getId().toString(), entity.getName(), entity.getEntityType()),
-            attributes, derivedValues, skills, conditionals
+            entity.getExperiencePoints(), 0, attributes, derivedValues, skills, conditionals
         );
     }
 

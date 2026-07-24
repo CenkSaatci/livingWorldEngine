@@ -3,7 +3,9 @@ import { apiClient } from '../api/client';
 
 export interface SheetData {
   entity: { id: string; name: string; entityType: string };
-  attributes: { name: string; value: number; modifier: number }[];
+  experiencePoints: number;
+  level: number;
+  attributes: { name: string; value: number; modifier: number; min: number; max: number }[];
   derivedValues: { name: string; value: number }[];
   skills: { name: string; total: number }[];
   conditionals: { name: string; active: boolean; description: string }[];

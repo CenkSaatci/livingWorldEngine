@@ -15,7 +15,8 @@
     "conditionals": "Conditionals",
     "abilities": "Abilities",
     "abilitiesComingSoon": "Abilities UI coming soon",
-    "rollProbe": "Roll probe"
+    "rollProbe",
+    "level": "Level": "Roll probe"
   },
   "attribute": {
     "modifier": "Modifier"

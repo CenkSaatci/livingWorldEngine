@@ -12,7 +12,7 @@ const VALUE_ICONS: Record<string, React.ReactNode> = {
   sanity: <Sparkles size={16} className="text-purple-400" />,
 };
 
-function AttrInput({ name, value, entityId, onSaved }: { name: string; value: number; entityId: string; onSaved: () => void }) {
+function AttrInput({ name, value, min, max, entityId, onSaved }: { name: string; value: number; min: number; max: number; entityId: string; onSaved: () => void }) {
   const [editing, setEditing] = useState(false);
   const [editVal, setEditVal] = useState(String(value));
   const [saving, setSaving] = useState(false);
@@ -20,6 +20,7 @@ function AttrInput({ name, value, entityId, onSaved }: { name: string; value: nu
   const save = async () => {
     const newVal = parseInt(editVal, 10);
     if (isNaN(newVal) || newVal === value) { setEditing(false); return; }
+    if (newVal < min || newVal > max) { setEditVal(String(value)); setEditing(false); return; }
     setSaving(true);
     try {
       await apiClient.patch(`/entities/${entityId}/attributes`, { [name]: newVal });
@@ -35,6 +36,7 @@ function AttrInput({ name, value, entityId, onSaved }: { name: string; value: nu
     <div className="flex items-center justify-center gap-1">
       <input
         type="number" value={editVal} autoFocus
+        min={min} max={max}
         onChange={(e) => setEditVal(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel(); }}
         className="w-16 rounded border border-accent bg-bg-primary px-1 py-0.5 text-lg font-heading text-center text-text-primary outline-none"
@@ -53,6 +55,41 @@ function AttrInput({ name, value, entityId, onSaved }: { name: string; value: nu
 interface Props {
   entityId: string;
   worldId: string;
+}
+
+function XpInput({ value, entityId, onSaved }: { value: number; entityId: string; onSaved: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [editVal, setEditVal] = useState(String(value));
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    const newVal = parseInt(editVal, 10);
+    if (isNaN(newVal) || newVal === value) { setEditing(false); return; }
+    setSaving(true);
+    try {
+      await apiClient.patch(`/entities/${entityId}/progression`, { experience_points: newVal });
+      onSaved();
+      setEditing(false);
+    } catch { setEditVal(String(value)); setEditing(false); }
+    finally { setSaving(false); }
+  };
+
+  return editing ? (
+    <div className="flex items-center gap-1">
+      <input type="number" value={editVal} autoFocus min={0}
+        onChange={(e) => setEditVal(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { setEditVal(String(value)); setEditing(false); }}}
+        className="w-20 rounded border border-accent bg-bg-primary px-1 py-0.5 text-xs text-text-primary text-right outline-none"
+        disabled={saving}
+      />
+      <button onClick={save} className="text-success" disabled={saving}><Check size={12} /></button>
+      <button onClick={() => { setEditVal(String(value)); setEditing(false); }} className="text-danger"><X size={12} /></button>
+    </div>
+  ) : (
+    <button onClick={() => setEditing(true)} className="text-xs text-text-secondary hover:text-accent">
+      {value} XP
+    </button>
+  );
 }
 
 export function CharacterSheet({ entityId }: Props) {
@@ -76,6 +113,18 @@ export function CharacterSheet({ entityId }: Props) {
         <p className="text-xs text-text-secondary">{data.entity.entityType}</p>
       </div>
 
+      {/* XP Bar */}
+      <div className="rounded-lg border border-bg-elevated bg-bg-surface p-3">
+        <div className="flex items-center gap-3 text-xs">
+          <Sparkles size={14} className="text-warning" />
+          <span className="font-medium text-text-primary">{t('sheet.level')} {data.level}</span>
+          <div className="flex-1 h-2 rounded-full bg-bg-elevated overflow-hidden">
+            <div className="h-full rounded-full bg-warning" style={{ width: `${Math.min(100, (data.experiencePoints % 1000) / 10)}%` }} />
+          </div>
+          <XpInput value={data.experiencePoints} entityId={entityId} onSaved={refetch} />
+        </div>
+      </div>
+
       {/* Attributes */}
       <div className="rounded-lg border border-bg-elevated bg-bg-surface p-3">
         <h3 className="mb-2 text-xs font-semibold text-text-secondary uppercase tracking-wider">
@@ -85,7 +134,7 @@ export function CharacterSheet({ entityId }: Props) {
           {data.attributes.map((attr) => (
             <div key={attr.name} className="rounded bg-bg-primary/50 p-2 text-center">
               <p className="text-[10px] text-text-secondary uppercase">{attr.name}</p>
-              <AttrInput name={attr.name} value={attr.value} entityId={entityId} onSaved={refetch} />
+              <AttrInput name={attr.name} value={attr.value} min={attr.min} max={attr.max} entityId={entityId} onSaved={refetch} />
               {attr.modifier !== 0 && (
                 <p className="text-xs text-accent">
                   {attr.modifier > 0 ? '+' : ''}{Math.round(attr.modifier * 10) / 10}
