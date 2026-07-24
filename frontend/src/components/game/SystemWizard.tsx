@@ -92,6 +92,7 @@ export interface WizardData {
   description: string;
   progressionType: 'level' | 'xp' | 'improvement' | null;
   features: SystemFeatures;
+  probeType: 'd20_target' | 'd100_threshold' | 'd20_3attr';
   derivedValues: DerivedValue[];
   abilities: AbilityDef[];
   progression: {
@@ -130,6 +131,7 @@ const INITIAL: WizardData = {
     armorPenalty: false,
   },
   derivedValues: [],
+  probeType: 'd20_target',
   abilities: [],
   progression: {
     levels: [{ level: 1, xpRequired: 0, features: '' }, { level: 2, xpRequired: 300, features: '' }, { level: 3, xpRequired: 900, features: '' }],
@@ -174,8 +176,12 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
     setData((prev) => ({ ...prev, [key]: val }));
 
   const buildRulesJson = () => {
+    const probeExpr = data.probeType === 'd20_target' ? '1d20+mod'
+      : data.probeType === 'd100_threshold' ? '1d100' : '3d20';
+
     const rules: Record<string, unknown> = {
       version: data.version,
+      probeType: data.probeType,
       progressionType: data.progressionType,
       features: data.features,
       derived_values: data.derivedValues,
@@ -186,7 +192,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
       conditionals: data.conditionals,
       attributes: data.attributes,
       skills: data.skills,
-      dice_mechanics: { probe: data.probe },
+      dice_mechanics: { probe: probeExpr },
     };
     if (data.enableCombat) {
       (rules.dice_mechanics as Record<string, unknown>).combat = {
@@ -506,6 +512,9 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s3_title')}</h3>
           <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s3_hint') }} />
+          {data.probeType === 'd20_3attr' && (
+            <p className="text-xs text-warning/80">DSA-Modus: Jedes Talent hat genau 3 Attribute.</p>
+          )}
           {data.skills.map((skill, i) => (
             <div key={i} className="flex items-start gap-2 rounded bg-bg-primary/50 p-2">
               <input
@@ -535,28 +544,32 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                         <option key={a.name} value={a.name}>{a.name}</option>
                       ))}
                     </select>
-                    <button
-                      onClick={() => {
-                        const s = [...data.skills];
-                        s[i].attributes = skill.attributes.filter((_, j) => j !== ai);
-                        update('skills', s);
-                      }}
-                      className="text-danger/60 hover:text-danger"
-                    >
-                      <X size={12} />
-                    </button>
+                    {data.probeType !== 'd20_3attr' && (
+                      <button
+                        onClick={() => {
+                          const s = [...data.skills];
+                          s[i].attributes = skill.attributes.filter((_, j) => j !== ai);
+                          update('skills', s);
+                        }}
+                        className="text-danger/60 hover:text-danger"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
                   </div>
                 ))}
-                <button
-                  onClick={() => {
-                    const s = [...data.skills];
-                    s[i].attributes = [...skill.attributes, ''];
-                    update('skills', s);
-                  }}
-                  className="text-[11px] text-accent hover:text-accent/80"
-                >
-                  + Attribut
-                </button>
+                {data.probeType !== 'd20_3attr' && (
+                  <button
+                    onClick={() => {
+                      const s = [...data.skills];
+                      s[i].attributes = [...skill.attributes, ''];
+                      update('skills', s);
+                    }}
+                    className="text-[11px] text-accent hover:text-accent/80"
+                  >
+                    + Attribut
+                  </button>
+                )}
               </div>
               <div>
                 <label className="block text-[10px] text-text-secondary mb-1">Bonus</label>
@@ -583,7 +596,11 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           ))}
           <button
             onClick={() =>
-              update('skills', [...data.skills, { name: '', attributes: [], bonus: 0 }])
+              update('skills', [...data.skills, {
+                name: '',
+                attributes: data.probeType === 'd20_3attr' ? ['', '', ''] : [],
+                bonus: 0,
+              }])
             }
             className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
           >
@@ -1115,6 +1132,22 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           <h3 className="font-heading text-text-primary">{t('s4_title')}</h3>
           <div className="rounded bg-bg-primary/30 p-3 text-xs text-text-secondary">
             <p dangerouslySetInnerHTML={{ __html: t('s4_probe_hint') }} />
+          </div>
+          <div>
+            <label className="block text-xs text-text-secondary mb-1">{t('s4_probe_type')}</label>
+            <select
+              value={data.probeType}
+              onChange={(e) => {
+                const pt = e.target.value as 'd20_target' | 'd100_threshold' | 'd20_3attr';
+                update('probeType', pt);
+                update('probe', pt === 'd20_target' ? '1d20+mod' : pt === 'd100_threshold' ? '1d100' : '3d20');
+              }}
+              className="rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+            >
+              <option value="d20_target">{t('s4_probe_d20')}</option>
+              <option value="d100_threshold">{t('s4_probe_d100')}</option>
+              <option value="d20_3attr">{t('s4_probe_3d20')}</option>
+            </select>
           </div>
           <div>
             <label className="block text-xs text-text-secondary mb-1">{t('s4_probe_label')}</label>

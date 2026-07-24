@@ -161,6 +161,7 @@ export default function GameSystemPage() {
         name: parsed.name ?? '',
         version: parsed.version ?? 1,
         description: parsed.description ?? '',
+        probeType: (parsed.probeType as 'd20_target' | 'd100_threshold' | 'd20_3attr') ?? 'd20_target',
         attributes: attrs,
         skills,
         probe: dice.probe ?? '1d20+mod',
