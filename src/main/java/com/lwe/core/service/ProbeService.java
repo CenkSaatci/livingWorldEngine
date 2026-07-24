@@ -1,0 +1,155 @@
+package com.lwe.core.service;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lwe.api.dto.ProbeResponse;
+import com.lwe.core.domain.GameEntity;
+import com.lwe.core.domain.World;
+import com.lwe.core.repository.GameEntityRepository;
+import com.lwe.core.repository.GameSystemRepository;
+import com.lwe.core.repository.WorldRepository;
+import com.lwe.core.util.WorldAccess;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
+
+/**
+ * Führt systemgerechte Proben (Würfelwürfe) aus:
+ * <ul>
+ *   <li>d20_target (D&D): 1d20 + Modifikator ≥ Zielwert</li>
+ *   <li>d100_threshold (CoC): 1d100 ≤ Fertigkeit</li>
+ *   <li>d20_3attr (DSA): 3d20, je ≤ Attribut, Fehlschläge kompensieren</li>
+ * </ul>
+ */
+@Service
+public class ProbeService {
+
+    private final GameEntityRepository entityRepo;
+    private final WorldRepository worldRepo;
+    private final GameSystemRepository systemRepo;
+    private final WorldAccess worldAccess;
+    private final ConditionEvaluator conditionEvaluator;
+    private final ModifierService modifierService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public ProbeService(GameEntityRepository entityRepo, WorldRepository worldRepo,
+                        GameSystemRepository systemRepo, WorldAccess worldAccess,
+                        ConditionEvaluator conditionEvaluator, ModifierService modifierService) {
+        this.entityRepo = entityRepo;
+        this.worldRepo = worldRepo;
+        this.systemRepo = systemRepo;
+        this.worldAccess = worldAccess;
+        this.conditionEvaluator = conditionEvaluator;
+        this.modifierService = modifierService;
+    }
+
+    public ProbeResponse executeProbe(UUID entityId, UUID userId, String skillName,
+                                       int target, boolean advantage) {
+        var entity = entityRepo.findById(entityId)
+            .orElseThrow(() -> new RuntimeException("ENTITY_NOT_FOUND"));
+        worldAccess.requireAccess(entity.getWorldId(), userId);
+
+        var world = worldRepo.findById(entity.getWorldId())
+            .orElseThrow(() -> new RuntimeException("WORLD_NOT_FOUND"));
+        var rules = parseRules(world);
+        var probeType = (String) rules.getOrDefault("probeType", "d20_target");
+        var attributes = parseAttributes(entity);
+        var allowed = attributes.keySet();
+
+        // Modifier Formel anwenden
+        var modifierFormula = (String) rules.getOrDefault("modifierFormula", "");
+        var modifiers = modifierService.calculateModifiers(modifierFormula, attributes);
+
+        // Skill finden
+        var skills = (List<Map<String, Object>>) rules.getOrDefault("skills", List.of());
+        var skill = skills.stream()
+            .filter(s -> s.getOrDefault("name", "").equals(skillName))
+            .findFirst().orElse(null);
+
+        int skillBonus = 0;
+        List<String> skillAttrs = new ArrayList<>();
+        if (skill != null) {
+            skillBonus = ((Number) skill.getOrDefault("bonus", 0)).intValue();
+            var attrs = (List<String>) skill.getOrDefault("attributes", List.of());
+            if (attrs != null) skillAttrs.addAll(attrs);
+        }
+
+        var rng = ThreadLocalRandom.current();
+        List<ProbeResponse.ConditionalResult> activeConditionals;
+        int total;
+        int modifierTotal;
+        int[] dice;
+        boolean success;
+        List<ProbeResponse.DieDetail> details = new ArrayList<>();
+
+        switch (probeType) {
+            case "d100_threshold": {
+                var die = rng.nextInt(1, 101);
+                dice = new int[]{die};
+                total = die;
+                modifierTotal = 0;
+                success = die <= (skillBonus + skillAttrs.stream()
+                    .mapToInt(a -> (int) Math.round(modifiers.getOrDefault(a, 0.0))).sum());
+                break;
+            }
+            case "d20_3attr": {
+                // 3d20, je ≤ Attribut
+                int count = Math.min(skillAttrs.size(), 3);
+                var rolls = new int[count];
+                int fails = 0;
+                for (int i = 0; i < count; i++) {
+                    rolls[i] = rng.nextInt(1, 21);
+                    var attrVal = attributes.getOrDefault(skillAttrs.get(i), 10);
+                    var ok = rolls[i] <= attrVal;
+                    if (!ok) fails += rolls[i] - attrVal;
+                    details.add(new ProbeResponse.DieDetail(rolls[i], skillAttrs.get(i), attrVal, ok));
+                }
+                dice = rolls;
+                total = Arrays.stream(rolls).sum();
+                modifierTotal = -fails;
+                success = fails <= skillBonus;
+                break;
+            }
+            default: { // d20_target
+                var die1 = rng.nextInt(1, 21);
+                var die2 = advantage ? rng.nextInt(1, 21) : die1;
+                var die = advantage ? Math.max(die1, die2) : die1;
+                dice = advantage ? new int[]{die1, die2} : new int[]{die};
+                var attrMod = skillAttrs.stream()
+                    .mapToDouble(a -> modifiers.getOrDefault(a, 0.0)).sum();
+                modifierTotal = (int) Math.round(attrMod) + skillBonus;
+                total = die + modifierTotal;
+                success = total >= target;
+                break;
+            }
+        }
+
+        // Conditionals auswerten
+        var conditionals = (List<Map<String, Object>>) rules.getOrDefault("conditionals", List.of());
+        activeConditionals = conditionEvaluator.evaluate(conditionals, attributes);
+
+        return new ProbeResponse(probeType, dice, modifierTotal, total, success, details, activeConditionals);
+    }
+
+    private Map<String, Object> parseRules(World world) {
+        if (world.getGameSystemId() == null) return Map.of();
+        var system = systemRepo.findById(world.getGameSystemId()).orElse(null);
+        if (system == null || system.getRulesJson() == null || system.getRulesJson().isBlank()) return Map.of();
+        try {
+            return objectMapper.readValue(system.getRulesJson(), new TypeReference<>() {});
+        } catch (Exception e) {
+            return Map.of();
+        }
+    }
+
+    private Map<String, Integer> parseAttributes(GameEntity entity) {
+        if (entity.getAttributesJson() == null || entity.getAttributesJson().isBlank()) return Map.of();
+        try {
+            return objectMapper.readValue(entity.getAttributesJson(), new TypeReference<>() {});
+        } catch (Exception e) {
+            return Map.of();
+        }
+    }
+}

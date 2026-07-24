@@ -95,7 +95,7 @@ export function CharacterSheet({ entityId }: Props) {
                 <span className="text-xs font-mono text-text-secondary">
                   {skill.total > 0 ? '+' : ''}{skill.total}
                 </span>
-                <ProbeRoller skillName={skill.name} skillTotal={skill.total} />
+                <ProbeRoller entityId={data.entity.id} skillName={skill.name} skillTotal={skill.total} />
               </div>
             </div>
           ))}

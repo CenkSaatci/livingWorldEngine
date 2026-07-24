@@ -1,9 +1,11 @@
 package com.lwe.api;
 
 import com.lwe.api.dto.ErrorResponse;
+import com.lwe.api.dto.ProbeResponse;
 import com.lwe.api.dto.RollResponse;
 import com.lwe.api.dto.SkillCheckResponse;
 import com.lwe.core.domain.User;
+import com.lwe.core.service.ProbeService;
 import com.lwe.core.service.RollService;
 import com.lwe.rules.DiceExpression;
 import jakarta.validation.Valid;
@@ -20,9 +22,11 @@ import java.util.UUID;
 public class RollController {
 
     private final RollService rollService;
+    private final ProbeService probeService;
 
-    public RollController(RollService rollService) {
+    public RollController(RollService rollService, ProbeService probeService) {
         this.rollService = rollService;
+        this.probeService = probeService;
     }
 
     @PostMapping("/free")
@@ -37,17 +41,21 @@ public class RollController {
         }
     }
 
-    @PostMapping
-    public ResponseEntity<SkillCheckResponse> roll(@Valid @RequestBody RollRequest req,
-                                                    @AuthenticationPrincipal User user) {
-        var result = rollService.executeRoll(
-            user.getId(), req.worldId(), req.entityId(),
-            req.skillId(), req.modifier(), req.target());
-
-        return ResponseEntity.ok(new SkillCheckResponse(
-            result.skillId(), result.expression(), result.dice(),
-            result.total(), result.target(), result.success(), result.error()));
+    @PostMapping("/probe")
+    public ResponseEntity<ProbeResponse> probe(@Valid @RequestBody ProbeRequest req,
+                                                @AuthenticationPrincipal User user) {
+        var result = probeService.executeProbe(
+            req.entityId(), user.getId(), req.skillName(),
+            req.target(), req.advantage());
+        return ResponseEntity.ok(result);
     }
+
+    public record ProbeRequest(
+        @NotBlank UUID entityId,
+        @NotBlank String skillName,
+        int target,
+        boolean advantage
+    ) {}
 
     public record RollRequest(
         @NotBlank UUID worldId,
