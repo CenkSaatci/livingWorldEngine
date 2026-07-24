@@ -1369,9 +1369,9 @@ Drei Zielsysteme (D&D 5e, CoC 7e, DSA 5) haben stark unterschiedliche Regelmecha
 - **Qualitäts-Check:** TDD, Code-Qualität, Security
 
 ### P16-T09: Beispiel-Systeme validieren + Integrationstests
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 2,0 Tage
-- **Abhängigkeiten:** P16-T06, P16-T07, P16-T08
+- **Erledigt:** 2026-07-24
 - **Beschreibung:** 
   - Validiere dass die 3 Beispiel-JSONs aus T01 im Wizard geladen und gespeichert werden können
   - Erstelle für jedes System einen Test-Character im Wizard
