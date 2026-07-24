@@ -1213,13 +1213,19 @@ Drei Zielsysteme (D&D 5e, CoC 7e, DSA 5) haben stark unterschiedliche Regelmecha
 | Progression | Level + XP (Milestone) | Steigerungswürfe | XP + Talentstufen |
 | Kampf | Multi-Attack, AC, HP | Wunden, Manöver | AT/PA, DP, Rüstung |
 
-### P16-T01: System-Analyse + Lücken-Dokumentation
+### P16-T01: System-Analyse + Beispiel-JSONs als Living Spec
 - **Status:** 📋
 - **Aufwand:** 1,0 Tag
-- **Beschreibung:** Erstelle 3 Beispiel-JSON-Konfigurationen für D&D 5e, CoC 7e und DSA 5. Analysiere ob der Wizard alle benötigten Konzepte abbilden kann (3er-Proben, Aktionstypen, Modifier-Formel). Dokumentiere Lücken als konkrete Änderungsanforderungen für die Folgetasks.
+- **Beschreibung:** Erstelle 3 vollständige `rulesJson`-Konfigurationen für D&D 5e, CoC 7e und DSA 5 als **Living Spec** für alle Folgetasks. Jede Konfiguration wird manuell erstellt (nicht via Wizard) und deckt alle relevanten Regelmechaniken ab. Die Configs dienen als:
+  - **Akzeptanzkriterien** für den Wizard (muss diese Felder produzieren können)
+  - **Testdaten** für die Sheet-API und RuleEngine
+  - **Dokumentation** der System-Unterschiede
+- **Abhängigkeiten:** —
 - **Akzeptanzkriterien:**
   - 3 valide `rulesJson`-Konfigurationen in `docs/examples/` abgelegt
-  - Lücken-Report mit Bezug zu Folgetasks
+  - Jede Config enthält: Attribute, Skills (mit 1–3 Attribut-Verknüpfungen), Abilities, Progression, Conditionals
+  - Lücken-Report: welche Wizard-Felder fehlen noch?
+- **Bemerkungen:** Die Configs werden nie gelöscht — jeder Code muss sie korrekt verarbeiten können. Bei Datenmodell-Änderungen werden sie aktualisiert.
 - **Qualitäts-Check:** Dokumentation + Datenmodell-Review
 
 ### P16-T02: Wizard Step 5 erweitern — Probentyp + DSA-3er-Proben
@@ -1231,13 +1237,15 @@ Drei Zielsysteme (D&D 5e, CoC 7e, DSA 5) haben stark unterschiedliche Regelmecha
   - `d100_threshold` (CoC): d100 ≤ Fertigkeit
   - `d20_3attr` (DSA): 3d20, je ≤ Attribut, Fehlschläge kompensieren
   - Der Würfelausdruck im Dice-Step wird automatisch aus dem Probentyp generiert
-- **Backend:** `rulesJson.probe_type` + `rulesJson.skill_attributes` (array statt single)
-- **Frontend:** Wizard Step 2 (Skills) erlaubt mehrere Attribute + Dropdown für Probentyp
+- **Backend:** `rulesJson.probe_type` (Default: `'d20_target'` für alte Systeme), `rulesJson.skill_attributes` (array statt single)
+- **Frontend:** Wizard Step 2 (Skills) erlaubt mehrere Attribute + neues Dropdown für Probentyp im Dice-Step
 - **Akzeptanzkriterien:**
   - Skill kann 1–3 Attribute haben (je nach Probentyp)
-  - Probentyp wird in `rulesJson` gespeichert und vom Frontend angezeigt
-  - Frontend-Tests für neuen Step-Logik
-- **Qualitäts-Check:** TDD (Tests first), i18n, UI/UX-Review
+  - Probentyp wird in `rulesJson` gespeichert
+  - Alte Systeme ohne `probe_type` → Default `d20_target`
+  - Frontend-Tests
+- **Bemerkungen:** Default-Werte für `probe_type` stellen sicher dass bestehende Systeme nicht brechen.
+- **Qualitäts-Check:** TDD, i18n, UI/UX-Review, Migration alter Systeme geprüft
 
 ### P16-T03: Wizard Step 8 erweitern — Action Economy
 - **Status:** 📋
@@ -1284,23 +1292,30 @@ Drei Zielsysteme (D&D 5e, CoC 7e, DSA 5) haben stark unterschiedliche Regelmecha
     - HP = Basis + Attribut × Multiplikator
     - AC = 10 + DEX-Modifier + Rüstung
   - Backend evaluiert die Formeln beim Character-Request
-- **Backend:** `ModifierService` + `FormulaEvaluator` parsen simple mathematische Ausdrücke
-  - Sicherheitsbeschränkung: nur bekannte Attribut-Variablen, keine Script-Injection
+- **Backend:** `ModifierService` + **`FormulaEvaluator`** — sicherer Recursive-Descent-Parser:
+  - Erlaubte Operatoren: `+`, `-`, `*`, `/`, `()`, `min()`, `max()`, `floor()`
+  - Erlaubte Variablen: nur Attribut-Namen aus `rulesJson.attributes`
+  - **Kein `eval`, kein `ScriptEngine`, keine dynamischen Funktionsaufrufe**
+  - Verhindert Code-Injection von Haus aus
 - **Akzeptanzkriterien:**
-  - Modifier-Formeln werden korrekt berechnet
-  - Sicherheit: keine Injection möglich (nur erlaubte Variablen + Operatoren)
-  - Unit-Tests für FormulaEvaluator
+  - Modifier-Formeln werden korrekt berechnet (D&D: attr 15 → +2)
+  - Derived-Formeln funktionieren (DSA: `(KO+KK)/2+5` → LP)
+  - Sicherheit: nur erlaubte Variablen + Operatoren, keine Injection
+  - Unit-Tests für FormulaEvaluator (Grenzfälle, Division durch 0, etc.)
+- **Bemerkungen:** FormulaEvaluator ist das Herzstück. Sheet-API + RuleEngine bauen darauf auf. Je sauberer das hier ist, desto einfacher werden T06–T08.
 - **Qualitäts-Check:** TDD, Security-Review, Code-Qualität
 
 ### P16-T06: Character-Sheet API (Backend)
 - **Status:** 📋
 - **Aufwand:** 3,0 Tage
 - **Abhängigkeiten:** P16-T02, P16-T05
-- **Beschreibung:** REST-API für Character-Sheet:
+- **Beschreibung:** REST-API für Character-Sheet — **funktioniert für PCs und NPCs gleichermassen** (NPCs haben nur einfachere Progression):
   - `GET /entities/{id}/sheet` — berechnet alle Werte aus `rulesJson` + `attributesJson`
-  - Wendet Derived-Formeln, Modifier und Conditionals an
-  - Gibt berechnete Attribute, Skills, Abilities, Derived Values zurück
+  - Wendet FormulaEvaluator auf Derived-Formeln, Modifier und Conditionals an
+  - Gibt berechnete Attribute (mit Modifiern), Skills, Abilities, Derived Values zurück
   - Berücksichtigt Progression (Level, XP, Talentstufen)
+  - NPCs: liefert Basis-Werte ohne Progression
+  - Alte Systeme ohne `probe_type` oder `modifierFormula`: Default-Werte verwenden, Sheet trotzdem ausliefern
 - **Backend:** `CharacterSheetService`, `FormulaEvaluator` (aus T05)
 - **Akzeptanzkriterien:**
   - Sheet-API gibt konsistente Werte zurück
@@ -1310,57 +1325,58 @@ Drei Zielsysteme (D&D 5e, CoC 7e, DSA 5) haben stark unterschiedliche Regelmecha
   - Integrationstests für jedes Beispielsystem
 - **Qualitäts-Check:** TDD, Architektur-Review
 
-### P16-T07: Character-Sheet UI (Frontend)
+### P16-T07: Character-Sheet UI (Frontend) — Read-Only first
 - **Status:** 📋
 - **Aufwand:** 3,0 Tage
 - **Abhängigkeiten:** P16-T06
-- **Beschreibung:** Dynamisches Character-Sheet:
+- **Beschreibung:** Dynamisches Character-Sheet — **zunächst Read-Only**. Editieren kommt in einer späteren Iteration:
   - Ruft `GET /entities/{id}/sheet` ab
-  - Zeigt Attribute (editierbar), Skills (mit Würfel-Button), Abilities (gefiltert nach Tags)
-  - Zeigt abgeleitete Werte (HP, AC, Ini, etc.)
-  - Zeigt Conditionals als Tooltip/Hinweis bei Proben
-  - Proben-Würfel: verwendet Probentyp aus `rulesJson`
-    - D&D: 1d20 + Modifikator, zeigt Erfolg/Fehlschlag
-    - CoC: 1d100, vergleicht mit Skill-Wert
-    - DSA: 3d20, zeigt Einzelergebnisse
-  - Kampf-UI: Aktions-Typen + Kosten visualisieren
-- **Frontend:** `CharacterSheetService` (API-Aufruf), `DynamicSheet`-Komponente
-- **Akzeptanzkriterien:**
-  - Alle drei Systeme werden korrekt dargestellt
-  - Proben-Würfel funktioniert systemgerecht
-  - Attribute editierbar → Sheet aktualisiert sich
-  - Frontend-Tests + TypeScript
+  - Zeigt alle berechneten Werte: Attribute (mit Modifiern), Skills, Abilities, Derived Values
+  - Proben-Würfel-Button bei Skills — verwendet Probentyp aus `rulesJson`:
+    - D&D: `1d20+staerke`, zeigt `≥ DC` Erfolg/Fehlschlag
+    - CoC: `1d100`, vergleicht mit Skill-Wert
+    - DSA: `3d20`, zeigt Einzelergebnisse pro Attribut
+  - Abilities gefiltert nach Tags (im Kampf: nur `attack`-Abilities)
+  - Conditionals als Tooltip/Hinweis: "Stärke > 15: +2 auf Schaden"
+  - Kampf-UI: Aktions-Typen visualisieren, verbleibende Aktionen anzeigen
+- **Bemerkungen:** Read-Only reduziert Komplexität und UI-Tests. Editieren wird ein eigener Task in Phase 17.
 - **Qualitäts-Check:** TDD, UI/UX-Review, i18n, Responsive-Test
 
-### P16-T08: RuleEngine — Conditionals auswerten
+### P16-T08: RuleEngine — Conditionals auswerten + Roll-API v2
 - **Status:** 📋
 - **Aufwand:** 2,0 Tage
 - **Abhängigkeiten:** P16-T05, P16-T06
-- **Beschreibung:** Backend wertet `conditionals` aus `rulesJson` aus:
-  - Bei Proben: prüfe alle Bedingungen, wende Boni/Mali an
-  - `per_point`: für jeden Punkt über/unter Schwellwert, Bonus anwenden
-  - `if(attribut > X, +bonus, 0)` → einfache Bedingungen
-  - Ergebnis: modifizierter Würfelwert + Erklärung (welche Bedingungen aktiv sind)
-- **Backend:** `ConditionEvaluator` (Erweiterung von FormulaEvaluator)
+- **Beschreibung:** Backend wertet `conditionals` aus `rulesJson` aus und erweitert die Würfel-API:
+  - `ConditionEvaluator` wendet Bedingungen auf Proben an:
+    - `gt/gte/lt/lte/eq`: einfache Vergleiche → Bonus/Malus
+    - `per_point`: für jeden Punkt über/unter Schwellwert, Bonus × Differenz
+    - Ergebnis: modifizierter Würfelwert + **Erklärung** (welche Bedingungen aktiv)
+  - Erweiterte Roll-API:
+    - `POST /rolls/probe` — würfelt eine System-Probe:
+      - Input: `{ entityId, skillName, target (DC), advantage/disadvantage }`
+      - Ermittelt Probentyp aus `rulesJson`, berechnet Modifier, wendet Conditionals an
+      - Liefert: Einzelwürfe, Gesamtergebnis, Erfolg/Fehlschlag, aktive Conditionals
+    - `POST /rolls/advantage` — D&D Vorteil/Nachteil: 2d20, wähle höher/niedriger
+- **Backend:** `ConditionEvaluator`, `ProbeService` (erweitert `RollController`)
 - **Akzeptanzkriterien:**
   - Conditionals werden bei Sheet-API und Würfel-API ausgewertet
-  - Per-Point-Boni (DSA: jeder Punkt IN über 8 → +1 Initiative) funktionieren
+  - Per-Point-Boni funktionieren (DSA: IN>8 → +1 Initiative pro Punkt)
   - Erklärung der aktiven Boni wird mitgeliefert
+  - `POST /rolls/probe` funktioniert für alle 3 Probentypen
   - Unit-Tests für alle Operator-Typen
 - **Qualitäts-Check:** TDD, Code-Qualität, Security
 
-### P16-T09: Beispiel-Systeme + Integrationstests
+### P16-T09: Beispiel-Systeme validieren + Integrationstests
 - **Status:** 📋
 - **Aufwand:** 2,0 Tage
 - **Abhängigkeiten:** P16-T06, P16-T07, P16-T08
 - **Beschreibung:** 
-  - Erstelle vollständige D&D 5e Konfiguration im Wizard
-  - Erstelle vollständige CoC 7e Konfiguration
-  - Erstelle vollständige DSA 5 Konfiguration
-  - Integrationstests: Character erstellen → Sheet laden → Probe würfeln
-  - Dokumentiere jede Konfiguration mit Screenshots/Beispielen
+  - Validiere dass die 3 Beispiel-JSONs aus T01 im Wizard geladen und gespeichert werden können
+  - Erstelle für jedes System einen Test-Character im Wizard
+  - Integrationstests: Character erstellen → Sheet laden → Probe würfeln → Conditional auswerten
+  - Dokumentiere jede Konfiguration mit Screenshots
 - **Akzeptanzkriterien:**
-  - Alle 3 Systeme sind via Wizard konfigurierbar
+  - Alle 3 Beispiel-JSONs aus T01 sind via Wizard importierbar
   - Character-Sheet + Proben funktioniert für jedes System
   - Integrationstests grün
 - **Qualitäts-Check:** Funktionaler Test, UI/UX-Review, i18n
