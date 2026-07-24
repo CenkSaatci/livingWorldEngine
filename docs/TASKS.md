@@ -1192,6 +1192,202 @@
 | 13 (Campaign-Features) | 5 | 12,0 Tage |
 | 14 (Adventure Editor) | 4 | 9,5 Tage |
 | 15 (Wizard 2.0 & Editor UX) | 11 | 14,5 Tage |
-| **Summe** | **113 (1 cancelled)** | **205,5 Tage** |
+| 16 (Multi-System & RuleEngine) | 10 | 20,0 Tage |
+| **Summe** | **123 (1 cancelled)** | **225,5 Tage** |
 
-Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das ~9,5 Monaten (vollzeit). Bei Nebenher-Betrieb ist dies entsprechend zu multiplizieren. Zuzüglich offener Risiken (~0,5 Tage).
+---
+
+## Phase 16: Multi-System Character-Sheet & RuleEngine
+
+### Kontext
+Drei Zielsysteme (D&D 5e, CoC 7e, DSA 5) haben stark unterschiedliche Regelmechaniken. Der SystemWizard muss diese abbilden können, und der Character-Sheet + RuleEngine müssen die Konfiguration auswerten.
+
+| Merkmal | D&D 5e | CoC 7e | DSA 5 |
+|---|---|---|---|
+| Attribute | 6 (STR/DEX/CON/INT/WIS/CHA) | 8 (STR/CON/DEX/APP/POW/INT/SIZ/EDU) | 8 (MU/KL/IN/CH/FF/GE/KO/KK) |
+| Attribut-Range | 3–20 | 3–18 | 1–21 |
+| Modifier | (Wert-10)/2 | — | — |
+| Probe | d20 + Mod ≥ DC | d100 ≤ Fertigkeit% | 3d20 ≤ Attribut (3 Attribute) |
+| Vorteile | Feats, Class Features | Perks | Vor-/Nachteile, SF |
+| Aktionen | Action/Bonus/Reaction | 1 Aktion | 1 Aktion |
+| Progression | Level + XP (Milestone) | Steigerungswürfe | XP + Talentstufen |
+| Kampf | Multi-Attack, AC, HP | Wunden, Manöver | AT/PA, DP, Rüstung |
+
+### P16-T01: System-Analyse + Lücken-Dokumentation
+- **Status:** 📋
+- **Aufwand:** 1,0 Tag
+- **Beschreibung:** Erstelle 3 Beispiel-JSON-Konfigurationen für D&D 5e, CoC 7e und DSA 5. Analysiere ob der Wizard alle benötigten Konzepte abbilden kann (3er-Proben, Aktionstypen, Modifier-Formel). Dokumentiere Lücken als konkrete Änderungsanforderungen für die Folgetasks.
+- **Akzeptanzkriterien:**
+  - 3 valide `rulesJson`-Konfigurationen in `docs/examples/` abgelegt
+  - Lücken-Report mit Bezug zu Folgetasks
+- **Qualitäts-Check:** Dokumentation + Datenmodell-Review
+
+### P16-T02: Wizard Step 5 erweitern — Probentyp + DSA-3er-Proben
+- **Status:** 📋
+- **Aufwand:** 2,0 Tage
+- **Abhängigkeiten:** P16-T01
+- **Beschreibung:** Skills aktuell an ein Attribut gekoppelt. Für DSA brauchen Skills **drei** Attribute. Ausserdem muss der **Probentyp** konfigurierbar sein:
+  - `d20_target` (D&D): d20 + Mod ≥ Zielwert
+  - `d100_threshold` (CoC): d100 ≤ Fertigkeit
+  - `d20_3attr` (DSA): 3d20, je ≤ Attribut, Fehlschläge kompensieren
+  - Der Würfelausdruck im Dice-Step wird automatisch aus dem Probentyp generiert
+- **Backend:** `rulesJson.probe_type` + `rulesJson.skill_attributes` (array statt single)
+- **Frontend:** Wizard Step 2 (Skills) erlaubt mehrere Attribute + Dropdown für Probentyp
+- **Akzeptanzkriterien:**
+  - Skill kann 1–3 Attribute haben (je nach Probentyp)
+  - Probentyp wird in `rulesJson` gespeichert und vom Frontend angezeigt
+  - Frontend-Tests für neuen Step-Logik
+- **Qualitäts-Check:** TDD (Tests first), i18n, UI/UX-Review
+
+### P16-T03: Wizard Step 8 erweitern — Action Economy
+- **Status:** 📋
+- **Aufwand:** 1,5 Tage
+- **Abhängigkeiten:** P16-T01
+- **Beschreibung:** System kann konfigurieren welche Aktions-Typen es gibt und wie viele pro Runde:
+  - `actionTypes`: Liste der Typen (`["action"]`, `["action", "bonus_action"]`, usw.)
+  - `actionsPerTurn`: Anzahl pro Typ (`{ action: 1 }`, `{ action: 1, bonus_action: 1 }`)
+  - Abilities/Abilities bekommen Feld `actionCost: { type, amount }`
+  - DSA-Sonderfertigkeit "Nachladen": `actionCost: { type: "action", amount: -1 }` (reduziert Kosten)
+  - D&D "Extra Attack": erlaubt 2 Angriffe pro Action → Feld `multiAttack: number`
+- **Backend:** `rulesJson.combat.action_types` + `rulesJson.combat.actions_per_turn`
+- **Frontend:** Wizard Step 2 (Combat Dice) um Action-Sektion erweitern. Ability-Step zeigt Action-Dropdown.
+- **Akzeptanzkriterien:**
+  - Action-Config speicherbar und im Review sichtbar
+  - Pro Ability kann Action-Typ + Kosten gewählt werden
+  - Frontend-Tests + TypeScript
+- **Qualitäts-Check:** TDD, Datenmodell-Review, i18n
+
+### P16-T04: Ability-Tags + Vor-/Nachteile
+- **Status:** 📋
+- **Aufwand:** 1,5 Tage
+- **Abhängigkeiten:** P16-T01
+- **Beschreibung:** Abilities bekommen Tags für bessere Filterung im Kampf-UI:
+  - `tags: string[]` (z.B. `["attack", "ranged", "magic"]`, `["defensive", "concentration"]`)
+  - Vor-/Nachteile (DSA) / Feats (D&D) / Perks (CoC) als spezielle Abilities:
+    - `category: 'ability' | 'advantage' | 'perk'` 
+    - Können Conditionals referenzieren (z.B. Vorteil "Zäher Hund": +2 auf KO-Proben)
+- **Backend:** `rulesJson.abilities[].tags`, `rulesJson.abilities[].category`
+- **Frontend:** Wizard Step 5 (Abilities) um Tag-Eingabe + Kategorie-Dropdown erweitern. Review zeigt Tags.
+- **Akzeptanzkriterien:**
+  - Tags speicherbar und im Review sichtbar
+  - Kategorie-Auswahl für normale Fähigkeiten / Vorzüge / Nachteile
+  - Frontend-Tests
+- **Qualitäts-Check:** TDD, UI/UX-Review
+
+### P16-T05: Modifier-Engine (Backend)
+- **Status:** 📋
+- **Aufwand:** 2,0 Tage
+- **Abhängigkeiten:** P16-T01
+- **Beschreibung:** Automatische Modifier-Berechnung für Systeme die das unterstützen:
+  - `modifierFormula: '(value - 10) / 2'` (D&D) → wird auf jedes Attribut angewendet
+  - `derivedValueFormula` in Conditionals auswerten:
+    - HP = Basis + Attribut × Multiplikator
+    - AC = 10 + DEX-Modifier + Rüstung
+  - Backend evaluiert die Formeln beim Character-Request
+- **Backend:** `ModifierService` + `FormulaEvaluator` parsen simple mathematische Ausdrücke
+  - Sicherheitsbeschränkung: nur bekannte Attribut-Variablen, keine Script-Injection
+- **Akzeptanzkriterien:**
+  - Modifier-Formeln werden korrekt berechnet
+  - Sicherheit: keine Injection möglich (nur erlaubte Variablen + Operatoren)
+  - Unit-Tests für FormulaEvaluator
+- **Qualitäts-Check:** TDD, Security-Review, Code-Qualität
+
+### P16-T06: Character-Sheet API (Backend)
+- **Status:** 📋
+- **Aufwand:** 3,0 Tage
+- **Abhängigkeiten:** P16-T02, P16-T05
+- **Beschreibung:** REST-API für Character-Sheet:
+  - `GET /entities/{id}/sheet` — berechnet alle Werte aus `rulesJson` + `attributesJson`
+  - Wendet Derived-Formeln, Modifier und Conditionals an
+  - Gibt berechnete Attribute, Skills, Abilities, Derived Values zurück
+  - Berücksichtigt Progression (Level, XP, Talentstufen)
+- **Backend:** `CharacterSheetService`, `FormulaEvaluator` (aus T05)
+- **Akzeptanzkriterien:**
+  - Sheet-API gibt konsistente Werte zurück
+  - D&D: Modifier = (attr-10)/2, HP = Basis + CON-Mod x Level
+  - CoC: HP = (STR+CON)/2, Sanity = POW×5
+  - DSA: LP = (KO+KK)/2+5
+  - Integrationstests für jedes Beispielsystem
+- **Qualitäts-Check:** TDD, Architektur-Review
+
+### P16-T07: Character-Sheet UI (Frontend)
+- **Status:** 📋
+- **Aufwand:** 3,0 Tage
+- **Abhängigkeiten:** P16-T06
+- **Beschreibung:** Dynamisches Character-Sheet:
+  - Ruft `GET /entities/{id}/sheet` ab
+  - Zeigt Attribute (editierbar), Skills (mit Würfel-Button), Abilities (gefiltert nach Tags)
+  - Zeigt abgeleitete Werte (HP, AC, Ini, etc.)
+  - Zeigt Conditionals als Tooltip/Hinweis bei Proben
+  - Proben-Würfel: verwendet Probentyp aus `rulesJson`
+    - D&D: 1d20 + Modifikator, zeigt Erfolg/Fehlschlag
+    - CoC: 1d100, vergleicht mit Skill-Wert
+    - DSA: 3d20, zeigt Einzelergebnisse
+  - Kampf-UI: Aktions-Typen + Kosten visualisieren
+- **Frontend:** `CharacterSheetService` (API-Aufruf), `DynamicSheet`-Komponente
+- **Akzeptanzkriterien:**
+  - Alle drei Systeme werden korrekt dargestellt
+  - Proben-Würfel funktioniert systemgerecht
+  - Attribute editierbar → Sheet aktualisiert sich
+  - Frontend-Tests + TypeScript
+- **Qualitäts-Check:** TDD, UI/UX-Review, i18n, Responsive-Test
+
+### P16-T08: RuleEngine — Conditionals auswerten
+- **Status:** 📋
+- **Aufwand:** 2,0 Tage
+- **Abhängigkeiten:** P16-T05, P16-T06
+- **Beschreibung:** Backend wertet `conditionals` aus `rulesJson` aus:
+  - Bei Proben: prüfe alle Bedingungen, wende Boni/Mali an
+  - `per_point`: für jeden Punkt über/unter Schwellwert, Bonus anwenden
+  - `if(attribut > X, +bonus, 0)` → einfache Bedingungen
+  - Ergebnis: modifizierter Würfelwert + Erklärung (welche Bedingungen aktiv sind)
+- **Backend:** `ConditionEvaluator` (Erweiterung von FormulaEvaluator)
+- **Akzeptanzkriterien:**
+  - Conditionals werden bei Sheet-API und Würfel-API ausgewertet
+  - Per-Point-Boni (DSA: jeder Punkt IN über 8 → +1 Initiative) funktionieren
+  - Erklärung der aktiven Boni wird mitgeliefert
+  - Unit-Tests für alle Operator-Typen
+- **Qualitäts-Check:** TDD, Code-Qualität, Security
+
+### P16-T09: Beispiel-Systeme + Integrationstests
+- **Status:** 📋
+- **Aufwand:** 2,0 Tage
+- **Abhängigkeiten:** P16-T06, P16-T07, P16-T08
+- **Beschreibung:** 
+  - Erstelle vollständige D&D 5e Konfiguration im Wizard
+  - Erstelle vollständige CoC 7e Konfiguration
+  - Erstelle vollständige DSA 5 Konfiguration
+  - Integrationstests: Character erstellen → Sheet laden → Probe würfeln
+  - Dokumentiere jede Konfiguration mit Screenshots/Beispielen
+- **Akzeptanzkriterien:**
+  - Alle 3 Systeme sind via Wizard konfigurierbar
+  - Character-Sheet + Proben funktioniert für jedes System
+  - Integrationstests grün
+- **Qualitäts-Check:** Funktionaler Test, UI/UX-Review, i18n
+
+### P16-T10: Qualitätssicherung + Bugfixes
+- **Status:** 📋
+- **Aufwand:** 2,0 Tage
+- **Abhängigkeiten:** Alle P16-Tasks
+- **Beschreibung:** 
+  - Bug-Hunting-Session: Edge-Cases in allen 3 Systemen testen
+  - Code-Qualität: Prüfe auf die bekannten Muster (keine raw Maps, Exception-Handler konsistent, i18n vollständig)
+  - UI/UX: Prüfe Dark/Light/Cyber-Themes, Scrollverhalten, mobile Ansatz
+  - Performance: Ladezeiten des Character-Sheets prüfen (viele Conditionals)
+  - Nachbesserungen aus den Reviews
+- **Akzeptanzkriterien:**
+  - Alle gefundenen Bugs gefixt
+  - Keine offenen Code-Qualität-Mängel
+  - Alle Themes funktionieren
+- **Qualitäts-Check:** Full-Suite-Run (86+ Tests)
+
+---
+
+## Phase 16 Statistik
+| Phase | Tasks | Sum Aufwand |
+|---|---|---|
+| 16 (Multi-System & RuleEngine) | 10 | 20,0 Tage |
+
+Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das ~1 Monat (vollzeit).
+
+---
