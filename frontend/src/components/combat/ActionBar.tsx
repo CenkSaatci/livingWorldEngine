@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Sword, SkipForward, LogOut, Move, Shield, Zap } from 'lucide-react';
+import { SkipForward, LogOut, Shield, Zap } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useCombatStore } from '../../store/combatStore';
 import { playCombatHit } from '../../utils/sound';
+
+const ACTION_ICONS: Record<string, React.ReactNode> = {
+  action: <Zap size={14} />,
+  bonus_action: <Zap size={12} />,
+  reaction: <Shield size={14} />,
+};
 
 interface Props {
   worldId: string;
@@ -15,7 +21,7 @@ interface AbilityEntry {
   apCost: number;
 }
 
-export function ActionBar({ worldId: _worldId }: Props) {
+export function ActionBar({ worldId }: Props) {
   const { t } = useTranslation('common');
   const session = useCombatStore((s) => s.session);
   const participants = useCombatStore((s) => s.participants);
@@ -23,26 +29,42 @@ export function ActionBar({ worldId: _worldId }: Props) {
   const setTargetEntityId = useCombatStore((s) => s.setTargetEntityId);
 
   const [abilities, setAbilities] = useState<AbilityEntry[]>([]);
+  const [actionTypes, setActionTypes] = useState<string[]>(['action']);
+  const [actionsPerTurn, setActionsPerTurn] = useState<Record<string, number>>({ action: 1 });
+  const [usedActions, setUsedActions] = useState<Record<string, number>>({});
 
   const currentActor = participants.find((p) => p.entity_id === session?.current_turn_entity_id);
 
+  // Load action config from game system
+  useEffect(() => {
+    if (!worldId) return;
+    apiClient.get(`/worlds/${worldId}`).then((wr) => {
+      const gsId = wr.data.game_system_id;
+      if (!gsId) return;
+      apiClient.get(`/game-systems/${gsId}`).then((gr) => {
+        try {
+          const rules = JSON.parse(gr.data.rules_json);
+          const combat = rules.dice_mechanics?.combat;
+          if (combat?.action_types) setActionTypes(combat.action_types);
+          if (combat?.actions_per_turn) setActionsPerTurn(combat.actions_per_turn);
+        } catch {}
+      }).catch(() => {});
+    }).catch(() => {});
+  }, [worldId]);
+
+  // Reset used actions on turn change
+  useEffect(() => {
+    setUsedActions({});
+  }, [session?.current_turn_entity_id]);
+
   // Fetch abilities for current actor
   useEffect(() => {
-    if (!currentActor?.entity_id) {
-      setAbilities([]);
-      return;
-    }
-    let cancelled = false;
-    apiClient
-      .get(`/entities/${currentActor.entity_id}/abilities`)
-      .then((r) => {
-        if (cancelled) return;
-        setAbilities(r.data as AbilityEntry[]);
-      })
+    if (!currentActor?.entity_id) { setAbilities([]); return; }
+    let c = false;
+    apiClient.get(`/entities/${currentActor.entity_id}/abilities`)
+      .then((r) => { if (!c) setAbilities(r.data as AbilityEntry[]); })
       .catch(() => setAbilities([]));
-    return () => {
-      cancelled = true;
-    };
+    return () => { c = true; };
   }, [currentActor?.entity_id]);
 
   if (!session || session.status !== 'ACTIVE') return null;
@@ -51,111 +73,39 @@ export function ActionBar({ worldId: _worldId }: Props) {
     (p) => p.entity_id !== session.current_turn_entity_id && p.ap_current > 0,
   );
 
-  const handleAttack = async () => {
-    if (!targetEntityId) return;
+  const handleAction = async (type: string, abilityId?: string) => {
     try {
-      const res = await apiClient.post(`/combat/${session.id}/action`, {
-        actorId: currentActor?.entity_id,
-        actionType: 'ATTACK',
-        targetId: targetEntityId,
-      });
+      const url = abilityId
+        ? `/combat/${session.id}/ability`
+        : `/combat/${session.id}/action`;
+      const body: Record<string, unknown> = abilityId
+        ? { actorId: currentActor?.entity_id, abilityId, targetId: targetEntityId }
+        : { actorId: currentActor?.entity_id, actionType: type.toUpperCase(), targetId: targetEntityId };
+
+      const res = await apiClient.post(url, body);
       if (res.data.success) {
-        useCombatStore
-          .getState()
-          .updateParticipantAp(currentActor?.entity_id ?? '', res.data.ap_remaining);
-        playCombatHit();
+        useCombatStore.getState().updateParticipantAp(currentActor?.entity_id ?? '', res.data.ap_remaining);
+        setUsedActions((prev) => ({ ...prev, [type]: (prev[type] ?? 0) + 1 }));
+        if (!abilityId) playCombatHit();
       }
       const refresh = await apiClient.get(`/combat/${session.id}`);
       useCombatStore.getState().setSession(refresh.data.session, refresh.data.participants);
-    } catch {
-      /* */
-    }
+    } catch { /* */ }
   };
 
-  const handleAbility = async (abilityId: string) => {
-    try {
-      const res = await apiClient.post(`/combat/${session.id}/ability`, {
-        actorId: currentActor?.entity_id,
-        abilityId,
-        targetId: targetEntityId,
-      });
-      if (res.data.success) {
-        useCombatStore
-          .getState()
-          .updateParticipantAp(currentActor?.entity_id ?? '', res.data.ap_remaining);
-      }
-      const refresh = await apiClient.get(`/combat/${session.id}`);
-      useCombatStore.getState().setSession(refresh.data.session, refresh.data.participants);
-    } catch {
-      /* */
-    }
-  };
-
-  const handleDefend = async () => {
-    try {
-      const res = await apiClient.post(`/combat/${session.id}/action`, {
-        actorId: currentActor?.entity_id,
-        actionType: 'DEFEND',
-      });
-      if (res.data.success) {
-        useCombatStore
-          .getState()
-          .updateParticipantAp(currentActor?.entity_id ?? '', res.data.ap_remaining);
-      }
-    } catch {
-      /* */
-    }
-  };
-
-  const handleMove = async () => {
-    try {
-      const res = await apiClient.post(`/combat/${session.id}/action`, {
-        actorId: currentActor?.entity_id,
-        actionType: 'MOVE',
-      });
-      if (res.data.success) {
-        useCombatStore
-          .getState()
-          .updateParticipantAp(currentActor?.entity_id ?? '', res.data.ap_remaining);
-      }
-    } catch {
-      /* */
-    }
-  };
-
-  const handleNextTurn = async () => {
-    try {
-      await apiClient.post(`/combat/${session.id}/next-turn`);
-    } catch {
-      /* */
-    }
-  };
-
-  const handleEndCombat = async () => {
-    try {
-      await apiClient.post(`/combat/${session.id}/end`);
-    } catch {
-      /* */
-    }
-  };
+  const isAvailable = (type: string) => (usedActions[type] ?? 0) < (actionsPerTurn[type] ?? 1);
 
   return (
     <div className="space-y-3">
+      {/* Target Selection */}
       {aliveTargets.length > 0 && (
         <div>
           <p className="text-xs text-text-secondary mb-1">{t('combat.target')}</p>
           <div className="flex flex-wrap gap-1">
             {aliveTargets.map((t) => (
-              <button
-                key={t.entity_id}
-                onClick={() =>
-                  setTargetEntityId(t.entity_id === targetEntityId ? null : t.entity_id)
-                }
-                className={`rounded px-2 py-1 text-xs ${
-                  t.entity_id === targetEntityId
-                    ? 'bg-danger text-white'
-                    : 'bg-bg-elevated text-text-secondary hover:text-text-primary'
-                }`}
+              <button key={t.entity_id}
+                onClick={() => setTargetEntityId(t.entity_id === targetEntityId ? null : t.entity_id)}
+                className={`rounded px-2 py-1 text-xs ${t.entity_id === targetEntityId ? 'bg-danger text-white' : 'bg-bg-elevated text-text-secondary hover:text-text-primary'}`}
               >
                 {t.entity_id.slice(0, 8)}…
               </button>
@@ -164,51 +114,46 @@ export function ActionBar({ worldId: _worldId }: Props) {
         </div>
       )}
 
-      <div className="flex items-center gap-2">
-        <button
-          onClick={handleAttack}
-          disabled={!targetEntityId}
-          className="flex items-center gap-1 rounded bg-accent px-3 py-1.5 text-xs text-white hover:bg-accent/80 disabled:opacity-40"
-        >
-          <Sword size={14} /> {t('combat.attack')}
-        </button>
+      {/* Action Buttons */}
+      <div className="flex flex-wrap items-center gap-2">
+        {actionTypes.map((type) => {
+          const available = isAvailable(type);
+          const remaining = (actionsPerTurn[type] ?? 1) - (usedActions[type] ?? 0);
+          return (
+            <button key={type}
+              onClick={() => handleAction(type)}
+              disabled={!available || !targetEntityId}
+              className={`flex items-center gap-1 rounded px-3 py-1.5 text-xs
+                ${type === 'action' ? 'bg-accent text-white hover:bg-accent/80' : 'bg-bg-elevated text-text-secondary hover:text-text-primary'}
+                disabled:opacity-40`}
+              title={`${remaining}/${actionsPerTurn[type] ?? 1} verbleibend`}
+            >
+              {ACTION_ICONS[type] ?? <Zap size={14} />}
+              {t(`combat.action_${type}`, { defaultValue: type })}
+              {!available && ' (—)'}
+            </button>
+          );
+        })}
 
-        <button
-          onClick={handleDefend}
-          className="flex items-center gap-1 rounded bg-bg-elevated px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary"
-        >
-          <Shield size={14} /> Defend
-        </button>
-
-        <button
-          onClick={handleMove}
-          className="flex items-center gap-1 rounded bg-bg-elevated px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary"
-        >
-          <Move size={14} /> Move
-        </button>
-
+        {/* Abilities */}
         {abilities.map((a) => (
-          <button
-            key={a.abilityId}
-            onClick={() => handleAbility(a.abilityId)}
+          <button key={a.abilityId}
+            onClick={() => handleAction('ability', a.abilityId)}
+            disabled={!targetEntityId}
             className="flex items-center gap-1 rounded bg-warning/20 px-3 py-1.5 text-xs text-warning hover:bg-warning/30 disabled:opacity-40"
-            title={`AP cost: ${a.apCost}`}
+            title={`AP: ${a.apCost}`}
           >
             <Zap size={14} /> {a.abilityName}
           </button>
         ))}
 
-        <button
-          onClick={handleNextTurn}
-          className="flex items-center gap-1 rounded bg-bg-elevated px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary"
-        >
+        {/* Turn Controls */}
+        <button onClick={async () => { try { await apiClient.post(`/combat/${session.id}/next-turn`); } catch {} }}
+          className="flex items-center gap-1 rounded bg-bg-elevated px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary ml-auto">
           <SkipForward size={14} /> {t('combat.nextTurn')}
         </button>
-
-        <button
-          onClick={handleEndCombat}
-          className="flex items-center gap-1 rounded bg-danger/20 px-3 py-1.5 text-xs text-danger hover:bg-danger/30"
-        >
+        <button onClick={async () => { try { await apiClient.post(`/combat/${session.id}/end`); } catch {} }}
+          className="flex items-center gap-1 rounded bg-danger/20 px-3 py-1.5 text-xs text-danger hover:bg-danger/30">
           <LogOut size={14} /> {t('combat.end')}
         </button>
       </div>
