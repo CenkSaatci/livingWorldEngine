@@ -76,7 +76,7 @@ function XpInput({ value, entityId, onSaved }: { value: number; entityId: string
 
   return editing ? (
     <div className="flex items-center gap-1">
-      <input type="number" value={editVal} autoFocus min={0}
+      <input type="number" value={editVal} autoFocus min={0} max={Math.max(value * 10, 1000000)}
         onChange={(e) => setEditVal(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { setEditVal(String(value)); setEditing(false); }}}
         className="w-20 rounded border border-accent bg-bg-primary px-1 py-0.5 text-xs text-text-primary text-right outline-none"
