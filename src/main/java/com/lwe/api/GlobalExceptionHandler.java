@@ -15,89 +15,12 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(AuthService.AuthException.class)
-    public ResponseEntity<ApiError> handleAuthException(AuthService.AuthException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(CombatService.CombatException.class)
-    public ResponseEntity<ApiError> handleCombatException(CombatService.CombatException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(EntityEventService.EntityEventException.class)
-    public ResponseEntity<ApiError> handleEntityEventException(EntityEventService.EntityEventException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(AdventureService.AdventureException.class)
-    public ResponseEntity<ApiError> handleAdventureException(AdventureService.AdventureException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(LocationService.LocationException.class)
-    public ResponseEntity<ApiError> handleLocationException(LocationService.LocationException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(QuestService.QuestException.class)
-    public ResponseEntity<ApiError> handleQuestException(QuestService.QuestException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(RegionService.RegionException.class)
-    public ResponseEntity<ApiError> handleRegionException(RegionService.RegionException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(FactionService.FactionException.class)
-    public ResponseEntity<ApiError> handleFactionException(FactionService.FactionException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(GameSessionService.SessionException.class)
-    public ResponseEntity<ApiError> handleSessionException(GameSessionService.SessionException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(QuotaService.QuotaException.class)
-    public ResponseEntity<ApiError> handleQuotaException(QuotaService.QuotaException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(NpcIntentService.IntentException.class)
-    public ResponseEntity<ApiError> handleIntentException(NpcIntentService.IntentException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(InventoryService.InventoryException.class)
-    public ResponseEntity<ApiError> handleInventoryException(InventoryService.InventoryException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(EntityService.EntityException.class)
-    public ResponseEntity<ApiError> handleEntityException(EntityService.EntityException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(AbilityService.AbilityException.class)
-    public ResponseEntity<ApiError> handleAbilityException(AbilityService.AbilityException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(EntityAbilityService.EntityAbilityException.class)
-    public ResponseEntity<ApiError> handleEntityAbilityException(EntityAbilityService.EntityAbilityException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(WorldService.WorldException.class)
-    public ResponseEntity<ApiError> handleWorldException(WorldService.WorldException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(GameSystemService.GameSystemException.class)
-    public ResponseEntity<ApiError> handleGameSystemException(GameSystemService.GameSystemException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex) {
+        var details = ex.getBindingResult().getFieldErrors().stream()
+            .map(fe -> Map.of("field", fe.getField(), "issue", fe.getDefaultMessage()))
+            .toList();
+        return ResponseEntity.badRequest().body(ApiError.validationFailed(details));
     }
 
     @ExceptionHandler(RuleSchemaValidator.SchemaValidationException.class)
@@ -110,23 +33,45 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatus()).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex) {
-        var details = ex.getBindingResult().getFieldErrors().stream()
-            .map(fe -> Map.of("field", fe.getField(), "issue", fe.getDefaultMessage()))
-            .toList();
-        return ResponseEntity.badRequest().body(ApiError.validationFailed(details));
-    }
-
-    @ExceptionHandler(WorldAccess.WorldAccessException.class)
-    public ResponseEntity<ApiError> handleWorldAccessException(WorldAccess.WorldAccessException ex) {
-        return status(errorCode(ex)).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiError> handleServiceException(RuntimeException ex) {
+        var errorCode = extractErrorCode(ex);
+        if (errorCode != null) {
+            return status(errorCode(ex)).body(ApiError.of(errorCode, ex.getMessage()));
+        }
+        throw ex;
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneric(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(ApiError.of("SYSTEM_INTERNAL_ERROR", "An unexpected error occurred"));
+    }
+
+    private static String extractErrorCode(RuntimeException ex) {
+        return switch (ex) {
+            case AuthService.AuthException e -> e.getErrorCode();
+            case CombatService.CombatException e -> e.getErrorCode();
+            case EntityEventService.EntityEventException e -> e.getErrorCode();
+            case AdventureService.AdventureException e -> e.getErrorCode();
+            case LocationService.LocationException e -> e.getErrorCode();
+            case QuestService.QuestException e -> e.getErrorCode();
+            case RegionService.RegionException e -> e.getErrorCode();
+            case FactionService.FactionException e -> e.getErrorCode();
+            case GameSessionService.SessionException e -> e.getErrorCode();
+            case QuotaService.QuotaException e -> e.getErrorCode();
+            case NpcIntentService.IntentException e -> e.getErrorCode();
+            case InventoryService.InventoryException e -> e.getErrorCode();
+            case EntityService.EntityException e -> e.getErrorCode();
+            case AbilityService.AbilityException e -> e.getErrorCode();
+            case EntityAbilityService.EntityAbilityException e -> e.getErrorCode();
+            case WorldService.WorldException e -> e.getErrorCode();
+            case GameSystemService.GameSystemException e -> e.getErrorCode();
+            case WorldInviteService.InviteException e -> e.getErrorCode();
+            case WorldAccess.WorldAccessException e -> e.getErrorCode();
+            case null -> null;
+            default -> null;
+        };
     }
 
     private static HttpStatus errorCode(Object ex) {
