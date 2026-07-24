@@ -1249,8 +1249,9 @@ Drei Zielsysteme (D&D 5e, CoC 7e, DSA 5) haben stark unterschiedliche Regelmecha
 - **Qualitäts-Check:** TDD, i18n, UI/UX-Review, Migration alter Systeme geprüft
 
 ### P16-T03: Wizard Step 8 erweitern — Action Economy
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 1,5 Tage
+- **Erledigt:** 2026-07-19
 - **Abhängigkeiten:** P16-T01
 - **Beschreibung:** System kann konfigurieren welche Aktions-Typen es gibt und wie viele pro Runde:
   - `actionTypes`: Liste der Typen (`["action"]`, `["action", "bonus_action"]`, usw.)
