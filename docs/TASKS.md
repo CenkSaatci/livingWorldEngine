@@ -1161,8 +1161,9 @@
 - **Akzeptanzkriterien:** Alle UX-Punkte aus dem Feedback umgesetzt.
 
 ### P15-T11: 3D-Würfel-Verbesserung (nice-to-have)
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 1,0 Tag
+- **Erledigt:** 2026-07-19
 - **Beschreibung:** Ersetze die aktuelle THREE.js-Darstellung (farbige Polyeder + Sprite-Label) durch echte 3D-Würfel mit korrekter Augenzahl auf allen Faces. Für d6: Dots pro Face (1-6). Für d4/d8/d10/d12/d20: Jeweilige Zahl (1-N) auf jedem Face, nicht nur das gewürfelte Ergebnis. Geometrien und Face-Mapping müssen korrekt sein (keine leeren Faces).
 - **Akzeptanzkriterien:**
   - Alle Würfeltypen (d4/d6/d8/d10/d12/d20) zeigen korrekte Augenzahlen auf jedem Face
