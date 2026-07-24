@@ -742,6 +742,33 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 </>
               )}
 
+              {/* Tags + Category row */}
+              <div className="col-span-full flex gap-2 mt-1">
+                <input
+                  value={(ability.tags ?? []).join(', ')}
+                  onChange={(e) => {
+                    const a = [...data.abilities];
+                    a[i] = { ...a[i], tags: e.target.value.split(',').map((t) => t.trim()).filter(Boolean) };
+                    update('abilities', a);
+                  }}
+                  className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-[10px] text-text-secondary outline-none focus:border-accent"
+                  placeholder={t('s5a_tags_placeholder')}
+                />
+                <select
+                  value={ability.category ?? 'ability'}
+                  onChange={(e) => {
+                    const a = [...data.abilities];
+                    a[i] = { ...a[i], category: e.target.value };
+                    update('abilities', a);
+                  }}
+                  className="w-24 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-[10px] text-text-secondary outline-none focus:border-accent"
+                >
+                  <option value="ability">{t('s5a_cat_ability')}</option>
+                  <option value="advantage">{t('s5a_cat_advantage')}</option>
+                  <option value="perk">{t('s5a_cat_perk')}</option>
+                </select>
+              </div>
+
               <button
                 onClick={() =>
                   update('abilities', data.abilities.filter((_, j) => j !== i))
@@ -757,7 +784,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
             onClick={() =>
               update('abilities', [
                 ...data.abilities,
-                { name: '', type: 'active', costType: 'AP', cost: 1, diceExpression: '', effect: '', bonus: '' },
+                { name: '', type: 'active', costType: 'AP', cost: 1, diceExpression: '', effect: '', bonus: '', tags: [], category: 'ability' },
               ])
             }
             className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
