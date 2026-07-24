@@ -1308,9 +1308,9 @@ Drei Zielsysteme (D&D 5e, CoC 7e, DSA 5) haben stark unterschiedliche Regelmecha
 - **Qualitäts-Check:** TDD, Security-Review, Code-Qualität
 
 ### P16-T06: Character-Sheet API (Backend)
-- **Status:** 📋
+- **Status:** ✅
 - **Aufwand:** 3,0 Tage
-- **Abhängigkeiten:** P16-T02, P16-T05
+- **Erledigt:** 2026-07-24
 - **Beschreibung:** REST-API für Character-Sheet — **funktioniert für PCs und NPCs gleichermassen** (NPCs haben nur einfachere Progression):
   - `GET /entities/{id}/sheet` — berechnet alle Werte aus `rulesJson` + `attributesJson`
   - Wendet FormulaEvaluator auf Derived-Formeln, Modifier und Conditionals an
