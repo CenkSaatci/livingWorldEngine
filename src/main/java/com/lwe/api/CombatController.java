@@ -33,13 +33,15 @@ public class CombatController {
     }
 
     @PostMapping("/{sessionId}/action")
-    public ResponseEntity<CombatActionResultResponse> action(@PathVariable UUID sessionId,
-                                                              @Valid @RequestBody ActionRequest req,
-                                                              @AuthenticationPrincipal User user) {
-        var result = combatService.executeAction(user.getId(), sessionId,
+    public ResponseEntity<CombatSessionWithParticipants> action(@PathVariable UUID sessionId,
+                                                                  @Valid @RequestBody ActionRequest req,
+                                                                  @AuthenticationPrincipal User user) {
+        combatService.executeAction(user.getId(), sessionId,
             req.actorId(), req.actionType(), req.targetId(), req.itemId());
-        return ResponseEntity.ok(new CombatActionResultResponse(
-            result.actionType(), result.totalDamage(), result.apRemaining(), result.success()));
+        var session = combatService.getSession(user.getId(), sessionId);
+        var participants = combatService.getParticipants(sessionId);
+        return ResponseEntity.ok(new CombatSessionWithParticipants(
+            CombatSessionResponse.from(session), participants));
     }
 
     @PostMapping("/{sessionId}/next-turn")
@@ -66,13 +68,15 @@ public class CombatController {
     }
 
     @PostMapping("/{sessionId}/ability")
-    public ResponseEntity<CombatActionResultResponse> useAbility(@PathVariable UUID sessionId,
-                                                                   @Valid @RequestBody AbilityRequest req,
-                                                                   @AuthenticationPrincipal User user) {
-        var result = combatService.useAbility(user.getId(), sessionId,
+    public ResponseEntity<CombatSessionWithParticipants> useAbility(@PathVariable UUID sessionId,
+                                                                      @Valid @RequestBody AbilityRequest req,
+                                                                      @AuthenticationPrincipal User user) {
+        combatService.useAbility(user.getId(), sessionId,
             req.actorId(), req.abilityId(), req.targetId());
-        return ResponseEntity.ok(new CombatActionResultResponse(
-            result.actionType(), result.totalDamage(), result.apRemaining(), result.success()));
+        var session = combatService.getSession(user.getId(), sessionId);
+        var participants = combatService.getParticipants(sessionId);
+        return ResponseEntity.ok(new CombatSessionWithParticipants(
+            CombatSessionResponse.from(session), participants));
     }
 
     public record StartRequest(

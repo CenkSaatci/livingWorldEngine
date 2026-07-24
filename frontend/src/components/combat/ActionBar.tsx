@@ -83,13 +83,11 @@ export function ActionBar({ worldId }: Props) {
         : { actorId: currentActor?.entity_id, actionType: type.toUpperCase(), targetId: targetEntityId };
 
       const res = await apiClient.post(url, body);
-      if (res.data.success) {
-        useCombatStore.getState().updateParticipantAp(currentActor?.entity_id ?? '', res.data.ap_remaining);
-        setUsedActions((prev) => ({ ...prev, [type]: (prev[type] ?? 0) + 1 }));
-        if (!abilityId) playCombatHit();
-      }
-      const refresh = await apiClient.get(`/combat/${session.id}`);
-      useCombatStore.getState().setSession(refresh.data.session, refresh.data.participants);
+      // POST returns full session state now — no extra GET needed
+      useCombatStore.getState().setSession(res.data.session, res.data.participants);
+      setUsedActions((prev) => ({ ...prev, [type]: (prev[type] ?? 0) + 1 }));
+      if (!abilityId) playCombatHit();
+      useCombatStore.getState().updateParticipantAp(currentActor?.entity_id ?? '', 0);
     } catch { /* */ }
   };
 
