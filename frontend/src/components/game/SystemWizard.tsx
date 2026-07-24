@@ -636,7 +636,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           </div>
 
           {data.abilities.map((ability, i) => (
-            <div key={i} className="flex items-start gap-2 rounded bg-bg-primary/50 p-2">
+            <div key={i} className="flex flex-wrap items-start gap-2 rounded bg-bg-primary/50 p-2">
               <input
                 value={ability.name}
                 onChange={(e) => {
@@ -743,7 +743,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
               )}
 
               {/* Tags + Category row */}
-              <div className="col-span-full flex gap-2 mt-1">
+              <div className="w-full flex gap-2 mt-1">
                 <input
                   value={(ability.tags ?? []).join(', ')}
                   onChange={(e) => {
