@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
 
 @Service
 public class WorldService {
@@ -80,12 +82,8 @@ public class WorldService {
     }
 
     public AccessibleResult listAccessible(UUID userId, int page, int size) {
-        var all = listAccessible(userId);
-        var total = all.size();
-        var from = Math.min(page * size, total);
-        var to = Math.min(from + size, total);
-        var items = all.subList(from, to);
-        return new AccessibleResult(items, total, page, to < total);
+        var pg = worldRepo.findAccessibleByUserId(userId, PageRequest.of(page, size));
+        return new AccessibleResult(pg.getContent(), (int) pg.getTotalElements(), page, pg.hasNext());
     }
 
     public record AccessibleResult(List<World> items, int total, int page, boolean hasMore) {}

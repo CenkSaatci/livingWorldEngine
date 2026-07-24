@@ -1,7 +1,11 @@
 package com.lwe.core.repository;
 
 import com.lwe.core.domain.World;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.UUID;
@@ -10,4 +14,22 @@ public interface WorldRepository extends JpaRepository<World, UUID> {
     List<World> findByOwnerIdAndActiveTrue(UUID ownerId);
     List<World> findByActiveTrue();
     long countByOwnerIdAndActiveTrue(UUID ownerId);
+
+    @Query(value = """
+        (SELECT * FROM worlds WHERE owner_id = :userId AND active = true)
+        UNION
+        (SELECT w.* FROM worlds w JOIN world_members m ON w.id = m.world_id
+         WHERE m.user_id = :userId AND w.active = true AND w.owner_id != :userId)
+        ORDER BY created_at DESC
+        """,
+        countQuery = """
+        SELECT COUNT(*) FROM (
+          (SELECT id FROM worlds WHERE owner_id = :userId AND active = true)
+          UNION
+          (SELECT w.id FROM worlds w JOIN world_members m ON w.id = m.world_id
+           WHERE m.user_id = :userId AND w.active = true AND w.owner_id != :userId)
+        ) AS cnt
+        """,
+        nativeQuery = true)
+    Page<World> findAccessibleByUserId(@Param("userId") UUID userId, Pageable pageable);
 }

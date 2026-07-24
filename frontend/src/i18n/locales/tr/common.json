@@ -35,7 +35,12 @@
     "createNpc": "👤 NPC / Character",
     "createRegion": "🌍 Region",
     "createLocation": "📍 Location",
-    "closeLocation": "Konumu kapat"
+    "closeLocation": "Konumu kapat",
+    "title": "Game View",
+    "combat": "Combat",
+    "location": "📍 Location",
+    "explore": "🗺️ Explore",
+    "chat": "Chat"
   },
   "admin": {
     "accessDenied": "Access denied",
@@ -110,7 +115,11 @@
     "memberAdded": "Member added",
     "memberAddFailed": "Failed to add member",
     "memberRemoved": "Member removed",
-    "memberRemoveFailed": "Failed to remove member"
+    "memberRemoveFailed": "Failed to remove member",
+    "worldInfo": "World Info",
+    "created": "Created",
+    "gameTime": "Game Time",
+    "invite": "Invite"
   },
   "combat": {
     "target": "Target",
