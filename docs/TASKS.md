@@ -1437,7 +1437,8 @@ Nach dem Read-Only-Sheet (P16-T07) folgen Editieren, Inventory und Kampf.
 
 ### P17-T04: Kampf-UI verbessern
 - **Aufwand:** 2,0 Tage
-- **Status:** 📋
+- **Status:** ✅
+- **Erledigt:** 2026-07-24
 
 ### P17-T05: Character Export/Import
 - **Aufwand:** 1,0 Tag
