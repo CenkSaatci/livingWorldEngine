@@ -22,11 +22,11 @@ public class CharacterSheetService {
 
     private final GameEntityRepository entityRepo;
     private final WorldRepository worldRepo;
-    private final GameSystemRepository systemRepo;
     private final WorldAccess worldAccess;
     private final ModifierService modifierService;
     private final DerivedValueService derivedValueService;
     private final LevelUpService levelUpService;
+    private final RulesLoader rulesLoader;
     private final ObjectMapper objectMapper;
 
     private static final TypeReference<Map<String, Integer>> ATTR_MAP_TYPE = new TypeReference<>() {};
@@ -34,19 +34,20 @@ public class CharacterSheetService {
     private static final TypeReference<Map<String, Object>> OVERRIDE_TYPE = new TypeReference<>() {};
 
     public CharacterSheetService(GameEntityRepository entityRepo, WorldRepository worldRepo,
-                                  GameSystemRepository systemRepo, WorldAccess worldAccess,
+                                  WorldAccess worldAccess,
                                   ModifierService modifierService,
                                   DerivedValueService derivedValueService,
                                   LevelUpService levelUpService,
-                        ObjectMapper objectMapper) {
+                                  RulesLoader rulesLoader,
+                                  ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldRepo = worldRepo;
-        this.systemRepo = systemRepo;
         this.worldAccess = worldAccess;
         this.modifierService = modifierService;
         this.derivedValueService = derivedValueService;
         this.levelUpService = levelUpService;
+        this.rulesLoader = rulesLoader;
     }
 
     public SheetResponse getSheet(UUID entityId, UUID userId) {
@@ -58,7 +59,7 @@ public class CharacterSheetService {
 
         worldAccess.requireAccess(entity.getWorldId(), userId);
 
-        var rules = parseRules(world);
+        var rules = rulesLoader.loadRules(world);
         var attributeValues = parseAttributes(entity);
         // Wenn Entity keine Attribute hat, mit Defaults aus rulesJson initialisieren
         if (attributeValues.isEmpty()) {
@@ -157,17 +158,6 @@ public class CharacterSheetService {
         entityRepo.save(entity);
     }
 
-    private Map<String, Object> parseRules(World world) {
-        if (world.getGameSystemId() == null) return Map.of();
-        var system = systemRepo.findById(world.getGameSystemId()).orElse(null);
-        if (system == null || system.getRulesJson() == null || system.getRulesJson().isBlank()) return Map.of();
-        try {
-            return objectMapper.readValue(system.getRulesJson(), new TypeReference<>() {});
-        } catch (Exception e) {
-            return Map.of();
-        }
-    }
-
     private Map<String, Object> parseOverrides(GameEntity entity) {
         if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank()) return Map.of();
         try {
@@ -194,8 +184,7 @@ public class CharacterSheetService {
     }
 
     private GameSystem resolveGameSystem(World world) {
-        if (world.getGameSystemId() == null) return null;
-        return systemRepo.findById(world.getGameSystemId()).orElse(null);
+        return rulesLoader.loadSystem(world);
     }
 
     private List<SheetResponse.AbilityInfo> parseAbilities(Map<String, Object> rules) {

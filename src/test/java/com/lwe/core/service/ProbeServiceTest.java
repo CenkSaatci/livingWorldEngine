@@ -5,7 +5,6 @@ import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.GameSystem;
 import com.lwe.core.domain.World;
 import com.lwe.core.repository.GameEntityRepository;
-import com.lwe.core.repository.GameSystemRepository;
 import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.util.WorldAccess;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,10 +22,11 @@ class ProbeServiceTest {
 
     private final GameEntityRepository entityRepo = mock();
     private final WorldRepository worldRepo = mock();
-    private final GameSystemRepository systemRepo = mock();
     private final WorldAccess worldAccess = mock();
     private final ConditionEvaluator conditionEvaluator = mock();
     private final ModifierService modifierService = mock();
+    private final RulesLoader rulesLoader = mock();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private ProbeService service;
 
@@ -44,11 +44,16 @@ class ProbeServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ProbeService(entityRepo, worldRepo, systemRepo, worldAccess,
-            conditionEvaluator, modifierService, new ObjectMapper());
+        service = new ProbeService(entityRepo, worldRepo, worldAccess,
+            conditionEvaluator, modifierService, rulesLoader, objectMapper);
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
         lenient().when(conditionEvaluator.evaluate(any(), any())).thenReturn(java.util.List.of());
         lenient().when(modifierService.calculateModifiers(any(), any())).thenReturn(Map.of("staerke", 0.0));
+        lenient().when(rulesLoader.loadRules(any(World.class))).thenAnswer(inv -> {
+            var world = inv.getArgument(0, World.class);
+            if (world == null || world.getGameSystemId() == null) return Map.of();
+            return objectMapper.readValue(D20_RULES, Map.class);
+        });
     }
 
     private GameEntity entityWithAttrs(String attrs) {
@@ -74,7 +79,6 @@ class ProbeServiceTest {
 
         when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
-        when(systemRepo.findById(gsId)).thenReturn(Optional.of(gs));
 
         var result = service.executeProbe(entityId, userId, "Athletik", 15, false);
 
@@ -98,7 +102,6 @@ class ProbeServiceTest {
 
         when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
-        when(systemRepo.findById(gsId)).thenReturn(Optional.of(gs));
 
         var result = service.executeProbe(entityId, userId, "Athletik", 15, false);
 
@@ -123,7 +126,6 @@ class ProbeServiceTest {
 
         when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
-        when(systemRepo.findById(gsId)).thenReturn(Optional.of(gs));
 
         var result = service.executeProbe(entityId, userId, "Athletik", 15, false);
 

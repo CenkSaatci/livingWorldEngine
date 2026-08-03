@@ -1,12 +1,9 @@
 package com.lwe.core.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.GameSystem;
 import com.lwe.core.repository.GameEntityRepository;
-import com.lwe.core.repository.GameSystemRepository;
-import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.util.WorldAccess;
 import com.lwe.rules.DiceExpression;
 import org.springframework.stereotype.Service;
@@ -18,19 +15,16 @@ import java.util.UUID;
 public class RestService {
 
     private final GameEntityRepository entityRepo;
-    private final GameSystemRepository gameSystemRepo;
-    private final WorldRepository worldRepo;
     private final WorldAccess worldAccess;
+    private final RulesLoader rulesLoader;
     private final ObjectMapper mapper;
 
-    public RestService(GameEntityRepository entityRepo, GameSystemRepository gameSystemRepo,
-                       WorldRepository worldRepo, WorldAccess worldAccess,
-                        ObjectMapper mapper) {
+    public RestService(GameEntityRepository entityRepo, WorldAccess worldAccess,
+                       RulesLoader rulesLoader, ObjectMapper mapper) {
         this.mapper = mapper;
         this.entityRepo = entityRepo;
-        this.gameSystemRepo = gameSystemRepo;
-        this.worldRepo = worldRepo;
         this.worldAccess = worldAccess;
+        this.rulesLoader = rulesLoader;
     }
 
     @Transactional
@@ -98,9 +92,7 @@ public class RestService {
     }
 
     private RestConfig parseRestConfig(UUID worldId, String restType) {
-        var world = worldRepo.findById(worldId).orElse(null);
-        if (world == null || world.getGameSystemId() == null) return null;
-        var gs = gameSystemRepo.findById(world.getGameSystemId()).orElse(null);
+        var gs = rulesLoader.loadSystem(worldId);
         if (gs == null) return null;
         try {
             var tree = mapper.readTree(gs.getRulesJson());

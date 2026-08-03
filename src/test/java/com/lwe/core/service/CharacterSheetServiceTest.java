@@ -1,11 +1,10 @@
 package com.lwe.core.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.GameEntity;
-import com.lwe.core.domain.GameSystem;
 import com.lwe.core.domain.World;
 import com.lwe.core.repository.GameEntityRepository;
-import com.lwe.core.repository.GameSystemRepository;
 import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.util.WorldAccess;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,13 +25,14 @@ class CharacterSheetServiceTest {
 
     @Mock GameEntityRepository entityRepo;
     @Mock WorldRepository worldRepo;
-    @Mock GameSystemRepository systemRepo;
     @Mock WorldAccess worldAccess;
     @Mock LevelUpService levelUpService;
+    @Mock RulesLoader rulesLoader;
 
     private CharacterSheetService service;
     private ModifierService modifierService;
     private DerivedValueService derivedValueService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final UUID entityId = UUID.randomUUID();
     private final UUID userId = UUID.randomUUID();
@@ -43,27 +43,39 @@ class CharacterSheetServiceTest {
     void setUp() {
         modifierService = new ModifierService();
         derivedValueService = new DerivedValueService();
-        service = new CharacterSheetService(entityRepo, worldRepo, systemRepo, worldAccess,
-            modifierService, derivedValueService, levelUpService, new ObjectMapper());
+        service = new CharacterSheetService(entityRepo, worldRepo, worldAccess,
+            modifierService, derivedValueService, levelUpService, rulesLoader, objectMapper);
+        doNothing().when(worldAccess).requireAccess(any(), any());
+        lenient().when(levelUpService.getLevel(any(), any())).thenReturn(1);
     }
 
-    @Test
-    void getSheet_returnsBasicInfo() {
+    private void stubRules(String rulesJson) throws Exception {
+        when(rulesLoader.loadRules(any(World.class))).thenReturn(
+            objectMapper.readValue(rulesJson, new TypeReference<Map<String, Object>>() {}));
+    }
+
+    private void mockWorld(UUID gsId) {
+        var world = mock(World.class);
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+    }
+
+    private GameEntity mockEntity(String attrsJson, String skillsJson) {
         var entity = mock(GameEntity.class);
         when(entity.getId()).thenReturn(entityId);
         when(entity.getName()).thenReturn("Held");
         when(entity.getEntityType()).thenReturn("PC");
         when(entity.getWorldId()).thenReturn(worldId);
-        when(entity.getAttributesJson()).thenReturn("{\"staerke\":15,\"geschick\":12}");
+        when(entity.getAttributesJson()).thenReturn(attrsJson);
+        if (skillsJson != null) when(entity.getSkillsJson()).thenReturn(skillsJson);
         when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        return entity;
+    }
 
-        var world = mock(World.class);
-        when(world.getGameSystemId()).thenReturn(systemId);
-        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
-        doNothing().when(worldAccess).requireAccess(any(), any());
-
-        var system = mock(GameSystem.class);
-        when(system.getRulesJson()).thenReturn("""
+    @Test
+    void getSheet_returnsBasicInfo() throws Exception {
+        mockEntity("{\"staerke\":15,\"geschick\":12}", null);
+        mockWorld(systemId);
+        stubRules("""
             {
                 "attributes": [{"name":"staerke","type":"INT","min":3,"max":20,"default":10}],
                 "derived_values": [{"name":"hp","formula":"10+@{staerke}"}],
@@ -71,82 +83,50 @@ class CharacterSheetServiceTest {
                 "conditionals": [{"name":"Stark","attribute":"staerke","operator":"gt","value":14,"bonus":"+2","target":"schaden"}]
             }
             """);
-        when(systemRepo.findById(systemId)).thenReturn(Optional.of(system));
 
         var sheet = service.getSheet(entityId, userId);
 
         assertEquals("Held", sheet.entity().name());
         assertEquals("PC", sheet.entity().entityType());
 
-        // Attribute
         var staerke = sheet.attributes().stream().filter(a -> a.name().equals("staerke")).findFirst().orElseThrow();
         assertEquals(15, staerke.value());
-        assertEquals(0.0, staerke.modifier(), 0.01); // kein modifierFormula
+        assertEquals(0.0, staerke.modifier(), 0.01);
 
-        // Derived Values
         var hp = sheet.derivedValues().stream().filter(d -> d.name().equals("hp")).findFirst().orElseThrow();
         assertEquals(25.0, hp.value(), 0.01);
 
-        // Skills
         var athletik = sheet.skills().stream().filter(s -> s.name().equals("Athletik")).findFirst().orElseThrow();
-        assertEquals(2, athletik.total()); // bonus 2 + mod 0
+        assertEquals(2, athletik.total());
 
-        // Conditionals
         var stark = sheet.conditionals().stream().filter(c -> c.name().equals("Stark")).findFirst().orElseThrow();
         assertTrue(stark.active());
     }
 
     @Test
-    void getSheet_includesPerCharacterSkills() {
-        var entity = mock(GameEntity.class);
-        when(entity.getId()).thenReturn(entityId);
-        when(entity.getName()).thenReturn("Held");
-        when(entity.getEntityType()).thenReturn("PC");
-        when(entity.getWorldId()).thenReturn(worldId);
-        when(entity.getAttributesJson()).thenReturn("{\"staerke\":15,\"geschick\":12}");
-        when(entity.getSkillsJson()).thenReturn("{\"Athletik\":5}");
-        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
-
-        var world = mock(World.class);
-        when(world.getGameSystemId()).thenReturn(systemId);
-        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
-        doNothing().when(worldAccess).requireAccess(any(), any());
-
-        var system = mock(GameSystem.class);
-        when(system.getRulesJson()).thenReturn("""
+    void getSheet_includesPerCharacterSkills() throws Exception {
+        mockEntity("{\"staerke\":15,\"geschick\":12}", "{\"Athletik\":5}");
+        mockWorld(systemId);
+        stubRules("""
             {
                 "attributes": [{"name":"staerke","type":"INT","min":3,"max":20,"default":10}],
                 "skills": [{"name":"Athletik","attributes":["staerke"],"bonus":2}],
                 "dice_mechanics":{"probe":"1d20+mod"}
             }
             """);
-        when(systemRepo.findById(systemId)).thenReturn(Optional.of(system));
 
         var sheet = service.getSheet(entityId, userId);
 
         var athletik = sheet.skills().stream().filter(s -> s.name().equals("Athletik")).findFirst().orElseThrow();
         assertThat(athletik.perCharacterValue()).isEqualTo(5);
-        // total = perCharacter (5) + attrMod (0) = 5
         assertThat(athletik.total()).isEqualTo(5);
     }
 
     @Test
-    void getSheet_includesAbilities() {
-        var entity = mock(GameEntity.class);
-        when(entity.getId()).thenReturn(entityId);
-        when(entity.getName()).thenReturn("Held");
-        when(entity.getEntityType()).thenReturn("PC");
-        when(entity.getWorldId()).thenReturn(worldId);
-        when(entity.getAttributesJson()).thenReturn("{}");
-        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
-
-        var world = mock(World.class);
-        when(world.getGameSystemId()).thenReturn(systemId);
-        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
-        doNothing().when(worldAccess).requireAccess(any(), any());
-
-        var system = mock(GameSystem.class);
-        when(system.getRulesJson()).thenReturn("""
+    void getSheet_includesAbilities() throws Exception {
+        mockEntity("{}", null);
+        mockWorld(systemId);
+        stubRules("""
             {
                 "attributes": [{"name":"staerke","type":"INT","min":3,"max":20,"default":10}],
                 "abilities": [
@@ -157,12 +137,10 @@ class CharacterSheetServiceTest {
                 "dice_mechanics":{"probe":"1d20+mod"}
             }
             """);
-        when(systemRepo.findById(systemId)).thenReturn(Optional.of(system));
 
         var sheet = service.getSheet(entityId, userId);
 
         assertThat(sheet.abilities()).hasSize(3);
-
         var active = sheet.abilities().stream().filter(a -> a.type().equals("active")).toList();
         assertThat(active).hasSize(2);
         assertThat(active.get(0).name()).isEqualTo("Angriff");
@@ -176,22 +154,12 @@ class CharacterSheetServiceTest {
 
     @Test
     void getSheet_handlesEmptyRulesJson() {
-        var entity = mock(GameEntity.class);
-        when(entity.getId()).thenReturn(entityId);
-        when(entity.getName()).thenReturn("Held");
-        when(entity.getEntityType()).thenReturn("PC");
-        when(entity.getWorldId()).thenReturn(worldId);
-        when(entity.getAttributesJson()).thenReturn("{\"staerke\":15}");
-        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
-
-        var world = mock(World.class);
-        when(world.getGameSystemId()).thenReturn(null);
-        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
-        doNothing().when(worldAccess).requireAccess(any(), any());
+        mockWorld(null);
+        mockEntity("{\"staerke\":15}", null);
+        when(rulesLoader.loadRules(any(World.class))).thenReturn(Map.of());
 
         var sheet = service.getSheet(entityId, userId);
         assertThat(sheet).isNotNull();
-        // Attributes from entity JSON are still shown (min/max default to 1/99)
         assertThat(sheet.attributes()).isNotEmpty();
         assertThat(sheet.skills()).isEmpty();
         assertThat(sheet.abilities()).isEmpty();
@@ -199,20 +167,9 @@ class CharacterSheetServiceTest {
 
     @Test
     void getSheet_handlesMissingGameSystem() {
-        var entity = mock(GameEntity.class);
-        when(entity.getId()).thenReturn(entityId);
-        when(entity.getName()).thenReturn("Held");
-        when(entity.getEntityType()).thenReturn("PC");
-        when(entity.getWorldId()).thenReturn(worldId);
-        when(entity.getAttributesJson()).thenReturn("{\"staerke\":15}");
-        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
-
-        var world = mock(World.class);
-        when(world.getGameSystemId()).thenReturn(systemId);
-        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
-        doNothing().when(worldAccess).requireAccess(any(), any());
-
-        when(systemRepo.findById(systemId)).thenReturn(Optional.empty());
+        mockWorld(systemId);
+        mockEntity("{\"staerke\":15}", null);
+        when(rulesLoader.loadRules(any(World.class))).thenReturn(Map.of());
 
         var sheet = service.getSheet(entityId, userId);
         assertThat(sheet).isNotNull();
@@ -220,25 +177,12 @@ class CharacterSheetServiceTest {
     }
 
     @Test
-    void getSheet_handlesMissingAbilitiesInRules() {
-        var entity = mock(GameEntity.class);
-        when(entity.getId()).thenReturn(entityId);
-        when(entity.getName()).thenReturn("Held");
-        when(entity.getEntityType()).thenReturn("PC");
-        when(entity.getWorldId()).thenReturn(worldId);
-        when(entity.getAttributesJson()).thenReturn("{\"staerke\":15}");
-        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
-
-        var world = mock(World.class);
-        when(world.getGameSystemId()).thenReturn(systemId);
-        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
-        doNothing().when(worldAccess).requireAccess(any(), any());
-
-        var system = mock(GameSystem.class);
-        when(system.getRulesJson()).thenReturn("""
+    void getSheet_handlesMissingAbilitiesInRules() throws Exception {
+        mockEntity("{\"staerke\":15}", null);
+        mockWorld(systemId);
+        stubRules("""
             {"version":1,"attributes":[{"name":"staerke","type":"INT","min":3,"max":20,"default":10}],"dice_mechanics":{"probe":"1d20+mod"}}
             """);
-        when(systemRepo.findById(systemId)).thenReturn(Optional.of(system));
 
         var sheet = service.getSheet(entityId, userId);
         assertThat(sheet.abilities()).isEmpty();

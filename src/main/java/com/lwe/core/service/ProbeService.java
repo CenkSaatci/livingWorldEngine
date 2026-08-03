@@ -28,23 +28,23 @@ public class ProbeService {
 
     private final GameEntityRepository entityRepo;
     private final WorldRepository worldRepo;
-    private final GameSystemRepository systemRepo;
     private final WorldAccess worldAccess;
     private final ConditionEvaluator conditionEvaluator;
     private final ModifierService modifierService;
+    private final RulesLoader rulesLoader;
     private final ObjectMapper objectMapper;
 
     public ProbeService(GameEntityRepository entityRepo, WorldRepository worldRepo,
-                        GameSystemRepository systemRepo, WorldAccess worldAccess,
+                        WorldAccess worldAccess,
                         ConditionEvaluator conditionEvaluator, ModifierService modifierService,
-                        ObjectMapper objectMapper) {
+                        RulesLoader rulesLoader, ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldRepo = worldRepo;
-        this.systemRepo = systemRepo;
         this.worldAccess = worldAccess;
         this.conditionEvaluator = conditionEvaluator;
         this.modifierService = modifierService;
+        this.rulesLoader = rulesLoader;
     }
 
     public ProbeResponse executeProbe(UUID entityId, UUID userId, String skillName,
@@ -55,7 +55,7 @@ public class ProbeService {
 
         var world = worldRepo.findById(entity.getWorldId())
             .orElseThrow(() -> new RuntimeException("WORLD_NOT_FOUND"));
-        var rules = parseRules(world);
+        var rules = rulesLoader.loadRules(world);
         var probeType = resolveProbeType(rules);
         var attributes = parseAttributes(entity);
         var allowed = attributes.keySet();
@@ -139,17 +139,6 @@ public class ProbeService {
         activeConditionals = conditionEvaluator.evaluate(conditionals, attributes);
 
         return new ProbeResponse(probeType, dice, modifierTotal, total, success, details, activeConditionals);
-    }
-
-    private Map<String, Object> parseRules(World world) {
-        if (world.getGameSystemId() == null) return Map.of();
-        var system = systemRepo.findById(world.getGameSystemId()).orElse(null);
-        if (system == null || system.getRulesJson() == null || system.getRulesJson().isBlank()) return Map.of();
-        try {
-            return objectMapper.readValue(system.getRulesJson(), new TypeReference<>() {});
-        } catch (Exception e) {
-            return Map.of();
-        }
     }
 
     private String resolveProbeType(Map<String, Object> rules) {
