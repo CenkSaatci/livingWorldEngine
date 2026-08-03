@@ -1978,3 +1978,163 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD, i18n
 
 ---
+
+## Phase 24: Datenmodell-Umbau — 3-Ebenen-Modell (System ∥ Welt → Kampagne)
+
+> Siehe [ADR-010](ADR/010-three-tier-model-system-world-campaign.md). Systeme und Welten werden entkoppelt; Items/Abilities wandern zum System; neue Kampagne verbindet Welt × System.
+
+### P24-T01: `items.world_id` → `game_system_id`
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:**
+  - Migration V090: `items` Spalte `world_id` → `game_system_id REFERENCES game_systems(id) ON DELETE CASCADE`
+  - `GameItem.java`: Feld `worldId` → `gameSystemId`
+  - `InventoryService`: Zugriffe + Repos anpassen
+- **Akzeptanzkriterien:**
+  - Migration läuft auf bestehender DB
+  - Items sind System-zugeordnet
+  - Alle Tests grün
+- **Qualitäts-Check:** TDD, Migration-Test
+
+### P24-T02: `abilities.world_id` → `game_system_id`
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:**
+  - Migration V091: `abilities` Spalte `world_id` → `game_system_id`
+  - `Ability.java`: Feld anpassen
+  - `AbilityService`: Zugriffe anpassen
+- **Akzeptanzkriterien:**
+  - Migration läuft
+  - Abilities sind System-zugeordnet
+  - Tests grün
+- **Qualitäts-Check:** TDD
+
+### P24-T03: `campaigns`-Tabelle + Domain
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:**
+  - Migration V092: `campaigns(id, world_id FK, game_system_id FK, name, settings_json, state_json, created_at, updated_at)`
+  - `Campaign.java` Domain + `CampaignRepository`
+  - Indizes auf world_id + game_system_id
+- **Akzeptanzkriterien:**
+  - Tabelle + Domain existieren
+  - Migration-Test grün
+- **Qualitäts-Check:** TDD
+
+### P24-T04: `worlds.game_system_id` entfernen
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:**
+  - Migration V093: Spalte `game_system_id` aus `worlds` entfernen
+  - `World.java`: Feld + Getter/Setter entfernen
+  - `WorldController`/`WorldService`: Create/Update ohne gameSystemId
+- **Akzeptanzkriterien:**
+  - Welten systemunabhängig anlegbar
+  - Bestehende API-Aufrufer angepasst
+- **Qualitäts-Check:** TDD
+
+### P24-T05: Campaign-CRUD-API
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:**
+  - `CampaignController` + `CampaignService`:
+    - `POST /api/v1/campaigns` (worldId, gameSystemId, name)
+    - `GET /api/v1/campaigns` (eigene Kampagnen)
+    - `GET/PATCH/DELETE /api/v1/campaigns/{id}`
+  - Access-Check: nur Owner/World-Member
+- **Akzeptanzkriterien:**
+  - CRUD funktioniert mit korrekten Fehlercodes
+  - Nur Berechtigte sehen Kampagnen
+- **Qualitäts-Check:** TDD, Security
+
+---
+
+## Phase 25: Kampagnen-Integration (Backend)
+
+### P25-T01: RulesLoader auf Kampagnen-Kontext
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** `RulesLoader` bekommt `loadRulesByCampaign(campaignId)`:
+  - Kampagne → gameSystemId → rulesJson
+  - Alte `loadRules(World)`-Überladung entfernen
+- **Akzeptanzkriterien:** Kampagnen-Kontext liefert korrektes System; Tests grün
+- **Qualitäts-Check:** TDD
+
+### P25-T02: CombatService + LevelUpService auf Kampagne
+- **Status:** 🔜
+- **Aufwand:** 1,0 Tage
+- **Beschreibung:** Alle `world.getGameSystemId()`-Stellen (CombatService 4×, LevelUpService 2×) auf Kampagnen-Kontext umstellen:
+  - Combat startet mit `campaignId` statt world-basiertem System
+  - `StartRequest` erweitert
+- **Akzeptanzkriterien:** Kampf nutzt System der Kampagne; Tests grün
+- **Qualitäts-Check:** TDD, Integrationstests
+
+### P25-T03: CharacterSheet + ProbeService auf Kampagne
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** `CharacterSheetService`/`ProbeService` laden System über Kampagne statt Welt:
+  - Sheet-Request bekommt campaignId (oder Entity → Kampagne)
+- **Akzeptanzkriterien:** Sheet/Proben nutzen Kampagnen-System; Tests grün
+- **Qualitäts-Check:** TDD
+
+### P25-T04: Session an Kampagne binden
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:**
+  - Migration V094: `sessions.campaign_id` (statt world-only)
+  - `SessionManager` nutzt Kampagnen-Kontext
+- **Akzeptanzkriterien:** Session gehört zur Kampagne; Tests grün
+- **Qualitäts-Check:** TDD
+
+### P25-T05: Item-CRUD am System
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:**
+  - `GET/POST /api/v1/game-systems/{id}/items` (Items eines Systems listen/anlegen)
+  - `GET/PUT/DELETE /api/v1/items/{id}`
+  - Item-Erstellung mit type/weight/value/bonusesJson/metadataJson
+- **Akzeptanzkriterien:** Items systemweit verwaltbar; Tests grün
+- **Qualitäts-Check:** TDD, Security
+
+---
+
+## Phase 26: Frontend 3-Ebenen
+
+### P26-T01: Kampagnen-CRUD-UI
+- **Status:** 🔜
+- **Aufwand:** 1,5 Tage
+- **Beschreibung:**
+  - Dashboard: Kampagnen-Sektion (Liste + Erstellen-Modal)
+  - Erstellen: Welt wählen + System wählen + Name
+  - Kampagnen-Detail: Einstieg in Welt mit System-Kontext
+- **Akzeptanzkriterien:** Kampagne anlegen/öffnen; Welt+System-Kombination korrekt
+- **Qualitäts-Check:** TDD, i18n, UI-Tests
+
+### P26-T02: Welt-Erstellung ohne System
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** Welt-Wizard: `game_system_id`-Auswahl entfernen (Welten sind systemunabhängig)
+- **Akzeptanzkriterien:** Welt ohne System anlegbar; bestehende Welten editierbar
+- **Qualitäts-Check:** TDD, i18n
+
+### P26-T03: Combat/Session/ActionBar auf Kampagnen-Kontext
+- **Status:** 🔜
+- **Aufwand:** 1,0 Tage
+- **Beschreibung:**
+  - Combat starten aus Kampagne (campaignId statt world→System)
+  - ActionBar lädt action_types über Kampagnen-System
+  - Session-Start über Kampagne
+- **Akzeptanzkriterien:** Kampf/System-Einstellungen funktionieren im Kampagnen-Kontext
+- **Qualitäts-Check:** TDD, UI-Tests
+
+---
+
+## Gesamtstatistik (aktualisiert)
+
+| Phase | Tasks | Sum Aufwand |
+|---|---|---|
+| 24 (Datenmodell 3-Ebenen) | 5 | ~2,5 Tage |
+| 25 (Kampagnen-Integration) | 5 | ~3,0 Tage |
+| 26 (Frontend 3-Ebenen) | 3 | ~3,0 Tage |
+
+---
