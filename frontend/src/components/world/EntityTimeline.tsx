@@ -4,12 +4,12 @@ import { useApiGet } from '../../hooks/useApiGet';
 
 interface EntityEvent {
   id: number;
-  entity_type: string;
+  entityType: string;
   event_type: string;
   title: string;
   description: string;
   importance: number;
-  created_at: string;
+  createdAt: string;
 }
 
 interface Props {
@@ -73,7 +73,7 @@ export function EntityTimeline({ entityType, entityId }: Props) {
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-medium text-text-primary truncate">{ev.title}</p>
                 <span className="shrink-0 text-[10px] text-text-secondary">
-                  {formatTime(ev.created_at)}
+                  {formatTime(ev.createdAt)}
                 </span>
               </div>
               {ev.description && (

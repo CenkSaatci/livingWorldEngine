@@ -44,7 +44,7 @@ export function StatusBar() {
 
   const isDm = user?.role === 'ADMIN';
 
-  const time = world?.current_game_time ?? null;
+  const time = world?.currentGameTime ?? null;
   const phase = dayPhase(time);
   const formattedTime = formatGameTime(time);
 
@@ -94,7 +94,7 @@ export function StatusBar() {
           <span className="flex items-center gap-1" aria-live="polite">
             ⚔️ Turn{' '}
             {combatParticipants.findIndex(
-              (p) => p.entity_id === combatSession.current_turn_entity_id,
+              (p) => p.entityId === combatSession.currentTurnEntityId,
             ) + 1}
             /{combatParticipants.length} (Rd. {combatSession.round})
           </span>

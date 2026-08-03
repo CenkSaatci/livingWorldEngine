@@ -30,7 +30,7 @@ import { useApiGet } from '../hooks/useApiGet';
 
 const defaultData = {
   items: [],
-  computed_bonuses: {},
+  computedBonuses: {},
 };
 
 beforeEach(() => {
@@ -63,7 +63,7 @@ describe('InventoryPage', () => {
     (useApiGet as any).mockReturnValue({
       data: {
         items: [{ itemId: 'i1', name: 'Schwert', type: 'WEAPON', quantity: 1, equipped: true, slot: 'weapon', weight: 2 }],
-        computed_bonuses: { staerke: 2 },
+        computedBonuses: { staerke: 2 },
       },
       loading: false,
       refetch: vi.fn(),

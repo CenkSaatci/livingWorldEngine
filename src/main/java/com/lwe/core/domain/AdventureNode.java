@@ -43,7 +43,9 @@ public class AdventureNode {
     public UUID getId() { return id; }
     public UUID getAdventureId() { return adventureId; }
     public String getText() { return text; }
+    public void setText(String v) { this.text = v; }
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String v) { this.imageUrl = v; }
     public boolean isEnd() { return isEnd; }
+    public void setEnd(boolean v) { this.isEnd = v; }
 }

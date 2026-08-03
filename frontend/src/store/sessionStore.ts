@@ -2,11 +2,11 @@ import { create } from 'zustand';
 
 export interface GameSession {
   id: string;
-  world_id: string;
+  worldId: string;
   status: string;
-  started_at: string;
-  ended_at: string;
-  created_at: string;
+  startedAt: string;
+  endedAt: string;
+  createdAt: string;
 }
 
 interface SessionState {

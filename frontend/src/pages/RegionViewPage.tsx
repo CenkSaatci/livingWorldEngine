@@ -21,11 +21,11 @@ const CLIMATES = [
 
 interface RegionData {
   id: string;
-  world_id: string;
+  worldId: string;
   name: string;
   description: string;
   history: string;
-  danger_level: number;
+  dangerLevel: number;
   climate: string;
   population: number;
   resources: string | null;
@@ -69,7 +69,7 @@ export default function RegionViewPage() {
     setEditName(region.name);
     setEditDescription(region.description);
     setEditClimate(region.climate);
-    setEditDangerLevel(region.danger_level);
+    setEditDangerLevel(region.dangerLevel);
     setEditPopulation(region.population);
     setEditResources(region.resources ?? '');
     setEditFactionsJson(region.factions ?? '');
@@ -80,7 +80,7 @@ export default function RegionViewPage() {
     if (!region || !editName.trim()) return;
     setSaving(true);
     try {
-      await apiClient.patch(`/worlds/${region.world_id}/regions/${region.id}`, {
+      await apiClient.patch(`/worlds/${region.worldId}/regions/${region.id}`, {
         name: editName.trim(),
         description: editDescription || null,
         climate: editClimate,
@@ -101,7 +101,7 @@ export default function RegionViewPage() {
   const handleDelete = async () => {
     if (!region) return;
     try {
-      await apiClient.delete(`/worlds/${region.world_id}/regions/${region.id}`);
+      await apiClient.delete(`/worlds/${region.worldId}/regions/${region.id}`);
       navigate(-1);
     } catch {
       /* */
@@ -120,9 +120,9 @@ export default function RegionViewPage() {
           <Globe size={20} className="text-accent" /> {region.name}
         </h1>
         <span
-          className={`text-xs px-2 py-0.5 rounded ${region.danger_level > 5 ? 'bg-danger/20 text-danger' : 'bg-bg-elevated text-text-secondary'}`}
+          className={`text-xs px-2 py-0.5 rounded ${region.dangerLevel > 5 ? 'bg-danger/20 text-danger' : 'bg-bg-elevated text-text-secondary'}`}
         >
-          ⚔️ {region.danger_level}/10
+          ⚔️ {region.dangerLevel}/10
         </span>
         <span className="text-xs text-text-secondary capitalize">{region.climate}</span>
         <button onClick={openEdit} className="text-xs text-accent hover:text-accent/60 ml-auto">
@@ -164,7 +164,7 @@ export default function RegionViewPage() {
                 {locations.map((loc) => (
                   <button
                     key={loc.id}
-                    onClick={() => navigate(`/worlds/${region.world_id}/locations/${loc.id}`)}
+                    onClick={() => navigate(`/worlds/${region.worldId}/locations/${loc.id}`)}
                     className="rounded border border-bg-elevated bg-bg-primary/50 px-4 py-3 text-left hover:border-accent/50"
                   >
                     <p className="text-sm font-medium text-text-primary">{loc.name}</p>

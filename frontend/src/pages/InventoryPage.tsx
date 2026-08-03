@@ -22,11 +22,11 @@ export default function InventoryPage() {
 
   const { data, loading, refetch } = useApiGet<{
     items: InventoryEntry[];
-    computed_bonuses: Record<string, number>;
+    computedBonuses: Record<string, number>;
   }>(`/entities/${id}/inventory`, [id]);
 
   const items = data?.items ?? [];
-  const bonuses = data?.computed_bonuses ?? {};
+  const bonuses = data?.computedBonuses ?? {};
 
   const handleEquip = async (itemId: string, slot: string) => {
     if (!id) return;

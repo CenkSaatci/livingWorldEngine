@@ -225,8 +225,8 @@ export default function DashboardPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {worlds.map((w) => {
-              const dateStr = w.created_at
-                ? new Date(w.created_at).toLocaleDateString(currentLocale)
+              const dateStr = w.createdAt
+                ? new Date(w.createdAt).toLocaleDateString(currentLocale)
                 : '';
               return (
               <div

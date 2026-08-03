@@ -18,10 +18,10 @@ export function InitiativeList() {
       </div>
 
       {participants.map((p, idx) => {
-        const isActive = p.entity_id === session.current_turn_entity_id;
+        const isActive = p.entityId === session.currentTurnEntityId;
         return (
           <div
-            key={p.entity_id}
+            key={p.entityId}
             className={`flex items-center gap-2 rounded px-3 py-1.5 text-xs ${
               isActive
                 ? 'bg-accent/15 text-accent font-medium ring-1 ring-accent/40'
@@ -29,17 +29,17 @@ export function InitiativeList() {
             }`}
           >
             <span className="w-5 text-center text-[10px] text-text-secondary">{idx + 1}.</span>
-            <span className="flex-1 truncate">{p.name ?? p.entity_id.slice(0, 12)}</span>
+            <span className="flex-1 truncate">{p.name ?? p.entityId.slice(0, 12)}</span>
             <span className="text-text-secondary">{p.initiative}</span>
             <span
-              className={`text-[10px] ${(p.hp_current ?? 10) > 0 ? 'text-success' : 'text-danger'}`}
+              className={`text-[10px] ${(p.hpCurrent ?? 10) > 0 ? 'text-success' : 'text-danger'}`}
             >
-              {(p.hp_current ?? 10) > 0 ? `❤️ ${p.hp_current}/${p.hp_max ?? '?'}` : '💀 Defeated'}
+              {(p.hpCurrent ?? 10) > 0 ? `❤️ ${p.hpCurrent}/${p.hpMax ?? '?'}` : '💀 Defeated'}
             </span>
             <span
-              className={`text-[10px] ${p.ap_current > 0 ? 'text-accent' : 'text-text-secondary'}`}
+              className={`text-[10px] ${p.apCurrent > 0 ? 'text-accent' : 'text-text-secondary'}`}
             >
-              AP {p.ap_current}/{p.ap_max}
+              AP {p.apCurrent}/{p.apMax}
             </span>
           </div>
         );

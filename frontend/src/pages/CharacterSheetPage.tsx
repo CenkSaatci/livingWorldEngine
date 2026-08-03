@@ -31,19 +31,19 @@ export default function CharacterSheetPage() {
     try {
       const text = await file.text();
       const data = JSON.parse(text);
-      const worldId = data.world_id;
-      if (!worldId) { toast.error('No world_id in import file'); return; }
+      const worldId = data.worldId;
+      if (!worldId) { toast.error('No worldId in import file'); return; }
       const res = await apiClient.post(`/worlds/${worldId}/entities/import`, {
-        entityType: data.entity_type ?? 'PC',
+        entityType: data.entityType ?? 'PC',
         name: data.name ?? 'Imported',
-        attributesJson: data.attributes_json,
-        inventoryJson: data.inventory_json ? JSON.stringify(data.inventory_json) : undefined,
-        positionJson: data.position_json ? JSON.stringify(data.position_json) : undefined,
-        metadataJson: data.metadata_json ? JSON.stringify(data.metadata_json) : undefined,
+        attributesJson: data.attributesJson,
+        inventoryJson: data.inventoryJson,
+        positionJson: data.positionJson,
+        metadataJson: data.metadataJson,
         backstory: data.backstory,
         age: data.age,
-        experienceLevel: data.experience_level,
-        socialStanding: data.social_standing,
+        experienceLevel: data.experienceLevel,
+        socialStanding: data.socialStanding,
       });
       navigate(`/characters/${res.data.id}`);
     } catch { toast.error('Import failed'); }

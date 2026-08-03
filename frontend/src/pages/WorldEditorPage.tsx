@@ -22,9 +22,9 @@ interface GameSystem {
 
 interface Member {
   id: string;
-  user_id: string;
+  userId: string;
   role: string;
-  joined_at: string;
+  joinedAt: string;
 }
 
 interface WorldSettings {
@@ -494,7 +494,7 @@ export default function WorldEditorPage() {
                   className="flex items-center justify-between rounded bg-bg-primary/50 px-3 py-2 text-sm"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-text-primary">{m.user_id.slice(0, 8)}…</span>
+                    <span className="text-text-primary">{m.userId.slice(0, 8)}…</span>
                     <span className="rounded bg-bg-elevated px-2 py-0.5 text-xs text-text-secondary">
                       {m.role}
                     </span>

@@ -20,7 +20,7 @@ interface Region {
   id: string;
   name: string;
   climate: string;
-  danger_level: number;
+  dangerLevel: number;
 }
 
 interface Location {
@@ -285,7 +285,7 @@ export function WorldMapView({
             const w = weather[r.id];
             return (
               <div key={r.id} className="flex items-center gap-2 py-0.5">
-                <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${r.danger_level > 5 ? 'bg-danger' : 'bg-success'}`} />
+                <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${r.dangerLevel > 5 ? 'bg-danger' : 'bg-success'}`} />
                 <span className="truncate">{r.name}</span>
                 {w && (
                   <span className="flex items-center gap-1 shrink-0" title={w.description}>

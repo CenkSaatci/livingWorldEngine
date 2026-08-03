@@ -43,9 +43,9 @@ interface FactionData {
 
 interface FactionRelation {
   id: string;
-  faction_a_id: string;
-  faction_b_id: string;
-  relation_status: string;
+  factionAId: string;
+  factionBId: string;
+  relationStatus: string;
 }
 
 const RELATION_ICONS: Record<string, JSX.Element> = {
@@ -312,28 +312,28 @@ export default function NpcViewPage() {
                   <p className="text-xs font-semibold text-text-secondary mb-1">Diplomacy</p>
                   {relations.map((rel) => {
                     const otherId =
-                      rel.faction_a_id === faction.id ? rel.faction_b_id : rel.faction_a_id;
+                      rel.factionAId === faction.id ? rel.factionBId : rel.factionAId;
                     return (
                       <div
                         key={rel.id}
                         className="flex items-center gap-2 text-xs text-text-secondary py-0.5"
                       >
-                        {RELATION_ICONS[rel.relation_status] ?? <Minus size={14} />}
+                        {RELATION_ICONS[rel.relationStatus] ?? <Minus size={14} />}
                         <span>{otherId.slice(0, 8)}…</span>
                         <span
                           className={
-                            rel.relation_status === 'WAR'
+                            rel.relationStatus === 'WAR'
                               ? 'text-danger'
-                              : rel.relation_status === 'ALLIANCE'
+                              : rel.relationStatus === 'ALLIANCE'
                                 ? 'text-success'
-                                : rel.relation_status === 'FRIENDLY'
+                                : rel.relationStatus === 'FRIENDLY'
                                   ? 'text-accent'
-                                  : rel.relation_status === 'UNFRIENDLY'
+                                  : rel.relationStatus === 'UNFRIENDLY'
                                     ? 'text-yellow-500'
                                     : ''
                           }
                         >
-                          {rel.relation_status}
+                          {rel.relationStatus}
                         </span>
                       </div>
                     );

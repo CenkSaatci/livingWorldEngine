@@ -10,9 +10,9 @@ import { useAuthStore } from '../../store/authStore';
 const mockWorld = {
   id: 'w1',
   name: 'Testwelt',
-  game_system_id: 'gs1',
-  current_game_time: '2026-07-19T14:30:00Z',
-  created_at: '2026-01-01T00:00:00Z',
+  gameSystemId: 'gs1',
+  currentGameTime: '2026-07-19T14:30:00Z',
+  createdAt: '2026-01-01T00:00:00Z',
 };
 
 const mockUser = { id: 'u1', email: 'dm@test.com', username: 'testdm', role: 'ADMIN' as const, locale: 'de' };
@@ -53,8 +53,8 @@ describe('StatusBar', () => {
     useWorldStore.setState({ currentWorld: mockWorld });
     useSessionStore.setState({
       activeSession: {
-        id: 's1', world_id: 'w1', started_at: '2026-07-19T14:00:00Z',
-        ended_at: null as unknown as string, status: 'ACTIVE' as const, created_at: '2026-07-19T14:00:00Z',
+        id: 's1', worldId: 'w1', startedAt: '2026-07-19T14:00:00Z',
+        endedAt: null as unknown as string, status: 'ACTIVE' as const, createdAt: '2026-07-19T14:00:00Z',
       },
     });
     const { container } = renderStatusBar();
@@ -64,10 +64,10 @@ describe('StatusBar', () => {
   it('shows combat turn info when combat is active', () => {
     useWorldStore.setState({ currentWorld: mockWorld });
     useCombatStore.setState({
-      session: { id: 'c1', world_id: 'w1', status: 'ACTIVE', round: 3, current_turn_entity_id: 'e2' } as any,
+      session: { id: 'c1', worldId: 'w1', status: 'ACTIVE', round: 3, currentTurnEntityId: 'e2' } as any,
       participants: [
-        { entity_id: 'e1', name: 'Hero', initiative: 20, entity_type: 'PC', is_active: true, hp_current: 10, hp_max: 10 } as any,
-        { entity_id: 'e2', name: 'Goblin', initiative: 15, entity_type: 'NPC', is_active: true, hp_current: 5, hp_max: 5 } as any,
+        { entityId: 'e1', name: 'Hero', initiative: 20, entityType: 'PC', is_active: true, hpCurrent: 10, hpMax: 10 } as any,
+        { entityId: 'e2', name: 'Goblin', initiative: 15, entityType: 'NPC', is_active: true, hpCurrent: 5, hpMax: 5 } as any,
       ],
     });
     const { container } = renderStatusBar();

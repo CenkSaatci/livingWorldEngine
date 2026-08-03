@@ -1,8 +1,10 @@
 package com.lwe.api;
 
+import com.lwe.api.dto.EntityResponse;
 import com.lwe.api.dto.SheetResponse;
 import com.lwe.core.domain.User;
 import com.lwe.core.service.CharacterSheetService;
+import com.lwe.core.service.EntityService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -15,9 +17,19 @@ import java.util.UUID;
 public class CharacterSheetController {
 
     private final CharacterSheetService sheetService;
+    private final EntityService entityService;
 
-    public CharacterSheetController(CharacterSheetService sheetService) {
+    public CharacterSheetController(CharacterSheetService sheetService,
+                                    EntityService entityService) {
         this.sheetService = sheetService;
+        this.entityService = entityService;
+    }
+
+    @GetMapping("/{entityId}")
+    public ResponseEntity<EntityResponse> getEntity(@PathVariable UUID entityId,
+                                                    @AuthenticationPrincipal User user) {
+        var entity = entityService.getById(entityId, user.getId());
+        return ResponseEntity.ok(EntityResponse.from(entity));
     }
 
     @GetMapping("/{entityId}/sheet")

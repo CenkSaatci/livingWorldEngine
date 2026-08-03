@@ -4,8 +4,8 @@ import { useApiGet } from '../../hooks/useApiGet';
 interface NpcQuickInfoData {
   id: string;
   name: string;
-  entity_type: string;
-  metadata_json: string;
+  entityType: string;
+  metadataJson: string;
 }
 
 interface NpcMeta {
@@ -30,7 +30,7 @@ export function NpcQuickInfo({ npcId, worldId, onClose }: Props) {
 
   let meta: NpcMeta = {};
   try {
-    meta = JSON.parse(npc.metadata_json) as NpcMeta;
+    meta = JSON.parse(npc.metadataJson) as NpcMeta;
   } catch {
     /* */
   }

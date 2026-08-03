@@ -24,7 +24,7 @@ import { useLazyApiGet } from '../../hooks/useLazyApiGet';
 interface Region {
   id: string;
   name: string;
-  danger_level: number;
+  dangerLevel: number;
   climate: string;
 }
 
@@ -153,9 +153,9 @@ export function RegionTree({ worldId, onSelectRegion, onSelectLocation }: Props)
                 </span>
               )}
               <span
-                className={`text-xs ${r.danger_level > 5 ? 'text-danger' : 'text-text-secondary'}`}
+                className={`text-xs ${r.dangerLevel > 5 ? 'text-danger' : 'text-text-secondary'}`}
               >
-                ⚔️ {r.danger_level}
+                ⚔️ {r.dangerLevel}
               </span>
             </button>
           </div>

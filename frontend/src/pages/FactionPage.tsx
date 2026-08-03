@@ -129,8 +129,8 @@ export default function FactionPage() {
     const map = new Map<string, string>();
     for (const [, rels] of Object.entries(relations)) {
       for (const r of rels) {
-        map.set(`${r.faction_a_id}:${r.faction_b_id}`, r.relation_status);
-        map.set(`${r.faction_b_id}:${r.faction_a_id}`, r.relation_status);
+        map.set(`${r.factionAId}:${r.factionBId}`, r.relationStatus);
+        map.set(`${r.factionBId}:${r.factionAId}`, r.relationStatus);
       }
     }
     return map;
@@ -206,7 +206,7 @@ export default function FactionPage() {
                     style={{ backgroundColor: f.color }}
                   />
                   <span className="font-medium text-text-primary">{f.name}</span>
-                  {f.leader_entity_id && (
+                  {f.leaderEntityId && (
                     <span className="text-xs text-text-secondary">Has leader</span>
                   )}
                 </button>

@@ -61,15 +61,18 @@ public class LocationController {
     }
 
     @PatchMapping("/{locationId}")
-    public ResponseEntity<LocationResponse> updatePosition(@PathVariable UUID regionId,
-                                                            @PathVariable UUID locationId,
-                                                            @RequestBody Map<String, String> body,
-                                                            @AuthenticationPrincipal User user) {
-        var positionJson = body.get("positionJson");
-        if (positionJson != null) {
-            service.updatePosition(locationId, user.getId(), positionJson);
-        }
-        var loc = service.getById(locationId, user.getId());
+    public ResponseEntity<LocationResponse> update(@PathVariable UUID regionId,
+                                                   @PathVariable UUID locationId,
+                                                   @RequestBody Map<String, String> body,
+                                                   @AuthenticationPrincipal User user) {
+        var loc = service.update(locationId, user.getId(),
+            body.get("type"), body.get("name"), body.get("description"),
+            body.get("history"),
+            body.containsKey("population") ? Integer.parseInt(body.get("population")) : null,
+            body.containsKey("wealth") ? Integer.parseInt(body.get("wealth")) : null,
+            body.get("services"), body.get("factions"),
+            body.containsKey("isCapital") ? Boolean.parseBoolean(body.get("isCapital")) : null,
+            body.get("positionJson"));
         return ResponseEntity.ok(LocationResponse.from(loc));
     }
 

@@ -2,24 +2,24 @@ import { create } from 'zustand';
 
 export interface CombatParticipant {
   id: string;
-  entity_id: string;
+  entityId: string;
   name: string;
   initiative: number;
-  ap_current: number;
-  ap_max: number;
-  hp_current: number;
-  hp_max: number;
+  apCurrent: number;
+  apMax: number;
+  hpCurrent: number;
+  hpMax: number;
   side: string;
 }
 
 export interface CombatSession {
   id: string;
-  world_id: string;
+  worldId: string;
   status: string;
   round: number;
-  current_turn_entity_id: string;
-  map_id?: string;
-  created_at: string;
+  currentTurnEntityId: string;
+  mapId?: string;
+  createdAt: string;
 }
 
 interface CombatState {
@@ -45,20 +45,20 @@ export const useCombatStore = create<CombatState>((set) => ({
   updateParticipantAp: (entityId, apCurrent) =>
     set((state) => ({
       participants: state.participants.map((p) =>
-        p.entity_id === entityId ? { ...p, ap_current: apCurrent } : p,
+        p.entityId === entityId ? { ...p, apCurrent } : p,
       ),
     })),
 
   handleTurnChanged: (currentTurn, round) =>
     set((state) => ({
       session: state.session
-        ? { ...state.session, current_turn_entity_id: currentTurn, round }
+        ? { ...state.session, currentTurnEntityId: currentTurn, round }
         : null,
     })),
 
   setCurrentTurn: (entityId) =>
     set((state) => ({
-      session: state.session ? { ...state.session, current_turn_entity_id: entityId } : null,
+      session: state.session ? { ...state.session, currentTurnEntityId: entityId } : null,
     })),
 
   clearCombat: () => set({ session: null, participants: [], targetEntityId: null }),

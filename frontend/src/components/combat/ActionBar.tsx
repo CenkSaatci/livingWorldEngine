@@ -35,17 +35,17 @@ export function ActionBar({ worldId }: Props) {
   const [usedActions, setUsedActions] = useState<Record<string, number>>({});
   const toast = useToast();
 
-  const currentActor = participants.find((p) => p.entity_id === session?.current_turn_entity_id);
+  const currentActor = participants.find((p) => p.entityId === session?.currentTurnEntityId);
 
   // Load action config from game system
   useEffect(() => {
     if (!worldId) return;
     apiClient.get(`/worlds/${worldId}`).then((wr) => {
-      const gsId = wr.data.game_system_id;
+      const gsId = wr.data.gameSystemId;
       if (!gsId) return;
       apiClient.get(`/game-systems/${gsId}`).then((gr) => {
         try {
-          const rules = JSON.parse(gr.data.rules_json);
+          const rules = JSON.parse(gr.data.rulesJson);
           const combat = rules.dice_mechanics?.combat;
           if (combat?.action_types) setActionTypes(combat.action_types);
           if (combat?.actions_per_turn) setActionsPerTurn(combat.actions_per_turn);
@@ -57,22 +57,22 @@ export function ActionBar({ worldId }: Props) {
   // Reset used actions on turn change
   useEffect(() => {
     setUsedActions({});
-  }, [session?.current_turn_entity_id]);
+  }, [session?.currentTurnEntityId]);
 
   // Fetch abilities for current actor
   useEffect(() => {
-    if (!currentActor?.entity_id) { setAbilities([]); return; }
+    if (!currentActor?.entityId) { setAbilities([]); return; }
     let c = false;
-    apiClient.get(`/entities/${currentActor.entity_id}/abilities`)
+    apiClient.get(`/entities/${currentActor.entityId}/abilities`)
       .then((r) => { if (!c) setAbilities(r.data as AbilityEntry[]); })
       .catch(() => setAbilities([]));
     return () => { c = true; };
-  }, [currentActor?.entity_id]);
+  }, [currentActor?.entityId]);
 
   if (!session || session.status !== 'ACTIVE') return null;
 
   const aliveTargets = participants.filter(
-    (p) => p.entity_id !== session.current_turn_entity_id && p.ap_current > 0,
+    (p) => p.entityId !== session.currentTurnEntityId && p.apCurrent > 0,
   );
 
   const handleAction = async (type: string, abilityId?: string) => {
@@ -81,8 +81,8 @@ export function ActionBar({ worldId }: Props) {
         ? `/combat/${session.id}/ability`
         : `/combat/${session.id}/action`;
       const body: Record<string, unknown> = abilityId
-        ? { actorId: currentActor?.entity_id, abilityId, targetId: targetEntityId }
-        : { actorId: currentActor?.entity_id, actionType: type.toUpperCase(), targetId: targetEntityId };
+        ? { actorId: currentActor?.entityId, abilityId, targetId: targetEntityId }
+        : { actorId: currentActor?.entityId, actionType: type.toUpperCase(), targetId: targetEntityId };
 
       const res = await apiClient.post(url, body);
       // POST returns full session state → AP-Werte sind bereits korrekt
@@ -102,11 +102,11 @@ export function ActionBar({ worldId }: Props) {
           <p className="text-xs text-text-secondary mb-1">{t('combat.target')}</p>
           <div className="flex flex-wrap gap-1">
             {aliveTargets.map((t) => (
-              <button key={t.entity_id}
-                onClick={() => setTargetEntityId(t.entity_id === targetEntityId ? null : t.entity_id)}
-                className={`rounded px-2 py-1 text-xs ${t.entity_id === targetEntityId ? 'bg-danger text-white' : 'bg-bg-elevated text-text-secondary hover:text-text-primary'}`}
+              <button key={t.entityId}
+                onClick={() => setTargetEntityId(t.entityId === targetEntityId ? null : t.entityId)}
+                className={`rounded px-2 py-1 text-xs ${t.entityId === targetEntityId ? 'bg-danger text-white' : 'bg-bg-elevated text-text-secondary hover:text-text-primary'}`}
               >
-                {t.name ?? t.entity_id.slice(0, 8)}
+                {t.name ?? t.entityId.slice(0, 8)}
               </button>
             ))}
           </div>

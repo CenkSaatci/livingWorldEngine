@@ -10,7 +10,7 @@ import { apiClient } from '../../api/client';
 
 export interface LocationData {
   id: string;
-  region_id?: string;
+  regionId?: string;
   name: string;
   type: string;
   description: string;
@@ -18,7 +18,7 @@ export interface LocationData {
   population: number;
   wealth: number;
   services: string[];
-  created_at: string;
+  createdAt: string;
 }
 
 interface NpcSummary {

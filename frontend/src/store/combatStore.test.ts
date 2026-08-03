@@ -3,22 +3,23 @@ import { useCombatStore } from './combatStore';
 
 const mockSession = {
   id: 's1',
-  world_id: 'w1',
+  worldId: 'w1',
   status: 'ACTIVE',
   round: 1,
-  current_turn_entity_id: 'e1',
-  created_at: '',
+  currentTurnEntityId: 'e1',
+  mapId: 'm1',
+  createdAt: '',
 };
 const mockParticipants = [
   {
     id: 'p1',
-        entity_id: 'e1',
-        name: 'Hero',
+    entityId: 'e1',
+    name: 'Hero',
     initiative: 20,
-    ap_current: 2,
-    ap_max: 2,
-    hp_current: 10,
-    hp_max: 10,
+    apCurrent: 2,
+    apMax: 2,
+    hpCurrent: 10,
+    hpMax: 10,
     side: 'A',
   },
 ];
@@ -28,16 +29,25 @@ beforeEach(() =>
 );
 
 describe('combatStore', () => {
-  it('sets session and participants', () => {
+  it('sets session and participants with camelCase fields', () => {
     useCombatStore.getState().setSession(mockSession, mockParticipants);
-    expect(useCombatStore.getState().session?.round).toBe(1);
-    expect(useCombatStore.getState().participants).toHaveLength(1);
+    expect(useCombatStore.getState().session?.worldId).toBe('w1');
+    expect(useCombatStore.getState().session?.currentTurnEntityId).toBe('e1');
+    expect(useCombatStore.getState().participants[0].entityId).toBe('e1');
+    expect(useCombatStore.getState().participants[0].apCurrent).toBe(2);
   });
 
   it('updates participant AP', () => {
     useCombatStore.getState().setSession(mockSession, mockParticipants);
     useCombatStore.getState().updateParticipantAp('e1', 1);
-    expect(useCombatStore.getState().participants[0].ap_current).toBe(1);
+    expect(useCombatStore.getState().participants[0].apCurrent).toBe(1);
+  });
+
+  it('updates turn via handleTurnChanged', () => {
+    useCombatStore.getState().setSession(mockSession, mockParticipants);
+    useCombatStore.getState().handleTurnChanged('e2', 2);
+    expect(useCombatStore.getState().session?.currentTurnEntityId).toBe('e2');
+    expect(useCombatStore.getState().session?.round).toBe(2);
   });
 
   it('clears combat on end', () => {

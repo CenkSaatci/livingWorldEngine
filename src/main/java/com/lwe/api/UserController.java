@@ -14,6 +14,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -138,6 +139,28 @@ public class UserController {
         tokenRepo.save(token);
 
         return ResponseEntity.ok(new ApiResponse("Password reset successful"));
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@AuthenticationPrincipal User user,
+                                             @RequestBody Map<String, String> body) {
+        var currentPassword = body.get("currentPassword");
+        var newPassword = body.get("newPassword");
+        if (currentPassword == null || newPassword == null)
+            return ResponseEntity.badRequest().body(new ErrorResponse("currentPassword and newPassword required"));
+        if (newPassword.length() < 6)
+            return ResponseEntity.badRequest().body(new ErrorResponse("Password must be at least 6 characters"));
+
+        var dbUser = userRepo.findById(user.getId()).orElse(null);
+        if (dbUser == null)
+            return ResponseEntity.badRequest().body(new ErrorResponse("User not found"));
+        if (!passwordEncoder.matches(currentPassword, dbUser.getPasswordHash()))
+            return ResponseEntity.badRequest().body(new ErrorResponse("Current password is incorrect"));
+
+        dbUser.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepo.save(dbUser);
+
+        return ResponseEntity.ok(new ApiResponse("Password changed successfully"));
     }
 
     private String extractLocale(HttpServletRequest req) {

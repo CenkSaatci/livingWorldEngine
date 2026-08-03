@@ -7,7 +7,7 @@ import { apiClient } from '../../api/client';
 interface EntitySummary {
   id: string;
   name: string;
-  entity_type: string;
+  entityType: string;
 }
 
 interface MapSummary {
@@ -36,7 +36,7 @@ export function StartCombatModal({ worldId, onClose }: Props) {
       .get(`/worlds/${worldId}/entities`)
       .then((r) => {
         const all = (r.data as EntitySummary[]).filter(
-          (e) => e.entity_type === 'PC' || e.entity_type === 'NPC',
+          (e) => e.entityType === 'PC' || e.entityType === 'NPC',
         );
         setEntities(all);
       })
@@ -126,7 +126,7 @@ export function StartCombatModal({ worldId, onClose }: Props) {
                     className="accent-accent"
                   />
                   <span className="flex-1 text-text-primary">{e.name || e.id.slice(0, 12)}</span>
-                  <span className="text-[10px] uppercase text-text-secondary">{e.entity_type}</span>
+                  <span className="text-[10px] uppercase text-text-secondary">{e.entityType}</span>
                 </label>
               ))}
               {entities.length === 0 && (

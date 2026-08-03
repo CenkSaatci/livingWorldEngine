@@ -50,6 +50,15 @@ public class RollController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping
+    public ResponseEntity<RollService.RollResult> roll(@Valid @RequestBody RollRequest req,
+                                                       @AuthenticationPrincipal User user) {
+        var result = rollService.executeRoll(
+            user.getId(), req.worldId(), req.entityId(),
+            req.skillId(), req.modifier(), req.target());
+        return ResponseEntity.ok(result);
+    }
+
     public record ProbeRequest(
         @NotBlank UUID entityId,
         @NotBlank String skillName,
@@ -64,6 +73,5 @@ public class RollController {
         int modifier,
         @PositiveOrZero int target
     ) {}
-
     public record FreeRollRequest(@NotBlank String expression) {}
 }

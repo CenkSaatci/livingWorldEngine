@@ -23,8 +23,8 @@ interface Quest {
   status: string;
   objectives: string;
   rewards: string;
-  ai_generated: boolean;
-  created_at: string;
+  aiGenerated: boolean;
+  createdAt: string;
 }
 
 export default function QuestDetailPage() {
@@ -61,7 +61,7 @@ export default function QuestDetailPage() {
         </button>
         <h1 className="text-lg font-heading text-text-primary">{quest.title}</h1>
         <span className={`text-xs ${statusColors[quest.status] ?? ''}`}>{quest.status}</span>
-        {quest.ai_generated && (
+        {quest.aiGenerated && (
           <span className="flex items-center gap-1 rounded bg-accent/15 px-2 py-0.5 text-[10px] text-accent">
             <Bot size={10} /> AI
           </span>
@@ -135,7 +135,7 @@ export default function QuestDetailPage() {
             <div className="flex justify-between">
               <dt className="text-text-secondary">Created</dt>
               <dd className="text-text-primary">
-                {new Date(quest.created_at).toLocaleDateString()}
+                {new Date(quest.createdAt).toLocaleDateString()}
               </dd>
             </div>
           </dl>

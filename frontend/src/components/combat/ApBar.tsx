@@ -8,17 +8,17 @@ export function ApBar() {
 
   if (!session || session.status !== 'ACTIVE') return null;
 
-  const currentActor = participants.find((p) => p.entity_id === session.current_turn_entity_id);
+  const currentActor = participants.find((p) => p.entityId === session.currentTurnEntityId);
   if (!currentActor) return null;
 
-  const pct = (currentActor.ap_current / currentActor.ap_max) * 100;
+  const pct = (currentActor.apCurrent / currentActor.apMax) * 100;
 
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
         <span className="text-text-secondary">{t('combat.ap')}</span>
         <span className="text-text-primary font-medium">
-          {currentActor.ap_current} / {currentActor.ap_max}
+          {currentActor.apCurrent} / {currentActor.apMax}
         </span>
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-bg-elevated">

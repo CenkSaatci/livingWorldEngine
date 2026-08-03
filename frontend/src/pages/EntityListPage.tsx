@@ -35,8 +35,8 @@ export default function EntityListPage() {
   const [showCreate, setShowCreate] = useState(false);
 
   const filtered = (entities ?? []).filter((e) => {
-    if (e.entity_type === 'FACTION') return false;
-    if (typeFilter !== 'ALL' && e.entity_type !== typeFilter) return false;
+    if (e.entityType === 'FACTION') return false;
+    if (typeFilter !== 'ALL' && e.entityType !== typeFilter) return false;
     if (search && !e.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });

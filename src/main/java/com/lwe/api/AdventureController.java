@@ -84,7 +84,7 @@ public class AdventureController {
         return ResponseEntity.status(HttpStatus.CREATED).body(AdventureChoiceResponse.created(choice));
     }
 
-    // -- Existing endpoints --
+    @PostMapping("/{id}/nodes")
     public ResponseEntity<AdventureNodeResponse> addNode(@PathVariable UUID id,
                                                           @Valid @RequestBody NodeRequest req,
                                                           @AuthenticationPrincipal User user) {
@@ -172,6 +172,16 @@ public class AdventureController {
                                                           @PathVariable UUID nodeId,
                                                           @AuthenticationPrincipal User user) {
         var node = adventureService.getNodeById(nodeId, user.getId());
+        return ResponseEntity.ok(AdventureNodeResponse.from(node));
+    }
+
+    @PatchMapping("/{id}/nodes/{nodeId}")
+    public ResponseEntity<AdventureNodeResponse> updateNode(@PathVariable UUID id,
+                                                             @PathVariable UUID nodeId,
+                                                             @Valid @RequestBody NodeRequest req,
+                                                             @AuthenticationPrincipal User user) {
+        var node = adventureService.updateNode(id, nodeId, user.getId(),
+            req.text(), req.imageUrl(), req.isEnd());
         return ResponseEntity.ok(AdventureNodeResponse.from(node));
     }
 

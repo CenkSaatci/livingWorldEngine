@@ -12,8 +12,8 @@ interface AdminUser {
 }
 
 interface AdminStats {
-  total_worlds: number;
-  active_worlds: number;
+  totalWorlds: number;
+  activeWorlds: number;
 }
 
 export default function AdminPage() {
@@ -21,7 +21,7 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const { data: usersData } = useApiGet<AdminUser[]>('/admin/users', []);
-  const { data: stats } = useApiGet<AdminStats>('/admin/worlds/stats', []);
+  const { data: stats } = useApiGet<AdminStats>('/admin/stats', []);
   const users = usersData ?? [];
 
   if (user?.role !== 'ADMIN') {
@@ -46,12 +46,12 @@ export default function AdminPage() {
           <section className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <div className="rounded-lg bg-bg-surface p-4">
               <Globe size={20} className="text-accent mb-1" />
-              <p className="text-2xl font-heading text-text-primary">{stats.total_worlds}</p>
+              <p className="text-2xl font-heading text-text-primary">{stats.totalWorlds}</p>
               <p className="text-xs text-text-secondary">{t('admin.totalWorlds')}</p>
             </div>
             <div className="rounded-lg bg-bg-surface p-4">
               <Activity size={20} className="text-accent mb-1" />
-              <p className="text-2xl font-heading text-text-primary">{stats.active_worlds}</p>
+              <p className="text-2xl font-heading text-text-primary">{stats.activeWorlds}</p>
               <p className="text-xs text-text-secondary">{t('admin.activeWorlds')}</p>
             </div>
             <div className="rounded-lg bg-bg-surface p-4">

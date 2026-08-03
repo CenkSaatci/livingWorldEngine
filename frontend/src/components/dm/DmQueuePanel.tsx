@@ -5,12 +5,12 @@ import { apiClient } from '../../api/client';
 
 interface NpcIntent {
   id: string;
-  world_id: string;
-  npc_id: string;
-  intent_type: string;
+  worldId: string;
+  npcId: string;
+  intentType: string;
   reasoning: string;
   status: string;
-  created_at: string;
+  createdAt: string;
 }
 
 interface Props {
@@ -61,7 +61,7 @@ export function DmQueuePanel({ worldId }: Props) {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-xs font-medium text-text-primary truncate">
-                  {intent.intent_type}
+                  {intent.intentType}
                 </p>
                 <p className="text-[10px] text-text-secondary mt-0.5 line-clamp-2">
                   {intent.reasoning || '—'}

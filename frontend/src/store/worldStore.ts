@@ -3,9 +3,9 @@ import { create } from 'zustand';
 export interface WorldSummary {
   id: string;
   name: string;
-  game_system_id: string | null;
-  current_game_time: string | null;
-  created_at: string;
+  gameSystemId: string | null;
+  currentGameTime: string | null;
+  createdAt: string;
 }
 
 export interface WorldEvent {

@@ -73,7 +73,7 @@ export function SessionManager({ worldId }: Props) {
 
       {activeSession && (
         <p className="text-xs text-success mb-2">
-          {t('session.active_since')} {new Date(activeSession.started_at).toLocaleTimeString()}
+          {t('session.active_since')} {new Date(activeSession.startedAt).toLocaleTimeString()}
         </p>
       )}
 
@@ -86,7 +86,7 @@ export function SessionManager({ worldId }: Props) {
               key={s.id}
               className="flex items-center justify-between text-[10px] text-text-secondary"
             >
-              <span>{new Date(s.started_at).toLocaleDateString()}</span>
+              <span>{new Date(s.startedAt).toLocaleDateString()}</span>
               <span className={s.status === 'ACTIVE' ? 'text-success' : ''}>
                 {s.status === 'ACTIVE' ? t('session.active') : t('session.ended')}
               </span>

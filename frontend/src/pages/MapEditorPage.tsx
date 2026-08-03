@@ -20,7 +20,7 @@ const POLY_COLORS = [
 interface Region {
   id: string;
   name: string;
-  polygon_points?: string;
+  polygonPoints?: string;
 }
 
 interface Location {
@@ -138,9 +138,9 @@ export default function MapEditorPage() {
 
     const regionsGfx = new PIXI.Graphics();
     regions.forEach((region, index) => {
-      if (!region.polygon_points) return;
+      if (!region.polygonPoints) return;
       try {
-        const pts = JSON.parse(region.polygon_points) as { x: number; y: number }[];
+        const pts = JSON.parse(region.polygonPoints) as { x: number; y: number }[];
         if (pts.length < 3) return;
         const color = POLY_COLORS[index % POLY_COLORS.length];
         regionsGfx.beginFill(color, 0.25);
@@ -438,7 +438,7 @@ export default function MapEditorPage() {
                     onClick={() => handleStartDraw(region.id)}
                     className="text-xs text-accent hover:text-accent/80"
                   >
-                    {region.polygon_points ? t("editor.redraw_polygon") : t("editor.draw_polygon")}
+                    {region.polygonPoints ? t("editor.redraw_polygon") : t("editor.draw_polygon")}
                   </button>
                 </div>
                 );

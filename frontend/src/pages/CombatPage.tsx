@@ -18,7 +18,7 @@ export default function CombatPage() {
   const navigate = useNavigate();
   const [showChat, setShowChat] = useState(true);
   const worldId = id ?? '';
-  const mapId = useCombatStore((s) => s.session?.map_id);
+  const mapId = useCombatStore((s) => s.session?.mapId);
 
   useWorldSocket(worldId);
 

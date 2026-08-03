@@ -12,8 +12,8 @@ vi.mock('../../api/client', () => ({
 }));
 
 const mockIntents = [
-  { id: 'i1', world_id: 'w1', npc_id: 'n1', intent_type: 'ATTACK_PLAYER', reasoning: 'The goblin sees a lone traveler', status: 'pending', created_at: '2026-07-19T12:00:00Z' },
-  { id: 'i2', world_id: 'w1', npc_id: 'n2', intent_type: 'OFFER_QUEST', reasoning: 'The elder needs a hero', status: 'pending', created_at: '2026-07-19T12:05:00Z' },
+  { id: 'i1', worldId: 'w1', npcId: 'n1', intentType: 'ATTACK_PLAYER', reasoning: 'The goblin sees a lone traveler', status: 'pending', createdAt: '2026-07-19T12:00:00Z' },
+  { id: 'i2', worldId: 'w1', npcId: 'n2', intentType: 'OFFER_QUEST', reasoning: 'The elder needs a hero', status: 'pending', createdAt: '2026-07-19T12:05:00Z' },
 ];
 
 beforeEach(() => {

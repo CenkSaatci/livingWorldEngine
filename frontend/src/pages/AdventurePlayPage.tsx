@@ -17,6 +17,7 @@ export default function AdventurePlayPage() {
   const [choices, setChoices] = useState<any[]>([]);
   const [advancing, setAdvancing] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [entityId, setEntityId] = useState<string | null>(null);
 
   // Start or resume the adventure
   useEffect(() => {
@@ -41,6 +42,7 @@ export default function AdventurePlayPage() {
         const data = res.data as any;
         if (cancelled) return;
 
+        setEntityId(pc.id);
         setNodeText(data.node?.text || '(empty)');
         setImageUrl(data.node?.imageUrl || '');
         setIsEnd(data.node?.isEnd || false);
@@ -78,22 +80,15 @@ export default function AdventurePlayPage() {
 
   const handleChoice = async (choiceId: string) => {
     if (!adventureId) return;
+    if (!entityId) {
+      toast.error('No character started this adventure');
+      return;
+    }
     setAdvancing(true);
     setResult(null);
     try {
-      const progressRes = await apiClient.get(`/adventures/${adventureId}/progress`);
-      // In a real flow, we'd need the entityId here too.
-      // Simplified: use the stored progress
-      const progressList = (progressRes.data as any[]) || [];
-      const active = progressList.find((p: any) => p.status === 'ACTIVE');
-      if (!active) {
-        toast.error('No active progress');
-        setAdvancing(false);
-        return;
-      }
-
       const res = await apiClient.post(`/adventures/${adventureId}/advance`, {
-        entityId: active.entityId,
+        entityId,
         choiceId,
       });
       const data = res.data as any;

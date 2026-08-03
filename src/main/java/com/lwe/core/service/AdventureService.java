@@ -70,6 +70,20 @@ public class AdventureService {
     }
 
     @Transactional
+    public AdventureNode updateNode(UUID adventureId, UUID nodeId, UUID userId,
+                                    String text, String imageUrl, boolean isEnd) {
+        verifyAdventureAccess(adventureId, userId);
+        var node = nodeRepo.findById(nodeId)
+            .orElseThrow(() -> new AdventureException("NODE_NOT_FOUND", "Node not found"));
+        if (!node.getAdventureId().equals(adventureId))
+            throw new AdventureException("NODE_NOT_IN_ADVENTURE", "Node does not belong to this adventure");
+        if (text != null) node.setText(text);
+        if (imageUrl != null) node.setImageUrl(imageUrl);
+        node.setEnd(isEnd);
+        return nodeRepo.save(node);
+    }
+
+    @Transactional
     public void setStartNode(UUID adventureId, UUID userId, UUID nodeId) {
         var adv = verifyAdventureAccess(adventureId, userId);
         adv.setStartNodeId(nodeId);

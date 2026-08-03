@@ -37,7 +37,7 @@ export default function LocationViewPage() {
 
   const handleLocationLoad = (loc: LocationData) => {
     setLocationData(loc);
-    if (loc.region_id) setRegionId(loc.region_id);
+    if (loc.regionId) setRegionId(loc.regionId);
   };
 
   const openEdit = () => {

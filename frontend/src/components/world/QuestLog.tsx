@@ -21,8 +21,8 @@ interface Quest {
   status: string;
   objectives: string;
   rewards: string;
-  ai_generated: boolean;
-  created_at: string;
+  aiGenerated: boolean;
+  createdAt: string;
 }
 
 interface Props {
@@ -71,7 +71,7 @@ export function QuestLog({ worldId, onSelectQuest }: Props) {
 
       {/* AI-Generated Pending */}
       {pending
-        .filter((q) => q.ai_generated)
+        .filter((q) => q.aiGenerated)
         .map((q) => (
           <div key={q.id} className="rounded border border-accent/30 bg-accent/5 p-3">
             <div className="flex items-start gap-2">
@@ -115,7 +115,7 @@ export function QuestLog({ worldId, onSelectQuest }: Props) {
             <div className="flex items-center gap-2">
               <Clock size={14} className="text-accent shrink-0" />
               <span className="text-sm text-text-primary truncate">{q.title}</span>
-              {q.ai_generated && <span className="shrink-0 text-[10px] text-accent">AI</span>}
+              {q.aiGenerated && <span className="shrink-0 text-[10px] text-accent">AI</span>}
             </div>
             {q.description && (
               <p className="mt-0.5 text-xs text-text-secondary line-clamp-1">{q.description}</p>
