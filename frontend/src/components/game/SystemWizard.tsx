@@ -4,121 +4,15 @@ import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../api/client';
 import { useToast } from '../../hooks/useToast';
 import { FormulaBuilder } from '../ui/FormulaBuilder';
+import {
+  defaultWizardData,
+  toRulesJson,
+  type AttributeDef,
+  type ConditionalDef,
+  type WizardData,
+} from '../../types/gameSystem';
 
-interface AttributeDef {
-  name: string;
-  type: 'INT' | 'STRING' | 'BOOL';
-  min: number;
-  max: number;
-  default: number;
-}
-
-interface SkillDef {
-  name: string;
-  attributes: string[];
-  bonus: number;
-}
-
-interface DiceCombat {
-  initiative: string;
-  damage: string;
-  actionPoints: { standard: number; max: number };
-  actionTypes: string[];
-  actionsPerTurn: Record<string, number>;
-  criticalHit?: { threshold: number; multiplier: number };
-  savingThrows?: { baseDc: number; proficiencyBonus: string };
-  resting?: { shortRest: { healPercent: number; recoverResources: boolean }; longRest: { fullHeal: boolean; recoverAll: boolean } };
-}
-
-interface SystemFeatures {
-  magic: boolean;
-  psionics: boolean;
-  rangedCombat: boolean;
-  criticalHits: boolean;
-  armorPenalty: boolean;
-}
-
-interface DerivedValue {
-  name: string;
-  formula: string;
-}
-
-interface AbilityDef {
-  name: string;
-  type: 'active' | 'passive';
-  costType: 'AP' | 'MP' | '';
-  cost: number;
-  diceExpression: string;
-  effect: string;
-  bonus: string;
-  tags?: string[];
-  category?: string;
-  actionCost?: { type: string; amount: number };
-  multiAttack?: number;
-}
-
-interface LevelEntry {
-  level: number;
-  xpRequired: number;
-  features: string;
-}
-
-interface XpCostEntry {
-  name: string;
-  cost: number;
-}
-
-interface ImprovementEntry {
-  name: string;
-  count: number;
-  dice: string;
-  comparison: 'gte' | 'lte';
-  target: number;
-}
-
-interface MagicSystem {
-  manaFormula: string;
-  spellSlots: string;
-  schools: string;
-}
-
-interface PsionicsSystem {
-  powerPoints: string;
-  disciplines: string;
-}
-
-interface ConditionalDef {
-  name: string;
-  attribute: string;
-  operator: 'gt' | 'gte' | 'lt' | 'lte' | 'eq' | 'per_point';
-  value: number;
-  bonus: string;
-  target: string;
-}
-
-export interface WizardData {
-  name: string;
-  version: number;
-  description: string;
-  progressionType: 'level' | 'xp' | 'improvement' | null;
-  features: SystemFeatures;
-  probeType: 'd20_target' | 'd100_threshold' | 'd20_3attr';
-  derivedValues: DerivedValue[];
-  abilities: AbilityDef[];
-  progression: {
-    levels: LevelEntry[];
-    xpCosts: XpCostEntry[];
-    improvements: ImprovementEntry[];
-  };
-  magic: MagicSystem;
-  psionics: PsionicsSystem;
-  conditionals: ConditionalDef[];
-  attributes: AttributeDef[];
-  skills: SkillDef[];
-  probe: string;
-  enableCombat: boolean;
-  combat: DiceCombat;
-}
+export type { WizardData };
 
 const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_dv', 'step_label_3', 'step_label_5a', 'step_label_6', 'step_label_7', 'step_label_8', 'step_label_4', 'step_label_5'];
 
@@ -128,44 +22,7 @@ const DICE_PRESETS = [
   { v: '1d100', l: '1d100' }, { v: '2d6', l: '2d6' }, { v: '3d6', l: '3d6' }, { v: '4dF', l: '4dF' },
 ];
 
-const INITIAL: WizardData = {
-  name: '',
-  version: 1,
-  description: '',
-  progressionType: null,
-  features: {
-    magic: false,
-    psionics: false,
-    rangedCombat: false,
-    criticalHits: false,
-    armorPenalty: false,
-  },
-  derivedValues: [],
-  probeType: 'd20_target',
-  abilities: [],
-  progression: {
-    levels: [{ level: 1, xpRequired: 0, features: '' }, { level: 2, xpRequired: 300, features: '' }, { level: 3, xpRequired: 900, features: '' }],
-    xpCosts: [{ name: '', cost: 0 }],
-    improvements: [{ name: '', count: 1, dice: '1d100', comparison: 'gte', target: 0 }],
-  },
-  magic: { manaFormula: '', spellSlots: '', schools: '' },
-  psionics: { powerPoints: '', disciplines: '' },
-  conditionals: [],
-  attributes: [],
-  skills: [],
-  probe: '1d20+mod',
-  enableCombat: false,
-  combat: {
-    initiative: '1d20+geschick',
-    damage: '1d8+staerke',
-    actionPoints: { standard: 1, max: 2 },
-    actionTypes: ['action'],
-    actionsPerTurn: { action: 1 },
-    criticalHit: { threshold: 20, multiplier: 2 },
-    savingThrows: { baseDc: 8, proficiencyBonus: '' },
-    resting: { shortRest: { healPercent: 0.5, recoverResources: true }, longRest: { fullHeal: true, recoverAll: true } },
-  },
-};
+const INITIAL: WizardData = defaultWizardData();
 
 export interface SystemWizardHandle {
   buildRulesJson: () => string;
@@ -190,50 +47,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
   const update = <K extends keyof WizardData>(key: K, val: WizardData[K]) =>
     setData((prev) => ({ ...prev, [key]: val }));
 
-  const buildRulesJson = () => {
-    const probeExpr = data.probeType === 'd20_target' ? '1d20+mod'
-      : data.probeType === 'd100_threshold' ? '1d100' : '3d20';
-
-    const rules: Record<string, unknown> = {
-      version: data.version,
-      probeType: data.probeType,
-      progressionType: data.progressionType,
-      features: data.features,
-      derived_values: data.derivedValues,
-      abilities: data.abilities,
-      progression: data.progression,
-      magic: data.magic,
-      psionics: data.psionics,
-      conditionals: data.conditionals,
-      attributes: data.attributes,
-      skills: data.skills,
-      dice_mechanics: { probe: probeExpr },
-    };
-    if (data.enableCombat) {
-      const combat: Record<string, unknown> = {
-        initiative: data.combat.initiative,
-        damage: data.combat.damage,
-        action_points: data.combat.actionPoints,
-        action_types: data.combat.actionTypes,
-        actions_per_turn: data.combat.actionsPerTurn,
-      };
-      if (data.combat.criticalHit) combat.critical_hit = data.combat.criticalHit;
-      if (data.combat.savingThrows) {
-        combat.saving_throws = {
-          base_dc: data.combat.savingThrows.baseDc,
-          proficiency_bonus: data.combat.savingThrows.proficiencyBonus,
-        };
-      }
-      if (data.combat.resting) {
-        combat.resting = {
-          short_rest: data.combat.resting.shortRest,
-          long_rest: data.combat.resting.longRest,
-        };
-      }
-      (rules.dice_mechanics as Record<string, unknown>).combat = combat;
-    }
-    return JSON.stringify(rules, null, 2);
-  };
+  const buildRulesJson = () => toRulesJson(data);
 
   const handleSave = async () => {
     if (!data.name.trim()) return;

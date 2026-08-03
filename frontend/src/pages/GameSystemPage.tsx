@@ -18,6 +18,7 @@ import { SyntaxHighlightedTextarea } from '../components/ui/SyntaxHighlightedTex
 import { apiClient } from '../api/client';
 import { useToast } from '../hooks/useToast';
 import { SystemWizard, type SystemWizardHandle, type WizardData } from '../components/game/SystemWizard';
+import { fromRulesJson } from '../types/gameSystem';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 interface GameSystem {
@@ -136,105 +137,7 @@ export default function GameSystemPage() {
   const wizardRef = useRef<SystemWizardHandle | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const parseRulesToWizard = (json: string): WizardData | null => {
-    try {
-      const parsed = JSON.parse(json);
-      const attrs: WizardData['attributes'] = (parsed.attributes ?? []).map(
-        (a: Record<string, unknown>) => ({
-          name: (a.name as string) ?? '',
-          type: (['INT', 'STRING', 'BOOL'].includes(a.type as string) ? a.type : 'INT') as 'INT' | 'STRING' | 'BOOL',
-          min: (a.min as number) ?? 1,
-          max: (a.max as number) ?? 20,
-          default: (a.default as number) ?? 10,
-        })
-      );
-      const skills: WizardData['skills'] = (parsed.skills ?? []).map(
-        (s: Record<string, unknown>) => ({
-          name: (s.name as string) ?? '',
-          attributes: (s.attributes as string[]) ?? ((s.attribute as string) ? [s.attribute as string] : []),
-          bonus: (s.bonus as number) ?? 0,
-        })
-      );
-      const dice = parsed.dice_mechanics ?? {};
-      const combat = dice.combat ?? {};
-      return {
-        name: parsed.name ?? '',
-        version: parsed.version ?? 1,
-        description: parsed.description ?? '',
-        probeType: (parsed.probeType as 'd20_target' | 'd100_threshold' | 'd20_3attr') ?? 'd20_target',
-        attributes: attrs,
-        skills,
-        probe: dice.probe ?? '1d20+mod',
-        enableCombat: !!dice.combat,
-        combat: {
-          initiative: combat.initiative ?? '1d20+geschick',
-          damage: combat.damage ?? '1d8+staerke',
-          actionPoints: {
-            standard: combat.action_points?.standard ?? 1,
-            max: combat.action_points?.max ?? 2,
-          },
-          actionTypes: combat.action_types ?? ["action"],
-          actionsPerTurn: combat.actions_per_turn ?? { action: 1 },
-          criticalHit: { threshold: combat.critical_hit?.threshold ?? 20, multiplier: combat.critical_hit?.multiplier ?? 2 },
-          savingThrows: { baseDc: combat.saving_throws?.base_dc ?? 8, proficiencyBonus: combat.saving_throws?.proficiency_bonus ?? '' },
-          resting: {
-            shortRest: { healPercent: combat.resting?.short_rest?.heal_percent ?? 0.5, recoverResources: combat.resting?.short_rest?.recover_resources ?? true },
-            longRest: { fullHeal: combat.resting?.long_rest?.full_heal ?? true, recoverAll: combat.resting?.long_rest?.recover_all ?? true },
-          },
-        },
-        progressionType: parsed.progressionType ?? null,
-        features: parsed.features ?? { magic: false, psionics: false, rangedCombat: false, criticalHits: false, armorPenalty: false },
-        derivedValues: (parsed.derived_values ?? []).map((dv: Record<string, unknown>) => ({
-          name: (dv.name as string) ?? '',
-          formula: (dv.formula as string) ?? '',
-        })),
-        abilities: (parsed.abilities ?? []).map((a: Record<string, unknown>) => ({
-          name: (a.name as string) ?? '',
-          type: (a.type as 'active' | 'passive') ?? 'active',
-          costType: (a.costType as 'AP' | 'MP' | '') ?? 'AP',
-          cost: (a.cost as number) ?? 0,
-          diceExpression: (a.diceExpression as string) ?? '',
-          effect: (a.effect as string) ?? '',
-          bonus: (a.bonus as string) ?? '',
-        })),
-        progression: {
-          levels: ((parsed.progression?.levels as Record<string, unknown>[]) ?? []).map((lv: Record<string, unknown>) => ({
-            level: (lv.level as number) ?? 0,
-            xpRequired: (lv.xpRequired as number) ?? 0,
-            features: (lv.features as string) ?? '',
-          })),
-          xpCosts: ((parsed.progression?.xpCosts as Record<string, unknown>[]) ?? []).map((xc: Record<string, unknown>) => ({
-            name: (xc.name as string) ?? '',
-            cost: (xc.cost as number) ?? 0,
-          })),
-          improvements: ((parsed.progression?.improvements as Record<string, unknown>[]) ?? []).map((imp: Record<string, unknown>) => ({
-            name: (imp.name as string) ?? '',
-            count: (imp.count as number) ?? 1,
-            dice: (imp.dice as string) ?? '1d6',
-            comparison: (imp.comparison as 'gte' | 'lte') ?? 'gte',
-            target: (imp.target as number) ?? 0,
-          })),
-        },
-        magic: {
-          manaFormula: ((parsed.magic as Record<string, unknown>)?.manaFormula as string) ?? '',
-          spellSlots: ((parsed.magic as Record<string, unknown>)?.spellSlots as string) ?? '',
-          schools: ((parsed.magic as Record<string, unknown>)?.schools as string) ?? '',
-        },
-        psionics: {
-          powerPoints: ((parsed.psionics as Record<string, unknown>)?.powerPoints as string) ?? '',
-          disciplines: ((parsed.psionics as Record<string, unknown>)?.disciplines as string) ?? '',
-        },
-        conditionals: (parsed.conditionals ?? []).map((c: Record<string, unknown>) => ({
-          name: (c.name as string) ?? '',
-          attribute: (c.attribute as string) ?? '',
-          operator: (c.operator as 'gt' | 'gte' | 'lt' | 'lte' | 'eq' | 'per_point') ?? 'gte',
-          value: (c.value as number) ?? 0,
-          bonus: (c.bonus as string) ?? '',
-          target: (c.target as string) ?? '',
-        })),
-      };
-    } catch { return null; }
-  };
+  const parseRulesToWizard = (json: string): WizardData | null => fromRulesJson(json);
 
   const switchToJson = () => {
     if (wizardRef.current) {
