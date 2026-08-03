@@ -208,8 +208,14 @@ export function toRulesJson(data: WizardData): string {
     }
     if (data.combat.resting) {
       combat.resting = {
-        short_rest: data.combat.resting.shortRest,
-        long_rest: data.combat.resting.longRest,
+        short_rest: {
+          heal_percent: data.combat.resting.shortRest.healPercent,
+          recover_resources: data.combat.resting.shortRest.recoverResources,
+        },
+        long_rest: {
+          full_heal: data.combat.resting.longRest.fullHeal,
+          recover_all: data.combat.resting.longRest.recoverAll,
+        },
       };
     }
     (rules.dice_mechanics as Record<string, unknown>).combat = combat;
@@ -298,6 +304,10 @@ export function fromRulesJson(json: string): WizardData | null {
           diceExpression: (a.diceExpression as string) ?? '',
           effect: (a.effect as string) ?? '',
           bonus: (a.bonus as string) ?? '',
+          tags: a.tags as string[] | undefined,
+          category: a.category as string | undefined,
+          actionCost: a.actionCost as { type: string; amount: number } | undefined,
+          multiAttack: a.multiAttack as number | undefined,
         }),
       ),
       progression: {

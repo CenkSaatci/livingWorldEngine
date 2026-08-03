@@ -250,7 +250,7 @@ export function CharacterSheet({ entityId }: Props) {
         ) : (
           <div className="space-y-1">
             {data.abilities.map((a) => (
-              <AbilityRow key={a.name} ability={a} />
+              <AbilityRow key={a.name} ability={a} attributes={data.attributes} />
             ))}
           </div>
         )}
@@ -316,13 +316,26 @@ function SkillRow({ skill, entityId, skillOverrides, setSkillOverrides, onSaved 
   );
 }
 
-function AbilityRow({ ability }: { ability: SheetData['abilities'][0] }) {
+function AbilityRow({ ability, attributes }: {
+  ability: SheetData['abilities'][0];
+  attributes: SheetData['attributes'];
+}) {
   const [result, setResult] = useState<number | null>(null);
   const [showDetail, setShowDetail] = useState(false);
 
-  const handleUse = () => {
-    const rng = Math.floor(Math.random() * 20) + 1;
-    setResult(rng);
+  const handleUse = async () => {
+    // Attribut-Referenzen in der diceExpression auflösen (z.B. "2d6+intelligenz" → "2d6+14")
+    let expr = ability.diceExpression || '1d20';
+    for (const attr of attributes) {
+      expr = expr.split(attr.name).join(String(attr.value));
+    }
+    try {
+      const res = await apiClient.post('/rolls/free', { expression: expr });
+      setResult(res.data.total ?? 0);
+    } catch {
+      // Fallback: lokaler W20
+      setResult(Math.floor(Math.random() * 20) + 1);
+    }
     setShowDetail(true);
     setTimeout(() => setShowDetail(false), 3000);
   };
