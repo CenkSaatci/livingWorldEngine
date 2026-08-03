@@ -77,7 +77,10 @@ class RuleSchemaValidatorTest {
                             "standard": { "type": "integer", "default": 2 },
                             "max": { "type": "integer", "default": 4 }
                           }
-                        }
+                        },
+                        "critical_hit": { "type": "object" },
+                        "saving_throws": { "type": "object" },
+                        "resting": { "type": "object" }
                       }
                     }
                   }
@@ -117,6 +120,24 @@ class RuleSchemaValidatorTest {
             """;
         var errors = validator.validate(invalid, schemaJson);
         assertThat(errors).isNotEmpty();
+    }
+
+    @Test
+    void shouldAcceptNewCombatFields() {
+        var json = """
+            {"version":1,"attributes":[{"name":"staerke","type":"INT","min":3,"max":20,"default":10}],"dice_mechanics":{
+              "probe":"1d20+mod",
+              "combat":{
+                "initiative":"1d20+geschick",
+                "damage":"1d8+staerke",
+                "critical_hit":{"threshold":20,"multiplier":2},
+                "saving_throws":{"base_dc":8,"proficiency_bonus":"floor((attr-10)/2)"},
+                "resting":{"short_rest":{"heal_percent":0.5,"recover_resources":true},"long_rest":{"full_heal":true,"recover_all":true}}
+              }
+            }}
+            """;
+        var errors = validator.validate(json, schemaJson);
+        assertThat(errors).as("Neue Combat-Felder sollten akzeptiert werden").isEmpty();
     }
 
     @Test

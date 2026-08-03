@@ -87,6 +87,24 @@ public class EntityController {
         return ResponseEntity.ok(EntityResponse.from(entity));
     }
 
+    @PatchMapping("/{entityId}/skills")
+    public ResponseEntity<EntityResponse> updateSkills(@PathVariable UUID worldId,
+                                                       @PathVariable UUID entityId,
+                                                       @RequestBody Map<String, Integer> skills,
+                                                       @AuthenticationPrincipal User user) {
+        var entity = entityService.updateSkills(entityId, user.getId(), skills);
+        return ResponseEntity.ok(EntityResponse.from(entity));
+    }
+
+    @PatchMapping("/{entityId}/override")
+    public ResponseEntity<EntityResponse> updateOverride(@PathVariable UUID worldId,
+                                                          @PathVariable UUID entityId,
+                                                          @RequestBody Map<String, Object> body,
+                                                          @AuthenticationPrincipal User user) {
+        var entity = entityService.updateOverrides(entityId, user.getId(), body);
+        return ResponseEntity.ok(EntityResponse.from(entity));
+    }
+
     @DeleteMapping("/{entityId}")
     public ResponseEntity<Void> delete(@PathVariable UUID worldId,
                                        @PathVariable UUID entityId,
@@ -95,11 +113,29 @@ public class EntityController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{entityId}/rest")
-    public ResponseEntity<ApiResponse> rest(@PathVariable UUID entityId,
-                                             @AuthenticationPrincipal User user) {
-        restService.rest(entityId);
-        return ResponseEntity.ok(new ApiResponse("Rast durchgeführt"));
+    @PostMapping("/{entityId}/rest/short")
+    public ResponseEntity<ApiResponse> shortRest(@PathVariable UUID entityId,
+                                                  @AuthenticationPrincipal User user) {
+        restService.shortRest(entityId, user.getId());
+        return ResponseEntity.ok(new ApiResponse("Short rest completed"));
+    }
+
+    @PostMapping("/{entityId}/rest/long")
+    public ResponseEntity<ApiResponse> longRest(@PathVariable UUID entityId,
+                                                 @AuthenticationPrincipal User user) {
+        restService.longRest(entityId, user.getId());
+        return ResponseEntity.ok(new ApiResponse("Long rest completed"));
+    }
+
+    @PostMapping("/import")
+    public ResponseEntity<EntityResponse> importEntity(@PathVariable UUID worldId,
+                                                        @Valid @RequestBody CreateRequest req,
+                                                        @AuthenticationPrincipal User user) {
+        var entity = entityService.create(worldId, user.getId(), req.entityType(),
+            req.name(), req.attributesJson(), req.inventoryJson(),
+            req.positionJson(), req.metadataJson(), req.factionId(),
+            req.backstory(), req.age(), req.experienceLevel(), req.socialStanding());
+        return ResponseEntity.status(HttpStatus.CREATED).body(EntityResponse.from(entity));
     }
 
     private EntityResponse toResponse(com.lwe.core.domain.GameEntity e) {

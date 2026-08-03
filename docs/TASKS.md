@@ -1409,10 +1409,9 @@ Nach dem Read-Only-Sheet (P16-T07) folgen Editieren, Inventory und Kampf.
 - **Status:** ✅
 - **Aufwand:** 2,0 Tage
 - **Erledigt:** 2026-07-24
-- **Beschreibung:** Attribut-Werte editierbar machen + XP/Level bearbeiten + Formel-Overrides:
+- **Beschreibung:** Attribut-Werte editierbar machen + XP/Level bearbeiten:
   - `PATCH /entities/{entityId}/attributes` — einzelne Attribut-Werte setzen (merged in attributesJson)
   - `PATCH /entities/{entityId}/progression` — XP/Level/Talentstufen setzen
-  - `PATCH /entities/{entityId}/override` — Formel-Overrides (z.B. "Tough-Feat: HP+2")
   - Frontend: Inline-Edit für Attribut-Werte, XP-Balken editierbar
   - Validation gegen `rulesJson.attributes[].min/max`
   - Nur Character-Besitzer + DM dürfen editieren
@@ -1421,9 +1420,9 @@ Nach dem Read-Only-Sheet (P16-T07) folgen Editieren, Inventory und Kampf.
   - Attribut-Wert klickbar → editierbar → gespeichert
   - Validation: min/max aus rulesJson
   - XP/Level editierbar → Derived Values passen sich an
-  - Formel-Override möglich (optional)
   - Frontend-Tests + TypeScript
 - **Qualitäts-Check:** TDD, Security (Access-Check), i18n
+- **Hinweis:** Formel-Override (`PATCH /entities/{entityId}/override`) war optional und wurde nicht implementiert. Bei Bedarf separater Task.
 
 ### P17-T02: Inventory API
 - **Aufwand:** 2,0 Tage
@@ -1444,6 +1443,10 @@ Nach dem Read-Only-Sheet (P16-T07) folgen Editieren, Inventory und Kampf.
 - **Aufwand:** 1,0 Tag
 - **Status:** ✅
 - **Erledigt:** 2026-07-24
+- **Nachreichung Import:** 2026-07-24
+  - `POST /worlds/{worldId}/entities/import` — erstellt Entity aus JSON-Export
+  - Import-Button im CharacterSheetPage-Header (JSON-Datei upload)
+  - i18n DE/EN
 
 ### P17-T06: Qualitätssicherung
 - **Aufwand:** 2,0 Tage
@@ -1458,5 +1461,449 @@ Nach dem Read-Only-Sheet (P16-T07) folgen Editieren, Inventory und Kampf.
 | 17 (Character-Edit & Kampf) | 6 | 11,0 Tage |
 
 Mit Personalaufwand gerechnet. Bei ~20 effektiven Arbeitstagen/Monat entspricht das bei Vollzeit ~5,5 Monaten gesamt.
+
+---
+
+## Phase 17 Cleanup (Review-Nacharbeiten)
+
+Nach Abschluss der Review vom 2026-07-24 identifizierte und behobene Mängel:
+
+### P17-C01: Formel-Override implementiert
+- **Status:** ✅ (2026-07-24)
+- **Beschreibung:** Fehlendes Feature aus P17-T01-Spezifikation nachgereicht.
+  - `PATCH /entities/{entityId}/override` — speichert Overrides in `metadata_json.formula_overrides`
+  - `CharacterSheetService` wendet Overrides additiv auf Derived Values an
+  - Frontend: `FormulaOverrides`-Komponente im CharacterSheet (Hinzufügen/Entfernen)
+- **Aufwand:** ~2 h
+
+### P17-C02: Item-Typ → Slot Mapping beim Equip-Button
+- **Status:** ✅ (2026-07-24)
+- **Beschreibung:** Der "equip"-Button in `ItemCard.tsx` sendete immer `slot='weapon'`.  
+  Fix: Mapping via Item-Typ — `WEAPON→weapon, ARMOR→armor, HELMET→helmet, ACCESSORY→accessory`.
+- **Aufwand:** ~15 min
+
+### P17-C03: Error-Feedback in leeren catch-Blöcken
+- **Status:** ✅ (2026-07-24)
+- **Beschreibung:** `InventoryPage` hatte 3 leere `catch { /* */ }`-Blöcke.  
+  Fix: Toast-Nachrichten via `useToast` bei Fehlern in handleEquip/handleUnequip.
+- **Aufwand:** ~15 min
+
+### P17-C04: InventoryPage Tests
+- **Status:** ✅ (2026-07-24)
+- **Beschreibung:** `InventoryPage.test.tsx` mit 3 Tests: Loading-State, Empty-State, gerenderte Items + Bonuses.
+- **Aufwand:** ~30 min
+
+### P17-C05: TASKS.md bereinigt
+- **Status:** ✅ (2026-07-24)
+- **Beschreibung:** Formel-Override aus P17-T01-Beschreibung entfernt, Import-Nachreichung dokumentiert, Cleanup-Tasks eingefügt.
+- **Aufwand:** ~10 min
+
+### P17-C06: Abilities-UI (verschoben)
+- **Status:** 🔜 (Phase 18)
+- **Beschreibung:** Der `abilitiesComingSoon`-Placeholder im CharacterSheet bleibt bestehen.  
+  Geplant: Abilities aus der Datenbank laden + anzeigen (aus P16 vorbereitet).
+
+---
+
+## Phase 18: System-Validierung & Beispiel-Dateien
+
+Nach der Analyse der 3 Beispielsysteme (D&D 5e, CoC 7e, DSA 5) gegen die aktuelle Implementierung identifizierte Lücken und behobene Mängel.
+
+### P18-T01: Example JSONs korrigiert
+- **Status:** ✅ (2026-07-24)
+- **Beschreibung:** Drei Probleme in den Beispiel-JSONs:
+  - `_gaps` und `_comment` (nicht im Schema) entfernt → `description` stattdessen
+  - `probeType` fehlte in coc7e.json (`d100_threshold`) und dsa5.json (`d20_3attr`)
+  - `modifierFormula` fehlte in dnd5e.json → `"floor((attr-10)/2)"`
+- **Aufwand:** ~20 min
+- **Qualitäts-Check:** Alle 3 JSONs passieren jetzt die Schema-Validierung
+
+### P18-T02: ProbeType Auto-Detect
+- **Status:** ✅ (2026-07-24)
+- **Beschreibung:** `ProbeService` erkennt `probeType` jetzt automatisch aus `dice_mechanics.probe`:
+  - `1d100` → `d100_threshold`
+  - `3d20` → `d20_3attr`
+  - Sonst → `d20_target` (default)
+  - Explizites `probeType` im JSON überschreibt Auto-Detect
+- **Aufwand:** ~30 min
+- **Qualitäts-Check:** Alle Backend-Tests grün (204)
+
+### P18-T03: RULES-SCHEMA.md aktualisiert
+- **Status:** ✅ (2026-07-24)
+- **Beschreibung:** Vollständiges Schema aus `RuleSchemaValidator.DEFAULT_SCHEMA` übernommen.
+  - `probeType`, `modifierFormula`, `derived_values`, `conditionals`, `abilities` dokumentiert
+  - `skill.attributes`-Array dokumentiert (Multi-Attribute für DSA 3er-Proben)
+  - Probe-Typen-Tabelle + Auto-Detect dokumentiert
+- **Aufwand:** ~30 min
+
+### P18-T04: TASKS.md Phase 18 Abschnitt
+- **Status:** ✅ (2026-07-24)
+- **Beschreibung:** Dieser Abschnitt.
+
+## Phase 18 Ausblick (Architektur-Entscheidungen für später)
+
+Folgende Themen wurden analysiert, aber nicht umgesetzt — sie erfordern Architektur-Entscheidungen:
+
+### Per-Character Skill-Werte
+- **Problem:** DSA und CoC definieren Skill-Boni global im `rulesJson`. Alle Charaktere haben die gleichen Skill-Werte.
+- **DSA:** Talentwert (FW) ist charakterspezifisch (1-20), muss pro Entity gespeichert werden.
+- **CoC:** Skill-Startwerte sind berufsabhängig (Occupation-System), nicht global.
+- **Lösungsansatz:** Neues `skills_json`-Feld auf `entities`-Tabelle (JSONB mit `{ "skillName": value }`). `ProbeService` überschreibt globale Boni mit per-Character-Werten.
+- **Status:** 🔜 (Architektur-Entscheidung nötig)
+
+### Combat-System für CoC/DSA
+- Das Kampfsystem ist D&D-zentriert (Initiative, AP, HP). CoC hat vereinfachte Kämpfe, DSA verwendet AT/PA mit Aktionen.
+- **Status:** 🔜 (Phase 18/19)
+
+### Abilities-UI
+- `abilitiesComingSoon`-Placeholder im CharacterSheet ersetzen.
+- **Status:** 🔜 (Phase 18)
+
+---
+
+## Phase 18 Statistik
+| Phase | Tasks | Sum Aufwand |
+|---|---|---|
+| 18 (System-Validierung & Docs) | 4 | ~1,5 Tage |
+
+---
+
+## Phase 19: Per-Character Skill-Werte & Unified Proben-System
+
+Probendefinitionen (Talente, Fähigkeiten, Proben, Attacken) beziehen sich immer auf den Charakter — nicht auf das globale Regelwerk. `rulesJson.skills[].bonus` wird zum Startwert/Default, den der Charakter überschreiben kann.
+
+### P19-T01: DB-Migration — `skills_json` auf `entities`
+- **Status:** ✅ (2026-07-24, TDD: RED→GREEN→REFACTOR)
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** 
+  - Neue Column `skills_json` (JSONB, nullable) auf `entities`-Tabelle via Flyway
+  - Format: `{ "Athletik": 4, "Wahrnehmung": 2, "Heimlichkeit": 0 }`
+  - Optional: Wertebereich konfigurierbar (min/max aus `rulesJson.skills[].type`)
+- **Akzeptanzkriterien:**
+  - Migration läuft auf bestehender DB
+  - Field auf `GameEntity`-Domain gemappt
+  - Getter/Setter vorhanden
+- **Qualitäts-Check:** Migration-Test, Unit-Tests
+
+### P19-T02: Backend — Per-Character Skill-Overrides in ProbeService
+- **Status:** ✅ (2026-07-24, TDD: RED→GREEN→REFACTOR)
+- **Aufwand:** 1,0 Tage
+- **Beschreibung:** Der `ProbeService.executeProbe()` merged globale Skill-Boni mit per-Character-Overrides:
+  1. Lade `entity.skillsJson`
+  2. Wenn Skill-Name in `skillsJson` existiert → use per-character value als `skillBonus`
+  3. Sonst → use `rulesJson.skills[].bonus` als Fallback
+  - `PATCH /entities/{entityId}/skills` — einzelne Skill-Werte setzen (merged in `skillsJson`)
+  - `GET /entities/{entityId}/sheet` — `skillsJson`-Werte im `SheetResponse` mitsenden
+  - CharacterSheetService zeigt effektiven Skill-Wert (Fallback → Override)
+- **Akzeptanzkriterien:**
+  - ProbeService verwendet per-Character-Werte wenn vorhanden
+  - Fallback auf globalen Bonus wenn Character keinen Wert hat
+  - API-Endpunkt zum Setzen einzelner Skill-Werte
+  - SheetResponse enthält effektiven Skill-Wert + Herkunft (global/character)
+  - Alle 3 Probentypen (d20_target, d100_threshold, d20_3attr) verwenden den Mechanismus
+- **Qualitäts-Check:** TDD, Integrationstests, Security
+
+### P19-T03: Frontend — Skill-Werte editierbar im CharacterSheet
+- **Status:** ✅ (2026-07-24, TDD: RED→GREEN→REFACTOR)
+- **Aufwand:** 1,0 Tage
+- **Beschreibung:**
+  - Skill-Liste im CharacterSheet zeigt effektiven Wert + (edit icon)
+  - Inline-Edit wie bei Attributen (klick → Input → Speichern)
+  - `PATCH /entities/{entityId}/skills` wird beim Speichern aufgerufen
+  - Bei erfolgreichem Speichern: refetch des Sheets
+  - i18n DE/EN
+- **Akzeptanzkriterien:**
+  - Skill-Wert klickbar → editierbar → gespeichert
+  - Neue Werte erscheinen sofort im Sheet
+  - Fallback zu globalem Wert bei leerem `skillsJson`
+- **Qualitäts-Check:** TDD, UI-Test, i18n
+
+### P19-T04: Integrationstests — Per-Character Proben
+- **Status:** ✅ (2026-07-24, TDD: RED→GREEN→REFACTOR)
+- **Aufwand:** 1,0 Tage
+
+### P19-R01: Review-Nacharbeiten
+- **Status:** ✅ (2026-07-24)
+- **Beschreibung:** Nach Code-Review der Phase 19 behobene Mängel:
+  - `SkillRow` Toast-Feedback bei Fehlern (`useToast` + `toast.error`)
+  - `SkillRow` extra GET-Request entfernt (lokaler State via `skillOverrides`)
+  - Irreführender Kommentar im Integrationstest korrigiert
+  - `DATA-MODEL.md` um `skills_json` ergänzt
+- **Beschreibung:**
+  - Erstelle Charakter in Welt mit D&D, CoC, DSA System
+  - Setze per-Character Skill-Werte via `PATCH /entities/{entityId}/skills`
+  - Führe Probe via `POST /rolls/probe` aus → prüfe korrekten Skill-Wert
+  - Prüfe Fallback: leeres `skillsJson` → globaler Bonus
+  - Prüfe Edge-Cases: nicht-existenter Skill, Wert außerhalb Range
+- **Akzeptanzkriterien:**
+  - Alle 3 Systeme funktionieren mit per-Character Werten
+  - Fallback-Mechanismus korrekt
+  - Keine Regression (204 Tests)
+- **Qualitäts-Check:** Integrationstests grün
+
+---
+
+## Phase 20: Abilities-UI
+
+**Architektur-Entscheidung:** Abilities werden analog zu Skills aus `rulesJson.abilities[]` geparst und dynamisch im SheetResponse ausgeliefert — nicht aus der `entity_abilities`-Tabelle. Die DB-Tabelle bleibt für zukünftige Level-Up-Unlocks (Phase 21+).
+
+### P20-T01: SheetResponse um `rulesJson.abilities[]` erweitern
+- **Status:** ✅ (2026-07-24, TDD: RED→GREEN→REFACTOR)
+- **Aufwand:** 1,0 Tage
+- **Beschreibung:** Backend: Abilities aus `rulesJson.abilities[]` parsen und im SheetResponse ausliefern:
+  - Neues `SheetResponse.AbilityInfo { name, type, apCost, effect, diceExpression }`
+  - `CharacterSheetService` parst `rulesJson.abilities[]` (analog zu Skills)
+  - `parseRules()` existiert bereits — `abilities`-Array daraus lesen
+  - Active/Passive-Type unterscheiden
+- **Akzeptanzkriterien:**
+  - SheetResponse enthält `abilities[]` mit Name, Typ, AP-Kosten, Effekt
+  - Alle 3 Beispielsysteme haben korrekte Abilities im Response
+  - Fallback: leeres/fehlendes `abilities[]` → leere Liste
+- **Qualitäts-Check:** TDD, Integrationstests
+
+### P20-T02: Frontend — Abilities im CharacterSheet anzeigen
+- **Status:** ✅ (2026-07-24, TDD: RED→GREEN→REFACTOR)
+- **Aufwand:** 1,0 Tage
+- **Beschreibung:** Den `abilitiesComingSoon`-Placeholder ersetzen:
+  - `useSheet.ts`: `AbilityInfo`-Interface + Daten aus SheetResponse
+  - CharacterSheet: Abilities-Sektion unter Conditionals
+  - Darstellung: Name, Typ-Badge (ACTIVE/PASSIVE), AP-Kosten, Effekt-Beschreibung
+  - Active-Abilities hervorgehoben (mit "Use"-Button), Passive grau hinterlegt
+  - i18n DE/EN
+- **Akzeptanzkriterien:**
+  - Abilities werden korrekt angezeigt
+  - Active/Passive visuell unterscheidbar
+  - Bei leerer Liste: Hinweis statt Placeholder
+- **Qualitäts-Check:** TDD, Frontend-Tests, i18n
+
+### P20-T03: Ability-Nutzung aus dem CharacterSheet
+- **Status:** ✅ (2026-07-24, TDD: RED→GREEN→REFACTOR)
+- **Aufwand:** 1,0 Tage
+- **Beschreibung:** "Use"-Button für Active-Abilities:
+  - **Im Combat:** Ruft `POST /combat/{sessionId}/ability` auf (bestehender Endpoint)
+  - **Außerhalb Combat:** Würfelt via `diceExpression` der Ability (freier Wurf über Frontend-RNG)
+  - Ergebnis als Toast (Combat) oder ProbeRoller-ähnliches Popup (free)
+  - Deaktiviert wenn kein Target gewählt (im Combat)
+  - Analog zu `ProbeRoller` aber mit Ability-Kontext
+- **Akzeptanzkriterien:**
+  - Active-Ability im Combat nutzbar (via bestehendem Endpoint)
+  - Free-Roll außerhalb Combat mit Würfel-Animation
+  - Passive-Abilities haben keinen Use-Button
+- **Qualitäts-Check:** TDD, UI-Test
+
+---
+
+## Phase 17/19 Cleanup (Review-Nacharbeiten)
+
+### C01: API.md — fehlende Endpunkte dokumentieren
+- **Status:** 🔜
+- **Aufwand:** 30 min
+- **Beschreibung:** Drei Endpunkte sind nicht in API.md:
+  - `PATCH /entities/{entityId}/override` — Formel-Overrides
+  - `PATCH /entities/{entityId}/skills` — Per-Character Skill-Werte
+  - `POST /worlds/{worldId}/entities/import` — Character importieren
+- **Akzeptanzkriterien:**
+  - Alle 3 Endpunkte mit Request/Response dokumentiert
+  - Fehlercodes dokumentiert
+
+### C02: FormulaOverrides i18n
+- **Status:** 🔜
+- **Aufwand:** 15 min
+- **Beschreibung:** Die `FormulaOverrides`-Komponente verwendet hartcodierte Labels statt i18n-Keys:
+  - `t('sheet.overridesTitle')`, `t('sheet.overridesName')`, `t('sheet.overridesValue')`
+  - DE/EN in `character.json` ergänzen
+- **Akzeptanzkriterien:**
+  - Alle Labels via `t()` übersetzt
+  - DE + EN vorhanden
+
+### C03: Passive Abilities in EntityAbilityController anzeigen
+- **Status:** 🔜
+- **Aufwand:** 30 min
+- **Beschreibung:** `EntityAbilityController.list()` filtert mit `.filter(a -> "ACTIVE".equals(a.type))` → passive Abilities werden aus der API-Antwort entfernt.
+  - Fix: Beide Typen ausliefern, Frontend filtert selbst
+  - Oder: Optionalen `type`-Query-Parameter für Filter
+- **Akzeptanzkriterien:**
+  - Passive Abilities erscheinen in der API-Antwort
+  - Bestehende Nutzer (ActionBar) brechen nicht
+
+### C04: FormulaOverrides Test
+- **Status:** 🔜
+- **Aufwand:** 30 min
+- **Beschreibung:** Frontend-Test für die FormulaOverrides-Komponente:
+  - Rendert ohne Overrides → "No overrides" message
+  - Kann Override hinzufügen
+  - Kann Override entfernen
+- **Akzeptanzkriterien:**
+  - Test existiert und ist grün
+
+### C05: CharacterSheetService Test-Coverage
+- **Status:** 🔜
+- **Aufwand:** 1,0 Tag
+- **Beschreibung:** Aktuell nur 2 Tests für den SheetService:
+  - Test mit per-character skill values (vorhanden)
+  - Test für derivedValues + conditionals (vorhanden)
+  - Fehlt: Abilities, leeres rulesJson, Entity ohne World, Sheet ohne GameSystem
+- **Akzeptanzkriterien:**
+  - Mindestens 2 zusätzliche Tests
+  - Edge-Cases abgedeckt
+
+### C06: InventoryService.useConsumable via RollService
+- **Status:** 🔜
+- **Aufwand:** 1,0 Tag
+- **Beschreibung:** `useConsumable()` verwendet `new DiceExpression(effect.heal)` direkt statt `rollService.executeRoll()`:
+  - Ignoriert System-spezifische Würfelmechaniken (Pool, Fudge, etc.)
+  - Fix: `RollService` injizieren und `executeRoll` nutzen
+- **Akzeptanzkriterien:**
+  - useConsumable respektiert System-Würfelmechanik
+  - Bestehende Tests bleiben grün
+
+---
+
+## Phase 21: Combat-Mechanics vertiefen
+
+### P21-T01: Critical Hits, Saving Throws, Resting im Schema
+- **Status:** ✅ (2026-07-24)
+- **Aufwand:** 1,0 Tage
+- **Beschreibung:** Erweiterung des `dice_mechanics.combat`-Blocks:
+  - `critical_hit`: `{ "threshold": 20, "multiplier": 2 }`
+  - `saving_throws`: `{ "base_dc": 8, "proficiency_bonus": "floor((attr-10)/2)" }`
+  - `resting`: `{ "short_rest": { "heal_percent": 0.5, "recover_resources": true }, "long_rest": { "full_heal": true, "recover_all": true } }`
+  - `damage_types` bewusst nicht auf Systemebene — gehören zu Items/Fähigkeiten (siehe P21-T02)
+- **Akzeptanzkriterien:**
+  - Schema-Validierung akzeptiert neue Felder
+  - Beispiel-JSONs können erweitert werden
+- **Qualitäts-Check:** Schema-Tests, Beispiel-JSONs validieren
+
+### P21-T02: SystemWizard Combat-Step erweitern
+- **Status:** ✅ (2026-07-24)
+- **Aufwand:** 1,0 Tage
+- **Beschreibung:** UI-Step für die neuen Combat-Felder (Critical Hits, Saving Throws, Resting):
+  - Critical Hit Konfiguration (Threshold + Multiplier)
+  - Saving Throw Basis-DC + Proficient-Bonus-Formel
+  - Resting-Toggle (short/long rest mit Konfiguration)
+  - Alles optional (nur anzeigen wenn Combat enabled)
+- **Hinweis:** `damage_types` wird NICHT auf Systemebene konfiguriert — Schadensarten sind eine Eigenschaft von Items/Waffen/Fähigkeiten und werden dort pro Item definiert (z.B. `ability.damageType` oder `item.metadata_json.damage_type`).
+- **Akzeptanzkriterien:**
+  - Alle neuen Felder im Wizard setzbar
+  - BuildRulesJson erzeugt korrektes JSON
+  - i18n DE/EN
+- **Qualitäts-Check:** UI-Test, Export-Test
+
+### P21-T03: Resting-Mechanik im Backend
+- **Status:** ✅ (2026-07-24, TDD: RED→GREEN→REFACTOR)
+- **Aufwand:** 1,0 Tage
+- **Beschreibung:** Server-seitige Auswertung der Resting-Konfiguration:
+  - `POST /entities/{entityId}/rest/short` — kurze Rast (HP-Heilung, Ressourcen-Teilregeneration)
+  - `POST /entities/{entityId}/rest/long` — lange Rast (volle Heilung, alle Ressourcen)
+  - Konfiguration über `rulesJson.dice_mechanics.combat.resting`
+  - Bestehenden `POST /entities/{entityId}/rest`-Endpoint anpassen/erweitern
+- **Akzeptanzkriterien:**
+  - Short/Long Rest funktionieren laut Config
+  - D&D: Short Rest = 50% HP + Ressourcen, Long Rest = Full Heal
+  - CoC: (kein Resting, Config leer)
+  - DSA: 8h Schlaf = 1W6 LP (optional)
+- **Qualitäts-Check:** TDD, Integrationstests
+
+---
+
+## Phase 22: Social Mechanics (Konzeptphase)
+
+**Ziel:** Definition eines sozialen Regel-Subsystems, das im SystemWizard konfiguriert und vom Server ausgewertet werden kann.
+
+### P22-T01: Konzeptdefinition
+- **Status:** 🔜 (Konzept)
+- **Aufwand:** — (noch nicht geschätzt)
+- **Beschreibung:** Ausarbeitung des `social`-Blocks im rulesJson-Schema:
+  - **NPC-Reaktion:** `2d6+charisma` → Tabelle mit Ergebnissen (hostil/neutral/freundlich)
+  - **Morale:** Moral-Check bei 50% Verlusten, etc.
+  - **Reputation:** Fraktions-Ruf (-20 bis +20), beeinflusst Reaktionen
+  - **Social Conflict:** erweitertes Überzeugungs-System (optional)
+  - **Beziehungen:** Faction-Relationship-Änderungen durch soziale Aktionen
+- **Status der Umsetzung:** Nach Phase 21, sobald Combat-Mechanics stabil sind.
+
+---
+
+## Phase 23: Items, Abilities & Damage System
+
+Schadensarten (`damage_type`) gehören nicht auf Systemebene, sondern zu Items, Waffen und Fähigkeiten. Diese Phase definiert das Zusammenspiel.
+
+### P23-T01: `damageType` auf `rulesJson.abilities[]`
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** Jede Ability erhält ein optionales `damageType`-Feld:
+  - `rulesJson.abilities[].damageType`: `"slashing" | "piercing" | "bludgeoning" | "fire" | ...`
+  - Wird im `SheetResponse.AbilityInfo` ausgeliefert
+  - Schema-Validierung ergänzen
+- **Akzeptanzkriterien:**
+  - abilities[] mit damageType werden schema-valide akzeptiert
+  - Ohne damageType: null/leer (Slash-Fallback in CombatService)
+  - Beispiel: D&D 5e "Angriff (Nahkampf)" = slashing, "Angriff (Fernkampf)" = piercing
+- **Qualitäts-Check:** Schema-Tests, Unit-Tests
+
+### P23-T02: `damage_type` auf Items
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** Items erhalten ein `damage_type`-Feld in ihrer JSONB-Metadaten:
+  - `items.metadata_json.damage_type` für Waffen-Items
+  - `InventoryService` liefert damage_type im InventoryResponse mit aus
+  - CombatService nutzt Waffen-damage_type wenn vorhanden, sonst Ability-damageType
+- **Akzeptanzkriterien:**
+  - Items mit damage_type werden korrekt ausgeliefert
+  - Combat-Aktionen priorisieren Waffen-damage_type über Ability-damageType
+- **Qualitäts-Check:** TDD, Integrationstests
+
+### P23-T03: SystemWizard — Abilities-Step um damageType erweitern
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** Im bestehenden Abilities-Step (5a) ein Dropdown für damageType hinzufügen:
+  - Auswahl aus vordefinierter Liste
+  - Optional (kein damageType = leer)
+  - Serialisierung in `buildRulesJson` + Deserialisierung in `parseRulesToWizard`
+- **Akzeptanzkriterien:**
+  - damageType im Wizard setzbar
+  - Export/Import korrekt
+  - i18n DE/EN
+- **Qualitäts-Check:** UI-Test, Export-Test
+
+### P23-T04: Combat Damage-Type Auswertung (Resistenz/Vulnerabilität)
+- **Status:** 🔜
+- **Aufwand:** 1,0 Tage
+- **Beschreibung:** `CombatService.executeAction()` und `useAbility()` berücksichtigen damageType:
+  - `damage_types`-Liste auf der Welt/dem System als Referenz (nicht als Konfiguration)
+  - Entities können `metadata_json.damage_resistances` und `damage_vulnerabilities` haben
+  - Resistenz: Schaden halbiert. Verwundbarkeit: Schaden verdoppelt.
+  - Fallback: kein damageType → normaler Schaden
+- **Akzeptanzkriterien:**
+  - Feuer-Ability gegen Feuer-resistenten Gegner → halber Schaden
+  - Kälte-Ability gegen Kälte-verwundbaren Gegner → doppelter Schaden
+  - Ability ohne damageType → normaler Schaden
+- **Qualitäts-Check:** TDD, Integrationstests
+
+### P23-T05: Skill-Kategorien (optional)
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** Skills erhalten optionales `category`-Feld:
+  - `rulesJson.skills[].category`: `"strength" | "dexterity" | "knowledge" | "social" | "combat" | ...`
+  - Dient der Gruppierung im CharacterSheet (Filter/Sektionen)
+  - Keine gameplay-Auswirkung
+- **Akzeptanzkriterien:**
+  - Skills mit category werden schema-valide akzeptiert
+  - CharacterSheet gruppiert/filtert nach Kategorie (optional)
+
+---
+
+## Gesamtstatistik
+
+| Phase | Tasks | Sum Aufwand |
+|---|---|---|
+| 17 (Character-Edit & Kampf) | 6 | 11,0 Tage |
+| 17 Cleanup (Review) | 6 | ~1,5 Tage |
+| 18 (System-Validierung & Docs) | 4 | ~1,5 Tage |
+| 19 (Per-Character Skills) | 4 | ~3,5 Tage |
+| 20 (Abilities-UI) | 3 | ~3,0 Tage |
+| Cleanup (C01-C06) | 6 | ~4,0 Tage |
+| 21 (Combat vertiefen) | 3 | ~3,0 Tage |
+| 22 (Social Mechanics) | 1 (Konzept) | — |
+| 23 (Items, Abilities & Damage) | 5 | ~3,5 Tage |
 
 ---

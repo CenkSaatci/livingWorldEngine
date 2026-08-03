@@ -4,7 +4,9 @@
 
 ---
 
-## 1.顶层 Schema (JSON Schema 2020-12)
+## 1. Schema (JSON Schema 2020-12)
+
+Das aktuelle Schema wird von `RuleSchemaValidator.DEFAULT_SCHEMA` definiert:
 
 ```json
 {
@@ -14,7 +16,18 @@
   "required": ["version", "attributes", "dice_mechanics"],
   "additionalProperties": false,
   "properties": {
-    "version": { "type": "integer", "minimum": 1 },
+    "version":          { "type": "integer", "minimum": 1 },
+    "description":      { "type": "string" },
+    "probeType":        { "type": "string", "enum": ["d20_target", "d100_threshold", "d20_3attr"] },
+    "progressionType":  { "type": "string" },
+    "modifierFormula":  { "type": "string" },
+    "features":         { "type": "object" },
+    "derived_values":   { "type": "array", "items": { "type": "object" } },
+    "abilities":        { "type": "array", "items": { "type": "object" } },
+    "progression":      { "type": "object" },
+    "magic":            { "type": "object" },
+    "psionics":         { "type": "object" },
+    "conditionals":     { "type": "array", "items": { "type": "object" } },
     "attributes": {
       "type": "array",
       "minItems": 1,
@@ -28,7 +41,7 @@
       "type": "object",
       "required": ["probe"],
       "properties": {
-        "probe":        { "type": "string", "$ref": "#/$defs/diceExpression" },
+        "probe":        { "type": "string" },
         "combat":       { "$ref": "#/$defs/combat" }
       }
     }
@@ -47,20 +60,27 @@
     },
     "skill": {
       "type": "object",
-      "required": ["name", "attribute"],
+      "required": ["name"],
+      "anyOf": [
+        { "required": ["attribute"] },
+        { "required": ["attributes"] }
+      ],
       "properties": {
-        "name":      { "type": "string" },
-        "attribute": { "type": "string", "description": "Referenz auf Attribut #/properties/attributes/items/properties/name" },
-        "bonus":     { "type": "integer", "default": 0 }
+        "name":       { "type": "string" },
+        "attribute":  { "type": "string", "description": "Legacy single attribute reference" },
+        "attributes": { "type": "array", "items": { "type": "string" }, "description": "Multi-attribute reference (z.B. DSA 3er-Proben)" },
+        "bonus":      { "type": "integer", "default": 0 }
       }
     },
     "combat": {
       "type": "object",
       "required": ["initiative", "damage"],
       "properties": {
-        "initiative":     { "$ref": "#/$defs/diceExpression" },
-        "damage":         { "$ref": "#/$defs/diceExpression" },
-        "action_points":  { "$ref": "#/$defs/actionPoints" }
+        "initiative":       { "type": "string" },
+        "damage":           { "type": "string" },
+        "action_points":    { "$ref": "#/$defs/actionPoints" },
+        "action_types":     { "type": "array", "items": { "type": "string" } },
+        "actions_per_turn": { "type": "object" }
       }
     },
     "actionPoints": {
@@ -69,11 +89,6 @@
         "standard": { "type": "integer", "default": 2 },
         "max":      { "type": "integer", "default": 4 }
       }
-    },
-    "diceExpression": {
-      "type": "string",
-      "pattern": "^[0-9]+d[0-9]+([+-][a-z_0-9]+)([+-][0-9]+)?$",
-      "description": "Ausdrücke wie '1d20+mod', '2d6+intelligenz', '1d8+stärke'"
     }
   }
 }
@@ -81,159 +96,92 @@
 
 ---
 
-## 2. Dice-Expression-Syntax
+## 2. Probe-Typen
+
+| `probeType` | Beschreibung | Beispiel-System |
+|---|---|---|
+| `d20_target` | 1W20 + Modifikator ≥ Zielwert (default) | D&D 5e |
+| `d100_threshold` | 1W100 ≤ Fertigkeitswert | CoC 7e |
+| `d20_3attr` | 3W20, je ≤ Attribut, Fehlschläge kompensieren | DSA 5 |
+
+**Auto-Detect:** Ist `probeType` nicht gesetzt, erkennt das System den Typ aus `dice_mechanics.probe`:
+- `1d100` → `d100_threshold`
+- `3d20` → `d20_3attr`
+- Sonst → `d20_target`
+
+---
+
+## 3. Modifier-Formel
+
+Die optionale `modifierFormula` definiert, wie aus Attributswerten Modifikatoren berechnet werden. Syntax: `FormulaEvaluator` mit Attributnamen als Variablen.
+
+| System | Formel | Effekt |
+|---|---|---|
+| D&D 5e | `floor((attr-10)/2)` | Staerke 16 → +3 |
+| DSA 5 | (nicht benötigt) | — |
+| CoC 7e | (nicht benötigt) | — |
+
+Beispiel: `"modifierFormula": "floor((attr-10)/2)"`
+
+---
+
+## 4. Dice-Expression-Syntax
+
+Wird in `dice_mechanics.probe` sowie `combat.initiative/damage` verwendet:
 
 | Ausdruck   | Bedeutung |
 |------------|-----------|
 | `1d20`     | Einmal 20-seitiger Würfel |
-| `2d6`      | Zweimal 6-seitiger Würfel (Ergebnis ist Summe) |
-| `1d20+mod` | 1W20 mit Additions-Operator |
-| `2d6+intelligenz` | 2W6 + Wert des Attributs `intelligenz` des Charakters |
-| `1d8+stärke+2` | 1W8 + Stärke-Attribut + fixer Modifikator 2 |
-
-### Parser-BNF (vereinfacht)
-```
-expression := dice ( modifier )*
-modifier   := ("+" | "-") operand
-operand    := number | attribute
-attribute  := [a-z_][a-z0-9_]*
-dice       := count "d" sides
-count      := [0-9]+
-sides      := [0-9]+
-number     := [0-9]+
-```
-
-### Fehlerfälle
-- Invalides Token:  `1d20+@foo` → `VALIDATION_ERROR` mit `{ token: "@foo" }`
-- Attribut nicht im Regelwerk: `1d20+wahrheit` (kein Attribut `wahrheit`) → `INVALID_ATTRIBUTE_REF`
-- Division/Modulo werden nicht unterstützt
+| `2d6`      | Zweimal 6-seitiger Würfel (Summe) |
+| `1d20+mod` | 1W20 + System-Modifikator (nur D20RuleEngine) |
+| `2d6+intelligenz` | 2W6 + Wert des Attributs `intelligenz` |
+| `1d8+staerke+2` | 1W8 + Stärke-Attribut + fixer Modifikator 2 |
 
 ---
 
-## 3. Beispiel 1 — D20Lite (klassisch, D&D-artig)
+## 5. Probe-Endpunkt
+
+### `POST /rolls/probe` (systembewusst, mit Conditionals)
 
 ```json
 {
-  "version": 1,
-  "attributes": [
-    { "name": "stärke",            "type": "INT", "min": 1, "max": 20, "default": 10 },
-    { "name": "geschicklichkeit",  "type": "INT", "min": 1, "max": 20, "default": 10 },
-    { "name": "konstitution",     "type": "INT", "min": 1, "max": 20, "default": 10 },
-    { "name": "intelligenz",       "type": "INT", "min": 1, "max": 20, "default": 10 },
-    { "name": "weisheit",          "type": "INT", "min": 1, "max": 20, "default": 10 },
-    { "name": "charisma",         "type": "INT", "min": 1, "max": 20, "default": 10 }
-  ],
-  "skills": [
-    { "name": "athletik",     "attribute": "stärke" },
-    { "name": "schleichen",   "attribute": "geschicklichkeit" },
-    { "name": "wahrnehmung",  "attribute": "weisheit" },
-    { "name": "überzeugen",   "attribute": "charisma" }
-  ],
-  "dice_mechanics": {
-    "probe": "1d20+mod",
-    "combat": {
-      "initiative": "1d20+geschicklichkeit",
-      "damage": "1d8+stärke",
-      "action_points": { "standard": 1, "max": 2 }
-    }
-  }
-}
-```
-
-### Probe-Auswertung
-- Würfel 1W20 → E ∈ [1, 20]
-- Modifikator `mod` = floor((Attribut − 10) / 2)
-- Total = E + mod
-- Probe erfolgreich bei Total ≥ Target (vorgegeben im `WorldEvent` oder Aufrufer)
-
----
-
-## 4. Beispiel 2 — TwoDicePool (eigene Mechanik)
-
-```json
-{
-  "version": 1,
-  "attributes": [
-    { "name": "kraft",        "type": "INT", "min": 1, "max": 6, "default": 3 },
-    { "name": "intelligenz",  "type": "INT", "min": 1, "max": 6, "default": 3 },
-    { "name": "geschick",     "type": "INT", "min": 1, "max": 6, "default": 3 }
-  ],
-  "skills": [
-    { "name": "schlagen",     "attribute": "kraft" },
-    { "name": "zaubern",      "attribute": "intelligenz" }
-  ],
-  "dice_mechanics": {
-    "probe": "2d6+mod",
-    "combat": {
-      "initiative": "2d6+geschick",
-      "damage": "2d6+kraft",
-      "action_points": { "standard": 2, "max": 3 }
-    }
-  }
-}
-```
-
-### Probe-Auswertung (Pool-System)
-- Würfel 2W6 → Summe ∈ [2, 12]
-- Plus Attributswert (1–6)
-- Target-Schwellen:
-  - **≥ 6** → Erfolg mit Komplikation
-  - **≥ 8** → Erfolg
-  - **≥ 11** → Großer Erfolg
-
-Die Schwellen sind nicht im `rules_json` selbst gespeichert — sie gehören zum Implementierungsverhalten der `PoolRuleEngine`-Klasse. Zukünftige Erweiterung: `dice_mechanics.success_tiers` als optionales Array.
-
----
-
-## 5. Probe Request / Response (API-Ebene)
-
-### Request (POST `/api/rolls`)
-```json
-{
-  "world_id": "uuid",
-  "entity_id": "uuid",
-  "skill_id": "athletik",
-  "modifier": 2,
-  "target": 14
-}
-```
-
-### Response
-```json
-{
-  "roll_id": "uuid",
-  "roll_expressions": ["1d20+mod"],
-  "dice": [ { "count": 1, "sides": 20, "rolls": [14] } ],
-  "modifier": 2,
-  "total": 16,
+  "entityId": "uuid",
+  "skillName": "Athletik",
   "target": 14,
-  "success": true,
-  "world_event_id": 789012
+  "advantage": false
 }
 ```
 
+Response enthält: Würfelergebnis, Modifikator, Erfolg, Detail-Infos (z.B. bei 3er-Proben), aktive Conditionals.
+
 ---
 
-## 6. Validationsschritte beim Upload
+## 6. Validierungsschritte beim Upload
 
 1. JSON-Schema-Validierung (strukturell)
 2. Semantische Validierung:
-   - Jeder `skill.attribute`-Ref verweist auf existierendes Attribut
-   - Jede Attributreferenz in `dice_mechanics.*` existiert
+   - Jeder `skill.attribute`/`attributes`-Ref verweist auf existierendes Attribut
    - Attributnamen sind case-sensitiv lower-snake-case
-3. Bei Erfolg: Persistenz in `game_systems.rules_json` und Versionierung
+3. Bei Erfolg: Persistenz in `game_systems.rules_json`
 4. Bei Fehler: 400 mit strukturierten Errors
 
 ---
 
-## 7. Erweiterungs-Strategie
+## 7. Beispiel-Dateien
 
-Das Schema ist absichtlich schlank gehalten. Zukünftige Erweiterungen sind via zusätzliche optionale Properties möglich:
+Siehe [`docs/examples/`](examples/) für drei vollständige Beispielsysteme:
+- [`dnd5e.json`](examples/dnd5e.json) — D&D 5th Edition
+- [`coc7e.json`](examples/coc7e.json) — Call of Cthulhu 7th Edition
+- [`dsa5.json`](examples/dsa5.json) — Das Schwarze Auge 5. Edition
 
-- `magic` — Magie-Subsystem (Fokus, Kosten, Schule)
-- `advantages` — Vor- und Nachteile als Attribut-Modifikatoren
-- `dungeons` — Dungeon-Generierung
-- `resting` — Kurze/Lange-Rast-Mechaniken
-- `leveling` — XP/Level-Tabelle
+---
 
-Alle Erweiterungen müssen vor Usage dokumentiert + versioniert werden.
+## 8. Schema-Erweiterungen
+
+Neue optionale Properties können jederzeit ergänzt werden. Aktuell geplant/nutzbar:
+- `conditionals` — Bedingte Boni/Mali (via `ConditionEvaluator`)
+- `derived_values` — Abgeleitete Werte (HP, AC, Ini, etc.)
+- `abilities` — Charakter-Fähigkeiten für den Kampf
+- `features` — System-Feature-Flags (magic, psionics, armorPenalty)
+- `progression` — Level/XP-Tabellen und Verbesserungen
+- `magic` / `psionics` — Magie- und Psionik-Subsystem

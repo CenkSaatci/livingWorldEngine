@@ -235,6 +235,27 @@ Alle Endpunkte auth und user-scoped (Tenant-Isolation via JWT `user_id`, siehe [
 ### `GET /api/v1/worlds/{worldId}/entities/{id}` (**Fehlercodes:** `ENTITY_NOT_FOUND`)
 ### `PATCH /api/v1/worlds/{worldId}/entities/{id}` → Update attributes/inventory/metadata
 
+### `PATCH /api/v1/worlds/{worldId}/entities/{entityId}/attributes`
+**Request:** `{ "staerke": 16 }` — merged in attributesJson
+**Fehlercodes:** `ENTITY_NOT_FOUND`, `WORLD_ACCESS_DENIED`
+
+### `PATCH /api/v1/worlds/{worldId}/entities/{entityId}/progression`
+**Request:** `{ "experience_points": 1500 }`
+**Fehlercodes:** `ENTITY_NOT_FOUND`, `WORLD_ACCESS_DENIED`
+
+### `PATCH /api/v1/worlds/{worldId}/entities/{entityId}/skills`
+**Request:** `{ "Athletik": 5, "Wahrnehmung": 3 }` — merged in skillsJson, überschreibt globale Skill-Boni
+**Fehlercodes:** `ENTITY_NOT_FOUND`, `WORLD_ACCESS_DENIED`
+
+### `PATCH /api/v1/worlds/{worldId}/entities/{entityId}/override`
+**Request:** `{ "hp": 2, "ac": 1 }` — Formel-Overrides, additiv zu derivedValues
+**Fehlercodes:** `ENTITY_NOT_FOUND`, `WORLD_ACCESS_DENIED`
+
+### `POST /api/v1/worlds/{worldId}/entities/import`
+**Request:** Wie `POST /api/v1/worlds/{worldId}/entities` (Create), erzeugt neue Entity aus Export-JSON
+**Response 201:** Entity-Objekt
+**Fehlercodes:** `ENTITY_TYPE_INVALID`, `WORLD_NOT_FOUND`
+
 ---
 
 ## 6. Inventory (`/api/v1/entities/{entityId}/inventory`)
@@ -252,7 +273,7 @@ Alle Endpunkte auth und user-scoped (Tenant-Isolation via JWT `user_id`, siehe [
 **Fehlercodes:** `INVENTORY_SLOT_OCCUPIED`, `INVENTORY_ITEM_TYPE_INVALID`, `INVENTORY_EQUIP_NOT_IN_INVENTORY`
 
 ### `POST /api/v1/entities/{entityId}/inventory/unequip`
-**Request:** `{ "slot": "weapon" }`
+**Request:** `{ "itemId": "uuid" }`
 
 ### `GET /api/v1/entities/{entityId}/inventory`
 **Response:**

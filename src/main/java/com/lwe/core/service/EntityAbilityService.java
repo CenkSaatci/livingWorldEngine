@@ -7,6 +7,7 @@ import com.lwe.core.domain.EntityAbility;
 import com.lwe.core.repository.AbilityRepository;
 import com.lwe.core.repository.EntityAbilityRepository;
 import com.lwe.core.repository.GameEntityRepository;
+import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,19 +21,23 @@ public class EntityAbilityService {
     private final EntityAbilityRepository repo;
     private final GameEntityRepository entityRepo;
     private final AbilityRepository abilityRepo;
+    private final WorldAccess worldAccess;
 
     public EntityAbilityService(EntityAbilityRepository repo,
                                 GameEntityRepository entityRepo,
-                                AbilityRepository abilityRepo) {
+                                AbilityRepository abilityRepo,
+                                WorldAccess worldAccess) {
         this.repo = repo;
         this.entityRepo = entityRepo;
         this.abilityRepo = abilityRepo;
+        this.worldAccess = worldAccess;
     }
 
     @Transactional
-    public EntityAbility assign(UUID entityId, UUID abilityId) {
+    public EntityAbility assign(UUID entityId, UUID abilityId, UUID userId) {
         var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new EntityAbilityException("ENTITY_NOT_FOUND", "Entity not found"));
+        worldAccess.requireAccess(entity.getWorldId(), userId);
         var ability = abilityRepo.findById(abilityId)
             .orElseThrow(() -> new EntityAbilityException("ABILITY_NOT_FOUND", "Ability not found"));
 
@@ -45,7 +50,10 @@ public class EntityAbilityService {
         return repo.save(new EntityAbility(entityId, abilityId));
     }
 
-    public List<EntityAbility> listByEntity(UUID entityId) {
+    public List<EntityAbility> listByEntity(UUID entityId, UUID userId) {
+        var entity = entityRepo.findById(entityId)
+            .orElseThrow(() -> new EntityAbilityException("ENTITY_NOT_FOUND", "Entity not found"));
+        worldAccess.requireAccess(entity.getWorldId(), userId);
         return repo.findByEntityId(entityId);
     }
 
@@ -55,9 +63,10 @@ public class EntityAbilityService {
     }
 
     @Transactional
-    public void unassign(UUID entityId, UUID abilityId) {
-        entityRepo.findById(entityId)
+    public void unassign(UUID entityId, UUID abilityId, UUID userId) {
+        var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new EntityAbilityException("ENTITY_NOT_FOUND", "Entity not found"));
+        worldAccess.requireAccess(entity.getWorldId(), userId);
         var ea = repo.findByEntityIdAndAbilityId(entityId, abilityId)
             .orElseThrow(() -> new EntityAbilityException("NOT_ASSIGNED", "Ability not assigned to entity"));
         repo.delete(ea);

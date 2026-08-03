@@ -8,6 +8,7 @@ import { ItemCard, type InventoryEntry } from '../components/inventory/ItemCard'
 import { DraggableItem } from '../components/inventory/DraggableItem';
 import { DroppableSlot } from '../components/inventory/DroppableSlot';
 import { useApiGet } from '../hooks/useApiGet';
+import { useToast } from '../hooks/useToast';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 const SLOTS = ['weapon', 'armor', 'helmet', 'accessory'];
@@ -17,6 +18,7 @@ export default function InventoryPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [dragTarget, setDragTarget] = useState<string | null>(null);
+  const toast = useToast();
 
   const { data, loading, refetch } = useApiGet<{
     items: InventoryEntry[];
@@ -32,7 +34,7 @@ export default function InventoryPage() {
       await apiClient.post(`/entities/${id}/inventory/equip`, { itemId, slot });
       refetch();
     } catch {
-      /* */
+      toast.error('Equip failed');
     }
   };
 
@@ -42,7 +44,7 @@ export default function InventoryPage() {
       await apiClient.post(`/entities/${id}/inventory/unequip`, { itemId });
       refetch();
     } catch {
-      /* */
+      toast.error('Unequip failed');
     }
   };
 

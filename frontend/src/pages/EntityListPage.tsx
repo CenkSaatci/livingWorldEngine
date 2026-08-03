@@ -10,11 +10,11 @@ import { EntityCreateModal } from '../components/world/EntityCreateModal';
 interface EntitySummary {
   id: string;
   name: string;
-  entity_type: string;
+  entityType: string;
   age: number;
-  experience_level: string;
-  social_standing: string;
-  faction_id: string;
+  experienceLevel: string;
+  socialStanding: string;
+  factionId: string;
 }
 
 export default function EntityListPage() {
@@ -123,25 +123,25 @@ export default function EntityListPage() {
                 <tr
                   key={e.id}
                   className="cursor-pointer border-b border-bg-elevated/50 hover:bg-bg-elevated/20"
-                  onClick={() => navigate(`/worlds/${worldId}/npcs/${e.id}`)}
+                  onClick={() => navigate(e.entityType === 'PC' ? `/characters/${e.id}` : `/worlds/${worldId}/npcs/${e.id}`)}
                 >
                   <td className="py-2 pr-4 text-text-primary">{e.name || e.id.slice(0, 12)}</td>
                   <td className="py-2 pr-4">
                     <span
                       className={`rounded px-2 py-0.5 text-[10px] font-medium uppercase ${
-                        e.entity_type === 'PC'
+                        e.entityType === 'PC'
                           ? 'bg-accent/10 text-accent'
                           : 'bg-bg-elevated text-text-secondary'
                       }`}
                     >
-                      {e.entity_type}
+                      {e.entityType}
                     </span>
                   </td>
                   <td className="py-2 pr-4 text-text-secondary">{e.age}</td>
-                  <td className="py-2 pr-4 text-text-secondary capitalize">{e.experience_level}</td>
-                  <td className="py-2 pr-4 text-text-secondary capitalize">{e.social_standing}</td>
+                  <td className="py-2 pr-4 text-text-secondary capitalize">{e.experienceLevel}</td>
+                  <td className="py-2 pr-4 text-text-secondary capitalize">{e.socialStanding}</td>
                   <td className="py-2 pr-4 text-text-secondary">
-                    {e.faction_id ? e.faction_id.slice(0, 12) : '—'}
+                    {e.factionId ? e.factionId.slice(0, 12) : '—'}
                   </td>
                   <td className="py-2">
                     <button
@@ -172,9 +172,12 @@ export default function EntityListPage() {
       {showCreate && (
         <EntityCreateModal
           worldId={worldId}
-          onCreated={() => {
+          onCreated={(id, entityType) => {
             setShowCreate(false);
             refetch();
+            if (entityType === 'PC') {
+              navigate(`/characters/${id}`);
+            }
           }}
           onClose={() => setShowCreate(false)}
         />

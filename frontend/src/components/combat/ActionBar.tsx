@@ -85,11 +85,10 @@ export function ActionBar({ worldId }: Props) {
         : { actorId: currentActor?.entity_id, actionType: type.toUpperCase(), targetId: targetEntityId };
 
       const res = await apiClient.post(url, body);
-      // POST returns full session state now — no extra GET needed
+      // POST returns full session state → AP-Werte sind bereits korrekt
       useCombatStore.getState().setSession(res.data.session, res.data.participants);
       setUsedActions((prev) => ({ ...prev, [type]: (prev[type] ?? 0) + 1 }));
       if (!abilityId) playCombatHit();
-      useCombatStore.getState().updateParticipantAp(currentActor?.entity_id ?? '', 0);
     } catch { toast.error('Action failed'); }
   };
 
@@ -130,7 +129,7 @@ export function ActionBar({ worldId }: Props) {
             >
               {ACTION_ICONS[type] ?? <Zap size={14} />}
               {t(`combat.action_${type}`, { defaultValue: type })}
-              {!available && ' (—)'}
+              {!available && t('combat.used')}
             </button>
           );
         })}

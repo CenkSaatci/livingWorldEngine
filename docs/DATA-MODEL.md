@@ -196,12 +196,18 @@ erDiagram
 | inventory_json | JSONB | DEFAULT `[]` | Siehe [Inventory-Format](#inventory-format) |
 | position_json | JSONB | NULL | `{ map_id, x, y }` |
 | metadata_json | JSONB | DEFAULT `{}` | NPC: `{ personality, knowledge, goals }` |
+| skills_json | JSONB | NULL | Per-Character Skill-Overrides: `{ "Athletik": 5 }` |
 | faction_id | UUID | FK entities(id) ON DELETE SET NULL | |
+| experience_points | INT | DEFAULT 0 | |
+| hp_current | INT | DEFAULT 10 | |
+| hp_max | INT | DEFAULT 10 | |
+| ap_current | INT | DEFAULT 2 | |
+| ap_max | INT | DEFAULT 2 | |
 | created_at | TIMESTAMPTZ | DEFAULT NOW() | |
-| updated_at | TIMESTamPTZ | DEFAULT NOW() | |
+| updated_at | TIMESTAMPTZ | DEFAULT NOW() | |
 
 **Indizes:** `entities_world_id_idx`, `entities_faction_id_idx`, `entities_type_idx`
-**GIN-Indizes:** `entities_attributes_json_idx` (GIN), `entities_metadata_json_idx` (GIN)
+**GIN-Indizes:** `entities_attributes_json_idx` (GIN), `entities_metadata_json_idx` (GIN), `entities_skills_json_idx` (GIN)
 
 #### <a name="inventory-format"></a> `inventory_json` Format
 ```json

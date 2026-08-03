@@ -41,13 +41,11 @@ public class RollService {
 
     public RollResult executeRoll(UUID userId, UUID worldId, UUID entityId,
                                   String skillId, int modifier, int target) {
-        // 1. Entity prüfen
-        var entity = entityRepo.findById(entityId)
-            .orElseThrow(() -> new RuntimeException("ENTITY_NOT_FOUND"));
+        var entity = entityRepo.findById(entityId).orElse(null);
+        if (entity == null) return error(skillId, target, "ENTITY_NOT_FOUND");
 
-        // 2. Welt + Zugriff prüfen
-        var world = worldRepo.findById(worldId)
-            .orElseThrow(() -> new RuntimeException("WORLD_NOT_FOUND"));
+        var world = worldRepo.findById(worldId).orElse(null);
+        if (world == null) return error(skillId, target, "WORLD_NOT_FOUND");
         if (!world.getOwnerId().equals(userId)) {
             return error(skillId, target, "Access denied");
         }

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Heart, Shield, Zap, Sparkles, Check, X, Loader2 } from 'lucide-react';
+import { Heart, Shield, Zap, Sparkles, Check, X, Plus, Loader2 } from 'lucide-react';
 import { apiClient } from '../../api/client';
-import { useSheet } from '../../hooks/useSheet';
+import { useSheet, type SheetData } from '../../hooks/useSheet';
+import { useToast } from '../../hooks/useToast';
 import { ProbeRoller } from './ProbeRoller';
 
 const VALUE_ICONS: Record<string, React.ReactNode> = {
@@ -13,6 +14,7 @@ const VALUE_ICONS: Record<string, React.ReactNode> = {
 };
 
 function AttrInput({ name, value, min, max, entityId, onSaved }: { name: string; value: number; min: number; max: number; entityId: string; onSaved: () => void }) {
+  const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [editVal, setEditVal] = useState(String(value));
   const [saving, setSaving] = useState(false);
@@ -26,7 +28,7 @@ function AttrInput({ name, value, min, max, entityId, onSaved }: { name: string;
       await apiClient.patch(`/entities/${entityId}/attributes`, { [name]: newVal });
       onSaved();
       setEditing(false);
-    } catch { setEditVal(String(value)); setEditing(false); }
+    } catch { toast.error('Failed to save attribute'); setEditVal(String(value)); setEditing(false); }
     finally { setSaving(false); }
   };
 
@@ -56,7 +58,6 @@ function AttrInput({ name, value, min, max, entityId, onSaved }: { name: string;
 
 interface Props {
   entityId: string;
-  worldId: string;
 }
 
 function XpInput({ value, entityId, onSaved }: { value: number; entityId: string; onSaved: () => void }) {
@@ -100,6 +101,17 @@ export function CharacterSheet({ entityId }: Props) {
   const { t } = useTranslation('character');
   const { data, loading, error, refetch } = useSheet(entityId);
   const [skillFilter, setSkillFilter] = useState('');
+  const [skillOverrides, setSkillOverrides] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (data?.skills) {
+      const map: Record<string, number> = {};
+      data.skills.forEach((s) => {
+        if (s.perCharacterValue != null) map[s.name] = s.perCharacterValue;
+      });
+      setSkillOverrides((prev) => (Object.keys(map).length > 0 ? map : prev));
+    }
+  }, [data?.skills]);
 
   if (loading) return <div className="p-4 text-sm text-text-secondary">{t('sheet.loading')}</div>;
   if (error) return <div className="p-4 text-sm text-danger">{error}</div>;
@@ -181,15 +193,9 @@ export function CharacterSheet({ entityId }: Props) {
         </div>
         <div className="space-y-1 max-h-64 overflow-y-auto">
           {filteredSkills.map((skill) => (
-            <div key={skill.name} className="flex items-center justify-between rounded bg-bg-primary/30 px-2 py-1">
-              <span className="text-xs text-text-primary">{skill.name}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-text-secondary">
-                  {skill.total > 0 ? '+' : ''}{skill.total}
-                </span>
-                <ProbeRoller entityId={data.entity.id} skillName={skill.name} skillTotal={skill.total} />
-              </div>
-            </div>
+            <SkillRow key={skill.name} skill={skill} entityId={entityId}
+              skillOverrides={skillOverrides} setSkillOverrides={setSkillOverrides}
+              onSaved={refetch} />
           ))}
           {filteredSkills.length === 0 && (
             <p className="text-xs text-text-secondary">{t('sheet.noSkills')}</p>
@@ -222,13 +228,228 @@ export function CharacterSheet({ entityId }: Props) {
         </div>
       )}
 
-      {/* Abilities placeholder */}
+      {/* Formula Overrides */}
+      <FormulaOverrides entityId={entityId} onSaved={refetch} />
+
+      {/* Abilities */}
       <div className="rounded-lg border border-bg-elevated bg-bg-surface p-3">
         <h3 className="mb-2 text-xs font-semibold text-text-secondary uppercase tracking-wider">
           {t('sheet.abilities')}
         </h3>
-        <p className="text-xs text-text-secondary">{t('sheet.abilitiesComingSoon')}</p>
+        {data.abilities.length === 0 ? (
+          <p className="text-xs text-text-secondary">{t('sheet.noAbilities')}</p>
+        ) : (
+          <div className="space-y-1">
+            {data.abilities.map((a) => (
+              <AbilityRow key={a.name} ability={a} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
+}
+
+function SkillRow({ skill, entityId, skillOverrides, setSkillOverrides, onSaved }: {
+  skill: SheetData['skills'][0]; entityId: string;
+  skillOverrides: Record<string, number>; setSkillOverrides: (v: Record<string, number>) => void;
+  onSaved: () => void;
+}) {
+  const toast = useToast();
+  const [editing, setEditing] = useState(false);
+  const [editVal, setEditVal] = useState(String(skill.total));
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    const newVal = parseInt(editVal, 10);
+    if (isNaN(newVal) || newVal === skill.total) { setEditing(false); return; }
+    setSaving(true);
+    try {
+      const updated = { ...skillOverrides, [skill.name]: newVal };
+      await apiClient.patch(`/entities/${entityId}/skills`, updated);
+      setSkillOverrides(updated);
+      onSaved();
+      setEditing(false);
+    } catch { toast.error('Failed to save skill'); setEditVal(String(skill.total)); setEditing(false); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="flex items-center justify-between rounded bg-bg-primary/30 px-2 py-1">
+      <span className="text-xs text-text-primary">{skill.name}</span>
+      <div className="flex items-center gap-2">
+        {editing ? (
+          <div className="flex items-center gap-1">
+            <input type="number" value={editVal} autoFocus min={0} max={99}
+              onChange={(e) => setEditVal(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { setEditVal(String(skill.total)); setEditing(false); }}}
+              className="w-14 rounded border border-accent bg-bg-primary px-1 py-0.5 text-xs text-text-primary text-right outline-none"
+              disabled={saving}
+            />
+            <button onClick={save} className="text-success" disabled={saving}>
+              {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+            </button>
+            <button onClick={() => { setEditVal(String(skill.total)); setEditing(false); }} className="text-danger"><X size={12} /></button>
+          </div>
+        ) : (
+          <button onClick={() => setEditing(true)} className="group flex items-center gap-1 hover:bg-bg-elevated/30 rounded px-1 transition-colors">
+            <span className={`text-xs font-mono ${skill.perCharacterValue != null ? 'text-accent' : 'text-text-secondary'}`}>
+              {skill.total > 0 ? '+' : ''}{skill.total}
+            </span>
+            {skill.perCharacterValue != null && (
+              <span className="text-[9px] text-accent/60 italic">override</span>
+            )}
+          </button>
+        )}
+        <ProbeRoller entityId={entityId} skillName={skill.name} skillTotal={skill.total} />
+      </div>
+    </div>
+  );
+}
+
+function AbilityRow({ ability }: { ability: SheetData['abilities'][0] }) {
+  const [result, setResult] = useState<number | null>(null);
+  const [showDetail, setShowDetail] = useState(false);
+
+  const handleUse = () => {
+    const rng = Math.floor(Math.random() * 20) + 1;
+    setResult(rng);
+    setShowDetail(true);
+    setTimeout(() => setShowDetail(false), 3000);
+  };
+
+  if (ability.type !== 'active') {
+    return (
+      <div className="flex items-center justify-between rounded bg-bg-primary/30 px-2 py-1 text-xs">
+        <div className="flex items-center gap-2">
+          <span className="text-text-primary font-medium">{ability.name}</span>
+          <span className="text-[9px] uppercase text-text-secondary">passive</span>
+        </div>
+        {ability.effect && (
+          <span className="text-[10px] text-text-secondary truncate max-w-[200px]">{ability.effect}</span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between rounded bg-accent/10 px-2 py-1 text-xs">
+      <div className="flex items-center gap-2">
+        <span className="text-text-primary font-medium">{ability.name}</span>
+        <span className="text-[9px] uppercase text-accent">active</span>
+        {ability.apCost > 0 && (
+          <span className="text-[10px] text-text-secondary">AP: {ability.apCost}</span>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        {ability.effect && (
+          <span className="text-[10px] text-text-secondary truncate max-w-[140px]">{ability.effect}</span>
+        )}
+        <button onClick={handleUse}
+          className="rounded bg-accent px-2 py-0.5 text-[10px] text-white hover:bg-accent/80 disabled:opacity-40"
+        >
+          Use
+        </button>
+        {showDetail && result !== null && (
+          <span className="text-xs font-mono text-accent font-bold">{result}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FormulaOverrides({ entityId, onSaved }: { entityId: string; onSaved: () => void }) {
+  const { t } = useTranslation('character');
+  const [editName, setEditName] = useState('');
+  const [editValue, setEditValue] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
+  const [overrides, setOverrides] = useState<Record<string, number>>({});
+
+  // Load current overrides from entity metadata
+  useEffect(() => {
+    apiClient.get(`/entities/${entityId}`).then((res) => {
+      try {
+        const meta = JSON.parse(res.data.metadataJson ?? '{}');
+        setOverrides(meta.formula_overrides ?? {});
+      } catch { setOverrides({}); }
+    }).catch(() => {});
+  }, [entityId]);
+
+  const handleAdd = async () => {
+    if (!editName || !editValue) return;
+    const newOverrides = { ...overrides, [editName]: Number(editValue) };
+    try {
+      await apiClient.patch(`/entities/${entityId}/override`, newOverrides);
+      setOverrides(newOverrides);
+      setEditName('');
+      setEditValue('');
+      setIsAdding(false);
+      onSaved();
+    } catch { /* */ }
+  };
+
+  const handleRemove = async (name: string) => {
+    const { [name]: _, ...rest } = overrides;
+    try {
+      await apiClient.patch(`/entities/${entityId}/override`, rest);
+      setOverrides(rest);
+      onSaved();
+    } catch { /* */ }
+  };
+
+  const entries = Object.entries(overrides);
+  if (entries.length === 0 && !isAdding) {
+    return (
+      <div className="rounded-lg border border-bg-elevated bg-bg-surface p-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+            {t('sheet.overrides')}
+          </h3>
+          <button onClick={() => setIsAdding(true)} className="text-accent hover:text-accent/60">
+            <Plus size={14} />
+          </button>
+        </div>
+        {isAdding && <OverrideInput />}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-bg-elevated bg-bg-surface p-3">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+          {t('sheet.overrides')}
+        </h3>
+        <button onClick={() => setIsAdding(true)} className="text-accent hover:text-accent/60">
+          <Plus size={14} />
+        </button>
+      </div>
+      {isAdding && <OverrideInput />}
+      {entries.length > 0 && (
+        <div className="space-y-1">
+          {entries.map(([name, val]) => (
+            <div key={name} className="flex items-center justify-between rounded bg-bg-primary/30 px-2 py-1 text-xs">
+              <span className="text-text-primary">{name}: +{val}</span>
+              <button onClick={() => handleRemove(name)} className="text-danger hover:text-danger/60">
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  function OverrideInput() {
+    return (
+      <div className="flex items-center gap-2 mt-2">
+        <input value={editName} onChange={(e) => setEditName(e.target.value)}
+          placeholder={t('sheet.overridesName')!} className="w-20 rounded border border-bg-elevated bg-bg-primary px-1.5 py-0.5 text-xs text-text-primary outline-none" />
+        <input value={editValue} onChange={(e) => setEditValue(e.target.value)} type="number"
+          placeholder={t('sheet.overridesValue')!} className="w-16 rounded border border-bg-elevated bg-bg-primary px-1.5 py-0.5 text-xs text-text-primary outline-none" />
+        <button onClick={handleAdd} className="text-success hover:text-success/60"><Check size={14} /></button>
+        <button onClick={() => setIsAdding(false)} className="text-danger hover:text-danger/60"><X size={14} /></button>
+      </div>
+    );
+  }
 }

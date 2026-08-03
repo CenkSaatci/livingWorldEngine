@@ -47,6 +47,11 @@ public class GameEntity {
     @Column(name = "position_json")
     private String positionJson;
 
+    @JsonProperty("skills_json")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "skills_json")
+    private String skillsJson;
+
     @JsonProperty("metadata_json")
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata_json", nullable = false)
@@ -115,6 +120,8 @@ public class GameEntity {
     public void setInventoryJson(String v) { this.inventoryJson = v; }
     public String getPositionJson() { return positionJson; }
     public void setPositionJson(String v) { this.positionJson = v; }
+    public String getSkillsJson() { return skillsJson; }
+    public void setSkillsJson(String v) { this.skillsJson = v; }
     public String getMetadataJson() { return metadataJson; }
     public void setMetadataJson(String v) { this.metadataJson = v; }
     public UUID getFactionId() { return factionId; }

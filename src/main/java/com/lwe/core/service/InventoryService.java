@@ -6,6 +6,7 @@ import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.GameItem;
 import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.repository.GameItemRepository;
+import com.lwe.core.util.WorldAccess;
 import com.lwe.rules.DiceExpression;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,11 +19,14 @@ public class InventoryService {
 
     private final GameEntityRepository entityRepo;
     private final GameItemRepository itemRepo;
+    private final WorldAccess worldAccess;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public InventoryService(GameEntityRepository entityRepo, GameItemRepository itemRepo) {
+    public InventoryService(GameEntityRepository entityRepo, GameItemRepository itemRepo,
+                            WorldAccess worldAccess) {
         this.entityRepo = entityRepo;
         this.itemRepo = itemRepo;
+        this.worldAccess = worldAccess;
     }
 
     public InventoryResult getInventory(UUID entityId, UUID userId) {
@@ -123,13 +127,13 @@ public class InventoryService {
     }
 
     @Transactional
-    public InventoryResult unequipItem(UUID entityId, UUID userId, String slot) {
+    public InventoryResult unequipItem(UUID entityId, UUID userId, UUID itemId) {
         var entity = findEntity(entityId, userId);
         var inventory = parseInventory(entity.getInventoryJson());
         var equipped = inventory.stream()
-            .filter(e -> e.equipped() && (slot == null || slot.equals(e.slot())))
+            .filter(e -> e.itemId().equals(itemId) && e.equipped())
             .findFirst()
-            .orElseThrow(() -> new InventoryException("INVENTORY_SLOT_OCCUPIED", "No item equipped in this slot"));
+            .orElseThrow(() -> new InventoryException("INVENTORY_ITEM_NOT_FOUND", "Item not equipped"));
 
         var idx = inventory.indexOf(equipped);
         inventory.set(idx, new RawEntry(equipped.itemId(), equipped.quantity(), false, null));
@@ -155,6 +159,8 @@ public class InventoryService {
             throw new InventoryException("INVENTORY_NO_EFFECT", "Item has no use effect defined");
 
         int total = 0;
+        // Item-Effekte sind systemunabhängig (Heiltrank = 2d4+2 in jedem System)
+        // Daher direkte DiceExpression statt RollService (der System-Mods anwenden würde)
         if (effect.heal != null) {
             total = new DiceExpression(effect.heal).getTotal();
         }
@@ -199,10 +205,7 @@ public class InventoryService {
     private GameEntity findEntity(UUID entityId, UUID userId) {
         var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new InventoryException("ENTITY_NOT_FOUND", "Entity not found"));
-        // Permission-check via world ownership
-        if (entity.getWorldId() == null) {
-            throw new InventoryException("WORLD_ACCESS_DENIED", "Access denied");
-        }
+        worldAccess.requireAccess(entity.getWorldId(), userId);
         return entity;
     }
 
@@ -214,16 +217,12 @@ public class InventoryService {
                 itemOpt.ifPresent(item -> addBonuses(bonuses, item.getBonusesJson()));
             }
         }
-        // armor_class in attributes_json aktualisieren
+        // armor_class in attributes_json aktualisieren (immer neu berechnen)
         var baseAc = 10 + bonuses.getOrDefault("armor_class", 0);
         try {
             var tree = objectMapper.readTree(entity.getAttributesJson());
-            var ac = tree.path("armor_class");
-            if (ac.isMissingNode()) {
-                entity.setAttributesJson(objectMapper.writeValueAsString(
-                    Map.of("armor_class", baseAc)
-                ));
-            }
+            ((com.fasterxml.jackson.databind.node.ObjectNode) tree).put("armor_class", baseAc);
+            entity.setAttributesJson(objectMapper.writeValueAsString(tree));
         } catch (Exception ignored) {}
 
         var result = buildDetailedResult(inventory, bonuses);

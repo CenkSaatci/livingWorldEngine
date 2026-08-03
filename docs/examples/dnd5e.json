@@ -1,7 +1,9 @@
 {
-  "_comment": "Dungeons & Dragons 5th Edition — Beispielkonfiguration",
+  "description": "Dungeons & Dragons 5th Edition — Beispielkonfiguration",
   "version": 1,
   "progressionType": "level",
+  "probeType": "d20_target",
+  "modifierFormula": "floor((attr-10)/2)",
   "features": {
     "magic": true,
     "psionics": false,
@@ -138,14 +140,10 @@
     "combat": {
       "initiative": "1d20+geschick",
       "damage": "1d8+staerke",
-      "action_points": { "standard": 1, "max": 2 }
+      "action_points": { "standard": 1, "max": 2 },
+      "critical_hit": { "threshold": 20, "multiplier": 2 },
+      "saving_throws": { "base_dc": 8, "proficiency_bonus": "floor((attr-10)/2)" },
+      "resting": { "short_rest": { "heal_percent": 0.5, "recover_resources": true }, "long_rest": { "full_heal": true, "recover_all": true } }
     }
-  },
-  "_gaps": [
-    "Probe-Typ: d20_target (aktuell hartcodiert als '1d20+mod')",
-    "Modifier-Formel: (attr-10)/2 fehlt im Datenmodell",
-    "Actions-Typen (action/bonus_action/reaction) nicht konfigurierbar",
-    "Multi-Attack: 'extraAttack:2' nur als String in bonus, kein strukturiertes Feld",
-    "Advantage/Disadvantage-Mechanik nicht abbildbar"
-  ]
+  }
 }

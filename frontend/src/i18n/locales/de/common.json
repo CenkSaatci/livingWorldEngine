@@ -57,7 +57,8 @@
     "initiative": "Initiative",
     "round": "Runde",
     "noParticipants": "Keine Teilnehmer",
-    "ap": "AP"
+    "ap": "AP",
+    "used": " (verbraucht)"
   },
   "entityTimeline": {
     "today": "heute",

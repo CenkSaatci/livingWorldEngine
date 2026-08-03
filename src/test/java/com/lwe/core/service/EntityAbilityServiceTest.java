@@ -27,15 +27,18 @@ class EntityAbilityServiceTest {
     @Mock private EntityAbilityRepository repo;
     @Mock private GameEntityRepository entityRepo;
     @Mock private AbilityRepository abilityRepo;
+    @Mock private com.lwe.core.util.WorldAccess worldAccess;
 
     private EntityAbilityService service;
     private final UUID entityId = UUID.randomUUID();
     private final UUID abilityId = UUID.randomUUID();
     private final UUID worldId = UUID.randomUUID();
+    private final UUID userId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        service = new EntityAbilityService(repo, entityRepo, abilityRepo);
+        service = new EntityAbilityService(repo, entityRepo, abilityRepo, worldAccess);
+        lenient().doNothing().when(worldAccess).requireAccess(any(), any());
     }
 
     @Test
@@ -49,7 +52,7 @@ class EntityAbilityServiceTest {
         when(abilityRepo.findById(abilityId)).thenReturn(Optional.of(ability));
         when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        service.assign(entityId, abilityId);
+        service.assign(entityId, abilityId, userId);
 
         verify(repo).save(argThat(ea ->
             ea.getEntityId().equals(entityId) && ea.getAbilityId().equals(abilityId)));
@@ -65,15 +68,18 @@ class EntityAbilityServiceTest {
         when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
         when(abilityRepo.findById(abilityId)).thenReturn(Optional.of(ability));
 
-        assertThatThrownBy(() -> service.assign(entityId, abilityId))
+        assertThatThrownBy(() -> service.assign(entityId, abilityId, userId))
             .isInstanceOf(EntityAbilityService.EntityAbilityException.class);
     }
 
     @Test
     void shouldListAssignedAbilities() {
+        var entity = new GameEntity(worldId, "PC", "Test");
+        setId(entity, entityId);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
         when(repo.findByEntityId(entityId)).thenReturn(java.util.List.of());
 
-        var list = service.listByEntity(entityId);
+        var list = service.listByEntity(entityId, userId);
         assertThat(list).isEmpty();
         verify(repo).findByEntityId(entityId);
     }
@@ -87,7 +93,7 @@ class EntityAbilityServiceTest {
         when(repo.findByEntityIdAndAbilityId(entityId, abilityId)).thenReturn(Optional.of(
             new com.lwe.core.domain.EntityAbility(entityId, abilityId)));
 
-        service.unassign(entityId, abilityId);
+        service.unassign(entityId, abilityId, userId);
 
         verify(repo).delete(any());
     }

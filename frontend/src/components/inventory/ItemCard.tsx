@@ -25,6 +25,13 @@ export function ItemCard({ entry, onEquip, onUnequip, children }: Props) {
     accessory: '💍',
   };
 
+const ITEM_TYPE_TO_SLOT: Record<string, string> = {
+    WEAPON: 'weapon',
+    ARMOR: 'armor',
+    HELMET: 'helmet',
+    ACCESSORY: 'accessory',
+  };
+
   return (
     <div
       className={`group relative rounded border px-3 py-2 text-sm transition ${
@@ -54,7 +61,7 @@ export function ItemCard({ entry, onEquip, onUnequip, children }: Props) {
           </button>
         ) : onEquip && !entry.equipped ? (
           <button
-            onClick={() => onEquip(entry.itemId, 'weapon')}
+            onClick={() => onEquip(entry.itemId, ITEM_TYPE_TO_SLOT[entry.type] ?? 'weapon')}
             className="text-xs text-accent hover:text-accent/60"
           >
             equip

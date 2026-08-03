@@ -19,6 +19,7 @@ export function useApiGet<T>(url: string, deps: unknown[] = []): UseApiGetResult
   const refetch = useCallback(() => setTrigger((n) => n + 1), []);
 
   useEffect(() => {
+    if (!url) { setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -34,10 +35,11 @@ export function useApiGet<T>(url: string, deps: unknown[] = []): UseApiGetResult
       .catch((err) => {
         if (!cancelled) {
           const msg =
-            err?.response?.data?.message ??
-            err?.response?.data?.error ??
-            err?.message ??
-            'Anfrage fehlgeschlagen';
+            typeof err?.response?.data?.message === 'string'
+              ? err.response.data.message
+              : typeof err?.response?.data?.error === 'string'
+                ? err.response.data.error
+                : err?.message ?? 'Anfrage fehlgeschlagen';
           setError(msg);
           setLoading(false);
           toast.error(msg);

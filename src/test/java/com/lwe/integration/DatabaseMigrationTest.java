@@ -51,6 +51,20 @@ class DatabaseMigrationTest {
     }
 
     @Test
+    void entitiesTableHasSkillsJsonColumn() throws SQLException {
+        try (var conn = dataSource.getConnection()) {
+            var rs = conn.getMetaData()
+                .getColumns(null, "public", "entities", "skills_json");
+            assertThat(rs.next())
+                .as("V089 sollte skills_json-Spalte auf entities hinzufügen")
+                .isTrue();
+            assertThat(rs.getString("TYPE_NAME"))
+                .as("skills_json sollte JSONB sein")
+                .isIn("jsonb", "_jsonb");
+        }
+    }
+
+    @Test
     void flywayHistoryTableExists() throws SQLException {
         try (var conn = dataSource.getConnection()) {
             var rs = conn.getMetaData()

@@ -25,13 +25,13 @@ interface LocationSummary {
 interface NpcData {
   id: string;
   name: string;
-  entity_type: string;
-  metadata_json: string;
-  faction_id: string | null;
+  entityType: string;
+  metadataJson: string;
+  factionId: string | null;
   backstory?: string;
   age?: number;
-  experience_level?: string;
-  social_standing?: string;
+  experienceLevel?: string;
+  socialStanding?: string;
 }
 
 interface FactionData {
@@ -63,10 +63,10 @@ export default function NpcViewPage() {
   const user = useAuthStore((s) => s.user);
   const isDm = user?.role === 'ADMIN';
 
-  const { data: npc, loading, refetch } = useApiGet<NpcData>(`/entities/${npcId}`, [npcId]);
+  const { data: npc, loading, refetch } = useApiGet<NpcData>(`/worlds/${worldId}/entities/${npcId}`, [worldId, npcId]);
   const { data: faction } = useApiGet<FactionData>(
-    npc?.faction_id ? `/factions/${npc.faction_id}` : '',
-    [npc?.faction_id],
+    npc?.factionId ? `/factions/${npc.factionId}` : '',
+    [npc?.factionId],
   );
   const { data: relations, fetch: fetchRelations } = useLazyApiGet<FactionRelation[]>();
 
@@ -135,7 +135,7 @@ export default function NpcViewPage() {
 
   let meta: Record<string, string | string[] | number | undefined> = {};
   try {
-    meta = JSON.parse(npc.metadata_json) as Record<string, string | string[] | number | undefined>;
+    meta = JSON.parse(npc.metadataJson) as Record<string, string | string[] | number | undefined>;
   } catch {
     /* */
   }
@@ -149,10 +149,10 @@ export default function NpcViewPage() {
   const openEdit = () => {
     setEditName(npc.name);
     setEditAge(npc.age);
-    setEditExperienceLevel(npc.experience_level ?? '');
-    setEditSocialStanding(npc.social_standing ?? '');
-    setEditBackstory(npc.backstory ?? '');
-    setEditFactionId(npc.faction_id ?? '');
+    setEditExperienceLevel(npc.experienceLevel ?? '');
+    setEditSocialStanding(npc.socialStanding ?? '');
+
+    setEditFactionId(npc.factionId ?? '');
     setEditLocationId((meta.location_id as string) ?? '');
     setEditPersonality((meta.personality as string) ?? '');
     setEditKnowledge(((meta.knowledge as string[]) ?? []).join(', '));
@@ -274,7 +274,7 @@ export default function NpcViewPage() {
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <dt className="text-text-secondary">Type</dt>
-                <dd className="text-text-primary">{npc.entity_type}</dd>
+                <dd className="text-text-primary">{npc.entityType}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-text-secondary">Age</dt>
@@ -282,11 +282,11 @@ export default function NpcViewPage() {
               </div>
               <div className="flex justify-between">
                 <dt className="text-text-secondary">Experience</dt>
-                <dd className="text-text-primary capitalize">{npc.experience_level ?? '—'}</dd>
+                <dd className="text-text-primary capitalize">{npc.experienceLevel ?? '—'}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-text-secondary">Standing</dt>
-                <dd className="text-text-primary capitalize">{npc.social_standing ?? '—'}</dd>
+                <dd className="text-text-primary capitalize">{npc.socialStanding ?? '—'}</dd>
               </div>
               {faction && (
                 <div className="flex justify-between">

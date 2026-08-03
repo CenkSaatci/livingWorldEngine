@@ -10,11 +10,13 @@ public record SheetResponse(
     List<AttributeInfo> attributes,
     List<DerivedValueInfo> derivedValues,
     List<SkillInfo> skills,
-    List<ConditionalInfo> conditionals
+    List<ConditionalInfo> conditionals,
+    List<AbilityInfo> abilities
 ) {
     public record EntityInfo(String id, String name, String entityType) {}
     public record AttributeInfo(String name, int value, double modifier, int min, int max) {}
     public record DerivedValueInfo(String name, double value) {}
-    public record SkillInfo(String name, int total) {}
+    public record SkillInfo(String name, int total, Integer perCharacterValue) {}
     public record ConditionalInfo(String name, boolean active, String description) {}
+    public record AbilityInfo(String name, String type, int apCost, String effect, String diceExpression) {}
 }

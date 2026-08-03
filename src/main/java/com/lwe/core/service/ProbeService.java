@@ -54,7 +54,7 @@ public class ProbeService {
         var world = worldRepo.findById(entity.getWorldId())
             .orElseThrow(() -> new RuntimeException("WORLD_NOT_FOUND"));
         var rules = parseRules(world);
-        var probeType = (String) rules.getOrDefault("probeType", "d20_target");
+        var probeType = resolveProbeType(rules);
         var attributes = parseAttributes(entity);
         var allowed = attributes.keySet();
 
@@ -74,6 +74,12 @@ public class ProbeService {
             skillBonus = ((Number) skill.getOrDefault("bonus", 0)).intValue();
             var attrs = (List<String>) skill.getOrDefault("attributes", List.of());
             if (attrs != null) skillAttrs.addAll(attrs);
+        }
+
+        // Per-Character Skill-Override aus entity.skillsJson
+        var perCharSkills = parsePerCharacterSkills(entity);
+        if (perCharSkills.containsKey(skillName)) {
+            skillBonus = perCharSkills.get(skillName);
         }
 
         var rng = ThreadLocalRandom.current();
@@ -139,6 +145,29 @@ public class ProbeService {
         if (system == null || system.getRulesJson() == null || system.getRulesJson().isBlank()) return Map.of();
         try {
             return objectMapper.readValue(system.getRulesJson(), new TypeReference<>() {});
+        } catch (Exception e) {
+            return Map.of();
+        }
+    }
+
+    private String resolveProbeType(Map<String, Object> rules) {
+        var explicit = (String) rules.get("probeType");
+        if (explicit != null) return explicit;
+        var diceMechanics = (Map<String, Object>) rules.get("dice_mechanics");
+        if (diceMechanics != null) {
+            var probe = (String) diceMechanics.get("probe");
+            if (probe != null) {
+                if (probe.startsWith("1d100")) return "d100_threshold";
+                if (probe.startsWith("3d20")) return "d20_3attr";
+            }
+        }
+        return "d20_target";
+    }
+
+    private Map<String, Integer> parsePerCharacterSkills(GameEntity entity) {
+        if (entity.getSkillsJson() == null || entity.getSkillsJson().isBlank()) return Map.of();
+        try {
+            return objectMapper.readValue(entity.getSkillsJson(), new TypeReference<>() {});
         } catch (Exception e) {
             return Map.of();
         }

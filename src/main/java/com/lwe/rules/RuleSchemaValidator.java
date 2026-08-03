@@ -83,11 +83,29 @@ public class RuleSchemaValidator {
               "type": "object",
               "required": ["initiative", "damage"],
               "properties": {
-                "initiative":       { "type": "string" },
-                "damage":           { "type": "string" },
-                "action_points":    { "$ref": "#/$defs/actionPoints" },
-                "action_types":     { "type": "array", "items": { "type": "string" } },
-                "actions_per_turn": { "type": "object" }
+                "initiative":        { "type": "string" },
+                "damage":            { "type": "string" },
+                "action_points":     { "$ref": "#/$defs/actionPoints" },
+                "action_types":      { "type": "array", "items": { "type": "string" } },
+                "actions_per_turn":  { "type": "object" },
+                "critical_hit":      { "type": "object", "properties": {
+                  "threshold": { "type": "integer", "minimum": 1, "maximum": 20 },
+                  "multiplier": { "type": "integer", "minimum": 1 }
+                } },
+                "saving_throws":     { "type": "object", "properties": {
+                  "base_dc": { "type": "integer" },
+                  "proficiency_bonus": { "type": "string" }
+                } },
+                "resting":           { "type": "object", "properties": {
+                  "short_rest": { "type": "object", "properties": {
+                    "heal_percent": { "type": "number", "minimum": 0, "maximum": 1 },
+                    "recover_resources": { "type": "boolean" }
+                  } },
+                  "long_rest": { "type": "object", "properties": {
+                    "full_heal": { "type": "boolean" },
+                    "recover_all": { "type": "boolean" }
+                  } }
+                } }
               }
             },
             "actionPoints": {

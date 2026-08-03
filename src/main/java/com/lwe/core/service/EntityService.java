@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -99,6 +100,36 @@ public class EntityService {
         var entity = getById(entityId, userId);
         entity.setExperiencePoints(experiencePoints);
         return entityRepo.save(entity);
+    }
+
+    @Transactional
+    public GameEntity updateSkills(UUID entityId, UUID userId, Map<String, Integer> skills) {
+        var entity = getById(entityId, userId);
+        try {
+            var existing = entity.getSkillsJson() != null && !entity.getSkillsJson().isBlank()
+                ? objectMapper.readValue(entity.getSkillsJson(), ATTR_MAP)
+                : new java.util.HashMap<String, Integer>();
+            existing.putAll(skills);
+            entity.setSkillsJson(objectMapper.writeValueAsString(existing));
+            return entityRepo.save(entity);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update skills", e);
+        }
+    }
+
+    @Transactional
+    public GameEntity updateOverrides(UUID entityId, UUID userId, Map<String, Object> overrides) {
+        var entity = getById(entityId, userId);
+        try {
+            var meta = entity.getMetadataJson() != null
+                ? objectMapper.readTree(entity.getMetadataJson())
+                : objectMapper.createObjectNode();
+            ((ObjectNode) meta).set("formula_overrides", objectMapper.valueToTree(overrides));
+            entity.setMetadataJson(objectMapper.writeValueAsString(meta));
+            return entityRepo.save(entity);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update overrides", e);
+        }
     }
 
     @Transactional

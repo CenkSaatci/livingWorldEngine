@@ -7,8 +7,9 @@ export interface SheetData {
   level: number;
   attributes: { name: string; value: number; modifier: number; min: number; max: number }[];
   derivedValues: { name: string; value: number }[];
-  skills: { name: string; total: number }[];
+  skills: { name: string; total: number; perCharacterValue?: number | null }[];
   conditionals: { name: string; active: boolean; description: string }[];
+  abilities: { name: string; type: string; apCost: number; effect: string; diceExpression: string }[];
 }
 
 export function useSheet(entityId: string | undefined) {

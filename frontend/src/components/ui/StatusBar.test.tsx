@@ -15,8 +15,8 @@ const mockWorld = {
   created_at: '2026-01-01T00:00:00Z',
 };
 
-const mockUser = { id: 'u1', email: 'dm@test.com', username: 'testdm', role: 'ADMIN', locale: 'de' };
-const mockUserPlayer = { id: 'u2', email: 'player@test.com', username: 'player', role: 'USER', locale: 'de' };
+const mockUser = { id: 'u1', email: 'dm@test.com', username: 'testdm', role: 'ADMIN' as const, locale: 'de' };
+const mockUserPlayer = { id: 'u2', email: 'player@test.com', username: 'player', role: 'USER' as const, locale: 'de' };
 
 beforeEach(() => {
   vi.restoreAllMocks();
@@ -53,8 +53,8 @@ describe('StatusBar', () => {
     useWorldStore.setState({ currentWorld: mockWorld });
     useSessionStore.setState({
       activeSession: {
-        id: 's1', world_id: 'w1', dm_id: 'u1', started_at: '2026-07-19T14:00:00Z',
-        ended_at: null, status: 'ACTIVE' as const, created_at: '2026-07-19T14:00:00Z',
+        id: 's1', world_id: 'w1', started_at: '2026-07-19T14:00:00Z',
+        ended_at: null as unknown as string, status: 'ACTIVE' as const, created_at: '2026-07-19T14:00:00Z',
       },
     });
     const { container } = renderStatusBar();

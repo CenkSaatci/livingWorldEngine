@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.lwe.core.util.WorldAccess;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -25,58 +26,104 @@ class RestServiceTest {
     @Mock private GameEntityRepository entityRepo;
     @Mock private GameSystemRepository gameSystemRepo;
     @Mock private WorldRepository worldRepo;
+    @Mock private WorldAccess worldAccess;
 
     private RestService service;
     private final UUID worldId = UUID.randomUUID();
     private final UUID gameSystemId = UUID.randomUUID();
+    private final UUID userId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        service = new RestService(entityRepo, gameSystemRepo, worldRepo);
+        service = new RestService(entityRepo, gameSystemRepo, worldRepo, worldAccess);
+        lenient().doNothing().when(worldAccess).requireAccess(any(), any());
     }
 
-    @Test
-    void shouldFullHealWithDefaultConfig() {
-        var entity = entityWithHp(5, 20, 0, 2);
-        when(entityRepo.findById(entity.getId())).thenReturn(Optional.of(entity));
-        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        service.rest(entity.getId());
-
-        assertThat(entity.getHpCurrent()).isEqualTo(20);
-        assertThat(entity.getApCurrent()).isEqualTo(2);
-    }
+    private static final String NEW_REST_CONFIG = """
+        "dice_mechanics":{"probe":"1d20","combat":{
+          "initiative":"1d20","damage":"1d8",
+          "resting":{
+            "short_rest":{"hp":"50%","ap":"full","recover":["resources"]},
+            "long_rest":{"hp":"full","ap":"full","recover":["all"]}
+          }
+        }}
+        """;
 
     @Test
-    void shouldApplyDiceHealing() {
-        var entity = entityWithHp(5, 20, 0, 2);
-        var gs = gsWithRestConfig("""
-            "rest":{"hp_recovery":"dice","hp_dice":"1d6","ap_recovery":"full"}""");
-        when(entityRepo.findById(entity.getId())).thenReturn(Optional.of(entity));
-        when(worldRepo.findById(worldId)).thenReturn(Optional.of(worldWithSystem()));
-        when(gameSystemRepo.findById(gameSystemId)).thenReturn(Optional.of(gs));
-        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        service.rest(entity.getId());
-
-        assertThat(entity.getHpCurrent()).isBetween(6, 25); // 5 + (1 to 6)
-        assertThat(entity.getApCurrent()).isEqualTo(2);
-    }
-
-    @Test
-    void shouldApplyPercentageHealing() {
+    void shortRestHealsPercentageHp() {
         var entity = entityWithHp(10, 50, 0, 2);
-        var gs = gsWithRestConfig("""
-            "rest":{"hp_recovery":"percentage","hp_percentage":50,"ap_recovery":"none"}""");
+        var gs = gsWithConfig(NEW_REST_CONFIG);
         when(entityRepo.findById(entity.getId())).thenReturn(Optional.of(entity));
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(worldWithSystem()));
         when(gameSystemRepo.findById(gameSystemId)).thenReturn(Optional.of(gs));
         when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        service.rest(entity.getId());
+        service.shortRest(entity.getId(), userId);
 
-        assertThat(entity.getHpCurrent()).isEqualTo(35); // 10 + 25 (50% of 50)
-        assertThat(entity.getApCurrent()).isEqualTo(0); // unchanged
+        assertThat(entity.getHpCurrent()).isEqualTo(35); // 10 + 50% of 50 = 35
+    }
+
+    @Test
+    void shortRestRestoresAp() {
+        var entity = entityWithHp(50, 50, 0, 2);
+        var gs = gsWithConfig(NEW_REST_CONFIG);
+        when(entityRepo.findById(entity.getId())).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(worldWithSystem()));
+        when(gameSystemRepo.findById(gameSystemId)).thenReturn(Optional.of(gs));
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.shortRest(entity.getId(), userId);
+
+        assertThat(entity.getApCurrent()).isEqualTo(2); // restored to max
+    }
+
+    @Test
+    void longRestFullyHeals() {
+        var entity = entityWithHp(10, 50, 0, 2);
+        var gs = gsWithConfig(NEW_REST_CONFIG);
+        when(entityRepo.findById(entity.getId())).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(worldWithSystem()));
+        when(gameSystemRepo.findById(gameSystemId)).thenReturn(Optional.of(gs));
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.longRest(entity.getId(), userId);
+
+        assertThat(entity.getHpCurrent()).isEqualTo(50);
+        assertThat(entity.getApCurrent()).isEqualTo(2);
+    }
+
+    @Test
+    void shortRestWithDiceExpression() {
+        var entity = entityWithHp(10, 50, 0, 2);
+        var gs = gsWithConfig("""
+            "dice_mechanics":{"probe":"1d20","combat":{
+              "initiative":"1d20","damage":"1d8",
+              "resting":{"short_rest":{"hp":"1d6","ap":null,"recover":[]}}
+            }}
+            """);
+        when(entityRepo.findById(entity.getId())).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(worldWithSystem()));
+        when(gameSystemRepo.findById(gameSystemId)).thenReturn(Optional.of(gs));
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.shortRest(entity.getId(), userId);
+
+        assertThat(entity.getHpCurrent()).isBetween(11, 16); // 10 + (1 to 6)
+    }
+
+    @Test
+    void restWithoutConfigDefaultsToNoop() {
+        var entity = entityWithHp(5, 20, 0, 2);
+        var gs = gsWithConfig("""
+            {"version":1,"attributes":[],"dice_mechanics":{"probe":"1d20"}}
+            """);
+        when(entityRepo.findById(entity.getId())).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(worldWithSystem()));
+        when(gameSystemRepo.findById(gameSystemId)).thenReturn(Optional.of(gs));
+
+        service.shortRest(entity.getId(), userId);
+
+        assertThat(entity.getHpCurrent()).isEqualTo(5); // unchanged
     }
 
     private GameEntity entityWithHp(int hp, int hpMax, int ap, int apMax) {
@@ -95,8 +142,9 @@ class RestServiceTest {
         return w;
     }
 
-    private GameSystem gsWithRestConfig(String restJson) {
-        var gs = new GameSystem("D20", 1, "{\"version\":1,\"attributes\":[]," + restJson + "}", "{}");
+    private GameSystem gsWithConfig(String rulesJson) {
+        var gs = new GameSystem("D20", 1, rulesJson.startsWith("{") ? rulesJson : "{\"version\":1,\"attributes\":[]," + rulesJson + "}", "{}");
+
         setId(gs, gameSystemId);
         return gs;
     }

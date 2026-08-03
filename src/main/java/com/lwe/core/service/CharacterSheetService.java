@@ -26,21 +26,25 @@ public class CharacterSheetService {
     private final WorldAccess worldAccess;
     private final ModifierService modifierService;
     private final DerivedValueService derivedValueService;
+    private final LevelUpService levelUpService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final TypeReference<Map<String, Integer>> ATTR_MAP_TYPE = new TypeReference<>() {};
     private static final TypeReference<List<Map<String, Object>>> LIST_MAP_TYPE = new TypeReference<>() {};
+    private static final TypeReference<Map<String, Object>> OVERRIDE_TYPE = new TypeReference<>() {};
 
     public CharacterSheetService(GameEntityRepository entityRepo, WorldRepository worldRepo,
                                   GameSystemRepository systemRepo, WorldAccess worldAccess,
                                   ModifierService modifierService,
-                                  DerivedValueService derivedValueService) {
+                                  DerivedValueService derivedValueService,
+                                  LevelUpService levelUpService) {
         this.entityRepo = entityRepo;
         this.worldRepo = worldRepo;
         this.systemRepo = systemRepo;
         this.worldAccess = worldAccess;
         this.modifierService = modifierService;
         this.derivedValueService = derivedValueService;
+        this.levelUpService = levelUpService;
     }
 
     public SheetResponse getSheet(UUID entityId, UUID userId) {
@@ -54,6 +58,10 @@ public class CharacterSheetService {
 
         var rules = parseRules(world);
         var attributeValues = parseAttributes(entity);
+        // Wenn Entity keine Attribute hat, mit Defaults aus rulesJson initialisieren
+        if (attributeValues.isEmpty()) {
+            attributeValues = initDefaultAttributes(rules);
+        }
         var allowed = attributeValues.keySet();
 
         // Modifier
@@ -84,28 +92,57 @@ public class CharacterSheetService {
         var derivedRaw = (List<Map<String, Object>>) rules.getOrDefault("derived_values", List.of());
         var derivedValues = derivedValueService.evaluate(derivedRaw, attributeValues);
 
+        // Formula Overrides aus metadata_json
+        var overrides = parseOverrides(entity);
+        if (!overrides.isEmpty()) {
+            derivedValues = derivedValues.stream()
+                .map(dv -> {
+                    var overrideVal = overrides.get(dv.name());
+                    if (overrideVal instanceof Number n) {
+                        return new SheetResponse.DerivedValueInfo(
+                            dv.name(), dv.value() + n.doubleValue());
+                    }
+                    return dv;
+                })
+                .collect(Collectors.toList());
+        }
+
         // Skills (total = Basis + Attribut-Modifier)
+        var perCharSkills = parsePerCharacterSkills(entity);
         var skillsRaw = (List<Map<String, Object>>) rules.getOrDefault("skills", List.of());
         var skills = skillsRaw.stream()
             .map(s -> {
                 var name = (String) s.getOrDefault("name", "");
-                var bonus = ((Number) s.getOrDefault("bonus", 0)).intValue();
+                var globalBonus = ((Number) s.getOrDefault("bonus", 0)).intValue();
                 var attrs = (List<String>) s.getOrDefault("attributes", List.of());
                 var attrMod = attrs.stream()
                     .map(a -> modifiers.getOrDefault(a, 0.0))
                     .mapToDouble(Double::doubleValue)
                     .sum();
-                var total = (int) Math.round(bonus + attrMod);
-                return new SheetResponse.SkillInfo(name, total);
+                var effectiveBonus = perCharSkills.containsKey(name)
+                    ? perCharSkills.get(name) : globalBonus;
+                var total = (int) Math.round(effectiveBonus + attrMod);
+                var perCharVal = perCharSkills.get(name);
+                return new SheetResponse.SkillInfo(name, total, perCharVal);
             })
             .collect(Collectors.toList());
 
         // Conditionals
         var conditionals = evaluateConditionals(rules, attributeValues, allowed);
 
+        // Abilities aus rulesJson.abilities[]
+        var abilities = parseAbilities(rules);
+
+        // Level aus XP berechnen
+        int level = 1;
+        var gs = resolveGameSystem(world);
+        if (gs != null) {
+            level = levelUpService.getLevel(entity, gs);
+        }
+
         return new SheetResponse(
             new SheetResponse.EntityInfo(entity.getId().toString(), entity.getName(), entity.getEntityType()),
-            entity.getExperiencePoints(), 0, attributes, derivedValues, skills, conditionals
+            entity.getExperiencePoints(), level, attributes, derivedValues, skills, conditionals, abilities
         );
     }
 
@@ -124,6 +161,57 @@ public class CharacterSheetService {
         if (system == null || system.getRulesJson() == null || system.getRulesJson().isBlank()) return Map.of();
         try {
             return objectMapper.readValue(system.getRulesJson(), new TypeReference<>() {});
+        } catch (Exception e) {
+            return Map.of();
+        }
+    }
+
+    private Map<String, Object> parseOverrides(GameEntity entity) {
+        if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank()) return Map.of();
+        try {
+            var tree = objectMapper.readTree(entity.getMetadataJson());
+            var overrides = tree.path("formula_overrides");
+            if (overrides.isMissingNode()) return Map.of();
+            return objectMapper.convertValue(overrides, OVERRIDE_TYPE);
+        } catch (Exception e) {
+            return Map.of();
+        }
+    }
+
+    private Map<String, Integer> initDefaultAttributes(Map<String, Object> rules) {
+        var attrs = (List<Map<String, Object>>) rules.getOrDefault("attributes", List.of());
+        if (attrs.isEmpty()) return Map.of();
+        var map = new java.util.LinkedHashMap<String, Integer>();
+        for (var a : attrs) {
+            var name = (String) a.getOrDefault("name", "");
+            if (!name.isBlank()) {
+                map.put(name, ((Number) a.getOrDefault("default", 10)).intValue());
+            }
+        }
+        return map;
+    }
+
+    private GameSystem resolveGameSystem(World world) {
+        if (world.getGameSystemId() == null) return null;
+        return systemRepo.findById(world.getGameSystemId()).orElse(null);
+    }
+
+    private List<SheetResponse.AbilityInfo> parseAbilities(Map<String, Object> rules) {
+        var raw = (List<Map<String, Object>>) rules.getOrDefault("abilities", List.of());
+        return raw.stream().map(a -> {
+            var name = (String) a.getOrDefault("name", "");
+            var type = (String) a.getOrDefault("type", "active");
+            var cost = ((Number) a.getOrDefault("cost", 0)).intValue();
+            var effect = (String) a.getOrDefault("effect", "");
+            var diceExpr = (String) a.getOrDefault("diceExpression", "");
+            return new SheetResponse.AbilityInfo(name, type, cost, effect, diceExpr);
+        }).collect(Collectors.toList());
+    }
+
+    private Map<String, Integer> parsePerCharacterSkills(GameEntity entity) {
+        if (entity.getSkillsJson() == null || entity.getSkillsJson().isBlank()) return Map.of();
+        try {
+            return objectMapper.readValue(entity.getSkillsJson(), ATTR_MAP_TYPE);
         } catch (Exception e) {
             return Map.of();
         }

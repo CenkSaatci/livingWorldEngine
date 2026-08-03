@@ -54,9 +54,9 @@ public class InventoryController {
 
     @PostMapping("/unequip")
     public ResponseEntity<InventoryResponse> unequipItem(@PathVariable UUID entityId,
-                                                          @RequestBody UnequipRequest req,
+                                                          @RequestBody UnequipItemRequest req,
                                                           @AuthenticationPrincipal User user) {
-        var result = inventoryService.unequipItem(entityId, user.getId(), req.slot());
+        var result = inventoryService.unequipItem(entityId, user.getId(), req.itemId());
         return ResponseEntity.ok(new InventoryResponse(result.items(), result.computedBonuses()));
     }
 
@@ -71,5 +71,5 @@ public class InventoryController {
     public record AddRequest(UUID itemId, int quantity) {}
     public record RemoveRequest(UUID itemId, int quantity) {}
     public record EquipRequest(UUID itemId, String slot) {}
-    public record UnequipRequest(String slot) {}
+    public record UnequipItemRequest(UUID itemId) {}
 }

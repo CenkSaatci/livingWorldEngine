@@ -25,6 +25,9 @@ interface DiceCombat {
   actionPoints: { standard: number; max: number };
   actionTypes: string[];
   actionsPerTurn: Record<string, number>;
+  criticalHit?: { threshold: number; multiplier: number };
+  savingThrows?: { baseDc: number; proficiencyBonus: string };
+  resting?: { shortRest: { healPercent: number; recoverResources: boolean }; longRest: { fullHeal: boolean; recoverAll: boolean } };
 }
 
 interface SystemFeatures {
@@ -158,6 +161,9 @@ const INITIAL: WizardData = {
     actionPoints: { standard: 1, max: 2 },
     actionTypes: ['action'],
     actionsPerTurn: { action: 1 },
+    criticalHit: { threshold: 20, multiplier: 2 },
+    savingThrows: { baseDc: 8, proficiencyBonus: '' },
+    resting: { shortRest: { healPercent: 0.5, recoverResources: true }, longRest: { fullHeal: true, recoverAll: true } },
   },
 };
 
@@ -204,13 +210,27 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
       dice_mechanics: { probe: probeExpr },
     };
     if (data.enableCombat) {
-      (rules.dice_mechanics as Record<string, unknown>).combat = {
+      const combat: Record<string, unknown> = {
         initiative: data.combat.initiative,
         damage: data.combat.damage,
         action_points: data.combat.actionPoints,
         action_types: data.combat.actionTypes,
         actions_per_turn: data.combat.actionsPerTurn,
       };
+      if (data.combat.criticalHit) combat.critical_hit = data.combat.criticalHit;
+      if (data.combat.savingThrows) {
+        combat.saving_throws = {
+          base_dc: data.combat.savingThrows.baseDc,
+          proficiency_bonus: data.combat.savingThrows.proficiencyBonus,
+        };
+      }
+      if (data.combat.resting) {
+        combat.resting = {
+          short_rest: data.combat.resting.shortRest,
+          long_rest: data.combat.resting.longRest,
+        };
+      }
+      (rules.dice_mechanics as Record<string, unknown>).combat = combat;
     }
     return JSON.stringify(rules, null, 2);
   };
@@ -1355,6 +1375,120 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   </div>
                 )}
               </div>
+
+              {/* Critical Hits */}
+              <details className="rounded border border-bg-elevated bg-bg-primary/20">
+                <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-text-secondary hover:text-text-primary">
+                  {t('s4_critical_hit')}
+                </summary>
+                <div className="space-y-3 px-3 pb-3">
+                  <div>
+                    <label className="block text-xs text-text-secondary mb-1">{t('s4_crit_threshold')}</label>
+                    <input type="number" min={1} max={20}
+                      value={data.combat.criticalHit?.threshold ?? 20}
+                      onChange={(e) => update('combat', { ...data.combat, criticalHit: { ...data.combat.criticalHit ?? { threshold: 20, multiplier: 2 }, threshold: Number(e.target.value) } })}
+                      className="w-20 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-text-secondary mb-1">{t('s4_crit_multiplier')}</label>
+                    <input type="number" min={1} max={10}
+                      value={data.combat.criticalHit?.multiplier ?? 2}
+                      onChange={(e) => update('combat', { ...data.combat, criticalHit: { ...data.combat.criticalHit ?? { threshold: 20, multiplier: 2 }, multiplier: Number(e.target.value) } })}
+                      className="w-20 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                    />
+                  </div>
+                </div>
+              </details>
+
+              {/* Saving Throws */}
+              <details className="rounded border border-bg-elevated bg-bg-primary/20">
+                <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-text-secondary hover:text-text-primary">
+                  {t('s4_saving_throws')}
+                </summary>
+                <div className="space-y-3 px-3 pb-3">
+                  <div>
+                    <label className="block text-xs text-text-secondary mb-1">{t('s4_save_base_dc')}</label>
+                    <input type="number" min={1} max={30}
+                      value={data.combat.savingThrows?.baseDc ?? 8}
+                      onChange={(e) => update('combat', { ...data.combat, savingThrows: { ...data.combat.savingThrows ?? { baseDc: 8, proficiencyBonus: '' }, baseDc: Number(e.target.value) } })}
+                      className="w-20 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                    />
+                  </div>
+                  <CombatExpressionRow
+                    label={t('s4_save_prof_bonus')}
+                    value={data.combat.savingThrows?.proficiencyBonus ?? ''}
+                    attributes={data.attributes}
+                    diceOptions={[]}
+                    onRoll={async () => {}}
+                    onChange={(v) => update('combat', { ...data.combat, savingThrows: { ...data.combat.savingThrows ?? { baseDc: 8, proficiencyBonus: '' }, proficiencyBonus: v } })}
+                  />
+                </div>
+              </details>
+
+              {/* Resting */}
+              <details className="rounded border border-bg-elevated bg-bg-primary/20">
+                <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-text-secondary hover:text-text-primary">
+                  {t('s4_resting')}
+                </summary>
+                <div className="space-y-3 px-3 pb-3">
+                  <div className="rounded bg-bg-primary/30 p-2">
+                    <p className="text-xs font-medium text-text-primary mb-2">{t('s4_short_rest')}</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] text-text-secondary mb-0.5">{t('s4_rest_heal_pct')}</label>
+                        <input type="number" min={0} max={1} step={0.1}
+                          value={data.combat.resting?.shortRest.healPercent ?? 0.5}
+                          onChange={(e) => update('combat', {
+                            ...data.combat,
+                            resting: { ...data.combat.resting ?? { shortRest: { healPercent: 0.5, recoverResources: true }, longRest: { fullHeal: true, recoverAll: true } },
+                              shortRest: { ...(data.combat.resting?.shortRest ?? { healPercent: 0.5, recoverResources: true }), healPercent: Number(e.target.value) } },
+                          })}
+                          className="w-20 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                        />
+                      </div>
+                      <label className="flex items-center gap-1.5 text-xs text-text-secondary">
+                        <input type="checkbox" className="accent-accent"
+                          checked={data.combat.resting?.shortRest.recoverResources ?? true}
+                          onChange={(e) => update('combat', {
+                            ...data.combat,
+                            resting: { ...data.combat.resting ?? { shortRest: { healPercent: 0.5, recoverResources: true }, longRest: { fullHeal: true, recoverAll: true } },
+                              shortRest: { ...(data.combat.resting?.shortRest ?? { healPercent: 0.5, recoverResources: true }), recoverResources: e.target.checked } },
+                          })}
+                        />
+                        {t('s4_rest_recover')}
+                      </label>
+                    </div>
+                  </div>
+                  <div className="rounded bg-bg-primary/30 p-2">
+                    <p className="text-xs font-medium text-text-primary mb-2">{t('s4_long_rest')}</p>
+                    <div className="flex flex-wrap gap-3">
+                      <label className="flex items-center gap-1.5 text-xs text-text-secondary">
+                        <input type="checkbox" className="accent-accent"
+                          checked={data.combat.resting?.longRest.fullHeal ?? true}
+                          onChange={(e) => update('combat', {
+                            ...data.combat,
+                            resting: { ...data.combat.resting ?? { shortRest: { healPercent: 0.5, recoverResources: true }, longRest: { fullHeal: true, recoverAll: true } },
+                              longRest: { ...(data.combat.resting?.longRest ?? { fullHeal: true, recoverAll: true }), fullHeal: e.target.checked } },
+                          })}
+                        />
+                        {t('s4_rest_full_heal')}
+                      </label>
+                      <label className="flex items-center gap-1.5 text-xs text-text-secondary">
+                        <input type="checkbox" className="accent-accent"
+                          checked={data.combat.resting?.longRest.recoverAll ?? true}
+                          onChange={(e) => update('combat', {
+                            ...data.combat,
+                            resting: { ...data.combat.resting ?? { shortRest: { healPercent: 0.5, recoverResources: true }, longRest: { fullHeal: true, recoverAll: true } },
+                              longRest: { ...(data.combat.resting?.longRest ?? { fullHeal: true, recoverAll: true }), recoverAll: e.target.checked } },
+                          })}
+                        />
+                        {t('s4_rest_recover_all')}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </details>
             </div>
           )}
         </div>

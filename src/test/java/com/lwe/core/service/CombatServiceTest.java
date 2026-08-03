@@ -130,8 +130,11 @@ class CombatServiceTest {
         when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
 
         var participant = new CombatParticipant(session.getId(), attackerId, 15, 2, "A");
+        var defenderParticipant = new CombatParticipant(session.getId(), defenderId, 10, 2, "A");
+        defenderParticipant.setHpCurrent(10);
+        defenderParticipant.setHpMax(10);
         when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
-            .thenReturn(List.of(participant));
+            .thenReturn(List.of(participant, defenderParticipant));
         when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(new RollService.RollResult("attack", "1d8+3", new int[]{5}, 8, 0, true, null));
         when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
@@ -141,7 +144,7 @@ class CombatServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.actionType()).isEqualTo("ATTACK");
         assertThat(result.success()).isTrue();
-        verify(participantRepo).save(any());
+        verify(participantRepo, atLeast(1)).save(any());
     }
 
     private void setId(Object obj, UUID id) {

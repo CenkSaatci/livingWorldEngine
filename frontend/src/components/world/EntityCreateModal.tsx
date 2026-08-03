@@ -18,7 +18,7 @@ interface LocationSummary {
 
 interface Props {
   worldId: string;
-  onCreated: () => void;
+  onCreated: (entityId: string, entityType: string) => void;
   onClose: () => void;
 }
 
@@ -92,7 +92,7 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
           .filter(Boolean);
       if (locationId) metadata.location_id = locationId;
 
-      await apiClient.post(`/worlds/${worldId}/entities`, {
+      const res = await apiClient.post(`/worlds/${worldId}/entities`, {
         entityType,
         name: name.trim(),
         age: age || 30,
@@ -102,7 +102,7 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
         backstory: backstory || null,
         metadataJson: JSON.stringify(metadata),
       });
-      onCreated();
+      onCreated(res.data.id, entityType);
       onClose();
     } catch {
       /* */

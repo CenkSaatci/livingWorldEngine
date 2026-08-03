@@ -22,14 +22,17 @@ public class EntityAbilityController {
     }
 
     @PostMapping("/{abilityId}")
-    public ResponseEntity<Void> assign(@PathVariable UUID entityId, @PathVariable UUID abilityId) {
-        service.assign(entityId, abilityId);
+    public ResponseEntity<Void> assign(@PathVariable UUID entityId, @PathVariable UUID abilityId,
+                                       @AuthenticationPrincipal User user) {
+        service.assign(entityId, abilityId, user.getId());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @GetMapping
-    public ResponseEntity<List<AssignedAbilityResponse>> list(@PathVariable UUID entityId) {
-        var assigned = service.listByEntity(entityId);
+    public ResponseEntity<List<AssignedAbilityResponse>> list(@PathVariable UUID entityId,
+                                                               @RequestParam(required = false) String type,
+                                                               @AuthenticationPrincipal User user) {
+        var assigned = service.listByEntity(entityId, user.getId());
         var responses = assigned.stream()
             .map(ea -> {
                 var ability = service.getAbility(ea.getAbilityId());
@@ -37,14 +40,15 @@ public class EntityAbilityController {
                     ea.getAbilityId(), ability.getName(), ability.getType().name(),
                     ability.getApCost(), ability.getDescription());
             })
-            .filter(a -> "ACTIVE".equals(a.type))
+            .filter(a -> type == null || a.type().equalsIgnoreCase(type))
             .toList();
         return ResponseEntity.ok(responses);
     }
 
     @DeleteMapping("/{abilityId}")
-    public ResponseEntity<Void> unassign(@PathVariable UUID entityId, @PathVariable UUID abilityId) {
-        service.unassign(entityId, abilityId);
+    public ResponseEntity<Void> unassign(@PathVariable UUID entityId, @PathVariable UUID abilityId,
+                                         @AuthenticationPrincipal User user) {
+        service.unassign(entityId, abilityId, user.getId());
         return ResponseEntity.noContent().build();
     }
 

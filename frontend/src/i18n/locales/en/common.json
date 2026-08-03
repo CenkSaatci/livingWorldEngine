@@ -57,7 +57,8 @@
     "initiative": "Initiative",
     "round": "Round",
     "noParticipants": "No participants",
-    "ap": "AP"
+    "ap": "AP",
+    "used": " (used)"
   },
   "entityTimeline": {
     "today": "today",

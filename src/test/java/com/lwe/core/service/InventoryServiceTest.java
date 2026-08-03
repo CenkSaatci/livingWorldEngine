@@ -20,6 +20,7 @@ class InventoryServiceTest {
 
     private final GameEntityRepository entityRepo = mock();
     private final GameItemRepository itemRepo = mock();
+    private final com.lwe.core.util.WorldAccess worldAccess = mock();
     private InventoryService service;
 
     private final UUID userId = UUID.randomUUID();
@@ -29,7 +30,8 @@ class InventoryServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new InventoryService(entityRepo, itemRepo);
+        service = new InventoryService(entityRepo, itemRepo, worldAccess);
+        lenient().doNothing().when(worldAccess).requireAccess(any(), any());
     }
 
     private GameEntity entityWithInventory(String invJson) {
@@ -99,7 +101,7 @@ class InventoryServiceTest {
         when(itemRepo.findById(itemId)).thenReturn(Optional.of(createItem("WEAPON", "{}")));
         when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        var result = service.unequipItem(entityId, userId, "weapon");
+        var result = service.unequipItem(entityId, userId, itemId);
         assertThat(result.items().getFirst().equipped()).isFalse();
     }
 
