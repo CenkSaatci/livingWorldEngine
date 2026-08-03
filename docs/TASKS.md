@@ -1905,5 +1905,73 @@ Schadensarten (`damage_type`) gehören nicht auf Systemebene, sondern zu Items, 
 | 21 (Combat vertiefen) | 3 | ~3,0 Tage |
 | 22 (Social Mechanics) | 1 (Konzept) | — |
 | 23 (Items, Abilities & Damage) | 5 | ~3,5 Tage |
+| Audit-Cleanup (A01-A05) | 5 | ~2,5 Tage |
+
+---
+
+## Audit-Cleanup (aus API-Audit 2026-07-25)
+
+Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, keine Bugs:
+
+### A01: Ability-CRUD im Frontend
+- **Status:** 🔜
+- **Aufwand:** 1,0 Tage
+- **Beschreibung:** Backend-Endpoints existieren (`POST/GET /worlds/{worldId}/abilities`, `GET/PUT/DELETE /abilities/{id}`), aber es gibt **kein Frontend** zum Erstellen/Verwalten von Abilities.
+  - Ability-Verwaltungsseite oder Integration in den SystemWizard
+  - Zuweisung von Abilities an Entities (POST /entities/{id}/abilities/{abilityId}) per UI
+- **Akzeptanzkriterien:**
+  - Ability anlegen/bearbeiten/löschen über UI
+  - Ability einem Character zuweisen/entziehen
+  - Active/Passive-Typen korrekt
+- **Qualitäts-Check:** TDD, i18n
+
+### A02: Inventory add/remove/use ohne UI
+- **Status:** 🔜
+- **Aufwand:** 1,0 Tage
+- **Beschreibung:** Backend-Endpoints existieren (`POST /inventory/add`, `/remove`, `/use/{itemId}`), aber die InventoryPage erlaubt nur Equip/Unequip per Drag & Drop.
+  - "Item hinzufügen"-Dialog (Item aus Katalog wählen, Menge)
+  - Item entfernen (Menge/ganz)
+  - Consumables benutzen (`POST /use/{itemId}`) mit Effekt-Anzeige
+- **Akzeptanzkriterien:**
+  - Items hinzufügen/entfernen via UI
+  - Consumable-Nutzung zeigt Heilung/Schaden
+  - Mengen korrekt aktualisiert
+- **Qualitäts-Check:** TDD, i18n
+
+### A03: Fog of War Backend-Anbindung
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** `FogController` (`POST /fog/toggle`, `GET /fog/status`) existiert, aber `fogStore` ist reiner lokaler State — keine Server-Synchronisation.
+  - Fog-Zustand pro Welt im Backend persistieren
+  - WebSocket-Broadcast bei Fog-Änderungen
+  - StatusBar-Button nutzt den Endpoint
+- **Akzeptanzkriterien:**
+  - Fog-Toggle speichert Zustand
+  - Andere Clients sehen Fog-Änderung live
+- **Qualitäts-Check:** TDD
+
+### A04: World-Time-Controls vervollständigen
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** StatusBar ruft nur `POST /time/pause` und `POST /time/advance` auf. `/time/resume`, `/time/set`, `PATCH /time/mode` existieren, werden aber nicht genutzt.
+  - Resume-Button (bzw. Pause/Resume-Toggle)
+  - Zeit setzen (DM) + Modus-Umschaltung
+- **Akzeptanzkriterien:**
+  - Pause/Resume funktioniert als Toggle
+  - Modus-Umschaltung (auto/manual/hybrid) via UI
+- **Qualitäts-Check:** TDD, i18n
+
+### A05: Adventure-Editor UX vervollständigen
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** `POST /adventures/{id}/inject-choice` und `POST /adventures/{id}/abandon` existieren ohne UI. Node-Edit funktioniert jetzt (T7), aber:
+  - Choice-Injection im Live-Adventure-Panel
+  - Abandon-Button im Adventure-Play
+  - Fehler-Toasts bei fehlgeschlagenen Node-Saves (leere catches)
+- **Akzeptanzkriterien:**
+  - Choice-Injection per UI
+  - Abandon-Button funktioniert
+  - Keine stillen Fehler mehr
+- **Qualitäts-Check:** TDD, i18n
 
 ---
