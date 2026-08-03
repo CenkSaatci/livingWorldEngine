@@ -21,9 +21,11 @@ import java.util.UUID;
 public class IntentValidator {
 
     private final GameEntityRepository entityRepo;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
-    public IntentValidator(GameEntityRepository entityRepo) {
+    public IntentValidator(GameEntityRepository entityRepo,
+                        ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
     }
 

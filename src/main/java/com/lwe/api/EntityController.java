@@ -77,16 +77,6 @@ public class EntityController {
         return ResponseEntity.ok(EntityResponse.from(entity));
     }
 
-    @PatchMapping("/{entityId}/progression")
-    public ResponseEntity<EntityResponse> updateProgression(@PathVariable UUID worldId,
-                                                            @PathVariable UUID entityId,
-                                                            @RequestBody Map<String, Object> body,
-                                                            @AuthenticationPrincipal User user) {
-        var xp = ((Number) body.getOrDefault("experience_points", 0)).intValue();
-        var entity = entityService.updateProgression(entityId, user.getId(), xp, null);
-        return ResponseEntity.ok(EntityResponse.from(entity));
-    }
-
     @PatchMapping("/{entityId}/skills")
     public ResponseEntity<EntityResponse> updateSkills(@PathVariable UUID worldId,
                                                        @PathVariable UUID entityId,

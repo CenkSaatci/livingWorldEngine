@@ -1,5 +1,6 @@
 package com.lwe.core.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.GameSystem;
 import com.lwe.core.domain.World;
@@ -35,7 +36,7 @@ class RestServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new RestService(entityRepo, gameSystemRepo, worldRepo, worldAccess);
+        service = new RestService(entityRepo, gameSystemRepo, worldRepo, worldAccess, new ObjectMapper());
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
     }
 

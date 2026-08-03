@@ -18,9 +18,11 @@ public class LocationNpcService {
 
     private final GameEntityRepository entityRepo;
     private final LocationRepository locationRepo;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
-    public LocationNpcService(GameEntityRepository entityRepo, LocationRepository locationRepo) {
+    public LocationNpcService(GameEntityRepository entityRepo, LocationRepository locationRepo,
+                        ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.locationRepo = locationRepo;
     }

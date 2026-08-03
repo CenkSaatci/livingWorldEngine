@@ -19,11 +19,13 @@ public class LevelUpService {
     private final GameEntityRepository entityRepo;
     private final GameSystemRepository gameSystemRepo;
     private final WorldRepository worldRepo;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper;
 
     public LevelUpService(GameEntityRepository entityRepo,
                           GameSystemRepository gameSystemRepo,
-                          WorldRepository worldRepo) {
+                          WorldRepository worldRepo,
+                        ObjectMapper mapper) {
+        this.mapper = mapper;
         this.entityRepo = entityRepo;
         this.gameSystemRepo = gameSystemRepo;
         this.worldRepo = worldRepo;

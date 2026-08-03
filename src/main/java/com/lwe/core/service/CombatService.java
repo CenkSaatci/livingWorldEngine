@@ -27,7 +27,7 @@ public class CombatService {
     private final SimpMessagingTemplate messaging;
     private final com.lwe.core.util.WorldAccess worldAccess;
     private final Map<DiceExpressionParser.DiceSystem, RuleEngine> engines;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     public CombatService(CombatSessionRepository sessionRepo,
                          CombatParticipantRepository participantRepo,
@@ -39,7 +39,9 @@ public class CombatService {
                          AbilityRepository abilityRepo,
                          SimpMessagingTemplate messaging,
                          com.lwe.core.util.WorldAccess worldAccess,
-                         java.util.List<RuleEngine> engineList) {
+                         java.util.List<RuleEngine> engineList,
+                        ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         this.sessionRepo = sessionRepo;
         this.participantRepo = participantRepo;
         this.entityRepo = entityRepo;

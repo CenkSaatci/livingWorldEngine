@@ -19,10 +19,12 @@ public class EntityService {
 
     private final GameEntityRepository entityRepo;
     private final WorldAccess worldAccess;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
     private static final TypeReference<Map<String, Integer>> ATTR_MAP = new TypeReference<>() {};
 
-    public EntityService(GameEntityRepository entityRepo, WorldAccess worldAccess) {
+    public EntityService(GameEntityRepository entityRepo, WorldAccess worldAccess,
+                        ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldAccess = worldAccess;
     }

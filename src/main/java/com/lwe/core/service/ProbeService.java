@@ -32,11 +32,13 @@ public class ProbeService {
     private final WorldAccess worldAccess;
     private final ConditionEvaluator conditionEvaluator;
     private final ModifierService modifierService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     public ProbeService(GameEntityRepository entityRepo, WorldRepository worldRepo,
                         GameSystemRepository systemRepo, WorldAccess worldAccess,
-                        ConditionEvaluator conditionEvaluator, ModifierService modifierService) {
+                        ConditionEvaluator conditionEvaluator, ModifierService modifierService,
+                        ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldRepo = worldRepo;
         this.systemRepo = systemRepo;

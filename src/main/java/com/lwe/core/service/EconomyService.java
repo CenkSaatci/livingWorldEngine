@@ -19,9 +19,11 @@ public class EconomyService {
 
     private final LocationRepository locationRepo;
     private final GameEntityRepository entityRepo;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
-    public EconomyService(LocationRepository locationRepo, GameEntityRepository entityRepo) {
+    public EconomyService(LocationRepository locationRepo, GameEntityRepository entityRepo,
+                        ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         this.locationRepo = locationRepo;
         this.entityRepo = entityRepo;
     }

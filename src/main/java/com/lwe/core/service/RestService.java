@@ -21,10 +21,12 @@ public class RestService {
     private final GameSystemRepository gameSystemRepo;
     private final WorldRepository worldRepo;
     private final WorldAccess worldAccess;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper;
 
     public RestService(GameEntityRepository entityRepo, GameSystemRepository gameSystemRepo,
-                       WorldRepository worldRepo, WorldAccess worldAccess) {
+                       WorldRepository worldRepo, WorldAccess worldAccess,
+                        ObjectMapper mapper) {
+        this.mapper = mapper;
         this.entityRepo = entityRepo;
         this.gameSystemRepo = gameSystemRepo;
         this.worldRepo = worldRepo;

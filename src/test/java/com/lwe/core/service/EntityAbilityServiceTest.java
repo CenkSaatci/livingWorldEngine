@@ -1,5 +1,6 @@
 package com.lwe.core.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.Ability;
 import com.lwe.core.domain.Ability.AbilityType;
 import com.lwe.core.domain.GameEntity;

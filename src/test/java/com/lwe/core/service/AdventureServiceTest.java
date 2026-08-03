@@ -1,5 +1,6 @@
 package com.lwe.core.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.*;
 import com.lwe.core.util.WorldAccess;
 import com.lwe.core.repository.*;
@@ -40,7 +41,7 @@ class AdventureServiceTest {
     @BeforeEach
     void setUp() {
         service = new AdventureService(adventureRepo, nodeRepo, choiceRepo, progressRepo,
-            worldRepo, rollService, eventService, worldAccess);
+            worldRepo, rollService, eventService, worldAccess, new ObjectMapper());
     }
 
     @Test

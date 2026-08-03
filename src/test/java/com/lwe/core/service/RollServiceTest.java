@@ -1,5 +1,6 @@
 package com.lwe.core.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.GameSystem;
 import com.lwe.core.repository.GameEntityRepository;
@@ -24,7 +25,8 @@ class RollServiceTest {
     private final WorldEventService eventService = mock();
 
     private final RollService service = new RollService(entityRepo, worldRepo,
-        gameSystemRepo, eventService, List.of(new D20RuleEngine()));
+        gameSystemRepo, eventService, List.of(new D20RuleEngine()),
+            new ObjectMapper());
 
     @Test
     void shouldExecuteD20Roll() {

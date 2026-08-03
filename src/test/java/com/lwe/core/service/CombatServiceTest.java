@@ -1,5 +1,6 @@
 package com.lwe.core.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.*;
 import com.lwe.core.util.WorldAccess;
 import com.lwe.core.repository.*;
@@ -36,7 +37,8 @@ class CombatServiceTest {
     @BeforeEach
     void setUp() {
         combatService = new CombatService(sessionRepo, participantRepo, entityRepo,
-            worldRepo, gameSystemRepo, eventService, rollService, abilityRepo, messaging, worldAccess, List.of(new D20RuleEngine()));
+            worldRepo, gameSystemRepo, eventService, rollService, abilityRepo, messaging, worldAccess, List.of(new D20RuleEngine()),
+            new ObjectMapper());
     }
 
     @Test

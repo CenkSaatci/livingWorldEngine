@@ -24,11 +24,13 @@ public class RollService {
     private final GameSystemRepository gameSystemRepo;
     private final WorldEventService eventService;
     private final Map<DiceExpressionParser.DiceSystem, RuleEngine> engines;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     public RollService(GameEntityRepository entityRepo, WorldRepository worldRepo,
                        GameSystemRepository gameSystemRepo, WorldEventService eventService,
-                       java.util.List<RuleEngine> engineList) {
+                       java.util.List<RuleEngine> engineList,
+                        ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldRepo = worldRepo;
         this.gameSystemRepo = gameSystemRepo;

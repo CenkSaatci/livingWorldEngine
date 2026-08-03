@@ -27,9 +27,11 @@ public class WorldEventService {
 
     private final WorldEventRepository eventRepo;
     private final SimpMessagingTemplate messaging;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
-    public WorldEventService(WorldEventRepository eventRepo, SimpMessagingTemplate messaging) {
+    public WorldEventService(WorldEventRepository eventRepo, SimpMessagingTemplate messaging,
+                        ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         this.eventRepo = eventRepo;
         this.messaging = messaging;
     }

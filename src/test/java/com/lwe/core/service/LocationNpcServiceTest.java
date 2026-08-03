@@ -1,5 +1,6 @@
 package com.lwe.core.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.Location;
 import com.lwe.core.repository.GameEntityRepository;
@@ -26,7 +27,7 @@ class LocationNpcServiceTest {
 
     @BeforeEach
     void setUp() {
-        locationNpcService = new LocationNpcService(entityRepo, locationRepo);
+        locationNpcService = new LocationNpcService(entityRepo, locationRepo, new ObjectMapper());
         when(locationRepo.findById(locationId)).thenReturn(Optional.of(new Location(UUID.randomUUID(), "village", "Bree")));
     }
 

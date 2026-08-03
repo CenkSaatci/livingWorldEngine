@@ -20,10 +20,12 @@ public class InventoryService {
     private final GameEntityRepository entityRepo;
     private final GameItemRepository itemRepo;
     private final WorldAccess worldAccess;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     public InventoryService(GameEntityRepository entityRepo, GameItemRepository itemRepo,
-                            WorldAccess worldAccess) {
+                            WorldAccess worldAccess,
+                        ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.itemRepo = itemRepo;
         this.worldAccess = worldAccess;

@@ -1,5 +1,6 @@
 package com.lwe.core.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.GameSystem;
 import com.lwe.core.domain.World;
@@ -43,7 +44,7 @@ class CharacterSheetServiceTest {
         modifierService = new ModifierService();
         derivedValueService = new DerivedValueService();
         service = new CharacterSheetService(entityRepo, worldRepo, systemRepo, worldAccess,
-            modifierService, derivedValueService, levelUpService);
+            modifierService, derivedValueService, levelUpService, new ObjectMapper());
     }
 
     @Test

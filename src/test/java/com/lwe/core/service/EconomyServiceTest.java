@@ -1,5 +1,6 @@
 package com.lwe.core.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.Location;
 import com.lwe.core.repository.GameEntityRepository;
@@ -27,7 +28,7 @@ class EconomyServiceTest {
 
     @BeforeEach
     void setUp() {
-        economyService = new EconomyService(locationRepo, entityRepo);
+        economyService = new EconomyService(locationRepo, entityRepo, new ObjectMapper());
     }
 
     @Test

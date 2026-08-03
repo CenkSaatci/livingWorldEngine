@@ -1,5 +1,6 @@
 package com.lwe.core.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.GameSystem;
 import com.lwe.core.domain.World;
@@ -44,7 +45,7 @@ class ProbeServiceTest {
     @BeforeEach
     void setUp() {
         service = new ProbeService(entityRepo, worldRepo, systemRepo, worldAccess,
-            conditionEvaluator, modifierService);
+            conditionEvaluator, modifierService, new ObjectMapper());
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
         lenient().when(conditionEvaluator.evaluate(any(), any())).thenReturn(java.util.List.of());
         lenient().when(modifierService.calculateModifiers(any(), any())).thenReturn(Map.of("staerke", 0.0));

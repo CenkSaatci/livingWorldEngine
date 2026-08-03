@@ -36,10 +36,12 @@ public class IntentExecutor {
     private final GameEntityRepository entityRepo;
     private final WorldEventService eventService;
     private final FactionService factionService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     public IntentExecutor(GameEntityRepository entityRepo, WorldEventService eventService,
-                          FactionService factionService) {
+                          FactionService factionService,
+                        ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.eventService = eventService;
         this.factionService = factionService;

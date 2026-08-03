@@ -1,5 +1,6 @@
 package com.lwe.time;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.World;
 import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.service.WorldEventService;
@@ -30,7 +31,7 @@ class WorldTimeServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new WorldTimeService(worldRepo, eventService);
+        service = new WorldTimeService(worldRepo, eventService, new ObjectMapper());
     }
 
     @Test

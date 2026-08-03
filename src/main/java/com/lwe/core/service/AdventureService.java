@@ -22,12 +22,14 @@ public class AdventureService {
     private final RollService rollService;
     private final WorldEventService eventService;
     private final com.lwe.core.util.WorldAccess worldAccess;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     public AdventureService(AdventureRepository adventureRepo, AdventureNodeRepository nodeRepo,
                             NodeChoiceRepository choiceRepo, AdventureProgressRepository progressRepo,
                             WorldRepository worldRepo, RollService rollService,
-                            WorldEventService eventService, com.lwe.core.util.WorldAccess worldAccess) {
+                            WorldEventService eventService, com.lwe.core.util.WorldAccess worldAccess,
+                        ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         this.adventureRepo = adventureRepo;
         this.nodeRepo = nodeRepo;
         this.choiceRepo = choiceRepo;

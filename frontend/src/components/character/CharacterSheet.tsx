@@ -109,7 +109,16 @@ export function CharacterSheet({ entityId }: Props) {
       data.skills.forEach((s) => {
         if (s.perCharacterValue != null) map[s.name] = s.perCharacterValue;
       });
-      setSkillOverrides((prev) => (Object.keys(map).length > 0 ? map : prev));
+      // Nur setzen, wenn sich die Werte tatsächlich geändert haben (verhindert unnötige Re-Renders)
+      setSkillOverrides((prev) => {
+        const prevKeys = Object.keys(prev);
+        const newKeys = Object.keys(map);
+        if (prevKeys.length !== newKeys.length) return map;
+        for (const k of newKeys) {
+          if (prev[k] !== map[k]) return map;
+        }
+        return prev;
+      });
     }
   }, [data?.skills]);
 
@@ -409,7 +418,16 @@ function FormulaOverrides({ entityId, onSaved }: { entityId: string; onSaved: ()
             <Plus size={14} />
           </button>
         </div>
-        {isAdding && <OverrideInput />}
+        {isAdding && (
+          <OverrideInput
+            name={editName}
+            value={editValue}
+            onNameChange={setEditName}
+            onValueChange={setEditValue}
+            onAdd={handleAdd}
+            onCancel={() => setIsAdding(false)}
+          />
+        )}
       </div>
     );
   }
@@ -424,7 +442,16 @@ function FormulaOverrides({ entityId, onSaved }: { entityId: string; onSaved: ()
           <Plus size={14} />
         </button>
       </div>
-      {isAdding && <OverrideInput />}
+      {isAdding && (
+        <OverrideInput
+          name={editName}
+          value={editValue}
+          onNameChange={setEditName}
+          onValueChange={setEditValue}
+          onAdd={handleAdd}
+          onCancel={() => setIsAdding(false)}
+        />
+      )}
       {entries.length > 0 && (
         <div className="space-y-1">
           {entries.map(([name, val]) => (
@@ -439,17 +466,25 @@ function FormulaOverrides({ entityId, onSaved }: { entityId: string; onSaved: ()
       )}
     </div>
   );
+}
 
-  function OverrideInput() {
-    return (
-      <div className="flex items-center gap-2 mt-2">
-        <input value={editName} onChange={(e) => setEditName(e.target.value)}
-          placeholder={t('sheet.overridesName')!} className="w-20 rounded border border-bg-elevated bg-bg-primary px-1.5 py-0.5 text-xs text-text-primary outline-none" />
-        <input value={editValue} onChange={(e) => setEditValue(e.target.value)} type="number"
-          placeholder={t('sheet.overridesValue')!} className="w-16 rounded border border-bg-elevated bg-bg-primary px-1.5 py-0.5 text-xs text-text-primary outline-none" />
-        <button onClick={handleAdd} className="text-success hover:text-success/60"><Check size={14} /></button>
-        <button onClick={() => setIsAdding(false)} className="text-danger hover:text-danger/60"><X size={14} /></button>
-      </div>
-    );
-  }
+function OverrideInput({ name, value, onNameChange, onValueChange, onAdd, onCancel }: {
+  name: string;
+  value: string;
+  onNameChange: (v: string) => void;
+  onValueChange: (v: string) => void;
+  onAdd: () => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation('character');
+  return (
+    <div className="flex items-center gap-2 mt-2">
+      <input value={name} onChange={(e) => onNameChange(e.target.value)}
+        placeholder={t('sheet.overridesName')!} className="w-20 rounded border border-bg-elevated bg-bg-primary px-1.5 py-0.5 text-xs text-text-primary outline-none" />
+      <input value={value} onChange={(e) => onValueChange(e.target.value)} type="number"
+        placeholder={t('sheet.overridesValue')!} className="w-16 rounded border border-bg-elevated bg-bg-primary px-1.5 py-0.5 text-xs text-text-primary outline-none" />
+      <button onClick={onAdd} className="text-success hover:text-success/60"><Check size={14} /></button>
+      <button onClick={onCancel} className="text-danger hover:text-danger/60"><X size={14} /></button>
+    </div>
+  );
 }

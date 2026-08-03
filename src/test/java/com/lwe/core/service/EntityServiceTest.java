@@ -1,5 +1,6 @@
 package com.lwe.core.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.GameEntity;
 import com.lwe.core.util.WorldAccess;
 import com.lwe.core.repository.GameEntityRepository;
@@ -28,7 +29,7 @@ class EntityServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new EntityService(entityRepo, worldAccess);
+        service = new EntityService(entityRepo, worldAccess, new ObjectMapper());
     }
 
     @Test

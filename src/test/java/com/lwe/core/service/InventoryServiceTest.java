@@ -1,5 +1,6 @@
 package com.lwe.core.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.GameItem;
 import com.lwe.core.repository.GameEntityRepository;
@@ -30,7 +31,7 @@ class InventoryServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new InventoryService(entityRepo, itemRepo, worldAccess);
+        service = new InventoryService(entityRepo, itemRepo, worldAccess, new ObjectMapper());
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
     }
 

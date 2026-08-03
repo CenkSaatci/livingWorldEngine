@@ -32,8 +32,25 @@ export function useSheet(entityId: string | undefined) {
   }, [entityId]);
 
   useEffect(() => {
-    fetchSheet();
-  }, [fetchSheet]);
+    let cancelled = false;
+    const run = async () => {
+      if (!entityId) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await apiClient.get<SheetData>(`/entities/${entityId}/sheet`);
+        if (!cancelled) setData(res.data);
+      } catch {
+        if (!cancelled) setError('Failed to load character sheet');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [entityId]);
 
   return { data, loading, error, refetch: fetchSheet };
 }

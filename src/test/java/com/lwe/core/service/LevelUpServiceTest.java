@@ -1,5 +1,6 @@
 package com.lwe.core.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.GameSystem;
 import com.lwe.core.domain.World;
@@ -33,7 +34,7 @@ class LevelUpServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new LevelUpService(entityRepo, gameSystemRepo, worldRepo);
+        service = new LevelUpService(entityRepo, gameSystemRepo, worldRepo, new ObjectMapper());
         gs = new GameSystem("D20", 1, LEVELS_JSON, "{}");
         setId(gs, gameSystemId);
     }

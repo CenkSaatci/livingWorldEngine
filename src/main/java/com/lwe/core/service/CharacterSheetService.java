@@ -27,7 +27,7 @@ public class CharacterSheetService {
     private final ModifierService modifierService;
     private final DerivedValueService derivedValueService;
     private final LevelUpService levelUpService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     private static final TypeReference<Map<String, Integer>> ATTR_MAP_TYPE = new TypeReference<>() {};
     private static final TypeReference<List<Map<String, Object>>> LIST_MAP_TYPE = new TypeReference<>() {};
@@ -37,7 +37,9 @@ public class CharacterSheetService {
                                   GameSystemRepository systemRepo, WorldAccess worldAccess,
                                   ModifierService modifierService,
                                   DerivedValueService derivedValueService,
-                                  LevelUpService levelUpService) {
+                                  LevelUpService levelUpService,
+                        ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldRepo = worldRepo;
         this.systemRepo = systemRepo;

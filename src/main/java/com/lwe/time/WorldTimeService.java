@@ -30,9 +30,11 @@ public class WorldTimeService {
 
     private final WorldRepository worldRepo;
     private final WorldEventService eventService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
-    public WorldTimeService(WorldRepository worldRepo, WorldEventService eventService) {
+    public WorldTimeService(WorldRepository worldRepo, WorldEventService eventService,
+                        ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         this.worldRepo = worldRepo;
         this.eventService = eventService;
     }

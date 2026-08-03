@@ -1,5 +1,6 @@
 package com.lwe.core.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.WorldEvent;
 import com.lwe.core.repository.WorldEventRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +27,7 @@ class WorldEventServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new WorldEventService(eventRepo, messaging);
+        service = new WorldEventService(eventRepo, messaging, new ObjectMapper());
     }
 
     @Test
@@ -49,7 +50,7 @@ class WorldEventServiceTest {
 
     @Test
     void publishShouldHandleMissingMessagingTemplate() throws Exception {
-        var serviceNoWs = new WorldEventService(eventRepo, null);
+        var serviceNoWs = new WorldEventService(eventRepo, null, new ObjectMapper());
         when(eventRepo.save(any())).thenAnswer(inv -> {
             var e = inv.<WorldEvent>getArgument(0);
             var idField = WorldEvent.class.getDeclaredField("id");
