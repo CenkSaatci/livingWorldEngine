@@ -287,6 +287,19 @@ Alle Endpunkte auth und user-scoped (Tenant-Isolation via JWT `user_id`, siehe [
 }
 ```
 
+### `POST /api/v1/entities/{entityId}/rest/short`
+**Beschreibung:** Kurze Rast — HP-Heilung laut `rulesJson.dice_mechanics.combat.resting.short_rest`.
+Unterstützt: `"full"`, `"50%"`, `"1d8+konstitution"`, `"5"` (flach) für HP; `"full"`/`"half"` für AP.
+**Request:** `{}` (kein Body)
+**Response 200:** `{ "message": "Short rest completed" }`
+**Fehlercodes:** `ENTITY_NOT_FOUND`, `WORLD_ACCESS_DENIED`, `INVALID_HP_EXPR`
+
+### `POST /api/v1/entities/{entityId}/rest/long`
+**Beschreibung:** Lange Rast — volle Heilung laut `rulesJson.dice_mechanics.combat.resting.long_rest`.
+**Request:** `{}` (kein Body)
+**Response 200:** `{ "message": "Long rest completed" }`
+**Fehlercodes:** `ENTITY_NOT_FOUND`, `WORLD_ACCESS_DENIED`, `INVALID_HP_EXPR`
+
 ---
 
 ## 7. Rolls (`/api/v1/rolls`)

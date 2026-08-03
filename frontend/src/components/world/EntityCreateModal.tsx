@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../api/client';
+import { useToast } from '../../hooks/useToast';
 import { QuickFactionModal } from './QuickFactionModal';
 
 interface FactionSummary {
@@ -27,6 +28,7 @@ const SOCIAL_STANDINGS = ['peasant', 'merchant', 'guard', 'noble', 'clergy', 'cr
 
 export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
   const { t } = useTranslation('common');
+  const toast = useToast();
   const [name, setName] = useState('');
   const [entityType, setEntityType] = useState<'NPC' | 'PC'>('NPC');
   const [age, setAge] = useState(30);
@@ -50,28 +52,28 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
     apiClient
       .get(`/worlds/${worldId}/factions`)
       .then((r) => setFactions(r.data))
-      .catch(() => {});
-    // Lade alle Regionen → dann deren Locations
+      .catch(() => toast.error('Failed to load factions'));
+    // Lade alle Regionen → parallel deren Locations
     apiClient
       .get(`/worlds/${worldId}/regions`)
       .then(async (regRes) => {
         const regs = regRes.data as { id: string; name: string }[];
-        const allLocs: LocationSummary[] = [];
-        for (const r of regs) {
-          try {
-            const locRes = await apiClient.get(`/regions/${r.id}/locations`);
-            const locs = (locRes.data as { id: string; name: string }[]).map((l) => ({
-              ...l,
-              regionName: r.name,
-            }));
-            allLocs.push(...locs);
-          } catch {
-            /* */
-          }
-        }
-        setLocations(allLocs);
+        const results = await Promise.all(
+          regs.map(async (r) => {
+            try {
+              const locRes = await apiClient.get(`/regions/${r.id}/locations`);
+              return (locRes.data as { id: string; name: string }[]).map((l) => ({
+                ...l,
+                regionName: r.name,
+              }));
+            } catch {
+              return [] as LocationSummary[];
+            }
+          })
+        );
+        setLocations(results.flat());
       })
-      .catch(() => {});
+      .catch(() => toast.error('Failed to load locations'));
   }, [worldId]);
 
   const handleSave = async () => {
@@ -105,7 +107,7 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
       onCreated(res.data.id, entityType);
       onClose();
     } catch {
-      /* */
+      toast.error('Failed to create entity');
     } finally {
       setSaving(false);
     }
@@ -318,7 +320,7 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
             apiClient
               .get(`/worlds/${worldId}/factions`)
               .then((r) => setFactions(r.data))
-              .catch(() => {});
+              .catch(() => toast.error('Failed to refresh factions'));
           }}
           onClose={() => setShowFactionQuick(false)}
         />

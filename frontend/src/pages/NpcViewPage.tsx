@@ -32,6 +32,7 @@ interface NpcData {
   age?: number;
   experienceLevel?: string;
   socialStanding?: string;
+  experiencePoints?: number;
 }
 
 interface FactionData {
@@ -209,7 +210,11 @@ export default function NpcViewPage() {
     if (!npc) return;
     setGranting(true);
     try {
-      await apiClient.post(`/entities/${npc.id}/xp`, { amount: xpAmount });
+      // Neuen XP-Gesamtwert holen (additiv), dann per PATCH setzen
+      const current = npc.experiencePoints ?? 0;
+      await apiClient.patch(`/entities/${npc.id}/progression`, {
+        experience_points: current + xpAmount,
+      });
       toast.success(`${xpAmount} XP granted`);
       refetch();
     } catch {
