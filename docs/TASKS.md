@@ -1919,9 +1919,12 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Beschreibung:** Backend-Endpoints existieren (`POST/GET /worlds/{worldId}/abilities`, `GET/PUT/DELETE /abilities/{id}`), aber es gibt **kein Frontend** zum Erstellen/Verwalten von Abilities.
   - Ability-Verwaltungsseite oder Integration in den SystemWizard
   - Zuweisung von Abilities an Entities (POST /entities/{id}/abilities/{abilityId}) per UI
+- **Aktualisierung (2026-07-25):** Modell A beschlossen — Abilities wirken **direkt aus rulesJson im Sheet** (wie Skills, kein Zuweisungs-UI nötig). Der SystemWizard-Step 5a wird um fehlende Detailfelder (description, apCost, effectsJson, targetType) erweitert.
+- **⚠️ Vermerk — Modell B (Pro-Character-Zuweisung):** Für realistisches P&P (D&D-Klassen, DSA-Sonderfertigkeiten) brauchen verschiedene Characters unterschiedliche Abilities. Die Welt-Tabelle (`entity_abilities`) + Zuweisungs-UI wird als Teil von **Phase 23 (Items, Abilities & Damage)** geplant — dort zusammen mit dem Damage-System.
 - **Akzeptanzkriterien:**
-  - Ability anlegen/bearbeiten/löschen über UI
-  - Ability einem Character zuweisen/entziehen
+  - SystemWizard Step 5a: Abilities mit allen Detailfeldern definierbar
+  - Sheet zeigt Abilities vollständig (Name, Typ, AP, Effekt, damageType später)
+  - Use-Verhalten funktioniert
   - Active/Passive-Typen korrekt
 - **Qualitäts-Check:** TDD, i18n
 
