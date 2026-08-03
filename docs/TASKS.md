@@ -1913,8 +1913,8 @@ Schadensarten (`damage_type`) gehören nicht auf Systemebene, sondern zu Items, 
 
 Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, keine Bugs:
 
-### A01: Ability-CRUD im Frontend
-- **Status:** 🔜
+### A01: Ability-Roundtrip + Use-Verhalten (Modell A)
+- **Status:** ✅ (2026-07-25)
 - **Aufwand:** 1,0 Tage
 - **Beschreibung:** Backend-Endpoints existieren (`POST/GET /worlds/{worldId}/abilities`, `GET/PUT/DELETE /abilities/{id}`), aber es gibt **kein Frontend** zum Erstellen/Verwalten von Abilities.
   - Ability-Verwaltungsseite oder Integration in den SystemWizard
