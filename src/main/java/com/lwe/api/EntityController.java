@@ -64,7 +64,8 @@ public class EntityController {
         var entity = entityService.update(entityId, user.getId(),
             req.name(), req.attributesJson(), req.inventoryJson(),
             req.positionJson(), req.metadataJson(),
-            req.backstory(), req.age(), req.experienceLevel(), req.socialStanding());
+            req.backstory(), req.age(), req.experienceLevel(), req.socialStanding(),
+            req.factionId());
         return ResponseEntity.ok(EntityResponse.from(entity));
     }
 
@@ -155,6 +156,7 @@ public class EntityController {
         String backstory,
         Integer age,
         String experienceLevel,
-        String socialStanding
+        String socialStanding,
+        UUID factionId
     ) {}
 }

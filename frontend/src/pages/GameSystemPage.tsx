@@ -215,9 +215,9 @@ export default function GameSystemPage() {
     setValidating(true);
     setValidation(null);
     try {
-      const res = await apiClient.post('/game-systems/validate', {
-        rulesJson,
-        schemaJson: '{}',
+      // Backend erwartet den rulesJson-String direkt im Body (kein Wrapper-Objekt)
+      const res = await apiClient.post('/game-systems/validate', rulesJson, {
+        headers: { 'Content-Type': 'application/json' },
       });
       setValidation(res.data);
     } catch (e: unknown) {

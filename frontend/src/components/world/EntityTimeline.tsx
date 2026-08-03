@@ -5,7 +5,7 @@ import { useApiGet } from '../../hooks/useApiGet';
 interface EntityEvent {
   id: number;
   entityType: string;
-  event_type: string;
+  eventType: string;
   title: string;
   description: string;
   importance: number;
@@ -66,9 +66,9 @@ export function EntityTimeline({ entityType, entityId }: Props) {
       )}
 
       {events.map((ev) => (
-        <div key={ev.id} className={`rounded border px-3 py-2 ${eventBg(ev.event_type)}`}>
+        <div key={ev.id} className={`rounded border px-3 py-2 ${eventBg(ev.eventType)}`}>
           <div className="flex items-start gap-2">
-            {eventIcon(ev.event_type)}
+            {eventIcon(ev.eventType)}
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-medium text-text-primary truncate">{ev.title}</p>

@@ -58,7 +58,7 @@ public class RegionController {
                                                   @AuthenticationPrincipal User user) {
         var region = service.update(regionId, user.getId(), req.name(),
             req.description(), req.history(), req.dangerLevel(), req.climate(),
-            req.resources(), req.factions(), req.positionJson(), req.polygonPoints());
+            req.resources(), req.factions(), req.population(), req.positionJson(), req.polygonPoints());
         return ResponseEntity.ok(RegionResponse.from(region));
     }
 
@@ -79,7 +79,7 @@ public class RegionController {
     public record UpdateRequest(
         String name, String description, String history,
         Integer dangerLevel, String climate,
-        String resources, String factions, String positionJson,
-        String polygonPoints
+        String resources, String factions, Integer population,
+        String positionJson, String polygonPoints
     ) {}
 }

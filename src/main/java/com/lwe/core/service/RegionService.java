@@ -63,8 +63,8 @@ public class RegionService {
     @Transactional
     public Region update(UUID regionId, UUID userId, String name, String description,
                          String history, Integer dangerLevel, String climate,
-                         String resources, String factions, String positionJson,
-                         String polygonPoints) {
+                         String resources, String factions, Integer population,
+                         String positionJson, String polygonPoints) {
         var region = getById(regionId, userId);
         if (name != null) region.setName(name);
         if (description != null) region.setDescription(description);
@@ -73,6 +73,7 @@ public class RegionService {
         if (climate != null) region.setClimate(climate);
         if (resources != null) region.setResources(resources);
         if (factions != null) region.setFactions(factions);
+        if (population != null) region.setPopulation(population);
         if (positionJson != null) region.setPositionJson(positionJson);
         if (polygonPoints != null) region.setPolygonPoints(polygonPoints);
         return repo.save(region);

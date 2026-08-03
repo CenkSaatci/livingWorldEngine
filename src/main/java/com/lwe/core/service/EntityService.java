@@ -70,7 +70,7 @@ public class EntityService {
     public GameEntity update(UUID entityId, UUID userId, String name, String attributesJson,
                               String inventoryJson, String positionJson, String metadataJson,
                               String backstory, Integer age, String experienceLevel,
-                              String socialStanding) {
+                              String socialStanding, UUID factionId) {
         var entity = getById(entityId, userId);
         if (name != null) entity.setName(name);
         if (attributesJson != null) entity.setAttributesJson(attributesJson);
@@ -81,6 +81,7 @@ public class EntityService {
         if (age != null) entity.setAge(age);
         if (experienceLevel != null) entity.setExperienceLevel(experienceLevel);
         if (socialStanding != null) entity.setSocialStanding(socialStanding);
+        if (factionId != null) entity.setFactionId(factionId);
         return entityRepo.save(entity);
     }
 

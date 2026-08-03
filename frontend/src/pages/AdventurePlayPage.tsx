@@ -29,7 +29,7 @@ export default function AdventurePlayPage() {
         // Find a character for this player in this world
         const entitiesRes = await apiClient.get(`/worlds/${worldId}/entities`);
         const entities = entitiesRes.data as any[];
-        const pc = entities.find((e: any) => e.entity_type === 'PC');
+        const pc = entities.find((e: any) => e.entityType === 'PC');
         if (!pc) {
           if (!cancelled) {
             toast.error('No character found');
