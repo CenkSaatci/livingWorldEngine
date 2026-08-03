@@ -27,6 +27,7 @@ class InventoryServiceTest {
     private final UUID userId = UUID.randomUUID();
     private final UUID entityId = UUID.randomUUID();
     private final UUID worldId = UUID.randomUUID();
+    private final UUID gameSystemId = UUID.randomUUID();
     private final UUID itemId = UUID.randomUUID();
 
     @BeforeEach
@@ -44,8 +45,7 @@ class InventoryServiceTest {
     }
 
     private GameItem createItem(String type, String bonuses) {
-        var item = new GameItem(worldId, "Short Sword", type, BigDecimal.ONE, 10);
-        item.setBonusesJson(bonuses);
+        var item = new GameItem(gameSystemId, "Short Sword", type, BigDecimal.ONE, 10);        item.setBonusesJson(bonuses);
         try { var f = GameItem.class.getDeclaredField("id"); f.setAccessible(true); f.set(item, itemId); }
         catch (Exception ex) { throw new RuntimeException(ex); }
         return item;

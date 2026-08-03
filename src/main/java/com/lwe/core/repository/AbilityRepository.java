@@ -7,5 +7,5 @@ import java.util.List;
 import java.util.UUID;
 
 public interface AbilityRepository extends JpaRepository<Ability, UUID> {
-    List<Ability> findByWorldIdOrderByNameAsc(UUID worldId);
+    List<Ability> findByGameSystemIdOrderByNameAsc(UUID gameSystemId);
 }

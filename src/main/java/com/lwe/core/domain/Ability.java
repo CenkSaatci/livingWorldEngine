@@ -17,8 +17,8 @@ public class Ability {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "world_id", nullable = false)
-    private UUID worldId;
+    @Column(name = "game_system_id", nullable = false)
+    private UUID gameSystemId;
 
     @Column(nullable = false, length = 200)
     private String name;
@@ -52,14 +52,14 @@ public class Ability {
 
     protected Ability() {}
 
-    public Ability(UUID worldId, String name, AbilityType type) {
-        this.worldId = worldId;
+    public Ability(UUID gameSystemId, String name, AbilityType type) {
+        this.gameSystemId = gameSystemId;
         this.name = name;
         this.type = type;
     }
 
     public UUID getId() { return id; }
-    public UUID getWorldId() { return worldId; }
+    public UUID getGameSystemId() { return gameSystemId; }
     public String getName() { return name; }
     public void setName(String v) { this.name = v; }
     public AbilityType getType() { return type; }

@@ -3,7 +3,7 @@ package com.lwe.core.service;
 import com.lwe.core.domain.Ability;
 import com.lwe.core.domain.Ability.AbilityType;
 import com.lwe.core.repository.AbilityRepository;
-import com.lwe.core.repository.WorldRepository;
+import com.lwe.core.repository.GameSystemRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,23 +14,20 @@ import java.util.UUID;
 public class AbilityService {
 
     private final AbilityRepository repo;
-    private final WorldRepository worldRepo;
+    private final GameSystemRepository systemRepo;
 
-    public AbilityService(AbilityRepository repo, WorldRepository worldRepo) {
+    public AbilityService(AbilityRepository repo, GameSystemRepository systemRepo) {
         this.repo = repo;
-        this.worldRepo = worldRepo;
+        this.systemRepo = systemRepo;
     }
 
     @Transactional
-    public Ability create(UUID worldId, UUID userId, String name, AbilityType type,
+    public Ability create(UUID gameSystemId, UUID userId, String name, AbilityType type,
                           String description, String effectsJson, String statBonusesJson,
                           int apCost, int cooldownRounds, String targetType) {
-        var world = worldRepo.findById(worldId)
-            .orElseThrow(() -> new AbilityException("WORLD_NOT_FOUND", "World not found"));
-        if (!world.getOwnerId().equals(userId))
-            throw new AbilityException("WORLD_ACCESS_DENIED", "Only the owner may create abilities");
+        requireSystem(gameSystemId);
 
-        var ability = new Ability(worldId, name, type);
+        var ability = new Ability(gameSystemId, name, type);
         if (description != null) ability.setDescription(description);
         if (effectsJson != null) ability.setEffectsJson(effectsJson);
         if (statBonusesJson != null) ability.setStatBonusesJson(statBonusesJson);
@@ -41,16 +38,14 @@ public class AbilityService {
         return repo.save(ability);
     }
 
-    public List<Ability> listByWorld(UUID worldId, UUID userId) {
-        worldRepo.findById(worldId)
-            .orElseThrow(() -> new AbilityException("WORLD_NOT_FOUND", "World not found"));
-        return repo.findByWorldIdOrderByNameAsc(worldId);
+    public List<Ability> listByGameSystem(UUID gameSystemId, UUID userId) {
+        requireSystem(gameSystemId);
+        return repo.findByGameSystemIdOrderByNameAsc(gameSystemId);
     }
 
     public Ability getById(UUID id, UUID userId) {
-        var ability = repo.findById(id)
+        return repo.findById(id)
             .orElseThrow(() -> new AbilityException("ABILITY_NOT_FOUND", "Ability not found"));
-        return ability;
     }
 
     @Transactional
@@ -59,7 +54,7 @@ public class AbilityService {
                           Integer apCost, Integer cooldownRounds, String targetType) {
         var ability = repo.findById(id)
             .orElseThrow(() -> new AbilityException("ABILITY_NOT_FOUND", "Ability not found"));
-        requireOwner(ability.getWorldId(), userId);
+        requireSystem(ability.getGameSystemId());
 
         if (name != null) ability.setName(name);
         if (description != null) ability.setDescription(description);
@@ -76,15 +71,13 @@ public class AbilityService {
     public void delete(UUID id, UUID userId) {
         var ability = repo.findById(id)
             .orElseThrow(() -> new AbilityException("ABILITY_NOT_FOUND", "Ability not found"));
-        requireOwner(ability.getWorldId(), userId);
+        requireSystem(ability.getGameSystemId());
         repo.delete(ability);
     }
 
-    private void requireOwner(UUID worldId, UUID userId) {
-        var world = worldRepo.findById(worldId)
-            .orElseThrow(() -> new AbilityException("WORLD_NOT_FOUND", "World not found"));
-        if (!world.getOwnerId().equals(userId))
-            throw new AbilityException("WORLD_ACCESS_DENIED", "Only the owner may modify abilities");
+    private void requireSystem(UUID gameSystemId) {
+        systemRepo.findById(gameSystemId)
+            .orElseThrow(() -> new AbilityException("GAME_SYSTEM_NOT_FOUND", "Game system not found"));
     }
 
     public static class AbilityException extends RuntimeException {

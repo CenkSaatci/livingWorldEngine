@@ -2022,7 +2022,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD
 
 ### P24-T04: `worlds.game_system_id` entfernen
-- **Status:** 🔜
+- **Status:** ⏸️ (verschoben → P25-T06 — erfordert Kampagnen-Kontext in RulesLoader/Combat/LevelUp/Sheet, sonst bricht der Build)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:**
   - Migration V093: Spalte `game_system_id` aus `worlds` entfernen
@@ -2095,6 +2095,18 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
   - Item-Erstellung mit type/weight/value/bonusesJson/metadataJson
 - **Akzeptanzkriterien:** Items systemweit verwaltbar; Tests grün
 - **Qualitäts-Check:** TDD, Security
+
+### P25-T06: `worlds.game_system_id` entfernen
+- **Status:** 🔜 (vormals P24-T04)
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:**
+  - Migration V093: Spalte `game_system_id` aus `worlds` entfernen
+  - `World.java`: Feld + Getter/Setter entfernen
+  - `WorldController`/`WorldService`: Create/Update ohne gameSystemId
+- **Akzeptanzkriterien:**
+  - Welten systemunabhängig anlegbar
+  - Bestehende API-Aufrufer angepasst
+- **Qualitäts-Check:** TDD
 
 ---
 

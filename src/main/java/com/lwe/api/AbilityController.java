@@ -23,20 +23,20 @@ public class AbilityController {
         this.service = service;
     }
 
-    @PostMapping("/api/v1/worlds/{worldId}/abilities")
-    public ResponseEntity<AbilityResponse> create(@PathVariable UUID worldId,
+    @PostMapping("/api/v1/game-systems/{gameSystemId}/abilities")
+    public ResponseEntity<AbilityResponse> create(@PathVariable UUID gameSystemId,
                                                     @Valid @RequestBody CreateRequest req,
                                                     @AuthenticationPrincipal User user) {
-        var ability = service.create(worldId, user.getId(), req.name(), req.type(),
+        var ability = service.create(gameSystemId, user.getId(), req.name(), req.type(),
             req.description(), req.effectsJson(), req.statBonusesJson(),
             req.apCost(), req.cooldownRounds(), req.targetType());
         return ResponseEntity.status(HttpStatus.CREATED).body(AbilityResponse.from(ability));
     }
 
-    @GetMapping("/api/v1/worlds/{worldId}/abilities")
-    public ResponseEntity<List<AbilityResponse>> listByWorld(@PathVariable UUID worldId,
-                                                              @AuthenticationPrincipal User user) {
-        var abilities = service.listByWorld(worldId, user.getId())
+    @GetMapping("/api/v1/game-systems/{gameSystemId}/abilities")
+    public ResponseEntity<List<AbilityResponse>> listByGameSystem(@PathVariable UUID gameSystemId,
+                                                                   @AuthenticationPrincipal User user) {
+        var abilities = service.listByGameSystem(gameSystemId, user.getId())
             .stream().map(AbilityResponse::from).toList();
         return ResponseEntity.ok(abilities);
     }
@@ -85,13 +85,13 @@ public class AbilityController {
     ) {}
 
     public record AbilityResponse(
-        UUID id, UUID worldId, String name, String type,
+        UUID id, UUID gameSystemId, String name, String type,
         String description, String effectsJson, String statBonusesJson,
         int apCost, int cooldownRounds, String targetType, String createdAt
     ) {
         static AbilityResponse from(Ability a) {
             return new AbilityResponse(
-                a.getId(), a.getWorldId(), a.getName(), a.getType().name(),
+                a.getId(), a.getGameSystemId(), a.getName(), a.getType().name(),
                 a.getDescription(), a.getEffectsJson(), a.getStatBonusesJson(),
                 a.getApCost(), a.getCooldownRounds(), a.getTargetType(),
                 a.getCreatedAt().toString());

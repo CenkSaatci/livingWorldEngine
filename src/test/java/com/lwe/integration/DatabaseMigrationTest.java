@@ -65,6 +65,39 @@ class DatabaseMigrationTest {
     }
 
     @Test
+    void itemsTableHasGameSystemIdColumn() throws SQLException {
+        try (var conn = dataSource.getConnection()) {
+            var rs = conn.getMetaData()
+                .getColumns(null, "public", "items", "game_system_id");
+            assertThat(rs.next())
+                .as("V090 sollte game_system_id-Spalte auf items haben")
+                .isTrue();
+        }
+    }
+
+    @Test
+    void abilitiesTableHasGameSystemIdColumn() throws SQLException {
+        try (var conn = dataSource.getConnection()) {
+            var rs = conn.getMetaData()
+                .getColumns(null, "public", "abilities", "game_system_id");
+            assertThat(rs.next())
+                .as("V091 sollte game_system_id-Spalte auf abilities haben")
+                .isTrue();
+        }
+    }
+
+    @Test
+    void campaignsTableExists() throws SQLException {
+        try (var conn = dataSource.getConnection()) {
+            var rs = conn.getMetaData()
+                .getTables(null, "public", "campaigns", new String[]{"TABLE"});
+            assertThat(rs.next())
+                .as("V092 sollte campaigns-Tabelle anlegen")
+                .isTrue();
+        }
+    }
+
+    @Test
     void flywayHistoryTableExists() throws SQLException {
         try (var conn = dataSource.getConnection()) {
             var rs = conn.getMetaData()

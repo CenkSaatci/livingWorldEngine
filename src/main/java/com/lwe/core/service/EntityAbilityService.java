@@ -41,9 +41,6 @@ public class EntityAbilityService {
         var ability = abilityRepo.findById(abilityId)
             .orElseThrow(() -> new EntityAbilityException("ABILITY_NOT_FOUND", "Ability not found"));
 
-        if (!entity.getWorldId().equals(ability.getWorldId()))
-            throw new EntityAbilityException("WORLD_MISMATCH", "Entity and ability belong to different worlds");
-
         if (repo.findByEntityIdAndAbilityId(entityId, abilityId).isPresent())
             throw new EntityAbilityException("ALREADY_ASSIGNED", "Ability already assigned to entity");
 

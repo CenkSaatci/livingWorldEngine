@@ -16,8 +16,8 @@ public class GameItem {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "world_id")
-    private UUID worldId;
+    @Column(name = "game_system_id")
+    private UUID gameSystemId;
 
     @Column(nullable = false, length = 200)
     private String name;
@@ -47,8 +47,8 @@ public class GameItem {
 
     protected GameItem() {}
 
-    public GameItem(UUID worldId, String name, String type, BigDecimal weight, int value) {
-        this.worldId = worldId;
+    public GameItem(UUID gameSystemId, String name, String type, BigDecimal weight, int value) {
+        this.gameSystemId = gameSystemId;
         this.name = name;
         this.type = type;
         this.weight = weight;
@@ -58,7 +58,7 @@ public class GameItem {
     @PreUpdate void onUpdate() { this.updatedAt = Instant.now(); }
 
     public UUID getId() { return id; }
-    public UUID getWorldId() { return worldId; }
+    public UUID getGameSystemId() { return gameSystemId; }
     public String getName() { return name; }
     public String getType() { return type; }
     public BigDecimal getWeight() { return weight; }

@@ -60,17 +60,16 @@ class EntityAbilityServiceTest {
     }
 
     @Test
-    void shouldRejectAssignFromDifferentWorld() {
+    void shouldRejectUnknownAbility() {
         var entity = new GameEntity(worldId, "PC", "Aragorn");
         setId(entity, entityId);
-        var ability = new Ability(UUID.randomUUID(), "Wrong", AbilityType.ACTIVE);
-        setId(ability, abilityId);
 
         when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
-        when(abilityRepo.findById(abilityId)).thenReturn(Optional.of(ability));
+        when(abilityRepo.findById(abilityId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.assign(entityId, abilityId, userId))
-            .isInstanceOf(EntityAbilityService.EntityAbilityException.class);
+            .isInstanceOf(EntityAbilityService.EntityAbilityException.class)
+            .matches(e -> ((EntityAbilityService.EntityAbilityException) e).getErrorCode().equals("ABILITY_NOT_FOUND"));
     }
 
     @Test
