@@ -491,3 +491,209 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 #### 13.7.3 Character Edit schützen
 - [ ] `PATCH /entities/{charId}/attributes` auf fremden Character → 403
 - [ ] `PATCH /entities/{charId}/progression` auf fremden Character → 403
+---
+
+## 14. Manueller Testplan 3-Ebenen-Modell (Phase 24–26)
+
+**Ziel:** Verifikation des kompletten Kampagnen-Flows (ADR-010): Welt ∥ System → Kampagne. Alle Checkpoints gegen ein frisches Backend (Port 8080) + Frontend-Build (Port 3000).
+
+**Vorbereitung:**
+1. Backend starten (`mvn spring-boot:run` bzw. jar)
+2. Frontend bauen + serven (`npx vite build` + `npx serve -s dist -l 3000`)
+3. Zwei Test-Accounts anlegen: `dm@test.de` + `spieler@test.de` (Register → Email-Verify via Console-Token)
+4. DSA-System anlegen (Game Systems → New System → Template)
+5. Eine Welt „Testwelt" anlegen (Welt-Name reicht, KEIN System wählbar!)
+
+---
+
+### 14.1 Welt-Erstellung ohne System (P26-T02)
+
+#### 14.1.1 Welt anlegen
+- [ ] Dashboard → "Erstellen" → Name „Testwelt" → Welt erscheint in Liste
+- [ ] Kein Game-System-Dropdown im Create-Dialog (nur Name)
+- [ ] Welt-Editor (`/worlds/{id}/edit`) hat KEINEN Game-System-Dropdown mehr
+- [ ] Welt speichern → Toast „Gespeichert", keine Fehler
+
+#### 14.1.2 Welt-Clone
+- [ ] Welt-Editor → „Clone" → Kopie „Testwelt (Copy)" erscheint
+- [ ] Kopie enthält Regionen/Locations/NPCs (falls angelegt)
+
+---
+
+### 14.2 Kampagne erstellen (P24-T05, P26-T01)
+
+#### 14.2.1 Kampagnen-Sektion im Dashboard
+- [ ] Dashboard zeigt Abschnitt „Kampagnen" unterhalb der Welten
+- [ ] Ohne Kampagnen: Hinweis „Noch keine Kampagnen"
+- [ ] Button „Kampagne erstellen" öffnet Modal
+
+#### 14.2.2 Kampagne anlegen (DM = Ersteller)
+- [ ] Modal: Name „Runde 1" + Welt „Testwelt" + System „DSA" → Erstellen
+- [ ] Kampagne erscheint in der Kampagnen-Liste
+- [ ] Klick auf Kampagne → Detailseite `/campaigns/{id}`
+- [ ] Detailseite zeigt: Welt-Name, System-Name v{Version}, Mitglieder-Anzahl = 1
+- [ ] Mitgliederliste enthält `dm@test.de` mit Rolle **DM** (Kronen-Icon)
+- [ ] DM-Eintrag hat KEINEN Löschen-Button
+
+#### 14.2.3 Kampagne ohne System ablehnen
+- [ ] Modal: System leer → Erstellen-Button deaktiviert
+- [ ] Welt leer → Erstellen-Button deaktiviert
+
+#### 14.2.4 Kampagne mit inaktiver Welt-Zuordnung
+- [ ] (Optional, nur via API) `POST /campaigns` mit fremder worldId → 404/403
+
+---
+
+### 14.3 Kampagnen-Mitglieder (P25-T04)
+
+#### 14.3.1 Spieler hinzufügen (als DM)
+- [ ] Detailseite → „Spieler hinzufügen" → „spiel" tippen → Suchvorschlag `spieler@test.de`
+- [ ] Klick auf Vorschlag → Toast „Spieler hinzugefügt"
+- [ ] Mitgliederliste zeigt jetzt `spieler@test.de` mit Rolle **Spieler** (User-Icon)
+- [ ] Spieler-Eintrag hat Löschen-Button (Trash-Icon)
+
+#### 14.3.2 Spieler entfernen (als DM)
+- [ ] Trash-Icon am Spieler klicken → Toast „Spieler entfernt"
+- [ ] Mitgliederliste: Spieler verschwunden
+- [ ] Erneut hinzufügen für weitere Tests
+
+#### 14.3.3 Nicht-DM darf keine Mitglieder verwalten
+- [ ] Mit `spieler@test.de` einloggen → Kampagnen-Detail öffnen
+- [ ] Such-Input vorhanden, aber add → Fehler-Toast „Spieler konnte nicht hinzugefügt werden" (oder 403)
+- [ ] (Backend) Löschen eines Mitglieds → 403/`DM_REQUIRED`
+
+#### 14.3.4 DM kann nicht entfernt werden
+- [ ] (Backend) `DELETE /campaigns/{id}/members/{dmUserId}` → Fehler `DM_REMOVAL_DENIED`
+- [ ] UI zeigt für DM keinen Löschen-Button
+
+---
+
+### 14.4 Kampagnen-Kontext & Welt-Einstieg (P26-T01)
+
+#### 14.4.1 „In Welt starten"
+- [ ] Detailseite → Button „In Welt starten" → Navigiert zu `/worlds/{worldId}`
+- [ ] Header zeigt Kampagnen-Badge mit „Runde 1"
+- [ ] Welt lädt normal (Karte, Regionen)
+
+#### 14.4.2 Kampagnen-Kontext bei Session-Start
+- [ ] In GameView: „Session starten" (SessionManager)
+- [ ] (Backend) Session hat `campaignId` gesetzt
+- [ ] `GET /api/v1/worlds/{worldId}/sessions` → Response enthält `campaignId`
+
+#### 14.4.3 Kampagnen-Kontext bei Combat-Start
+- [ ] Combat starten (Mind. 2 Entities) → Response enthält `campaignId`
+- [ ] Kampf läuft mit System-Regeln der Kampagne (Action-Types aus DSA-rulesJson)
+- [ ] ActionBar zeigt Aktionen aus Kampagnen-System (nicht Welt-Fallback)
+
+---
+
+### 14.5 Character Sheet & Proben im Kampagnen-Kontext (P25-T03)
+
+#### 14.5.1 Sheet mit Kampagnen-System
+- [ ] Character öffnen (`/characters/{id}`) — Sheet nutzt Regeln der Kampagne
+- [ ] Attribute = DSA-Attribute (falls DSA-System, sonst Template-Attribute)
+- [ ] Level-Berechnung aus XP der Kampagne korrekt
+
+#### 14.5.2 Probe mit Kampagnen-System
+- [ ] Skill-Probe würfeln → Ergebnis nutzt DSA-Probe-Typ (z. B. `d20_3attr` oder `d100_threshold`)
+- [ ] (Backend) `POST /rolls/probe` mit `campaignId` → korrekte Expression
+
+#### 14.5.3 Roll via Kampagnen-Kontext
+- [ ] (Backend) `POST /rolls` mit `campaignId` → Engine aus Kampagnen-System
+- [ ] Ohne `campaignId` (Welt ohne System) → D20-Fallback, kein Crash
+
+---
+
+### 14.6 Items & Abilities am System (P24-T01/T02, P25-T08)
+
+#### 14.6.1 Item-CRUD
+- [ ] (Backend) `GET /api/v1/game-systems/{id}/items` → leere Liste (200)
+- [ ] (Backend) `POST /api/v1/game-systems/{id}/items` mit `{name:"Kurzschwert", type:"WEAPON", weight:1.5, value:10, bonusesJson:"{\"damage\":\"1d6\"}"}` → 201
+- [ ] (Backend) `GET /api/v1/items/{id}` → Item mit `gameSystemId`
+- [ ] (Backend) `PUT /api/v1/items/{id}` Name ändern → 200
+- [ ] (Backend) `DELETE /api/v1/items/{id}` → 204
+- [ ] (Backend) Invalid type (`"WAND"`) → 400 `INVALID_ITEM_TYPE`
+- [ ] (Backend) Unbekanntes System → 404 `GAME_SYSTEM_NOT_FOUND`
+
+#### 14.6.2 Ability-CRUD
+- [ ] (Backend) `GET /api/v1/game-systems/{id}/abilities` → leere Liste
+- [ ] (Backend) `POST /api/v1/game-systems/{id}/abilities` mit `{name:"Feuerball", type:"ACTIVE", apCost:2}` → 201
+- [ ] (Backend) `GET /api/v1/abilities/{id}` → `gameSystemId` gesetzt
+- [ ] (Backend) `DELETE /api/v1/abilities/{id}` → 204
+- [ ] (Frontend, optional) Ability am Character zuweisen → `POST /entities/{charId}/abilities/{abilityId}` funktioniert unabhängig vom Welt-Match
+
+#### 14.6.3 Alte Endpoints weg
+- [ ] (Backend) `POST /api/v1/worlds/{worldId}/abilities` → 404 (Endpoints existieren nicht mehr)
+- [ ] (Backend) `GET /api/v1/worlds/{worldId}/abilities` → 404
+
+---
+
+### 14.7 Security (Audit B1–B2)
+
+#### 14.7.1 Kampagnen-Liste nur für Berechtigte (B1)
+- [ ] User A (dm@test.de) sieht seine Kampagne
+- [ ] User B (spieler@test.de, ohne Welt-Zugriff) loggt ein → Dashboard zeigt KEINE Kampagne von User A
+- [ ] (Backend) `GET /api/v1/campaigns` als User B → leere Liste
+
+#### 14.7.2 Kampagnen-Detail geschützt
+- [ ] User B ohne Welt-Zugriff: `GET /api/v1/campaigns/{id}` → 403 `WORLD_ACCESS_DENIED`
+
+#### 14.7.3 Combat campaignId (B2)
+- [ ] (Backend) `POST /api/v1/combat/start` mit `campaignId` als Nicht-DM → 403 `WORLD_ACCESS_DENIED`
+- [ ] (Backend) Als DM mit `campaignId` → 201, Response mit `campaignId`
+
+#### 14.7.4 Session campaignId
+- [ ] (Backend) `POST /api/v1/sessions/start` mit `campaignId` als Nicht-DM → 403
+- [ ] (Backend) Als DM → 201, Response mit `campaignId`
+
+#### 14.7.5 Roll mit fremdem campaignId
+- [ ] (Backend) `POST /rolls` mit fremder campaignId → nicht-crash, Fallback oder 403 (kein 500)
+
+---
+
+### 14.8 Events & WebSocket (P25-T07)
+
+#### 14.8.1 Events tragen campaignId
+- [ ] Session starten (mit Kampagne) → `world_events`-Eintrag hat `campaignId`
+- [ ] Combat starten (mit Kampagne) → `COMBAT_STARTED`-Event hat `campaignId`
+- [ ] (Backend) `GET /api/v1/worlds/{id}/events?since=0` → Response-Feld `campaign_id` vorhanden
+
+#### 14.8.2 WebSocket
+- [ ] Zwei Browser: Welt A + Welt B geöffnet
+- [ ] Combat in Welt A → nur Welt A empfängt `COMBAT_STARTED`
+- [ ] Events ohne campaignId (z. B. Welt-Zeit) → `campaign_id` leer, kein Bruch
+
+---
+
+### 14.9 Regression
+
+#### 14.9.1 Bestehende Welten ohne Kampagne
+- [ ] Alte Welt ohne Kampagne öffnen → GameView funktioniert (Welt-Fallback)
+- [ ] Sheet/Combat ohne campaignId → D20-Fallback, keine Fehler
+- [ ] Welt-Zeit (Time Advance/Pause) funktioniert weiter
+
+#### 14.9.2 Resting
+- [ ] Kurz-Rast (short) → AP-Regenerierung lt. System (Fallback)
+- [ ] Lange Rast (long) → HP voll (Fallback oder Kampagnen-Regeln)
+
+#### 14.9.3 Export/Import
+- [ ] Character exportieren → JSON enthält camelCase-Felder (kein `world_id`-Mismatch)
+- [ ] Character importieren → Roundtrip korrekt
+
+#### 14.9.4 i18n
+- [ ] Sprache auf DE/EN wechseln → Kampagnen-Texte (Sektion, Modal, Detail, Toasts) übersetzt
+- [ ] FR/ES/IT/TR → Fallback auf EN, kein leeres Label
+
+---
+
+### 14.10 Testdaten-Checkliste (fürs Wochenende)
+
+- [ ] 2 Accounts (`dm@test.de`, `spieler@test.de`)
+- [ ] 1 Game-System (DSA oder D20Lite)
+- [ ] 1 Welt „Testwelt" (mit 2+ Entities: 1 PC + 1 NPC)
+- [ ] 1 Kampagne „Runde 1" (Welt + System, DM = dm@test.de)
+- [ ] 1 Spieler-Mitglied (spieler@test.de)
+- [ ] 1 Item (Kurzschwert) am System
+- [ ] 1 Ability (Feuerball) am System
+
+**Ergebnis-Erfassung:** Abgehakte Checkpoints + gefundene Fehler mit Reproduktionsschritten hier unten notieren (Datum, Ticket-Nummer).
