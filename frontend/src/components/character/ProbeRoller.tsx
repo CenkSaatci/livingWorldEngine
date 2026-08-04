@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dice1 as Dice } from 'lucide-react';
 import { apiClient } from '../../api/client';
+import { useCampaignStore } from '../../store/campaignStore';
 
 interface Props {
   entityId: string;
@@ -24,6 +25,7 @@ export function ProbeRoller({ entityId, skillName }: Props) {
   const [result, setResult] = useState<ProbeResult | null>(null);
   const [rolling, setRolling] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const activeCampaignId = useCampaignStore((s) => s.activeCampaignId);
 
   const handleRoll = async () => {
     setRolling(true);
@@ -34,6 +36,7 @@ export function ProbeRoller({ entityId, skillName }: Props) {
         skillName,
         target: 10,
         advantage: false,
+        campaignId: activeCampaignId ?? undefined,
       });
       setResult(res.data);
     } catch {

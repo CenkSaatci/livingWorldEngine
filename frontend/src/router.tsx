@@ -17,6 +17,7 @@ import QuestDetailPage from './pages/QuestDetailPage';
 import RegionViewPage from './pages/RegionViewPage';
 import LocationViewPage from './pages/LocationViewPage';
 import GameSystemPage from './pages/GameSystemPage';
+import CampaignDetailPage from './pages/CampaignDetailPage';
 import MapEditorPage from './pages/MapEditorPage';
 import AdventureEditorPage from './pages/AdventureEditorPage';
 import AdventurePlayPage from './pages/AdventurePlayPage';
@@ -54,6 +55,7 @@ export function AppRoutes() {
       <Route path="/worlds/:worldId/adventures/:adventureId" element={isAuthenticated ? <AdventurePlayPage /> : <Navigate to="/login" replace />} />
       <Route path="/worlds/:id/entities" element={isAuthenticated ? <EntityListPage /> : <Navigate to="/login" replace />} />
       <Route path="/game-systems" element={isAuthenticated ? <GameSystemPage /> : <Navigate to="/login" replace />} />
+      <Route path="/campaigns/:id" element={isAuthenticated ? <CampaignDetailPage /> : <Navigate to="/login" replace />} />
       <Route path="/forgot-password" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <ForgotPasswordPage />} />
       <Route path="/reset-password" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <ResetPasswordPage />} />
       <Route path="/verify-email" element={isAuthenticated ? <VerifyEmailPage /> : <Navigate to="/login" replace />} />

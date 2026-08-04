@@ -28,6 +28,7 @@ import { useWorldSocket } from '../hooks/useWorldSocket';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useAuthStore } from '../store/authStore';
+import { useActiveCampaign } from '../store/campaignStore';
 
 export default function GameView() {
   const { i18n } = useTranslation('map');
@@ -36,6 +37,7 @@ export default function GameView() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const activeCampaign = useActiveCampaign();
   const worldId = id ?? '';
 
   useWorldSocket(worldId);
@@ -85,6 +87,11 @@ export default function GameView() {
           </button>
           <span className="text-text-secondary">|</span>
           <h1 className="text-lg font-heading text-text-primary">{tc('gameView.title')}</h1>
+          {activeCampaign && (
+            <span className="rounded-full border border-accent/40 bg-accent/10 px-3 py-0.5 text-xs text-accent">
+              {activeCampaign.name}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <button

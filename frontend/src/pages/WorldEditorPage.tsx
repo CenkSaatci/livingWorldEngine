@@ -14,12 +14,6 @@ interface WorldDetail extends WorldSummary {
   gameSystemId: string | null;
 }
 
-interface GameSystem {
-  id: string;
-  name: string;
-  version: number;
-}
-
 interface Member {
   id: string;
   userId: string;
@@ -93,11 +87,9 @@ export default function WorldEditorPage() {
   const { data: members, refetch: refetchMembers } = useApiGet<Member[]>(`/worlds/${id}/members`, [
     id,
   ]);
-  const { data: gameSystems } = useApiGet<GameSystem[]>('/game-systems', []);
 
   // Editable state
   const [name, setName] = useState('');
-  const [gameSystemId, setGameSystemId] = useState<string>('');
   const [description, setDescription] = useState('');
   const [settings, setSettings] = useState<WorldSettings>({});
   const [dirty, setDirty] = useState(false);
@@ -105,7 +97,6 @@ export default function WorldEditorPage() {
   // Sync API data → local state when loaded
   const initFromWorld = useCallback((w: WorldDetail) => {
     setName(w.name);
-    setGameSystemId(w.gameSystemId ?? '');
     try {
       const parsed = JSON.parse(w.settingsJson) as Record<string, unknown>;
       setDescription((parsed.description as string) ?? '');
@@ -143,7 +134,6 @@ export default function WorldEditorPage() {
       const mergedSettings = { ...settings, description };
       await apiClient.patch(`/worlds/${id}`, {
         name,
-        gameSystemId: gameSystemId || null,
         settingsJson: JSON.stringify(mergedSettings),
       });
       toast.success(t('worldEditor.saved'));
@@ -271,24 +261,6 @@ export default function WorldEditorPage() {
                 }}
                 className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
               />
-            </div>
-            <div>
-              <label className="block text-xs text-text-secondary mb-1">Game System</label>
-              <select
-                value={gameSystemId}
-                onChange={(e) => {
-                  setGameSystemId(e.target.value);
-                  setDirty(true);
-                }}
-                className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-              >
-                <option value="">— None —</option>
-                {(gameSystems ?? []).map((gs) => (
-                  <option key={gs.id} value={gs.id}>
-                    {gs.name} v{gs.version}
-                  </option>
-                ))}
-              </select>
             </div>
             <div>
               <label className="block text-xs text-text-secondary mb-1">Description</label>

@@ -7,6 +7,7 @@ import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import { useWorldStore, type WorldSummary } from '../store/worldStore';
 import { SkeletonCard } from '../components/ui/SkeletonCard';
+import CampaignSection from '../components/campaign/CampaignSection';
 
 export default function DashboardPage() {
   const { t, i18n } = useTranslation('common');
@@ -273,6 +274,8 @@ export default function DashboardPage() {
             </button>
           </div>
         )}
+
+        <CampaignSection />
       </main>
     </div>
   );

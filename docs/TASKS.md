@@ -1978,14 +1978,14 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD, i18n
 
 ### A06: Audit-Follow-up 3-Ebenen-Modell
-- **Status:** 🔜
-- **Aufwand:** 0,5 Tage (mit P26-T02 verknüpft)
-- **Beschreibung:** Audit-Befund B7: `WorldEditorPage` zeigt weiterhin einen Game-System-Dropdown und sendet `gameSystemId` beim PATCH `/worlds/{id}`. Das Backend ignoriert das Feld seit P24 (Record ohne gameSystemId) — die UI suggeriert eine Zuordnung, die nicht mehr gespeichert wird.
-  - Beim P26-T02-Umbau: System-Auswahl aus dem Welt-Editor **entfernen** (Welten sind systemunabhängig, Zuordnung erfolgt in der Kampagne)
-  - i18n-Strings des Dropdowns mitbereinigen
+- **Status:** ✅ (mit P26-T02 umgesetzt)
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** Audit-Befund B7: `WorldEditorPage` zeigte weiterhin einen Game-System-Dropdown und sendete `gameSystemId` beim PATCH `/worlds/{id}`. Das Backend ignoriert das Feld seit P24 (Record ohne gameSystemId) — die UI suggerierte eine Zuordnung, die nicht mehr gespeichert wird.
+  - System-Auswahl aus dem Welt-Editor **entfernt** (Welten sind systemunabhängig, Zuordnung erfolgt in der Kampagne)
+  - GameSystem-Typ + API-Fetch entfernt
 - **Akzeptanzkriterien:**
-  - Welt-Editor hat keinen Game-System-Dropdown mehr
-  - Kein `gameSystemId` im World-PATCH-Request
+  - Welt-Editor hat keinen Game-System-Dropdown mehr ✅
+  - Kein `gameSystemId` im World-PATCH-Request ✅
 - **Qualitäts-Check:** TDD, i18n
 
 ## Phase 24: Datenmodell-Umbau — 3-Ebenen-Modell (System ∥ Welt → Kampagne)
@@ -2122,7 +2122,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 ## Phase 26: Frontend 3-Ebenen
 
 ### P26-T01: Kampagnen-CRUD-UI
-- **Status:** 🔜
+- **Status:** ✅
 - **Aufwand:** 1,5 Tage
 - **Beschreibung:**
   - Dashboard: Kampagnen-Sektion (Liste + Erstellen-Modal)
@@ -2132,14 +2132,14 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD, i18n, UI-Tests
 
 ### P26-T02: Welt-Erstellung ohne System
-- **Status:** 🔜
+- **Status:** ✅ (inkl. A06)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:** Welt-Wizard: `game_system_id`-Auswahl entfernen (Welten sind systemunabhängig)
 - **Akzeptanzkriterien:** Welt ohne System anlegbar; bestehende Welten editierbar
 - **Qualitäts-Check:** TDD, i18n
 
 ### P26-T03: Combat/Session/ActionBar auf Kampagnen-Kontext
-- **Status:** 🔜
+- **Status:** 🔜 (Teilumsetzung: SessionManager/StartCombatModal/useSheet/ProbeRoller/SkillList senden campaignId; ActionBar lädt action_types noch über Welt → REST, danach worlds.game_system_id entfernen)
 - **Aufwand:** 1,0 Tage
 - **Beschreibung:**
   - Combat starten aus Kampagne (campaignId statt world→System)

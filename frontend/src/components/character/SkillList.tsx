@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dices } from 'lucide-react';
 import { apiClient } from '../../api/client';
+import { useCampaignStore } from '../../store/campaignStore';
 import { DiceRollModal } from '../ui/DiceRollModal';
 import { parseExpression } from '../../utils/diceParser';
 
@@ -30,6 +31,7 @@ export function SkillList({ skills, entityId, worldId, attributes, disabled }: P
   const { t } = useTranslation('character');
   const [rolling, setRolling] = useState<string | null>(null);
   const [modal, setModal] = useState<RollModalState | null>(null);
+  const activeCampaignId = useCampaignStore((s) => s.activeCampaignId);
 
   const handleRoll = async (skill: Skill) => {
     setRolling(skill.name);
@@ -41,6 +43,7 @@ export function SkillList({ skills, entityId, worldId, attributes, disabled }: P
         skillId: skill.attribute,
         modifier: skill.bonus ?? 0,
         target: attrValue,
+        campaignId: activeCampaignId ?? undefined,
       });
       const data = res.data;
       const expr = (data.expression as string) ?? '1d20';

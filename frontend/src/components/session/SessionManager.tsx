@@ -3,6 +3,7 @@ import { Play, Square, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../api/client';
 import { useSessionStore } from '../../store/sessionStore';
+import { useCampaignStore } from '../../store/campaignStore';
 import { useToast } from '../../hooks/useToast';
 
 interface Props {
@@ -16,6 +17,7 @@ export function SessionManager({ worldId }: Props) {
   const setSessions = useSessionStore((s) => s.setSessions);
   const addSession = useSessionStore((s) => s.addSession);
   const endSession = useSessionStore((s) => s.endSession);
+  const activeCampaignId = useCampaignStore((s) => s.activeCampaignId);
   const toast = useToast();
 
   useEffect(() => {
@@ -28,7 +30,10 @@ export function SessionManager({ worldId }: Props) {
 
   const handleStart = async () => {
     try {
-      const res = await apiClient.post('/sessions/start', { worldId });
+      const res = await apiClient.post('/sessions/start', {
+        worldId,
+        campaignId: activeCampaignId ?? undefined,
+      });
       addSession(res.data);
       toast.success(t('session.started'));
     } catch {

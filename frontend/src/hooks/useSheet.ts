@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../api/client';
+import { useCampaignStore } from '../store/campaignStore';
 
 export interface SheetData {
   entity: { id: string; name: string; entityType: string };
@@ -16,20 +17,22 @@ export function useSheet(entityId: string | undefined) {
   const [data, setData] = useState<SheetData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const activeCampaignId = useCampaignStore((s) => s.activeCampaignId);
 
   const fetchSheet = useCallback(async () => {
     if (!entityId) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await apiClient.get<SheetData>(`/entities/${entityId}/sheet`);
+      const params = activeCampaignId ? `?campaignId=${activeCampaignId}` : '';
+      const res = await apiClient.get<SheetData>(`/entities/${entityId}/sheet${params}`);
       setData(res.data);
     } catch {
       setError('Failed to load character sheet');
     } finally {
       setLoading(false);
     }
-  }, [entityId]);
+  }, [entityId, activeCampaignId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,7 +41,8 @@ export function useSheet(entityId: string | undefined) {
       setLoading(true);
       setError(null);
       try {
-        const res = await apiClient.get<SheetData>(`/entities/${entityId}/sheet`);
+        const params = activeCampaignId ? `?campaignId=${activeCampaignId}` : '';
+        const res = await apiClient.get<SheetData>(`/entities/${entityId}/sheet${params}`);
         if (!cancelled) setData(res.data);
       } catch {
         if (!cancelled) setError('Failed to load character sheet');
@@ -50,7 +54,7 @@ export function useSheet(entityId: string | undefined) {
     return () => {
       cancelled = true;
     };
-  }, [entityId]);
+  }, [entityId, activeCampaignId]);
 
   return { data, loading, error, refetch: fetchSheet };
 }
