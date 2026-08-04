@@ -29,7 +29,7 @@ public class CombatController {
     @PostMapping("/start")
     public ResponseEntity<CombatSessionResponse> start(@Valid @RequestBody StartRequest req,
                                                         @AuthenticationPrincipal User user) {
-        var session = combatService.startCombat(user.getId(), req.worldId(), req.participantIds(), req.mapId());
+        var session = combatService.startCombat(user.getId(), req.worldId(), req.participantIds(), req.mapId(), req.campaignId());
         return ResponseEntity.status(HttpStatus.CREATED).body(CombatSessionResponse.from(session));
     }
 
@@ -83,7 +83,8 @@ public class CombatController {
     public record StartRequest(
         @NotBlank UUID worldId,
         @NotEmpty List<UUID> participantIds,
-        UUID mapId
+        UUID mapId,
+        UUID campaignId
     ) {}
 
     public record ActionRequest(

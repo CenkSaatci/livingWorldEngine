@@ -2,8 +2,10 @@ package com.lwe.core.service;
 
 import com.lwe.core.domain.Campaign;
 import com.lwe.core.domain.GameSystem;
+import com.lwe.core.domain.World;
 import com.lwe.core.repository.CampaignRepository;
 import com.lwe.core.repository.GameSystemRepository;
+import com.lwe.core.repository.WorldMemberRepository;
 import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
@@ -17,17 +19,20 @@ public class CampaignService {
 
     private final CampaignRepository repo;
     private final WorldRepository worldRepo;
+    private final WorldMemberRepository memberRepo;
     private final GameSystemRepository systemRepo;
     private final WorldAccess worldAccess;
     private final CampaignMemberService memberService;
 
     public CampaignService(CampaignRepository repo,
                            WorldRepository worldRepo,
+                           WorldMemberRepository memberRepo,
                            GameSystemRepository systemRepo,
                            WorldAccess worldAccess,
                            CampaignMemberService memberService) {
         this.repo = repo;
         this.worldRepo = worldRepo;
+        this.memberRepo = memberRepo;
         this.systemRepo = systemRepo;
         this.worldAccess = worldAccess;
         this.memberService = memberService;
@@ -52,8 +57,15 @@ public class CampaignService {
         return repo.findByWorldId(worldId);
     }
 
+    /** Kampagnen aus Welten, auf die der User Zugriff hat (Owner + Member). */
     public List<Campaign> listAccessible(UUID userId) {
-        return repo.findAll();
+        var owned = worldRepo.findByOwnerIdAndActiveTrue(userId).stream()
+            .map(World::getId).toList();
+        var memberWorldIds = memberRepo.findWorldIdsByUserId(userId);
+        var worldIds = java.util.stream.Stream.concat(owned.stream(), memberWorldIds.stream())
+            .distinct().toList();
+        if (worldIds.isEmpty()) return List.of();
+        return repo.findByWorldIdIn(worldIds);
     }
 
     public Campaign getById(UUID id, UUID userId) {

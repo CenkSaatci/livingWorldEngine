@@ -1,4 +1,6 @@
 package com.lwe.api.dto;
 
-public record WorldEventResponse(long id, String eventType, String sourceEntityId,
+import java.util.UUID;
+
+public record WorldEventResponse(long id, String eventType, String campaignId, String sourceEntityId,
                                    String targetEntityId, String payload, String createdAt) {}

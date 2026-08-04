@@ -160,7 +160,6 @@ Alle Endpunkte auth und user-scoped (Tenant-Isolation via JWT `user_id`, siehe [
 ```json
 {
   "name": "Schattental",
-  "game_system_id": "uuid",
   "settings_json": {
     "ai_mode": "suggest",
     "visibility": "fog_of_war",
@@ -179,13 +178,14 @@ Alle Endpunkte auth und user-scoped (Tenant-Isolation via JWT `user_id`, siehe [
 }
 ```
 
+> Seit dem 3-Ebenen-Modell (ADR-010) sind Welten **systemunabhängig**: `game_system_id` wird nicht mehr im World-Request akzeptiert. Die Zuordnung Welt → System erfolgt über die **Kampagne** (siehe Abschnitt 4a).
+
 **Response 201:**
 ```json
 {
   "id": "uuid",
   "name": "Schattental",
   "owner_id": "uuid",
-  "game_system_id": "uuid",
   "settings_json": { ... },
   "current_game_time": "2025-03-15T06:00:00",
   "last_tick_at": "2025-03-15T06:00:00",
@@ -193,7 +193,60 @@ Alle Endpunkte auth und user-scoped (Tenant-Isolation via JWT `user_id`, siehe [
 }
 ```
 
-**Fehlercodes:** `WORLD_NAME_REQUIRED`, `WORLD_SETTINGS_INVALID`, `WORLD_GAME_SYSTEM_INACTIVE`, `GAME_SYSTEM_NOT_FOUND`
+**Fehlercodes:** `WORLD_NAME_REQUIRED`, `WORLD_SETTINGS_INVALID`
+
+---
+
+## 4a. Campaigns (`/api/v1/campaigns`)
+
+Kampagnen verbinden eine **Welt** mit einem **System** (ADR-010). Der Ersteller wird automatisch **DM**; Spieler werden vom DM hinzugefügt/entfernt. Dynamische Spiel-Zustände (Krieg, Eroberungen) gehören in `state_json`.
+
+### `POST /api/v1/campaigns` (auth, Welt-Owner/Member)
+**Request:**
+```json
+{
+  "worldId": "uuid",
+  "gameSystemId": "uuid",
+  "name": "Runde 1"
+}
+```
+**Response 201:** Kampagne inkl. `id, worldId, gameSystemId, name, settingsJson, stateJson, createdAt, updatedAt`
+**Fehlercodes:** `WORLD_NOT_FOUND`, `GAME_SYSTEM_NOT_FOUND`, `WORLD_ACCESS_DENIED`
+
+### `GET /api/v1/campaigns` (auth)
+Nur Kampagnen aus Welten, auf die der User Zugriff hat (Owner/Member).
+
+### `GET /api/v1/campaigns/{id}` (auth, Welt-Zugriff)
+
+### `PATCH /api/v1/campaigns/{id}` (auth, Welt-Zugriff)
+Body (optional): `name`, `stateJson`
+
+### `DELETE /api/v1/campaigns/{id}` (auth, Welt-Zugriff)
+
+### `POST /api/v1/campaigns/{id}/members` (auth, nur DM)
+**Request:** `{ "userId": "uuid", "role": "PLAYER" }` (role: `PLAYER` | `DM`)
+**Fehlercodes:** `USER_NOT_FOUND`, `MEMBER_ALREADY`, `DM_REQUIRED`
+
+### `GET /api/v1/campaigns/{id}/members` (auth, Welt-Zugriff)
+
+### `DELETE /api/v1/campaigns/{id}/members/{memberId}` (auth, nur DM)
+**Fehlercodes:** `MEMBER_NOT_FOUND`, `DM_REMOVAL_DENIED`, `DM_REQUIRED`
+
+---
+
+## 4b. Game-System Items & Abilities
+
+### Items (`/api/v1/game-systems/{gameSystemId}/items`)
+- `POST` — Item anlegen: `{ name, type: "WEAPON"|"ARMOR"|"CONSUMABLE"|"MISC", weight, value, bonusesJson, metadataJson }`
+- `GET` — Items des Systems
+- `GET/PUT/DELETE /api/v1/items/{id}` — Einzel-Item
+**Fehlercodes:** `GAME_SYSTEM_NOT_FOUND`, `INVALID_ITEM_TYPE`, `ITEM_NOT_FOUND`
+
+### Abilities (`/api/v1/game-systems/{gameSystemId}/abilities`)
+- `POST` — Ability anlegen: `{ name, type: "ACTIVE"|"PASSIVE", description, effectsJson, statBonusesJson, apCost, cooldownRounds, targetType }`
+- `GET` — Abilities des Systems
+- `GET/PUT/DELETE /api/v1/abilities/{id}` — Einzel-Ability
+**Fehlercodes:** `GAME_SYSTEM_NOT_FOUND`, `ABILITY_NOT_FOUND`
 
 ### `GET /api/v1/worlds` → Liste eigener Welten
 ### `GET /api/v1/worlds/{id}` → Details (**Fehlercodes:** `WORLD_NOT_FOUND`, `WORLD_ACCESS_DENIED`)
@@ -305,7 +358,7 @@ Unterstützt: `"full"`, `"50%"`, `"1d8+konstitution"`, `"5"` (flach) für HP; `"
 ## 7. Rolls (`/api/v1/rolls`)
 
 ### `POST /api/v1/rolls`
-Führt eine Probe aus. Erzeugt `PROBE_ROLLED` Event + WS-Broadcast.
+Führt eine Probe aus. Erzeugt `PROBE_ROLLED` Event + WS-Broadcast. Mit `campaignId` wird das System der Kampagne bevorzugt (Fallback: System der Welt).
 
 **Request:**
 ```json
@@ -314,9 +367,13 @@ Führt eine Probe aus. Erzeugt `PROBE_ROLLED` Event + WS-Broadcast.
   "entity_id": "uuid",
   "skill_id": "stärke",
   "modifier": 2,
-  "target": 15
+  "target": 15,
+  "campaign_id": "uuid"
 }
 ```
+
+### `POST /api/v1/rolls/probe`
+Charakter-Probe (Per-Character-Skills, Vor-/Nachteil). `campaignId` optional im Body.
 
 **Response 200:**
 ```json
@@ -340,10 +397,10 @@ Führt eine Probe aus. Erzeugt `PROBE_ROLLED` Event + WS-Broadcast.
 ### `POST /api/v1/combat/start`
 **Request:**
 ```json
-{ "world_id": "uuid", "participant_ids": ["uuid", "uuid", "uuid"] }
+{ "world_id": "uuid", "participant_ids": ["uuid", "uuid", "uuid"], "campaign_id": "uuid" }
 ```
 
-**Response 201:** Combat-Session mit Initiative-Reihenfolge.
+**Response 201:** Combat-Session mit Initiative-Reihenfolge (inkl. `campaignId`).
 
 ### `POST /api/v1/combat/{sessionId}/next-turn`
 **Fehlercodes:** `COMBAT_NOT_YOUR_TURN`, `COMBAT_NOT_ACTIVE`
@@ -507,7 +564,26 @@ Führt Intent aus.
 
 ---
 
-## 12. World-Events (`/api/v1/worlds/{id}/events`)
+## 12. Game Sessions (`/api/v1/sessions`)
+
+### `POST /api/v1/sessions/start` (auth, Welt-Owner oder Kampagnen-DM)
+**Request:**
+```json
+{ "world_id": "uuid", "campaign_id": "uuid" }
+```
+`campaign_id` optional — Session wird der Kampagne zugeordnet.
+**Response 201:** `{ id, worldId, campaignId, status, startedAt, endedAt, createdAt }`
+**Fehlercodes:** `WORLD_NOT_FOUND`, `WORLD_ACCESS_DENIED`, `SESSION_NOT_FOUND`
+
+### `POST /api/v1/sessions/{id}/end` (auth, Welt-Owner oder Kampagnen-DM)
+**Response 200:** Session mit `status: "ENDED"`
+
+### `GET /api/v1/worlds/{worldId}/sessions` (auth, Welt-Owner)
+Aktive Sessions der Welt.
+
+---
+
+## 13. World-Events (`/api/v1/worlds/{id}/events`)
 
 ### `GET /api/v1/worlds/{id}/events?since={eventId}&limit=100`
 Gibt neue Events seit `eventId` zurück. Wird vom Bot gepollt.
@@ -519,6 +595,7 @@ Gibt neue Events seit `eventId` zurück. Wird vom Bot gepollt.
     {
       "id": 123456,
       "event_type": "FIRE_CREATED",
+      "campaign_id": "uuid",
       "source_entity_id": "uuid",
       "target_entity_id": null,
       "payload_json": { "position": { "x": 15, "y": 22 }, "intensity": 1 },
@@ -533,7 +610,7 @@ Gibt neue Events seit `eventId` zurück. Wird vom Bot gepollt.
 
 ---
 
-## 13. Admin (`/api/v1/admin/*` — Phase 5, Rolle `ADMIN`)
+## 14. Admin (`/api/v1/admin/*` — Phase 5, Rolle `ADMIN`)
 
 - `GET /api/v1/admin/users` — User-Übersicht
 - `GET /api/v1/admin/users/{id}` — User-Detail
@@ -544,7 +621,7 @@ Gibt neue Events seit `eventId` zurück. Wird vom Bot gepollt.
 
 ---
 
-## 14. WebSocket (STOMP)
+## 15. WebSocket (STOMP)
 
 ### Verbindung
 - Endpoint: `ws://localhost:8080/ws` (dev), `wss://{host}/ws` (prod)
@@ -581,7 +658,7 @@ Authorization: Bearer {jwt}
 
 ---
 
-## 15. Bot-Service-Token
+## 16. Bot-Service-Token
 
 Der AI-Bot benötigt **Service-Authentifizierung**:
 
@@ -592,7 +669,7 @@ Der AI-Bot benötigt **Service-Authentifizierung**:
 
 ---
 
-## 16. Offene Punkte (spätere Phasen)
+## 17. Offene Punkte (spätere Phasen)
 
 - Statistik-Endpunkte für Metriken
 - S3-kompatibles Asset-Storage für Map-Hintergründe
@@ -602,7 +679,7 @@ Der AI-Bot benötigt **Service-Authentifizierung**:
 
 ---
 
-## 17. Verweise
+## 18. Verweise
 
 - [`ADR/008`](ADR/008-api-versioning.md) — API-Versionierungs-Strategie
 - [`ADR/007`](ADR/007-internationalization-strategy.md) — i18n via `Accept-Language`

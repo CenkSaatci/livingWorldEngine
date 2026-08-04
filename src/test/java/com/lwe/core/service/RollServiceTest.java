@@ -24,9 +24,11 @@ class RollServiceTest {
     private final GameSystemRepository gameSystemRepo = mock();
     private final WorldEventService eventService = mock();
 
+    private final RulesLoader rulesLoader = mock();
+
     private final RollService service = new RollService(entityRepo, worldRepo,
         gameSystemRepo, eventService, List.of(new D20RuleEngine()),
-            new ObjectMapper());
+            rulesLoader, new ObjectMapper());
 
     @Test
     void shouldExecuteD20Roll() {
@@ -43,7 +45,7 @@ class RollServiceTest {
 
         when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
-        when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
         var result = service.executeRoll(userId, worldId, entityId, "staerke", 0, 15);
 

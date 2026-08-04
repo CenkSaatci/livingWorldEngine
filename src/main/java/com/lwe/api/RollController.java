@@ -55,7 +55,7 @@ public class RollController {
                                                        @AuthenticationPrincipal User user) {
         var result = rollService.executeRoll(
             user.getId(), req.worldId(), req.entityId(),
-            req.skillId(), req.modifier(), req.target());
+            req.skillId(), req.modifier(), req.target(), req.campaignId());
         return ResponseEntity.ok(result);
     }
 
@@ -72,7 +72,8 @@ public class RollController {
         @NotBlank UUID entityId,
         @NotBlank String skillId,
         int modifier,
-        @PositiveOrZero int target
+        @PositiveOrZero int target,
+        UUID campaignId
     ) {}
     public record FreeRollRequest(@NotBlank String expression) {}
 }

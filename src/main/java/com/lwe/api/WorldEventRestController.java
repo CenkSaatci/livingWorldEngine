@@ -30,6 +30,7 @@ public class WorldEventRestController {
         return ResponseEntity.ok(new WorldEventListResponse(events.stream()
             .map(e -> new WorldEventResponse(
                 e.getId(), e.getEventType(),
+                e.getCampaignId() != null ? e.getCampaignId().toString() : "",
                 e.getSourceEntityId() != null ? e.getSourceEntityId().toString() : "",
                 e.getTargetEntityId() != null ? e.getTargetEntityId().toString() : "",
                 e.getPayloadJson(), e.getCreatedAt().toString()))

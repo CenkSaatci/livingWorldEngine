@@ -1977,7 +1977,16 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
   - Keine stillen Fehler mehr
 - **Qualitäts-Check:** TDD, i18n
 
----
+### A06: Audit-Follow-up 3-Ebenen-Modell
+- **Status:** 🔜
+- **Aufwand:** 0,5 Tage (mit P26-T02 verknüpft)
+- **Beschreibung:** Audit-Befund B7: `WorldEditorPage` zeigt weiterhin einen Game-System-Dropdown und sendet `gameSystemId` beim PATCH `/worlds/{id}`. Das Backend ignoriert das Feld seit P24 (Record ohne gameSystemId) — die UI suggeriert eine Zuordnung, die nicht mehr gespeichert wird.
+  - Beim P26-T02-Umbau: System-Auswahl aus dem Welt-Editor **entfernen** (Welten sind systemunabhängig, Zuordnung erfolgt in der Kampagne)
+  - i18n-Strings des Dropdowns mitbereinigen
+- **Akzeptanzkriterien:**
+  - Welt-Editor hat keinen Game-System-Dropdown mehr
+  - Kein `gameSystemId` im World-PATCH-Request
+- **Qualitäts-Check:** TDD, i18n
 
 ## Phase 24: Datenmodell-Umbau — 3-Ebenen-Modell (System ∥ Welt → Kampagne)
 

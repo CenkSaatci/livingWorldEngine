@@ -23,18 +23,21 @@ public class RollService {
     private final WorldRepository worldRepo;
     private final GameSystemRepository gameSystemRepo;
     private final WorldEventService eventService;
+    private final RulesLoader rulesLoader;
     private final Map<DiceExpressionParser.DiceSystem, RuleEngine> engines;
     private final ObjectMapper objectMapper;
 
     public RollService(GameEntityRepository entityRepo, WorldRepository worldRepo,
                        GameSystemRepository gameSystemRepo, WorldEventService eventService,
                        java.util.List<RuleEngine> engineList,
-                        ObjectMapper objectMapper) {
+                       RulesLoader rulesLoader,
+                       ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldRepo = worldRepo;
         this.gameSystemRepo = gameSystemRepo;
         this.eventService = eventService;
+        this.rulesLoader = rulesLoader;
         this.engines = new EnumMap<>(DiceExpressionParser.DiceSystem.class);
         for (var engine : engineList) {
             this.engines.put(engine.getDiceSystem(), engine);
@@ -43,6 +46,11 @@ public class RollService {
 
     public RollResult executeRoll(UUID userId, UUID worldId, UUID entityId,
                                   String skillId, int modifier, int target) {
+        return executeRoll(userId, worldId, entityId, skillId, modifier, target, null);
+    }
+
+    public RollResult executeRoll(UUID userId, UUID worldId, UUID entityId,
+                                  String skillId, int modifier, int target, UUID campaignId) {
         var entity = entityRepo.findById(entityId).orElse(null);
         if (entity == null) return error(skillId, target, "ENTITY_NOT_FOUND");
 
@@ -56,13 +64,13 @@ public class RollService {
         var attrValue = AttributeUtils.extractAttribute(entity, skillId).orElse(10);
 
         // 4. Game-System laden → Engine bestimmen
-        var engine = getEngineForWorld(world);
-        var diceExpr = resolveDiceExpression(world);
+        var engine = getEngineForWorld(world, campaignId);
+        var diceExpr = resolveDiceExpression(world, campaignId);
         var req = new RuleEngine.ProbeRequest(skillId, attrValue, modifier, target, diceExpr);
         var probeResult = engine.executeProbe(req);
 
         // 5. Event loggen
-        eventService.publish(worldId, PROBE_ROLLED, entityId, null, Map.of(
+        eventService.publish(worldId, campaignId, PROBE_ROLLED, entityId, null, Map.of(
             "skillId", skillId,
             "total", probeResult.total(),
             "target", target,
@@ -74,16 +82,14 @@ public class RollService {
             probeResult.total(), target, probeResult.success(), null);
     }
 
-    private RuleEngine getEngineForWorld(com.lwe.core.domain.World world) {
-        if (world.getGameSystemId() != null) {
+    private RuleEngine getEngineForWorld(com.lwe.core.domain.World world, UUID campaignId) {
+        var gs = rulesLoader.loadSystemByCampaign(campaignId);
+        if (gs == null) gs = rulesLoader.loadSystem(world);
+        if (gs != null) {
             try {
-                var opt = gameSystemRepo.findById(world.getGameSystemId());
-                if (opt.isPresent()) {
-                    var gs = opt.get();
-                    var system = DiceExpressionParser.detect(gs.getRulesJson());
-                    var engine = engines.get(system);
-                    if (engine != null) return engine;
-                }
+                var system = DiceExpressionParser.detect(gs.getRulesJson());
+                var engine = engines.get(system);
+                if (engine != null) return engine;
             } catch (IllegalArgumentException e) {
                 // unsupported dice system → fall through to fallback
             }
@@ -92,14 +98,13 @@ public class RollService {
             engines.values().iterator().next());
     }
 
-    private String resolveDiceExpression(com.lwe.core.domain.World world) {
-        if (world.getGameSystemId() != null) {
+    private String resolveDiceExpression(com.lwe.core.domain.World world, UUID campaignId) {
+        var gs = rulesLoader.loadSystemByCampaign(campaignId);
+        if (gs == null) gs = rulesLoader.loadSystem(world);
+        if (gs != null) {
             try {
-                var gs = gameSystemRepo.findById(world.getGameSystemId()).orElse(null);
-                if (gs != null) {
-                    var tree = objectMapper.readTree(gs.getRulesJson());
-                    return tree.path("dice_mechanics").path("probe").asText("1d20+mod");
-                }
+                var tree = objectMapper.readTree(gs.getRulesJson());
+                return tree.path("dice_mechanics").path("probe").asText("1d20+mod");
             } catch (Exception e) {
                 // fall through
             }

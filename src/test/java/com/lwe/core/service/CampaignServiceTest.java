@@ -5,6 +5,7 @@ import com.lwe.core.domain.GameSystem;
 import com.lwe.core.domain.World;
 import com.lwe.core.repository.CampaignRepository;
 import com.lwe.core.repository.GameSystemRepository;
+import com.lwe.core.repository.WorldMemberRepository;
 import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.util.WorldAccess;
 import com.lwe.core.util.WorldAccess.WorldAccessException;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,6 +29,7 @@ class CampaignServiceTest {
 
     @Mock private CampaignRepository repo;
     @Mock private WorldRepository worldRepo;
+    @Mock private WorldMemberRepository memberRepo;
     @Mock private GameSystemRepository systemRepo;
     @Mock private WorldAccess worldAccess;
     @Mock private CampaignMemberService memberService;
@@ -38,7 +41,7 @@ class CampaignServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CampaignService(repo, worldRepo, systemRepo, worldAccess, memberService);
+        service = new CampaignService(repo, worldRepo, memberRepo, systemRepo, worldAccess, memberService);
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
     }
 
@@ -144,6 +147,45 @@ class CampaignServiceTest {
 
         assertThat(result.getId()).isEqualTo(campaign.getId());
         verify(worldAccess).requireAccess(worldId, userId);
+    }
+
+    @Test
+    void listAccessibleOnlyReturnsCampaignsFromOwnedOrMemberWorlds() {
+        var ownedWorld = new World("Mine", userId, null, "{}");
+        setId(ownedWorld, worldId);
+        var campaign = new Campaign(worldId, gameSystemId, "Runde 1");
+        when(worldRepo.findByOwnerIdAndActiveTrue(userId)).thenReturn(List.of(ownedWorld));
+        when(memberRepo.findWorldIdsByUserId(userId)).thenReturn(List.of());
+        when(repo.findByWorldIdIn(List.of(worldId))).thenReturn(List.of(campaign));
+
+        var result = service.listAccessible(userId);
+
+        assertThat(result).containsExactly(campaign);
+        verify(repo).findByWorldIdIn(List.of(worldId));
+    }
+
+    @Test
+    void listAccessibleReturnsEmptyWhenNoWorlds() {
+        when(worldRepo.findByOwnerIdAndActiveTrue(userId)).thenReturn(List.of());
+        when(memberRepo.findWorldIdsByUserId(userId)).thenReturn(List.of());
+
+        var result = service.listAccessible(userId);
+
+        assertThat(result).isEmpty();
+        verify(repo, never()).findByWorldIdIn(any());
+    }
+
+    @Test
+    void listAccessibleIncludesMemberWorlds() {
+        var otherWorldId = UUID.randomUUID();
+        var memberCampaign = new Campaign(otherWorldId, gameSystemId, "Gast");
+        when(worldRepo.findByOwnerIdAndActiveTrue(userId)).thenReturn(List.of());
+        when(memberRepo.findWorldIdsByUserId(userId)).thenReturn(List.of(otherWorldId));
+        when(repo.findByWorldIdIn(List.of(otherWorldId))).thenReturn(List.of(memberCampaign));
+
+        var result = service.listAccessible(userId);
+
+        assertThat(result).containsExactly(memberCampaign);
     }
 
     private void setId(Object obj, UUID id) {
