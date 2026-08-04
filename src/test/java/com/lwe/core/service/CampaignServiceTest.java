@@ -29,6 +29,7 @@ class CampaignServiceTest {
     @Mock private WorldRepository worldRepo;
     @Mock private GameSystemRepository systemRepo;
     @Mock private WorldAccess worldAccess;
+    @Mock private CampaignMemberService memberService;
 
     private CampaignService service;
     private final UUID userId = UUID.randomUUID();
@@ -37,7 +38,7 @@ class CampaignServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CampaignService(repo, worldRepo, systemRepo, worldAccess);
+        service = new CampaignService(repo, worldRepo, systemRepo, worldAccess, memberService);
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
     }
 

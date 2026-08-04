@@ -25,7 +25,7 @@ public class GameSessionController {
     @PostMapping("/api/v1/sessions/start")
     public ResponseEntity<GameSessionInfoResponse> start(@Valid @RequestBody StartRequest req,
                                                           @AuthenticationPrincipal User user) {
-        var session = sessionService.startSession(req.worldId(), user.getId());
+        var session = sessionService.startSession(req.worldId(), req.campaignId(), user.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(GameSessionInfoResponse.from(session));
     }
 
@@ -44,5 +44,5 @@ public class GameSessionController {
         return ResponseEntity.ok(sessions);
     }
 
-    public record StartRequest(@NotNull UUID worldId) {}
+    public record StartRequest(@NotNull UUID worldId, UUID campaignId) {}
 }

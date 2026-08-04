@@ -19,24 +19,30 @@ public class GameSessionService {
     private final GameSessionRepository sessionRepo;
     private final WorldRepository worldRepo;
     private final WorldEventService eventService;
+    private final CampaignMemberService campaignMemberService;
 
     public GameSessionService(GameSessionRepository sessionRepo, WorldRepository worldRepo,
-                              WorldEventService eventService) {
+                              WorldEventService eventService,
+                              CampaignMemberService campaignMemberService) {
         this.sessionRepo = sessionRepo;
         this.worldRepo = worldRepo;
         this.eventService = eventService;
+        this.campaignMemberService = campaignMemberService;
     }
 
     @Transactional
-    public GameSession startSession(UUID worldId, UUID userId) {
+    public GameSession startSession(UUID worldId, UUID campaignId, UUID userId) {
         var world = worldRepo.findById(worldId)
             .orElseThrow(() -> new SessionException("WORLD_NOT_FOUND", "World not found"));
-        if (!world.getOwnerId().equals(userId))
+        if (!world.getOwnerId().equals(userId)
+            && (campaignId == null || !campaignMemberService.isDm(campaignId, userId))) {
             throw new SessionException("WORLD_ACCESS_DENIED", "Access denied");
-        var session = new GameSession(worldId);
+        }
+        var session = new GameSession(worldId, campaignId);
         session = sessionRepo.save(session);
         eventService.publish(worldId, SESSION_STARTED, null, null, Map.of(
             "sessionId", session.getId(),
+            "campaignId", campaignId != null ? campaignId.toString() : "",
             "dm", userId.toString()
         ));
         return session;
@@ -48,8 +54,10 @@ public class GameSessionService {
             .orElseThrow(() -> new SessionException("SESSION_NOT_FOUND", "Session not found"));
         var world = worldRepo.findById(session.getWorldId())
             .orElseThrow(() -> new SessionException("WORLD_NOT_FOUND", "World not found"));
-        if (!world.getOwnerId().equals(userId))
+        if (!world.getOwnerId().equals(userId)
+            && (session.getCampaignId() == null || !campaignMemberService.isDm(session.getCampaignId(), userId))) {
             throw new SessionException("WORLD_ACCESS_DENIED", "Access denied");
+        }
         session.setStatus("ENDED");
         session.setEndedAt(Instant.now());
         session = sessionRepo.save(session);

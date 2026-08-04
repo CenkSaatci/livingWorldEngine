@@ -15,6 +15,9 @@ public class GameSession {
     @Column(name = "world_id", nullable = false)
     private UUID worldId;
 
+    @Column(name = "campaign_id")
+    private UUID campaignId;
+
     @Column(nullable = false, length = 20)
     private String status = "ACTIVE";
 
@@ -29,12 +32,14 @@ public class GameSession {
 
     protected GameSession() {}
 
-    public GameSession(UUID worldId) {
+    public GameSession(UUID worldId, UUID campaignId) {
         this.worldId = worldId;
+        this.campaignId = campaignId;
     }
 
     public UUID getId() { return id; }
     public UUID getWorldId() { return worldId; }
+    public UUID getCampaignId() { return campaignId; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public Instant getStartedAt() { return startedAt; }

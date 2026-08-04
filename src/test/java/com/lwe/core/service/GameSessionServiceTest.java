@@ -26,12 +26,13 @@ class GameSessionServiceTest {
     @Mock private GameSessionRepository sessionRepo;
     @Mock private WorldRepository worldRepo;
     @Mock private WorldEventService eventService;
+    @Mock private CampaignMemberService campaignMemberService;
 
     private GameSessionService service;
 
     @BeforeEach
     void setUp() {
-        service = new GameSessionService(sessionRepo, worldRepo, eventService);
+        service = new GameSessionService(sessionRepo, worldRepo, eventService, campaignMemberService);
     }
 
     @Test
@@ -49,7 +50,7 @@ class GameSessionServiceTest {
             return s;
         });
 
-        var session = service.startSession(worldId, userId);
+        var session = service.startSession(worldId, null, userId);
 
         assertThat(session.getWorldId()).isEqualTo(worldId);
         assertThat(session.getStatus()).isEqualTo("ACTIVE");
@@ -57,10 +58,48 @@ class GameSessionServiceTest {
     }
 
     @Test
+    void dmCanStartCampaignSession() throws Exception {
+        var worldId = UUID.randomUUID();
+        var campaignId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var world = new World("test", UUID.randomUUID(), null, "{}");
+
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(campaignMemberService.isDm(campaignId, userId)).thenReturn(true);
+        when(sessionRepo.save(any())).thenAnswer(inv -> {
+            var s = inv.<GameSession>getArgument(0);
+            var idField = GameSession.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(s, UUID.randomUUID());
+            return s;
+        });
+
+        var session = service.startSession(worldId, campaignId, userId);
+
+        assertThat(session.getCampaignId()).isEqualTo(campaignId);
+        verify(campaignMemberService).isDm(campaignId, userId);
+    }
+
+    @Test
+    void nonDmNonOwnerCannotStartCampaignSession() {
+        var worldId = UUID.randomUUID();
+        var campaignId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var world = new World("test", UUID.randomUUID(), null, "{}");
+
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(campaignMemberService.isDm(campaignId, userId)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.startSession(worldId, campaignId, userId))
+            .isInstanceOf(GameSessionService.SessionException.class)
+            .matches(e -> ((GameSessionService.SessionException) e).getErrorCode().equals("WORLD_ACCESS_DENIED"));
+    }
+
+    @Test
     void startSessionShouldThrowWhenWorldNotFound() {
         when(worldRepo.findById(any())).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.startSession(UUID.randomUUID(), UUID.randomUUID()))
+        assertThatThrownBy(() -> service.startSession(UUID.randomUUID(), null, UUID.randomUUID()))
             .isInstanceOf(GameSessionService.SessionException.class)
             .matches(e -> ((GameSessionService.SessionException) e).getErrorCode().equals("WORLD_NOT_FOUND"));
     }
@@ -71,7 +110,7 @@ class GameSessionServiceTest {
         var userId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
         var world = new World("test", userId, null, "{}");
-        var session = new GameSession(worldId);
+        var session = new GameSession(worldId, null);
         var idField = GameSession.class.getDeclaredField("id");
         idField.setAccessible(true);
         idField.set(session, sessionId);
@@ -91,7 +130,7 @@ class GameSessionServiceTest {
         var worldId = UUID.randomUUID();
         var userId = UUID.randomUUID();
         var world = new World("test", userId, null, "{}");
-        var sessions = List.of(new GameSession(worldId), new GameSession(worldId));
+        var sessions = List.of(new GameSession(worldId, null), new GameSession(worldId, null));
 
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(sessionRepo.findByWorldIdAndStatusOrderByStartedAtDesc(worldId, "ACTIVE"))

@@ -1,7 +1,9 @@
 package com.lwe.api;
 
 import com.lwe.core.domain.Campaign;
+import com.lwe.core.domain.CampaignMember;
 import com.lwe.core.domain.User;
+import com.lwe.core.service.CampaignMemberService;
 import com.lwe.core.service.CampaignService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -11,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,9 +22,11 @@ import java.util.UUID;
 public class CampaignController {
 
     private final CampaignService service;
+    private final CampaignMemberService memberService;
 
-    public CampaignController(CampaignService service) {
+    public CampaignController(CampaignService service, CampaignMemberService memberService) {
         this.service = service;
+        this.memberService = memberService;
     }
 
     @PostMapping
@@ -58,6 +63,28 @@ public class CampaignController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{id}/members")
+    public ResponseEntity<CampaignMemberResponse> addMember(@PathVariable UUID id,
+                                                             @Valid @RequestBody MemberRequest req,
+                                                             @AuthenticationPrincipal User user) {
+        var member = memberService.addMember(id, user.getId(), req.userId(), req.role());
+        return ResponseEntity.status(HttpStatus.CREATED).body(CampaignMemberResponse.from(member));
+    }
+
+    @GetMapping("/{id}/members")
+    public ResponseEntity<List<CampaignMemberResponse>> listMembers(@PathVariable UUID id,
+                                                                     @AuthenticationPrincipal User user) {
+        var members = memberService.listMembers(id, user.getId());
+        return ResponseEntity.ok(members.stream().map(CampaignMemberResponse::from).toList());
+    }
+
+    @DeleteMapping("/{id}/members/{memberId}")
+    public ResponseEntity<Void> removeMember(@PathVariable UUID id, @PathVariable UUID memberId,
+                                              @AuthenticationPrincipal User user) {
+        memberService.removeMember(id, user.getId(), memberId);
+        return ResponseEntity.noContent().build();
+    }
+
     public record CreateRequest(
         @NotNull UUID worldId,
         @NotNull UUID gameSystemId,
@@ -65,6 +92,17 @@ public class CampaignController {
     ) {}
 
     public record UpdateRequest(String name, String stateJson) {}
+
+    public record MemberRequest(@NotNull UUID userId, @NotBlank String role) {}
+
+    public record CampaignMemberResponse(
+        UUID id, UUID campaignId, UUID userId, String role, String joinedAt
+    ) {
+        static CampaignMemberResponse from(CampaignMember m) {
+            return new CampaignMemberResponse(
+                m.getId(), m.getCampaignId(), m.getUserId(), m.getRole(), m.getJoinedAt().toString());
+        }
+    }
 
     public record CampaignResponse(
         UUID id, UUID worldId, UUID gameSystemId, String name,

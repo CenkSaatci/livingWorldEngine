@@ -19,15 +19,18 @@ public class CampaignService {
     private final WorldRepository worldRepo;
     private final GameSystemRepository systemRepo;
     private final WorldAccess worldAccess;
+    private final CampaignMemberService memberService;
 
     public CampaignService(CampaignRepository repo,
                            WorldRepository worldRepo,
                            GameSystemRepository systemRepo,
-                           WorldAccess worldAccess) {
+                           WorldAccess worldAccess,
+                           CampaignMemberService memberService) {
         this.repo = repo;
         this.worldRepo = worldRepo;
         this.systemRepo = systemRepo;
         this.worldAccess = worldAccess;
+        this.memberService = memberService;
     }
 
     @Transactional
@@ -39,7 +42,9 @@ public class CampaignService {
             .filter(GameSystem::isActive)
             .orElseThrow(() -> new CampaignException("GAME_SYSTEM_NOT_FOUND", "Game system not found or inactive"));
 
-        return repo.save(new Campaign(worldId, gameSystemId, name));
+        var campaign = repo.save(new Campaign(worldId, gameSystemId, name));
+        memberService.addCreatorAsDm(campaign, userId);
+        return campaign;
     }
 
     public List<Campaign> listByWorld(UUID worldId, UUID userId) {
