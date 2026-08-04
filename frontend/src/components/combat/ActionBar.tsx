@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { SkipForward, LogOut, Shield, Zap } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useCombatStore } from '../../store/combatStore';
+import { useCampaignStore } from '../../store/campaignStore';
 import { useToast } from '../../hooks/useToast';
 import { playCombatHit } from '../../utils/sound';
 
@@ -34,14 +35,14 @@ export function ActionBar({ worldId }: Props) {
   const [actionsPerTurn, setActionsPerTurn] = useState<Record<string, number>>({ action: 1 });
   const [usedActions, setUsedActions] = useState<Record<string, number>>({});
   const toast = useToast();
+  const activeCampaignId = useCampaignStore((s) => s.activeCampaignId);
 
   const currentActor = participants.find((p) => p.entityId === session?.currentTurnEntityId);
 
-  // Load action config from game system
+  // Load action config from game system (campaign context preferred, world fallback)
   useEffect(() => {
     if (!worldId) return;
-    apiClient.get(`/worlds/${worldId}`).then((wr) => {
-      const gsId = wr.data.gameSystemId;
+    const loadActions = (gsId: string | null | undefined) => {
       if (!gsId) return;
       apiClient.get(`/game-systems/${gsId}`).then((gr) => {
         try {
@@ -51,8 +52,18 @@ export function ActionBar({ worldId }: Props) {
           if (combat?.actions_per_turn) setActionsPerTurn(combat.actions_per_turn);
         } catch {}
       }).catch(() => {});
+    };
+    const campaign = useCampaignStore.getState().campaigns.find(
+      (c) => c.id === activeCampaignId,
+    );
+    if (campaign?.gameSystemId) {
+      loadActions(campaign.gameSystemId);
+      return;
+    }
+    apiClient.get(`/worlds/${worldId}`).then((wr) => {
+      loadActions(wr.data.gameSystemId);
     }).catch(() => {});
-  }, [worldId]);
+  }, [worldId, activeCampaignId]);
 
   // Reset used actions on turn change
   useEffect(() => {
