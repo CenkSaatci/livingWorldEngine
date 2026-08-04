@@ -60,6 +60,7 @@ public class GameItem {
     public UUID getId() { return id; }
     public UUID getGameSystemId() { return gameSystemId; }
     public String getName() { return name; }
+    public void setName(String v) { this.name = v; }
     public String getType() { return type; }
     public BigDecimal getWeight() { return weight; }
     public int getValue() { return value; }

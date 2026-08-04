@@ -39,8 +39,15 @@ public class WorldEventService {
     @Transactional
     public long publish(UUID worldId, EventType eventType, UUID sourceEntityId,
                         UUID targetEntityId, Map<String, Object> payload) {
+        return publish(worldId, null, eventType, sourceEntityId, targetEntityId, payload);
+    }
+
+    @Transactional
+    public long publish(UUID worldId, UUID campaignId, EventType eventType, UUID sourceEntityId,
+                        UUID targetEntityId, Map<String, Object> payload) {
         var hash = computeHash(eventType.name(), payload);
-        var event = new WorldEvent(worldId, eventType.name(), sourceEntityId, targetEntityId, payload, hash);
+        var event = new WorldEvent(worldId, campaignId, eventType.name(),
+            sourceEntityId, targetEntityId, payload, hash);
         event = eventRepo.save(event);
 
         // WebSocket-Broadcast an /topic/world/{worldId}

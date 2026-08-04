@@ -34,8 +34,9 @@ public class CharacterSheetController {
 
     @GetMapping("/{entityId}/sheet")
     public ResponseEntity<SheetResponse> getSheet(@PathVariable UUID entityId,
+                                                    @RequestParam(required = false) UUID campaignId,
                                                     @AuthenticationPrincipal User user) {
-        var sheet = sheetService.getSheet(entityId, user.getId());
+        var sheet = sheetService.getSheet(entityId, user.getId(), campaignId);
         return ResponseEntity.ok(sheet);
     }
 

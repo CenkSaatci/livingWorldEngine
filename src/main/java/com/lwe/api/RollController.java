@@ -46,7 +46,7 @@ public class RollController {
                                                 @AuthenticationPrincipal User user) {
         var result = probeService.executeProbe(
             req.entityId(), user.getId(), req.skillName(),
-            req.target(), req.advantage());
+            req.target(), req.advantage(), req.campaignId());
         return ResponseEntity.ok(result);
     }
 
@@ -63,7 +63,8 @@ public class RollController {
         @NotBlank UUID entityId,
         @NotBlank String skillName,
         int target,
-        boolean advantage
+        boolean advantage,
+        UUID campaignId
     ) {}
 
     public record RollRequest(

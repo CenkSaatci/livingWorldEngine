@@ -18,6 +18,9 @@ public class WorldEvent {
     @Column(name = "world_id", nullable = false)
     private UUID worldId;
 
+    @Column(name = "campaign_id")
+    private UUID campaignId;
+
     @Column(name = "event_type", nullable = false, length = 50)
     private String eventType;
 
@@ -41,12 +44,13 @@ public class WorldEvent {
 
     public WorldEvent(UUID worldId, String eventType, UUID sourceEntityId,
                       UUID targetEntityId, Map<String, Object> payload) {
-        this(worldId, eventType, sourceEntityId, targetEntityId, payload, null);
+        this(worldId, null, eventType, sourceEntityId, targetEntityId, payload, null);
     }
 
-    public WorldEvent(UUID worldId, String eventType, UUID sourceEntityId,
+    public WorldEvent(UUID worldId, UUID campaignId, String eventType, UUID sourceEntityId,
                       UUID targetEntityId, Map<String, Object> payload, String eventHash) {
         this.worldId = worldId;
+        this.campaignId = campaignId;
         this.eventType = eventType;
         this.sourceEntityId = sourceEntityId;
         this.targetEntityId = targetEntityId;
@@ -64,6 +68,7 @@ public class WorldEvent {
 
     public Long getId() { return id; }
     public UUID getWorldId() { return worldId; }
+    public UUID getCampaignId() { return campaignId; }
     public String getEventType() { return eventType; }
     public UUID getSourceEntityId() { return sourceEntityId; }
     public UUID getTargetEntityId() { return targetEntityId; }

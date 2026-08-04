@@ -15,6 +15,9 @@ public class CombatSession {
     @Column(name = "world_id", nullable = false)
     private UUID worldId;
 
+    @Column(name = "campaign_id")
+    private UUID campaignId;
+
     @Column(name = "current_turn_entity_id")
     private UUID currentTurnEntityId;
 
@@ -35,12 +38,14 @@ public class CombatSession {
 
     protected CombatSession() {}
 
-    public CombatSession(UUID worldId) {
+    public CombatSession(UUID worldId, UUID campaignId) {
         this.worldId = worldId;
+        this.campaignId = campaignId;
     }
 
     public UUID getId() { return id; }
     public UUID getWorldId() { return worldId; }
+    public UUID getCampaignId() { return campaignId; }
     public UUID getCurrentTurnEntityId() { return currentTurnEntityId; }
     public void setCurrentTurnEntityId(UUID v) { this.currentTurnEntityId = v; }
     public UUID getMapId() { return mapId; }

@@ -26,6 +26,7 @@ class LevelUpServiceTest {
     @Mock private GameEntityRepository entityRepo;
     @Mock private GameSystemRepository gameSystemRepo;
     @Mock private WorldRepository worldRepo;
+    @Mock private RulesLoader rulesLoader;
 
     private LevelUpService service;
     private final UUID worldId = UUID.randomUUID();
@@ -34,7 +35,7 @@ class LevelUpServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new LevelUpService(entityRepo, gameSystemRepo, worldRepo, new ObjectMapper());
+        service = new LevelUpService(entityRepo, gameSystemRepo, worldRepo, rulesLoader, new ObjectMapper());
         gs = new GameSystem("D20", 1, LEVELS_JSON, "{}");
         setId(gs, gameSystemId);
     }

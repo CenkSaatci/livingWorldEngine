@@ -51,6 +51,10 @@ public class CharacterSheetService {
     }
 
     public SheetResponse getSheet(UUID entityId, UUID userId) {
+        return getSheet(entityId, userId, null);
+    }
+
+    public SheetResponse getSheet(UUID entityId, UUID userId, UUID campaignId) {
         var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new RuntimeException("ENTITY_NOT_FOUND"));
 
@@ -59,7 +63,7 @@ public class CharacterSheetService {
 
         worldAccess.requireAccess(entity.getWorldId(), userId);
 
-        var rules = rulesLoader.loadRules(world);
+        var rules = rulesLoader.loadRules(campaignId, entity.getWorldId());
         var attributeValues = parseAttributes(entity);
         // Wenn Entity keine Attribute hat, mit Defaults aus rulesJson initialisieren
         if (attributeValues.isEmpty()) {
@@ -138,7 +142,8 @@ public class CharacterSheetService {
 
         // Level aus XP berechnen
         int level = 1;
-        var gs = resolveGameSystem(world);
+        var gs = rulesLoader.loadSystemByCampaign(campaignId);
+        if (gs == null) gs = rulesLoader.loadSystem(world);
         if (gs != null) {
             level = levelUpService.getLevel(entity, gs);
         }

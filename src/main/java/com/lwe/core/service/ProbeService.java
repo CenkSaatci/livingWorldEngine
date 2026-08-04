@@ -49,13 +49,18 @@ public class ProbeService {
 
     public ProbeResponse executeProbe(UUID entityId, UUID userId, String skillName,
                                        int target, boolean advantage) {
+        return executeProbe(entityId, userId, skillName, target, advantage, null);
+    }
+
+    public ProbeResponse executeProbe(UUID entityId, UUID userId, String skillName,
+                                       int target, boolean advantage, UUID campaignId) {
         var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new RuntimeException("ENTITY_NOT_FOUND"));
         worldAccess.requireAccess(entity.getWorldId(), userId);
 
         var world = worldRepo.findById(entity.getWorldId())
             .orElseThrow(() -> new RuntimeException("WORLD_NOT_FOUND"));
-        var rules = rulesLoader.loadRules(world);
+        var rules = rulesLoader.loadRules(campaignId, entity.getWorldId());
         var probeType = resolveProbeType(rules);
         var attributes = parseAttributes(entity);
         var allowed = attributes.keySet();

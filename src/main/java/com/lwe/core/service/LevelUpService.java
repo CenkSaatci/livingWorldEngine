@@ -19,23 +19,31 @@ public class LevelUpService {
     private final GameEntityRepository entityRepo;
     private final GameSystemRepository gameSystemRepo;
     private final WorldRepository worldRepo;
+    private final RulesLoader rulesLoader;
     private final ObjectMapper mapper;
 
     public LevelUpService(GameEntityRepository entityRepo,
                           GameSystemRepository gameSystemRepo,
                           WorldRepository worldRepo,
-                        ObjectMapper mapper) {
+                          RulesLoader rulesLoader,
+                          ObjectMapper mapper) {
         this.mapper = mapper;
         this.entityRepo = entityRepo;
         this.gameSystemRepo = gameSystemRepo;
         this.worldRepo = worldRepo;
+        this.rulesLoader = rulesLoader;
     }
 
     @Transactional
     public void addXp(UUID entityId, int amount) {
+        addXp(entityId, amount, null);
+    }
+
+    @Transactional
+    public void addXp(UUID entityId, int amount, UUID campaignId) {
         var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new LevelException("ENTITY_NOT_FOUND", "Entity not found"));
-        var gameSystem = resolveGameSystem(entity.getWorldId());
+        var gameSystem = resolveGameSystem(entity.getWorldId(), campaignId);
 
         int oldLevel = getLevel(entity, gameSystem);
         entity.setExperiencePoints(entity.getExperiencePoints() + amount);
@@ -117,7 +125,9 @@ public class LevelUpService {
         entityRepo.save(entity);
     }
 
-    private GameSystem resolveGameSystem(UUID worldId) {
+    private GameSystem resolveGameSystem(UUID worldId, UUID campaignId) {
+        var viaCampaign = rulesLoader.loadSystemByCampaign(campaignId);
+        if (viaCampaign != null) return viaCampaign;
         var world = worldRepo.findById(worldId).orElse(null);
         if (world == null || world.getGameSystemId() == null) return null;
         return gameSystemRepo.findById(world.getGameSystemId()).orElse(null);

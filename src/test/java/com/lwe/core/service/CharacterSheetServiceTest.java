@@ -18,6 +18,7 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,7 +51,7 @@ class CharacterSheetServiceTest {
     }
 
     private void stubRules(String rulesJson) throws Exception {
-        when(rulesLoader.loadRules(any(World.class))).thenReturn(
+        when(rulesLoader.loadRules(isNull(), any())).thenReturn(
             objectMapper.readValue(rulesJson, new TypeReference<Map<String, Object>>() {}));
     }
 
@@ -156,7 +157,7 @@ class CharacterSheetServiceTest {
     void getSheet_handlesEmptyRulesJson() {
         mockWorld(null);
         mockEntity("{\"staerke\":15}", null);
-        when(rulesLoader.loadRules(any(World.class))).thenReturn(Map.of());
+        when(rulesLoader.loadRules(isNull(), any())).thenReturn(Map.of());
 
         var sheet = service.getSheet(entityId, userId);
         assertThat(sheet).isNotNull();
@@ -169,7 +170,7 @@ class CharacterSheetServiceTest {
     void getSheet_handlesMissingGameSystem() {
         mockWorld(systemId);
         mockEntity("{\"staerke\":15}", null);
-        when(rulesLoader.loadRules(any(World.class))).thenReturn(Map.of());
+        when(rulesLoader.loadRules(isNull(), any())).thenReturn(Map.of());
 
         var sheet = service.getSheet(entityId, userId);
         assertThat(sheet).isNotNull();
