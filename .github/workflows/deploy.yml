@@ -16,7 +16,7 @@ jobs:
           registry: ${{ secrets.REGISTRY_URL }}
 
       - name: Build Backend
-        run: podman build -t ${{ secrets.REGISTRY_URL }}/lwe-backend:${{ github.ref_name }} .
+        run: podman build -t ${{ secrets.REGISTRY_URL }}/lwe-backend:${{ github.ref_name }} backend/
       - name: Push Backend
         run: podman push ${{ secrets.REGISTRY_URL }}/lwe-backend:${{ github.ref_name }}
 

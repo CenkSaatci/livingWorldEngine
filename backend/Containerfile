@@ -1,16 +1,15 @@
 # ============================================================
 # Containerfile (Backend) — Multi-Stage OCI-Image
-# Build: podman build -t lwe-backend -f Containerfile .
+# Build (vom Projekt-Root): podman build -t lwe-backend backend/
 # ============================================================
 
 # --- Stage 1: Build mit Maven + JDK ---
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM maven:3.9-eclipse-temurin-21-alpine AS build
 WORKDIR /app
-COPY pom.xml mvnw ./
-COPY .mvn .mvn
-RUN ./mvnw dependency:resolve -q
+COPY pom.xml ./
+RUN mvn dependency:resolve -q
 COPY src src
-RUN ./mvnw package -DskipTests -q
+RUN mvn package -DskipTests -q
 
 # --- Stage 2: Runtime mit JRE only ---
 FROM eclipse-temurin:21-jre-alpine

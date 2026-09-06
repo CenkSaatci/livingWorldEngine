@@ -128,7 +128,7 @@ Nachdem Refactor abgeschlossen ist, wird **immer** die vollständige Build- und 
 
 | Bereich | Befehl | Was wird geprüft |
 |---|---|---|
-| Backend | `mvn verify` | Unit-Tests + Integration-Tests + Checkstyle |
+| Backend | `cd backend && mvn verify` | Unit-Tests + Integration-Tests + Checkstyle |
 | Frontend | `pnpm check` | ESLint + Prettier + TypeScript `--noEmit` |
 | Frontend | `pnpm test` | Vitest (Unit + i18n-Key-Konsistenz) |
 | Bot | `pytest` | Unit + Prompt-Golden-Files |

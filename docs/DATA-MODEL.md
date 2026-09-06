@@ -398,7 +398,7 @@ WORLD_CREATED, SESSION_STARTED, SESSION_ENDED
 ## 4. Flyway-Migrationskonzept
 
 ```
-src/main/resources/db/migration/
+backend/src/main/resources/db/migration/
 ├── V001__initial.sql            # users, game_systems, worlds, world_members, entities, world_events, npc_intents
 ├── V002__auth.sql               # refresh_tokens (JWT-Refresh)
 ├── V003__world_softdelete.sql   # worlds.active + entities.active (Soft-Delete)

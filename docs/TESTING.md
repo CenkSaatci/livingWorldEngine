@@ -498,7 +498,7 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 **Ziel:** Verifikation des kompletten Kampagnen-Flows (ADR-010): Welt ∥ System → Kampagne. Alle Checkpoints gegen ein frisches Backend (Port 8080) + Frontend-Build (Port 3000).
 
 **Vorbereitung:**
-1. Backend starten (`mvn spring-boot:run` bzw. jar)
+1. Backend starten (`cd backend && mvn spring-boot:run` bzw. jar aus `backend/target/`)
 2. Frontend bauen + serven (`npx vite build` + `npx serve -s dist -l 3000`)
 3. Zwei Test-Accounts anlegen: `dm@test.de` + `spieler@test.de` (Register → Email-Verify via Console-Token)
 4. DSA-System anlegen (Game Systems → New System → Template)

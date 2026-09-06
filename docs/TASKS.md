@@ -40,7 +40,7 @@
   - JDK 21 `javac` war nicht systemweit installiert → manuell in `~/.local/share/jdk21` abgelegt, `source scripts/setup.sh` vor `mvn` ausführen
   - Datenbank `lwe` auf `192.168.31.151:5432` musste via `psql` erstmalig angelegt werden
   - `com.lwe.domain` und `com.lwe.repository` sind Unterpakete von `com.lwe.core`
-- **Dateien:** `pom.xml`, `src/main/java/com/lwe/LweApplication.java`, `src/main/resources/application.yml`, `src/main/resources/application-dev.yml`, `scripts/setup.sh`
+- **Dateien:** `backend/pom.xml`, `backend/backend/src/main/java/com/lwe/LweApplication.java`, `backend/backend/src/main/resources/application.yml`, `backend/backend/src/main/resources/application-dev.yml`, `scripts/setup.sh`
 
 ### P1-T02: Podman Compose (PostgreSQL + pgAdmin)
 - **Status:** ⏸️ **cancelled**
@@ -63,7 +63,7 @@
 - **Bemerkungen:**
   - Flyway 10.x in Spring Boot 3.3.5 unterstützt PostgreSQL 18.3, zeigt lediglich Warnung (nicht kritisch)
   - Der Flyway-Integrationstest von V001 initial erzeugt global `flyway_schema_history`, was bei parallelen Tests kollidiert — spätere P2-T08 führt Testcontainers ein
-- **Dateien:** `src/main/resources/db/migration/V001__initial.sql`, `src/main/resources/application.yml` (flyway.baseline-version)
+- **Dateien:** `backend/src/main/resources/db/migration/V001__initial.sql`, `backend/src/main/resources/application.yml` (flyway.baseline-version)
 
 ### P1-T04: User-Tabelle + JWT-Authentifizierung
 - **Status:** ✅
@@ -86,7 +86,7 @@
   - `LoginRateLimiter` blockiert IPs nach 5 Fehlversuchen für 60 Sekunden
   - `GlobalExceptionHandler` einheitliches Fehlerformat über alle Endpunkte
   - Service-Login für AI-Bot via `/api/v1/auth/service-login` vorbereitet (Role `BOT`)
-- **Dateien:** `src/main/java/com/lwe/security/*`, `src/main/java/com/lwe/core/domain/User.java`, `src/main/java/com/lwe/core/domain/RefreshToken.java`, `src/main/java/com/lwe/core/repository/*`, `src/main/java/com/lwe/core/service/AuthService.java`, `src/main/java/com/lwe/api/UserController.java`, `src/main/java/com/lwe/api/GlobalExceptionHandler.java`, `src/main/resources/db/migration/V002__auth.sql`
+- **Dateien:** `backend/src/main/java/com/lwe/security/*`, `backend/src/main/java/com/lwe/core/domain/User.java`, `backend/src/main/java/com/lwe/core/domain/RefreshToken.java`, `backend/src/main/java/com/lwe/core/repository/*`, `backend/src/main/java/com/lwe/core/service/AuthService.java`, `backend/src/main/java/com/lwe/api/UserController.java`, `backend/src/main/java/com/lwe/api/GlobalExceptionHandler.java`, `backend/src/main/resources/db/migration/V002__auth.sql`
 
 ### P1-T05: Game-System Repository + JSON-Schema-Validator
 - **Status:** ✅
@@ -97,12 +97,12 @@
 - **Akzeptanzkriterien:**
   - [x] `POST /api/v1/game-systems` persistiert nur nach erfolgreicher Validierung; invalide JSON/fehlende Felder → 400 + strukturierte Fehler
   - [x] `POST /api/v1/game-systems/{id}/validate` returns `{valid:true/false, errors:[...]}`
-  - [x] 2 Test-Fixtures: `src/test/resources/rules/d20lite.json` + `twodicepool.json` (beide schema-konform)
+  - [x] 2 Test-Fixtures: `backend/src/test/resources/rules/d20lite.json` + `twodicepool.json` (beide schema-konform)
   - [x] `RuleSchemaValidatorTest` lädt beide Fixtures und prüft Validität, plus invalide JSON-Cases
   - [x] `GameSystemServiceTest` prüft CRUD-Logik mit gemocktem Repository (4 Tests)
   - [x] GlobalExceptionHandler `GAME_SYSTEM_SCHEMA_INVALID` + `GAME_SYSTEM_NOT_FOUND`
 - **Emittierte Komponenten:** `GameSystem` (JPA), `GameSystemRepository`, `GameSystemService`, `GameSystemController`, `RuleSchemaValidator`
-- **Dateien:** `src/main/java/com/lwe/core/domain/GameSystem.java`, `com/lwe/core/repository/GameSystemRepository.java`, `com/lwe/core/service/GameSystemService.java`, `com/lwe/api/GameSystemController.java`, `com/lwe/rules/RuleSchemaValidator.java`, `src/test/resources/rules/{d20lite,twodicepool}.json`, `src/test/java/com/lwe/rules/RuleSchemaValidatorTest.java`, `src/test/java/com/lwe/core/service/GameSystemServiceTest.java`
+- **Dateien:** `backend/src/main/java/com/lwe/core/domain/GameSystem.java`, `com/lwe/core/repository/GameSystemRepository.java`, `com/lwe/core/service/GameSystemService.java`, `com/lwe/api/GameSystemController.java`, `com/lwe/rules/RuleSchemaValidator.java`, `backend/src/test/resources/rules/{d20lite,twodicepool}.json`, `backend/src/test/java/com/lwe/rules/RuleSchemaValidatorTest.java`, `backend/src/test/java/com/lwe/core/service/GameSystemServiceTest.java`
 
 ### P1-T06: World + Entity Repository + REST-Endpoints
 - **Status:** ✅
@@ -123,7 +123,7 @@
   - `World.getById` prüft Owner vor Zugriff → `WORLD_ACCESS_DENIED` für Nicht-Owner
   - Delete = `setActive(false)` + `save()` — nie physisch gelöscht
   - GameSystem-Referenz wird auf Aktivität geprüft (`WORLD_GAME_SYSTEM_INACTIVE`)
-- **Dateien:** `src/main/java/com/lwe/core/domain/World.java`, `com/lwe/core/domain/WorldMember.java`, `com/lwe/core/repository/WorldRepository.java`, `com/lwe/core/repository/WorldMemberRepository.java`, `com/lwe/core/service/WorldService.java`, `com/lwe/api/WorldController.java`, `src/main/resources/db/migration/V003__world_softdelete.sql`
+- **Dateien:** `backend/src/main/java/com/lwe/core/domain/World.java`, `com/lwe/core/domain/WorldMember.java`, `com/lwe/core/repository/WorldRepository.java`, `com/lwe/core/repository/WorldMemberRepository.java`, `com/lwe/core/service/WorldService.java`, `com/lwe/api/WorldController.java`, `backend/src/main/resources/db/migration/V003__world_softdelete.sql`
 
 ### P1-T07: WebSocket-Konfiguration (STOMP) und Test-Topic
 - **Status:** ✅
@@ -157,12 +157,12 @@
 - **Erledigt:** 2026-07-13
 - **Beschreibung:** `AcceptHeaderLocaleResolver` in `I18nConfig.java` konfiguriert. Unterstützte Locales: `de` (Default), `en` (Fallback). `Accept-Language`-Header wird korrekt ausgelesen; nicht unterstützte Sprachen fallen auf Default zurück. Siehe [`ADR/007`](ADR/007-internationalization-strategy.md).
 - **Akzeptanzkriterien:**
-  - [x] `messages_de.properties` + `messages_en.properties` + `validation_de.properties` + `validation_en.properties` existieren in `src/main/resources/i18n/`
+  - [x] `messages_de.properties` + `messages_en.properties` + `validation_de.properties` + `validation_en.properties` existieren in `backend/src/main/resources/i18n/`
   - [x] `I18nConfig.localeResolver()` als `AcceptHeaderLocaleResolver` registriert
   - [x] `Accept-Language: de` → Locale `de`, `Accept-Language: en-US` → `en`
   - [x] Unbekannte Locale (z. B. `fr`) → Fallback `de` (Default)
   - [x] `I18nConfigTest` — 4 Unit-Tests für Locale-Resolution (DE, EN, Unknown, No-Header)
-- **Dateien:** `src/main/java/com/lwe/i18n/I18nConfig.java`, `I18nConfig.java`, `I18nConfigTest.java`
+- **Dateien:** `backend/src/main/java/com/lwe/i18n/I18nConfig.java`, `I18nConfig.java`, `I18nConfigTest.java`
 
 ---
 
@@ -267,10 +267,10 @@
 - **Abhängigkeiten:** P2-T01 … P2-T07
 - **Beschreibung:** End-to-End Integrationstests kombiniert: `Game-System hochladen → Welt erstellen → Charakter anlegen → Probe würfeln → Kampf → event-log prüfen`.
 - **Akzeptanzkriterien:**
-  - [ ] Test suite läuft via `mvn test`
+  - [ ] Test suite läuft via `cd backend && mvn test`
   - [ ] Test deckt beide Beispielwerke ab
   - [ ] M2 Trigger: Test suite grün
-- **Dateien:** `src/test/java/com/lwe/integration/RuleEngineFlowIT.java`
+- **Dateien:** `backend/src/test/java/com/lwe/integration/RuleEngineFlowIT.java`
 
 ### P2-T09: Time Engine (Weltzeit & Kalender)
 - **Status:** ✅
@@ -631,7 +631,7 @@
   - [ ] Health-Checks für alle Services
   - [ ] Letsencrypt-Integration dokumentiert
   - [ ] Prod-Image ≤ 300 MB
-- **Dateien:** `Containerfile` (Backend), `frontend/Containerfile`, `ai-bot/Containerfile`, `nginx/nginx.conf`, `compose.prod.yml`
+- **Dateien:** `backend/Containerfile`, `frontend/Containerfile`, `ai-bot/Containerfile`, `nginx/nginx.conf`, `compose.prod.yml`
 
 ### P5-T07: CI/CD (GitHub Actions)
 - **Status:** 📋

@@ -38,7 +38,8 @@ export PATH=$JAVA_HOME/bin:$PATH
 cp .env.example .env
 # DB_HOST, DB_USER, DB_PASSWORD, JWT_SECRET setzen
 
-# Kompilieren + Testen
+# Kompilieren + Testen (im backend/-Verzeichnis)
+cd backend
 mvn clean compile
 mvn test
 
@@ -71,8 +72,8 @@ pip install -e .
 ### Wichtige Befehle
 
 ```bash
-# Backend-Tests (alle Services)
-mvn test -Dtest="AbilityServiceTest,EntityAbilityServiceTest,InventoryServiceTest,WorldServiceTest,RegionServiceTest,CombatServiceTest#shouldStartCombat+shouldStartCombatWithMapId,FileUploadControllerTest,GameSessionServiceTest,EventArchiveJobTest,QuestServiceTest,QuotaServiceTest,WorldMapServiceTest,LevelUpServiceTest,WorldInviteServiceTest,RestServiceTest" -DfailIfNoTests=false
+# Backend-Tests (alle Services, im backend/-Verzeichnis)
+cd backend && mvn test -Dtest="AbilityServiceTest,EntityAbilityServiceTest,InventoryServiceTest,WorldServiceTest,RegionServiceTest,CombatServiceTest#shouldStartCombat+shouldStartCombatWithMapId,FileUploadControllerTest,GameSessionServiceTest,EventArchiveJobTest,QuestServiceTest,QuotaServiceTest,WorldMapServiceTest,LevelUpServiceTest,WorldInviteServiceTest,RestServiceTest" -DfailIfNoTests=false
 
 # Frontend-Check
 cd frontend && npm run check
@@ -180,7 +181,7 @@ Alle Fehler folgen dem Schema:
 
 ### Migrationen
 
-30 Flyway-Migrationen in `src/main/resources/db/migration/`:
+30 Flyway-Migrationen in `backend/src/main/resources/db/migration/` (Befehle im `backend/`-Verzeichnis ausführen):
 
 ```bash
 # Status prüfen

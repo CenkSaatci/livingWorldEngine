@@ -255,7 +255,7 @@ Build: `podman compose -f compose.prod.yml build` — liest `Containerfile` (Ali
 
 i18n ist ein **Cross-Cutting Concern ab Phase 1** — siehe [`ADR/007`](ADR/007-internationalization-strategy.md).
 
-- **Backend:** `MessageSource` mit UTF-8-Resource-Bundles unter `src/main/resources/i18n/` (`messages_de.properties`, `messages_en.properties`, `validation_de.properties`, `validation_en.properties`). `LocaleResolver` liest `Accept-Language`-Header (BCP 47). Fallback-Locale: `en`. Default (kein Header): `de`.
+- **Backend:** `MessageSource` mit UTF-8-Resource-Bundles unter `backend/src/main/resources/i18n/` (`messages_de.properties`, `messages_en.properties`, `validation_de.properties`, `validation_en.properties`). `LocaleResolver` liest `Accept-Language`-Header (BCP 47). Fallback-Locale: `en`. Default (kein Header): `de`.
 - **Frontend:** `react-i18next` + `i18next` mit Namespaces pro Feature (`common`, `auth`, `character`, `map`, `chat`, `dm`). Locale-Dateien unter `frontend/src/i18n/locales/{de,en}/`. Locale-Quellen (Priorität): User-Setting `users.locale` → `localStorage('lwe:locale')` → `navigator.language` → Fallback `de`. Sprachumschalter in TopBar.
 - **LLM-Prompts:** `worlds.settings_json.language` (BCP 47) steuert NPC-Antwortsprache. Jinja2-Templates injizieren `{{ language }}` in System-Prompt.
 - **Datum/Uhrzeit/Zahlen:** Frontend via `Intl.DateTimeFormat` / `Intl.NumberFormat` mit User-Locale; Backend via `java.time` + `java.text` mit `Locale`.

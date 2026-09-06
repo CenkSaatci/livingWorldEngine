@@ -140,8 +140,8 @@ pg_dump -h localhost -U lwe lwe > backup.sql
 # Restore
 psql -h localhost -U lwe lwe < backup.sql
 
-# Migration-Status
-mvn flyway:info
+# Migration-Status (im backend/-Verzeichnis)
+(cd backend && mvn flyway:info)
 
 # Uploads sichern
 tar czf uploads.tar.gz /pfad/zu/uploads/

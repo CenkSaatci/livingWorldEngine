@@ -31,7 +31,7 @@ Optionen für die Strategie:
 - Validierungsfehler via `@Valid` + `MessageSource` übersetzt
 - Resource-Pfade:
   ```
-  src/main/resources/i18n/
+  backend/src/main/resources/i18n/
   ├── messages_de.properties
   ├── messages_en.properties
   └── validation_de.properties / validation_en.properties

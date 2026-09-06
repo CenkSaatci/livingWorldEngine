@@ -23,7 +23,7 @@
 ## Setup (vorbereitet in Phase 1)
 
 1. `.env` aus `.env.example` kopieren und anpassen (PostgreSQL-Zugangsdaten)
-2. Backend (Spring Boot): `mvn spring-boot:run` (Java 21, übernimmt `.env` automatisch via
+2. Backend (Spring Boot): `cd backend && mvn spring-boot:run` (Java 21, übernimmt `.env` automatisch via
    `spring-dotenv`)
 3. Frontend (Phase 3): `cd frontend && pnpm install && pnpm dev` (liest ebenfalls root `.env`
    via `envDir: ..`)

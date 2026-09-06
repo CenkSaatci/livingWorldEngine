@@ -458,7 +458,7 @@ function CharacterSheet() {
 
 ### 14.7 Neue Sprache hinzufügen
 1. Ordner `frontend/src/i18n/locales/{code}/` anlegen + alle Namespace-JSONs kopieren und übersetzen
-2. Backend: `src/main/resources/i18n/messages_{code}.properties` + `validation_{code}.properties` anlegen
+2. Backend: `backend/src/main/resources/i18n/messages_{code}.properties` + `validation_{code}.properties` anlegen
 3. In `available_locales`-Array des Preferences-Endpunkts aufnehmen
 4. CI prüft Konsistenz der Keys
 

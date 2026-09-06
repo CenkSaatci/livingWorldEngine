@@ -6,7 +6,7 @@
 
 ## Voraussetzungen
 
-- **Server läuft:** `JAVA_HOME=~/.local/share/jdk21 mvn spring-boot:run`
+- **Server läuft:** `cd backend && JAVA_HOME=~/.local/share/jdk21 mvn spring-boot:run`
 - **Datenbank:** PostgreSQL auf `192.168.31.151:5432/lwe` erreichbar (Credentials in `.env`)
 - **Tooling:** `curl` installiert, `jq` optional für JSON-Better-Reading
 
@@ -211,7 +211,7 @@ curl -s http://localhost:8080/api/v1/worlds \
 
 Nach erfolgreichem Durchlauf:
 - Alle 13 Schritte sind grün → **Meilenstein M1 erreicht**
-- Bei Fehlern: Logs in `target/` prüfen, ggf. Schritt wiederholen
+- Bei Fehlern: Logs in `backend/target/` prüfen, ggf. Schritt wiederholen
 - Bekannte Nicht-Probleme:
   - Flyway-Warnung `PostgreSQL 18.3 is newer than this version` ist harmlos
   - `hibernate.dialect`-Deprecation-Warnung ist harmlos (Hibernate wählt automatisch)
