@@ -6,6 +6,7 @@ import com.lwe.core.domain.User;
 import com.lwe.core.service.CombatService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotEmpty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -81,22 +82,22 @@ public class CombatController {
     }
 
     public record StartRequest(
-        @NotBlank UUID worldId,
+        @NotNull UUID worldId,
         @NotEmpty List<UUID> participantIds,
         UUID mapId,
         UUID campaignId
     ) {}
 
     public record ActionRequest(
-        @NotBlank UUID actorId,
+        @NotNull UUID actorId,
         @NotBlank String actionType,
         UUID targetId,
         UUID itemId
     ) {}
 
     public record AbilityRequest(
-        @NotBlank UUID actorId,
-        @NotBlank UUID abilityId,
+        @NotNull UUID actorId,
+        @NotNull UUID abilityId,
         UUID targetId
     ) {}
 

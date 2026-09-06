@@ -7,6 +7,7 @@ import com.lwe.core.domain.User;
 import com.lwe.core.service.WorldService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -98,5 +99,5 @@ public class WorldController {
 
     public record CreateRequest(@NotBlank String name, UUID gameSystemId, String settingsJson) {}
     public record UpdateRequest(String name, String settingsJson, UUID gameSystemId) {}
-    public record MemberRequest(@NotBlank UUID userId, @NotBlank String role) {}
+    public record MemberRequest(@NotNull UUID userId, @NotBlank String role) {}
 }

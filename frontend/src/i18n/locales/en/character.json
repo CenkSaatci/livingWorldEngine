@@ -25,7 +25,12 @@
     "export": "Export",
     "import": "Import",
     "rollProbe": "Roll probe",
-    "level": "Level"
+    "level": "Level",
+    "probeFailed": "Probe roll failed",
+    "rollFailed": "Roll failed",
+    "abilityFailed": "Ability failed",
+    "xpSaveFailed": "Failed to save XP",
+    "overrideSaveFailed": "Failed to save override"
   },
   "attribute": {
     "modifier": "Modifier"

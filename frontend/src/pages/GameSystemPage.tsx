@@ -37,6 +37,7 @@ const TEMPLATES: Record<string, string> = {
   D20Lite: JSON.stringify(
     {
       version: 1,
+      progressionType: 'level',
       attributes: [
         { name: 'staerke', type: 'INT', min: 1, max: 20, default: 10 },
         { name: 'geschicklichkeit', type: 'INT', min: 1, max: 20, default: 10 },
@@ -51,6 +52,21 @@ const TEMPLATES: Record<string, string> = {
         { name: 'wahrnehmung', attribute: 'weisheit' },
         { name: 'ueberzeugen', attribute: 'charisma' },
       ],
+      derived_values: [
+        { name: 'hp', formula: '10+konstitution' },
+        { name: 'ac', formula: '10+floor((geschicklichkeit-10)/2)' },
+      ],
+      progression: {
+        levels: [
+          { level: 1, xpRequired: 0, features: '' },
+          { level: 2, xpRequired: 300, features: '' },
+          { level: 3, xpRequired: 900, features: '' },
+          { level: 4, xpRequired: 2700, features: '' },
+          { level: 5, xpRequired: 6500, features: '' },
+        ],
+        xpCosts: [],
+        improvements: [],
+      },
       dice_mechanics: {
         probe: '1d20+mod',
         combat: {
@@ -67,6 +83,7 @@ const TEMPLATES: Record<string, string> = {
   TwoDicePool: JSON.stringify(
     {
       version: 1,
+      progressionType: 'level',
       attributes: [
         { name: 'staerke', type: 'INT', min: 1, max: 12, default: 6 },
         { name: 'geschick', type: 'INT', min: 1, max: 12, default: 6 },
@@ -93,6 +110,7 @@ const TEMPLATES: Record<string, string> = {
   Fudge: JSON.stringify(
     {
       version: 1,
+      progressionType: 'improvement',
       attributes: [
         { name: 'geschick', type: 'INT', min: 1, max: 8, default: 3 },
         { name: 'schnelligkeit', type: 'INT', min: 1, max: 8, default: 3 },
@@ -134,6 +152,9 @@ export default function GameSystemPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [editorMode, setEditorMode] = useState<'wizard' | 'json'>('wizard');
   const [wizardData, setWizardData] = useState<WizardData | null>(null);
+  // Ändert sich bei Template-Load, damit SystemWizard mit den neuen initialData remountet
+  // (useState-Initialisierung greift nur beim Mount).
+  const [wizardKey, setWizardKey] = useState(0);
   const wizardRef = useRef<SystemWizardHandle | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -177,10 +198,29 @@ export default function GameSystemPage() {
     try {
       const text = await file.text();
       const data = JSON.parse(text);
+      // Zwei Formate werden akzeptiert:
+      // 1. Backend-Wire-Format {name, version, rulesJson} (Export-Format)
+      // 2. Wizard-/Beispiel-Format {attributes, dice_mechanics, ...} (docs/examples/*.json)
+      const isBareRules =
+        data && typeof data === 'object' && !data.rulesJson && !data.rules_json &&
+        (data.attributes || data.dice_mechanics || data.progressionType);
+      // Beispiel-Dateien enthalten Doku-Felder (description, _comment, ...), die das
+      // Backend-Schema (additionalProperties: false) ablehnen würde — auf bekannte
+      // Top-Level-Keys reduzieren.
+      const RULES_KEYS = [
+        'version', 'probeType', 'progressionType', 'modifierFormula', 'features',
+        'derived_values', 'abilities', 'progression', 'magic', 'psionics',
+        'conditionals', 'attributes', 'skills', 'dice_mechanics',
+      ];
+      const sanitize = (obj: Record<string, unknown>) =>
+        Object.fromEntries(Object.entries(obj).filter(([k]) => RULES_KEYS.includes(k)));
+      const rules = isBareRules
+        ? JSON.stringify(sanitize(data))
+        : (data.rulesJson ?? data.rules_json ?? '{}');
       await apiClient.post('/game-systems', {
-        name: data.name ?? 'Imported System',
+        name: data.name ?? file.name.replace(/\.json$/i, '') ?? 'Imported System',
         version: data.version ?? 1,
-        rulesJson: data.rulesJson ?? data.rules_json ?? '{}',
+        rulesJson: rules,
         schemaJson: '{}',
       });
       toast.success('System imported');
@@ -426,7 +466,40 @@ export default function GameSystemPage() {
             </div>
 
             {editorMode === 'wizard' ? (
-              <SystemWizard
+              <>
+                {!editingId && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <select
+                      value={template}
+                      onChange={(e) => setTemplate(e.target.value)}
+                      className="rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                    >
+                      {Object.keys(TEMPLATES).map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => {
+                        const parsed = parseRulesToWizard(TEMPLATES[template] ?? '');
+                        if (parsed) {
+                          parsed.name = name;
+                          setWizardData({ ...parsed, name });
+                          setWizardKey((k) => k + 1);
+                          toast.success('Template loaded');
+                        } else {
+                          toast.error('Failed to load template');
+                        }
+                      }}
+                      className="rounded bg-bg-elevated px-3 py-2 text-xs text-text-secondary hover:text-text-primary"
+                    >
+                      Load Template
+                    </button>
+                  </div>
+                )}
+                <SystemWizard
+                key={wizardKey}
                 ref={wizardRef}
                 initialData={wizardData as WizardData | undefined}
                 systemId={editingId ?? undefined}
@@ -438,6 +511,7 @@ export default function GameSystemPage() {
                 }}
                 onClose={() => { setShowEditor(false); setEditingId(null); setWizardData(null); }}
               />
+              </>
             ) : (
               <>
                 <div className="grid grid-cols-2 gap-4 mb-4">

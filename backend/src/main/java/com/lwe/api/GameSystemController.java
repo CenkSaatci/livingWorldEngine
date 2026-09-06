@@ -55,7 +55,8 @@ public class GameSystemController {
     public ResponseEntity<?> validate(@RequestBody String rulesJson) {
         // Frontend sendet den rulesJson-String im Body — StringHttpMessageConverter
         // liefert ihn hier roh an. Ein JSON-Wrapper-Objekt würde zu falscher Validierung führen.
-        var errors = validator.validate(rulesJson, "{}");
+        // Leeres Schema "{}" bedeutet: gegen das Default-Schema prüfen (wie beim Speichern).
+        var errors = validator.validate(rulesJson, RuleSchemaValidator.DEFAULT_SCHEMA);
         if (errors.isEmpty()) return ResponseEntity.ok(new ValidationResponse(true, null));
         return ResponseEntity.ok(new ValidationResponse(false,
             errors.stream().map(e -> e.path() + ": " + e.message()).toList()));

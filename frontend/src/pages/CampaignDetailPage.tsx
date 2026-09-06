@@ -68,7 +68,18 @@ export default function CampaignDetailPage() {
       .then(([cRes, mRes]) => {
         setCampaign(cRes.data);
         setMembers(mRes.data);
-        setActiveCampaign(campaignId);
+        // Zusammenfassung cachen, damit der GameView-Badge den Namen kennt —
+        // auch ohne geladene Kampagnenliste (Deep-Link, Reload).
+        setActiveCampaign(campaignId, {
+          id: cRes.data.id,
+          worldId: cRes.data.worldId,
+          gameSystemId: cRes.data.gameSystemId,
+          name: cRes.data.name,
+          settingsJson: cRes.data.settingsJson,
+          stateJson: cRes.data.stateJson,
+          createdAt: cRes.data.createdAt,
+          updatedAt: cRes.data.updatedAt,
+        });
         return Promise.all([
           apiClient.get<WorldDetail>(`/worlds/${cRes.data.worldId}`).catch(() => null),
           apiClient.get<SystemDetail>(`/game-systems/${cRes.data.gameSystemId}`).catch(() => null),
@@ -130,7 +141,16 @@ export default function CampaignDetailPage() {
 
   const handleEnterWorld = () => {
     if (!campaign) return;
-    setActiveCampaign(campaign.id);
+    setActiveCampaign(campaign.id, {
+      id: campaign.id,
+      worldId: campaign.worldId,
+      gameSystemId: campaign.gameSystemId,
+      name: campaign.name,
+      settingsJson: campaign.settingsJson,
+      stateJson: campaign.stateJson,
+      createdAt: campaign.createdAt,
+      updatedAt: campaign.updatedAt,
+    });
     const summary = {
       id: campaign.worldId,
       name: world?.name ?? campaign.worldId,

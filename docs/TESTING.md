@@ -218,17 +218,17 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 **Vorbereitung:** Dashboard → Game Systems → "New System"
 
 #### 13.1.1 Template laden
-- [ ] D20Lite-Template laden → Wizard zeigt 6 Attribute (staerke, geschick, etc.)
-- [ ] Alle 10 Wizard-Schritte sind erreichbar (Vor/Zurück-Navigation)
-- [ ] Schritt 10 (Übersicht) zeigt alle konfigurierten Daten
+- [ ] D20Lite-Template laden (Wizard: „Load Template", JSON-Tab: „Load Template") → Wizard zeigt 6 Attribute (staerke, geschick, etc.)
+- [ ] Alle 11 Wizard-Schritte sind erreichbar (Vor/Zurück-Navigation)
+- [ ] Schritt 11 (Übersicht) zeigt alle konfigurierten Daten
 
-#### 13.1.2 Probe-Typ konfigurieren (Schritt 10)
+#### 13.1.2 Probe-Typ konfigurieren (Schritt 11)
 - [ ] `d20_target` auswählen → Probe-Expression = `1d20+mod`
 - [ ] `d100_threshold` auswählen → Probe-Expression = `1d100`
 - [ ] `d20_3attr` auswählen → Probe-Expression = `3d20`
 - [ ] Test-Würfel-Button funktioniert (zeigt Ergebnis an)
 
-#### 13.1.3 Combat konfigurieren (Schritt 10)
+#### 13.1.3 Combat konfigurieren (Schritt 11)
 - [ ] "Kampfregeln aktivieren" checkbox → Combat-Felder erscheinen
 - [ ] Initiative-Expression setzbar (z.B. `1d20+geschick`)
 - [ ] Damage-Expression setzbar (z.B. `1d8+staerke`)
@@ -432,6 +432,7 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 - [ ] Export-Button im CharacterSheet-Header (Download-Icon)
 - [ ] Klick → JSON-Datei wird heruntergeladen
 - [ ] Datei enthält: entity_type, name, attributes_json, inventory_json, skills_json
+  (Hinweis: Export nutzt camelCase — `worldId`, `attributesJson`, …; `skills_json` existiert nicht)
 
 #### 13.5.2 Import
 - [ ] Import-Button im CharacterSheet-Header (Upload-Icon)
@@ -442,7 +443,7 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 - [ ] attributes_json nach Import nicht doppelt encodiert (kein "{\\\\\"...")
 
 #### 13.5.3 Edge-Cases
-- [ ] Import ohne world_id → Toast "No world_id in import file"
+- [ ] Import ohne world_id → Toast "No worldId in import file"
 - [ ] Import ungültiger JSON → Toast "Import failed"
 - [ ] Export + Import eines Characters mit per-character Skills → Skills erhalten
 
@@ -454,20 +455,20 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 
 #### 13.6.1 Short Rest
 - [ ] Character hat niedrige HP (z.B. 10/50)
-- [ ] `POST /entities/{id}/rest/short` aufrufen
+- [ ] `POST /worlds/{worldId}/entities/{id}/rest/short` aufrufen
 - [ ] HP um heal_percent (50%) erhöht → 10 + 25 = 35
 - [ ] AP auf maximum恢复了
 
 #### 13.6.2 Long Rest
 - [ ] Character hat niedrige HP + AP
-- [ ] `POST /entities/{id}/rest/long` aufrufen
+- [ ] `POST /worlds/{worldId}/entities/{id}/rest/long` aufrufen
 - [ ] HP = max (50/50)
 - [ ] AP = max
 
 #### 13.6.3 Ohne Resting-Config
 - [ ] Welt mit System ohne resting-Konfiguration
-- [ ] `POST /entities/{id}/rest/short` → HP unverändert
-- [ ] `POST /entities/{id}/rest/long` → HP unverändert
+- [ ] `POST /worlds/{worldId}/entities/{id}/rest/short` → HP unverändert
+- [ ] `POST /worlds/{worldId}/entities/{id}/rest/long` → HP unverändert
 
 #### 13.6.4 Dice-basierte Heilung
 - [ ] Config: `"hp": "1d6"` für short_rest
@@ -656,12 +657,13 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 #### 14.8.1 Events tragen campaignId
 - [ ] Session starten (mit Kampagne) → `world_events`-Eintrag hat `campaignId`
 - [ ] Combat starten (mit Kampagne) → `COMBAT_STARTED`-Event hat `campaignId`
-- [ ] (Backend) `GET /api/v1/worlds/{id}/events?since=0` → Response-Feld `campaign_id` vorhanden
+- [ ] (Backend) `GET /api/v1/worlds/{id}/events?since=0` → Response-Feld `campaignId` vorhanden
+  (Hinweis: API nutzt camelCase — kein `campaign_id`)
 
 #### 14.8.2 WebSocket
 - [ ] Zwei Browser: Welt A + Welt B geöffnet
 - [ ] Combat in Welt A → nur Welt A empfängt `COMBAT_STARTED`
-- [ ] Events ohne campaignId (z. B. Welt-Zeit) → `campaign_id` leer, kein Bruch
+- [ ] Events ohne campaignId (z. B. Welt-Zeit) → `campaignId` leer/null, kein Bruch
 
 ---
 

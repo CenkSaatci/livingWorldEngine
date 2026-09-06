@@ -24,7 +24,7 @@
     { "name": "lep", "formula": "(konstitution+koerperkraft)/2+5" },
     { "name": "asp", "formula": "(mut+klugheit+intuition)/2" },
     { "name": "kp", "formula": "1" },
-    { "name": "ini", "formula": "mut+geschwindigkeit" }
+    { "name": "ini", "formula": "(mut+gewandtheit)/2" }
   ],
   "skills": [
     { "name": "Fliegen", "attributes": ["klugheit", "intuition", "koerperkraft"], "bonus": 0 },

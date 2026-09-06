@@ -1,4 +1,5 @@
 import { useDraggable } from '@dnd-kit/core';
+import { GripVertical } from 'lucide-react';
 import { type ReactNode } from 'react';
 
 interface Props {
@@ -6,6 +7,15 @@ interface Props {
   children: ReactNode;
 }
 
+/**
+ * Drag-Wrapper für Inventar-Items.
+ *
+ * Nur der Griff (Grip-Icon) ist der Drag-Aktivator — der Rest der Karte ist
+ * normales DOM. Das ist Absicht: Wären die Listener auf dem gesamten Wrapper,
+ * würden Tastatur-Events (Enter/Space) und Klicks auf innere Buttons
+ * (equip/unequip) mit dem Drag-Verhalten kollidieren (dnd-kit Keyboard-Sensor,
+ * verschachtelte interaktive Elemente).
+ */
 export function DraggableItem({ id, children }: Props) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
 
@@ -17,11 +27,18 @@ export function DraggableItem({ id, children }: Props) {
     <div
       ref={setNodeRef}
       style={style}
-      {...listeners}
-      {...attributes}
-      className={`${isDragging ? 'opacity-50' : 'cursor-grab active:cursor-grabbing'}`}
+      className={`flex items-center gap-1 ${isDragging ? 'opacity-50' : ''}`}
     >
-      {children}
+      <span
+        {...listeners}
+        {...attributes}
+        className="cursor-grab touch-none text-text-secondary hover:text-accent active:cursor-grabbing"
+        aria-label="Drag item"
+        title="Ziehen zum Ausrüsten"
+      >
+        <GripVertical size={14} />
+      </span>
+      <div className="flex-1">{children}</div>
     </div>
   );
 }

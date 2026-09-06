@@ -25,13 +25,12 @@ export function ItemCard({ entry, onEquip, onUnequip, children }: Props) {
     accessory: '💍',
   };
 
-const ITEM_TYPE_TO_SLOT: Record<string, string> = {
+  const ITEM_TYPE_TO_SLOT: Record<string, string> = {
     WEAPON: 'weapon',
     ARMOR: 'armor',
     HELMET: 'helmet',
     ACCESSORY: 'accessory',
   };
-
   return (
     <div
       className={`group relative rounded border px-3 py-2 text-sm transition ${
@@ -69,8 +68,9 @@ const ITEM_TYPE_TO_SLOT: Record<string, string> = {
         ) : null}
       </div>
 
-      {/* Tooltip */}
-      <div className="invisible absolute left-0 top-full z-10 mt-1 w-56 rounded-lg border border-bg-elevated bg-bg-elevated p-3 shadow-xl group-hover:visible">
+      {/* Tooltip (rein informativ mit pointer-events-none, damit er beim
+          Hovern nicht die Equip-/Unequip-Buttons verdeckt und Klicks schluckt) */}
+      <div className="invisible pointer-events-none absolute left-0 top-full z-10 mt-1 w-56 rounded-lg border border-bg-elevated bg-bg-elevated p-3 shadow-xl group-hover:visible">
         <p className="mb-1 font-heading text-text-primary">{entry.name}</p>
         <p className="mb-1 text-xs text-text-secondary">Type: {entry.type}</p>
         <p className="text-xs text-text-secondary">Weight: {Number(entry.weight).toFixed(1)} kg</p>

@@ -10,6 +10,7 @@ import com.lwe.core.service.RollService;
 import com.lwe.rules.DiceExpression;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -60,7 +61,7 @@ public class RollController {
     }
 
     public record ProbeRequest(
-        @NotBlank UUID entityId,
+        @NotNull UUID entityId,
         @NotBlank String skillName,
         int target,
         boolean advantage,
@@ -68,8 +69,8 @@ public class RollController {
     ) {}
 
     public record RollRequest(
-        @NotBlank UUID worldId,
-        @NotBlank UUID entityId,
+        @NotNull UUID worldId,
+        @NotNull UUID entityId,
         @NotBlank String skillId,
         int modifier,
         @PositiveOrZero int target,

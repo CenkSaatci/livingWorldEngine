@@ -5,6 +5,7 @@ import com.lwe.core.domain.User;
 import com.lwe.core.service.AdventureService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -185,12 +186,12 @@ public class AdventureController {
         return ResponseEntity.ok(AdventureNodeResponse.from(node));
     }
 
-    public record CreateRequest(@NotBlank UUID worldId, @NotBlank String name, String description,
+    public record CreateRequest(@NotNull UUID worldId, @NotBlank String name, String description,
                                  UUID locationId, UUID giverEntityId) {}
     public record NodeRequest(@NotBlank String text, String imageUrl, boolean isEnd) {}
     public record ChoiceRequest(@NotBlank String label, UUID targetNodeId,
                                 String skillCheckJson, UUID onSuccessNodeId, UUID onFailureNodeId) {}
-    public record StartRequest(@NotBlank UUID entityId) {}
-    public record AdvanceRequest(@NotBlank UUID entityId, @NotBlank UUID choiceId) {}
+    public record StartRequest(@NotNull UUID entityId) {}
+    public record AdvanceRequest(@NotNull UUID entityId, @NotNull UUID choiceId) {}
     public record StartNodeResponse(UUID startNodeId) {}
 }

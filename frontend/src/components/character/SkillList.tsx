@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dices } from 'lucide-react';
 import { apiClient } from '../../api/client';
+import { useToast } from '../../hooks/useToast';
 import { useCampaignStore } from '../../store/campaignStore';
 import { DiceRollModal } from '../ui/DiceRollModal';
 import { parseExpression } from '../../utils/diceParser';
@@ -29,6 +30,7 @@ interface RollModalState {
 
 export function SkillList({ skills, entityId, worldId, attributes, disabled }: Props) {
   const { t } = useTranslation('character');
+  const toast = useToast();
   const [rolling, setRolling] = useState<string | null>(null);
   const [modal, setModal] = useState<RollModalState | null>(null);
   const activeCampaignId = useCampaignStore((s) => s.activeCampaignId);
@@ -54,7 +56,7 @@ export function SkillList({ skills, entityId, worldId, attributes, disabled }: P
 
       setModal({ label: skill.name, dice, modifier: parsed.modifier, total });
     } catch {
-      // silent
+      toast.error(t('sheet.rollFailed')!);
     } finally {
       setRolling(null);
     }

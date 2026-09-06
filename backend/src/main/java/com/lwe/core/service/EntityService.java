@@ -89,7 +89,9 @@ public class EntityService {
     public GameEntity updateAttributes(UUID entityId, UUID userId, Map<String, Integer> newAttrs) {
         var entity = getById(entityId, userId);
         try {
-            var current = objectMapper.readValue(entity.getAttributesJson(), ATTR_MAP);
+            var raw = entity.getAttributesJson();
+            if (raw == null || raw.isBlank()) raw = "{}";
+            var current = objectMapper.readValue(raw, ATTR_MAP);
             current.putAll(newAttrs);
             entity.setAttributesJson(objectMapper.writeValueAsString(current));
             return entityRepo.save(entity);

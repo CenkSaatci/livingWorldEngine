@@ -13,6 +13,14 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 const SLOTS = ['weapon', 'armor', 'helmet', 'accessory'];
 
+// Item-Typ → Equip-Slot (CONSUMABLE/MISC fallen auf 'weapon' zurück).
+const ITEM_TYPE_TO_SLOT: Record<string, string> = {
+  WEAPON: 'weapon',
+  ARMOR: 'armor',
+  HELMET: 'helmet',
+  ACCESSORY: 'accessory',
+};
+
 export default function InventoryPage() {
   const { t } = useTranslation('character');
   const { id } = useParams<{ id: string }>();
@@ -126,7 +134,12 @@ export default function InventoryPage() {
                 {backpack.map((item) => (
                   <li key={item.itemId}>
                     <DraggableItem id={item.itemId}>
-                      <ItemCard entry={item} />
+                      <ItemCard
+                        entry={item}
+                        onEquip={(itemId) =>
+                          handleEquip(itemId, ITEM_TYPE_TO_SLOT[item.type] ?? 'weapon')
+                        }
+                      />
                     </DraggableItem>
                   </li>
                 ))}

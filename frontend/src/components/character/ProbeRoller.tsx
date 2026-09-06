@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dice1 as Dice } from 'lucide-react';
 import { apiClient } from '../../api/client';
+import { useToast } from '../../hooks/useToast';
 import { useCampaignStore } from '../../store/campaignStore';
 
 interface Props {
@@ -22,14 +23,17 @@ interface ProbeResult {
 
 export function ProbeRoller({ entityId, skillName }: Props) {
   const { t } = useTranslation('character');
+  const toast = useToast();
   const [result, setResult] = useState<ProbeResult | null>(null);
   const [rolling, setRolling] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [failed, setFailed] = useState(false);
   const activeCampaignId = useCampaignStore((s) => s.activeCampaignId);
 
   const handleRoll = async () => {
     setRolling(true);
     setShowDetails(false);
+    setFailed(false);
     try {
       const res = await apiClient.post<ProbeResult>('/rolls/probe', {
         entityId,
@@ -40,17 +44,11 @@ export function ProbeRoller({ entityId, skillName }: Props) {
       });
       setResult(res.data);
     } catch {
-      // Fallback: local roll
-      const rolled = Math.floor(Math.random() * 20) + 1;
-      setResult({
-        probeType: 'd20_target',
-        dice: [rolled],
-        modifier: 0,
-        total: rolled,
-        success: rolled >= 10,
-        details: [],
-        activeConditionals: [],
-      });
+      // Kein lokaler Fallback-Wurf: Ein fehlgeschlagener Server-Wurf darf nicht
+      // wie ein echtes Ergebnis aussehen. Fehler anzeigen, nichts würfeln.
+      setResult(null);
+      setFailed(true);
+      toast.error(t('sheet.probeFailed')!);
     } finally {
       setRolling(false);
     }
@@ -66,6 +64,11 @@ export function ProbeRoller({ entityId, skillName }: Props) {
       >
         <Dice size={14} className={rolling ? 'animate-spin' : ''} />
       </button>
+      {failed && !result && (
+        <span className="text-xs font-mono text-danger" title={t('sheet.probeFailed')!}>
+          !
+        </span>
+      )}
       {result && (
         <>
           <button

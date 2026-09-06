@@ -49,4 +49,30 @@ public class CharacterSheetController {
         var sheet = sheetService.getSheet(entityId, user.getId());
         return ResponseEntity.ok(sheet);
     }
+
+    // Direkte PATCH-Endpunkte ohne worldId im Pfad (genutzt vom CharacterSheet);
+    // die Welt wird aus der Entity aufgelöst, Zugriff via EntityService geprüft.
+    @PatchMapping("/{entityId}/attributes")
+    public ResponseEntity<EntityResponse> updateAttributes(@PathVariable UUID entityId,
+                                                            @RequestBody Map<String, Integer> attrs,
+                                                            @AuthenticationPrincipal User user) {
+        var entity = entityService.updateAttributes(entityId, user.getId(), attrs);
+        return ResponseEntity.ok(EntityResponse.from(entity));
+    }
+
+    @PatchMapping("/{entityId}/skills")
+    public ResponseEntity<EntityResponse> updateSkills(@PathVariable UUID entityId,
+                                                        @RequestBody Map<String, Integer> skills,
+                                                        @AuthenticationPrincipal User user) {
+        var entity = entityService.updateSkills(entityId, user.getId(), skills);
+        return ResponseEntity.ok(EntityResponse.from(entity));
+    }
+
+    @PatchMapping("/{entityId}/override")
+    public ResponseEntity<EntityResponse> updateOverride(@PathVariable UUID entityId,
+                                                          @RequestBody Map<String, Object> body,
+                                                          @AuthenticationPrincipal User user) {
+        var entity = entityService.updateOverrides(entityId, user.getId(), body);
+        return ResponseEntity.ok(EntityResponse.from(entity));
+    }
 }

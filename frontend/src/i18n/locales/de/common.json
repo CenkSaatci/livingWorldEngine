@@ -47,7 +47,27 @@
     "created": "Erstellt",
     "gameTime": "Spielzeit",
     "invite": "Einladen",
-    "members": "Mitglieder"
+    "members": "Mitglieder",
+    "title": "Welt-Editor",
+    "general": "Allgemein",
+    "aiMode": "KI-Modus",
+    "time": "Zeit",
+    "combatChatLog": "Kampf-Chatlog",
+    "eventArchiving": "Event-Archivierung",
+    "map": "Karte",
+    "clone": "Klonen",
+    "invites": "Einladungen",
+    "dangerZone": "Gefahrenzone",
+    "saved": "Gespeichert",
+    "saveFailed": "Speichern fehlgeschlagen",
+    "deleted": "Gelöscht",
+    "deleteFailed": "Löschen fehlgeschlagen",
+    "cloneFailed": "Klonen fehlgeschlagen",
+    "inviteFailed": "Einladen fehlgeschlagen",
+    "memberAdded": "Spieler hinzugefügt",
+    "memberAddFailed": "Hinzufügen fehlgeschlagen",
+    "memberRemoved": "Spieler entfernt",
+    "memberRemoveFailed": "Entfernen fehlgeschlagen"
   },
   "combat": {
     "target": "Ziel",
@@ -160,6 +180,14 @@
   "no_session": "Keine Session",
   "diplomacy": "Diplomatie",
   "close": "Schließen",
+  "dashboard": {
+    "myWorlds": "Meine Welten",
+    "settings": "Einstellungen",
+    "gameSystems": "Spielsysteme",
+    "createWorld": "Welt erstellen",
+    "worldName": "Weltname",
+    "editWorldSettings": "Welteinstellungen bearbeiten"
+  },
   "campaign": {
     "title": "Kampagnen",
     "subtitle": "Welt + System — der Spielkontext",

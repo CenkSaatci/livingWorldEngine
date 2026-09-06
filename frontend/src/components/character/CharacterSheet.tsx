@@ -13,7 +13,7 @@ const VALUE_ICONS: Record<string, React.ReactNode> = {
   sanity: <Sparkles size={16} className="text-purple-400" />,
 };
 
-function AttrInput({ name, value, min, max, entityId, onSaved }: { name: string; value: number; min: number; max: number; entityId: string; onSaved: () => void }) {
+function AttrInput({ name, value, min, max, entityId, allAttributes, onSaved }: { name: string; value: number; min: number; max: number; entityId: string; allAttributes: Record<string, number>; onSaved: () => void }) {
   const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [editVal, setEditVal] = useState(String(value));
@@ -25,7 +25,11 @@ function AttrInput({ name, value, min, max, entityId, onSaved }: { name: string;
     if (newVal < min || newVal > max) { setEditVal(String(value)); setEditing(false); return; }
     setSaving(true);
     try {
-      await apiClient.patch(`/entities/${entityId}/attributes`, { [name]: newVal });
+      // Vollständiges Attributs-Map senden: Das Backend mergt nur, was es bekommt.
+      // Würde man nur {[name]: newVal} senden, gingen geerbte Defaults (die nur
+      // in der Sheet-Anzeige, nicht in der DB stehen) beim ersten Speichern verloren
+      // und abgeleitete Formeln würden mit „(Fehler)" fehlschlagen.
+      await apiClient.patch(`/entities/${entityId}/attributes`, { ...allAttributes, [name]: newVal });
       onSaved();
       setEditing(false);
     } catch { toast.error('Failed to save attribute'); setEditVal(String(value)); setEditing(false); }
@@ -61,6 +65,8 @@ interface Props {
 }
 
 function XpInput({ value, entityId, onSaved }: { value: number; entityId: string; onSaved: () => void }) {
+  const { t } = useTranslation('character');
+  const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [editVal, setEditVal] = useState(String(value));
   const [saving, setSaving] = useState(false);
@@ -73,7 +79,7 @@ function XpInput({ value, entityId, onSaved }: { value: number; entityId: string
       await apiClient.patch(`/entities/${entityId}/progression`, { experience_points: newVal });
       onSaved();
       setEditing(false);
-    } catch { setEditVal(String(value)); setEditing(false); }
+    } catch { toast.error(t('sheet.xpSaveFailed')!); setEditVal(String(value)); setEditing(false); }
     finally { setSaving(false); }
   };
 
@@ -159,7 +165,8 @@ export function CharacterSheet({ entityId }: Props) {
           {data.attributes.map((attr) => (
             <div key={attr.name} className="rounded bg-bg-primary/50 p-2 text-center">
               <p className="text-[10px] text-text-secondary uppercase">{attr.name}</p>
-              <AttrInput name={attr.name} value={attr.value} min={attr.min} max={attr.max} entityId={entityId} onSaved={refetch} />
+              <AttrInput name={attr.name} value={attr.value} min={attr.min} max={attr.max} entityId={entityId}
+                allAttributes={Object.fromEntries(data.attributes.map((a) => [a.name, a.value]))} onSaved={refetch} />
               {attr.modifier !== 0 && (
                 <p className="text-xs text-accent">
                   {attr.modifier > 0 ? '+' : ''}{Math.round(attr.modifier * 10) / 10}
@@ -320,8 +327,11 @@ function AbilityRow({ ability, attributes }: {
   ability: SheetData['abilities'][0];
   attributes: SheetData['attributes'];
 }) {
+  const { t } = useTranslation('character');
+  const toast = useToast();
   const [result, setResult] = useState<number | null>(null);
   const [showDetail, setShowDetail] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const handleUse = async () => {
     // Attribut-Referenzen in der diceExpression auflösen (z.B. "2d6+intelligenz" → "2d6+14")
@@ -329,12 +339,16 @@ function AbilityRow({ ability, attributes }: {
     for (const attr of attributes) {
       expr = expr.split(attr.name).join(String(attr.value));
     }
+    setFailed(false);
     try {
       const res = await apiClient.post('/rolls/free', { expression: expr });
       setResult(res.data.total ?? 0);
     } catch {
-      // Fallback: lokaler W20
-      setResult(Math.floor(Math.random() * 20) + 1);
+      // Kein lokaler Fallback-Wurf: Ein fehlgeschlagener Server-Wurf darf nicht
+      // wie ein echtes Ergebnis aussehen.
+      setResult(null);
+      setFailed(true);
+      toast.error(t('sheet.abilityFailed')!);
     }
     setShowDetail(true);
     setTimeout(() => setShowDetail(false), 3000);
@@ -372,9 +386,12 @@ function AbilityRow({ ability, attributes }: {
         >
           Use
         </button>
-        {showDetail && result !== null && (
-          <span className="text-xs font-mono text-accent font-bold">{result}</span>
-        )}
+          {showDetail && result !== null && (
+            <span className="text-xs font-mono text-accent font-bold">{result}</span>
+          )}
+          {showDetail && failed && (
+            <span className="text-xs font-mono text-danger font-bold">!</span>
+          )}
       </div>
     </div>
   );
@@ -382,6 +399,7 @@ function AbilityRow({ ability, attributes }: {
 
 function FormulaOverrides({ entityId, onSaved }: { entityId: string; onSaved: () => void }) {
   const { t } = useTranslation('character');
+  const toast = useToast();
   const [editName, setEditName] = useState('');
   const [editValue, setEditValue] = useState('');
   const [isAdding, setIsAdding] = useState(false);
@@ -407,7 +425,7 @@ function FormulaOverrides({ entityId, onSaved }: { entityId: string; onSaved: ()
       setEditValue('');
       setIsAdding(false);
       onSaved();
-    } catch { /* */ }
+    } catch { toast.error(t('sheet.overrideSaveFailed')!); }
   };
 
   const handleRemove = async (name: string) => {
@@ -416,7 +434,7 @@ function FormulaOverrides({ entityId, onSaved }: { entityId: string; onSaved: ()
       await apiClient.patch(`/entities/${entityId}/override`, rest);
       setOverrides(rest);
       onSaved();
-    } catch { /* */ }
+    } catch { toast.error(t('sheet.overrideSaveFailed')!); }
   };
 
   const entries = Object.entries(overrides);

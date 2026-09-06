@@ -5,6 +5,7 @@ import com.lwe.core.domain.User;
 import com.lwe.core.service.QuestService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -63,7 +64,7 @@ public class QuestController {
     }
 
     public record CreateRequest(
-        @NotBlank UUID worldId, @NotBlank String title, String description,
+        @NotNull UUID worldId, @NotBlank String title, String description,
         @NotBlank String type, UUID giverId, UUID locationId,
         String objectives, String rewards, boolean aiGenerated
     ) {}

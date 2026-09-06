@@ -167,6 +167,15 @@ export function defaultWizardData(): WizardData {
   };
 }
 
+/**
+ * Ersetzt den `mod`-Platzhalter (steht für den jeweils relevanten Modifikator)
+ * durch 0, damit Test-Würfe als reine Syntax-/Würfelprobe funktionieren.
+ * Echte Proben laufen immer über /rolls bzw. /rolls/probe mit Modifikator.
+ */
+export function testExpression(expression: string): string {
+  return expression.replace(/\bmod\b/g, '0');
+}
+
 /** WizardData → rulesJson (Backend-Wire-Format). */
 export function toRulesJson(data: WizardData): string {
   const probeExpr =
@@ -179,11 +188,24 @@ export function toRulesJson(data: WizardData): string {
   const rules: Record<string, unknown> = {
     version: data.version,
     probeType: data.probeType,
-    progressionType: data.progressionType,
+    // progressionType nur setzen, wenn gewählt — das Backend-Schema verlangt
+    // einen String und würde `null` ablehnen.
+    ...(data.progressionType ? { progressionType: data.progressionType } : {}),
     features: data.features,
     derived_values: data.derivedValues,
     abilities: data.abilities,
-    progression: data.progression,
+    // Backend-Wire-Format für Level: {level, xp, attribute_points, ability_slots}.
+    // (Wizard-intern heißt das XP-Feld xpRequired — hier wird gemappt.)
+    progression: {
+      levels: data.progression.levels.map((lv) => ({
+        level: lv.level,
+        xp: lv.xpRequired,
+        attribute_points: 0,
+        ability_slots: 0,
+      })),
+      xpCosts: data.progression.xpCosts,
+      improvements: data.progression.improvements,
+    },
     magic: data.magic,
     psionics: data.psionics,
     conditionals: data.conditionals,
@@ -311,9 +333,10 @@ export function fromRulesJson(json: string): WizardData | null {
         }),
       ),
       progression: {
+        // Wire-Format (xp) und Wizard-Format (xpRequired) werden beide gelesen.
         levels: ((parsed.progression as any)?.levels ?? []).map((lv: Record<string, unknown>) => ({
           level: (lv.level as number) ?? 0,
-          xpRequired: (lv.xpRequired as number) ?? 0,
+          xpRequired: ((lv.xp ?? lv.xpRequired) as number) ?? 0,
           features: (lv.features as string) ?? '',
         })),
         xpCosts: ((parsed.progression as any)?.xpCosts ?? []).map((xc: Record<string, unknown>) => ({

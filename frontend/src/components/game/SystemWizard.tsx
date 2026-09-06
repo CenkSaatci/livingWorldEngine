@@ -6,6 +6,7 @@ import { useToast } from '../../hooks/useToast';
 import { FormulaBuilder } from '../ui/FormulaBuilder';
 import {
   defaultWizardData,
+  testExpression,
   toRulesJson,
   type AttributeDef,
   type ConditionalDef,
@@ -1052,7 +1053,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
               <button
                 onClick={async () => {
                   try {
-                    const r = await apiClient.post('/rolls/free', { expression: data.probe });
+                    const r = await apiClient.post('/rolls/free', { expression: testExpression(data.probe) });
                     toast.success(`${t('s4_test_result')} ${r.data.total}`);
                   } catch {
                     toast.error(t('s4_invalid'));
@@ -1086,7 +1087,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 onChange={(v) => update('combat', { ...data.combat, initiative: v })}
                 onRoll={async (expr) => {
                   try {
-                    const r = await apiClient.post('/rolls/free', { expression: expr });
+                    const r = await apiClient.post('/rolls/free', { expression: testExpression(expr) });
                     toast.success(`${t('s4_initiative')}: ${r.data.total}`);
                   } catch { toast.error(t('s4_invalid')); }
                 }}
@@ -1099,7 +1100,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 onChange={(v) => update('combat', { ...data.combat, damage: v })}
                 onRoll={async (expr) => {
                   try {
-                    const r = await apiClient.post('/rolls/free', { expression: expr });
+                    const r = await apiClient.post('/rolls/free', { expression: testExpression(expr) });
                     toast.success(`${t('s4_damage')}: ${r.data.total}`);
                   } catch { toast.error(t('s4_invalid')); }
                 }}

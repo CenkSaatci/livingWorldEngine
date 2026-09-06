@@ -5,6 +5,7 @@ import com.lwe.core.domain.User;
 import com.lwe.core.service.NpcIntentService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -54,7 +55,7 @@ public class NpcIntentController {
     }
 
     public record CreateRequest(
-        @NotBlank UUID worldId, @NotBlank UUID npcId, @NotBlank String intentType,
+        @NotNull UUID worldId, @NotNull UUID npcId, @NotBlank String intentType,
         String paramsJson, String reasoning
     ) {}
     public record RejectRequest(String reason) {}

@@ -104,14 +104,14 @@ export default function DashboardPage() {
           <button
             onClick={() => navigate('/settings')}
             className="flex items-center gap-1 text-sm text-text-secondary hover:text-accent"
-            aria-label="Settings"
+            aria-label={t('dashboard.settings')}
           >
             <Settings size={16} />
           </button>
           <button
             onClick={() => navigate('/game-systems')}
             className="flex items-center gap-1 text-sm text-text-secondary hover:text-accent"
-            aria-label="Game Systems"
+            aria-label={t('dashboard.gameSystems')}
           >
             <FileText size={16} />
           </button>
@@ -157,8 +157,7 @@ export default function DashboardPage() {
       <main className="mx-auto max-w-4xl p-6">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-xl font-heading text-text-primary">
-            {/* No specific t key — inline OK */}
-            My Worlds
+            {t('dashboard.myWorlds')}
           </h2>
           <button
             onClick={() => setShowCreate(true)}
@@ -172,9 +171,9 @@ export default function DashboardPage() {
         {showCreate && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="w-full max-w-md rounded-lg bg-bg-surface p-6 shadow-xl">
-              <h3 className="mb-4 text-lg font-heading text-text-primary">
-                {t('actions.create')} World
-              </h3>
+                <h3 className="mb-4 text-lg font-heading text-text-primary">
+                  {t('dashboard.createWorld')}
+                </h3>
               {error && (
                 <div className="mb-3 rounded bg-danger/20 p-2 text-sm text-danger">{error}</div>
               )}
@@ -183,7 +182,7 @@ export default function DashboardPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                placeholder="World name"
+                placeholder={t('dashboard.worldName')!}
                 className="mb-4 w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2
                            text-text-primary placeholder:text-text-secondary/50
                            focus:border-accent focus:outline-none"
@@ -244,7 +243,7 @@ export default function DashboardPage() {
                       navigate(`/worlds/${w.id}/edit`);
                     }}
                     className="cursor-pointer text-text-secondary hover:text-accent"
-                    aria-label="Edit world settings"
+                    aria-label={t('dashboard.editWorldSettings')}
                   >
                     <Settings size={14} />
                   </span>

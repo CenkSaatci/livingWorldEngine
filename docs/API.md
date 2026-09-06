@@ -363,12 +363,12 @@ Führt eine Probe aus. Erzeugt `PROBE_ROLLED` Event + WS-Broadcast. Mit `campaig
 **Request:**
 ```json
 {
-  "world_id": "uuid",
-  "entity_id": "uuid",
-  "skill_id": "stärke",
+  "worldId": "uuid",
+  "entityId": "uuid",
+  "skillId": "stärke",
   "modifier": 2,
   "target": 15,
-  "campaign_id": "uuid"
+  "campaignId": "uuid"
 }
 ```
 
@@ -378,13 +378,13 @@ Charakter-Probe (Per-Character-Skills, Vor-/Nachteil). `campaignId` optional im 
 **Response 200:**
 ```json
 {
-  "roll_id": "uuid",
+  "probeType": "d20_target",
   "dice": [ 14 ],
   "modifier": 2,
   "total": 16,
-  "target": 15,
   "success": true,
-  "event_id": 123456
+  "details": [{ "die": 14, "attribute": "stärke", "attrValue": 12, "success": true }],
+  "activeConditionals": []
 }
 ```
 
@@ -397,7 +397,7 @@ Charakter-Probe (Per-Character-Skills, Vor-/Nachteil). `campaignId` optional im 
 ### `POST /api/v1/combat/start`
 **Request:**
 ```json
-{ "world_id": "uuid", "participant_ids": ["uuid", "uuid", "uuid"], "campaign_id": "uuid" }
+{ "worldId": "uuid", "participantIds": ["uuid", "uuid", "uuid"], "campaignId": "uuid" }
 ```
 
 **Response 201:** Combat-Session mit Initiative-Reihenfolge (inkl. `campaignId`).
@@ -408,7 +408,7 @@ Charakter-Probe (Per-Character-Skills, Vor-/Nachteil). `campaignId` optional im 
 ### `POST /api/v1/combat/{sessionId}/action`
 **Request:**
 ```json
-{ "actor_id": "uuid", "action_type": "ATTACK", "target_id": "uuid", "item_id": "uuid" }
+{ "actorId": "uuid", "actionType": "ATTACK", "targetId": "uuid", "itemId": "uuid" }
 ```
 
 **Response 200:** Ergebnis + WS-Broadcast an `/topic/combat/{sessionId}`.
@@ -422,41 +422,43 @@ Charakter-Probe (Per-Character-Skills, Vor-/Nachteil). `campaignId` optional im 
 ## 9. Adventures (`/api/v1/adventures`)
 
 ### `POST /api/v1/adventures`
-**Request:** `{ "world_id": "uuid", "name": "Die Höhle des Schreckens", "description": "..." }`
+**Request:** `{ "worldId": "uuid", "name": "Die Höhle des Schreckens", "description": "...", "locationId": "uuid", "giverEntityId": "uuid" }`
+(`locationId`/`giverEntityId` optional)
 
 ### `POST /api/v1/adventures/{id}/nodes`
-**Request:** `{ "text": "...", "image_url": null, "is_end": false }`
+**Request:** `{ "text": "...", "imageUrl": null, "isEnd": false }`
 
 ### `POST /api/v1/adventures/{id}/nodes/{nodeId}/choices`
 **Request:**
 ```json
 {
   "label": "Tür eintreten",
-  "target_node_id": "uuid",
-  "skill_check": { "skill": "stärke", "modifier": 0 },
-  "on_success_node_id": "uuid",
-  "on_failure_node_id": "uuid"
+  "targetNodeId": "uuid",
+  "skillCheckJson": { "skill": "stärke", "modifier": 0 },
+  "onSuccessNodeId": "uuid",
+  "onFailureNodeId": "uuid"
 }
 ```
 
 ### `POST /api/v1/adventures/{id}/start`
 Startet den Adventure-Flow für einen Charakter.
 
-**Request:** `{ "entity_id": "uuid" }`
+**Request:** `{ "entityId": "uuid" }`
 **Response 200:** Erste Node + Status.
 **Fehlercodes:** `ADVENTURE_NOT_FOUND`, `ADVENTURE_ALREADY_COMPLETED`
 
 ### `POST /api/v1/adventures/{id}/advance`
 Wählt eine Choice und wertet ggf. Skill-Check aus.
 
-**Request:** `{ "entity_id": "uuid", "choice_id": "uuid" }`
+**Request:** `{ "entityId": "uuid", "choiceId": "uuid" }`
 
 **Response 200:**
 ```json
 {
-  "next_node_id": "uuid",
-  "skill_check_result": { "roll_total": 18, "success": true },
-  "adventure_status": "ACTIVE"
+  "nextNodeId": "uuid",
+  "skillCheckSuccess": true,
+  "nextNodeText": "...",
+  "completed": false
 }
 ```
 
@@ -537,10 +539,10 @@ Wechselt Zeit-Modus. Akzeptierte Werte: `"automatic"`, `"manual"`, `"hybrid"`. P
 **Request:**
 ```json
 {
-  "world_id": "uuid",
-  "npc_id": "uuid",
-  "intent_type": "ATTACK",
-  "params_json": { "target_id": "uuid", "weapon_id": "uuid" },
+  "worldId": "uuid",
+  "npcId": "uuid",
+  "intentType": "ATTACK",
+  "paramsJson": { "targetId": "uuid", "weaponId": "uuid" },
   "reasoning": "NPC sieht Spielerfeuer, fühlt sich bedroht"
 }
 ```
@@ -569,9 +571,9 @@ Führt Intent aus.
 ### `POST /api/v1/sessions/start` (auth, Welt-Owner oder Kampagnen-DM)
 **Request:**
 ```json
-{ "world_id": "uuid", "campaign_id": "uuid" }
+{ "worldId": "uuid", "campaignId": "uuid" }
 ```
-`campaign_id` optional — Session wird der Kampagne zugeordnet.
+`campaignId` optional — Session wird der Kampagne zugeordnet.
 **Response 201:** `{ id, worldId, campaignId, status, startedAt, endedAt, createdAt }`
 **Fehlercodes:** `WORLD_NOT_FOUND`, `WORLD_ACCESS_DENIED`, `SESSION_NOT_FOUND`
 
@@ -594,9 +596,9 @@ Gibt neue Events seit `eventId` zurück. Wird vom Bot gepollt.
   "events": [
     {
       "id": 123456,
-      "event_type": "FIRE_CREATED",
-      "campaign_id": "uuid",
-      "source_entity_id": "uuid",
+      "eventType": "FIRE_CREATED",
+      "campaignId": "uuid",
+      "sourceEntityId": "uuid",
       "target_entity_id": null,
       "payload_json": { "position": { "x": 15, "y": 22 }, "intensity": 1 },
       "created_at": "2025-..."

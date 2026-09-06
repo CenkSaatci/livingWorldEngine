@@ -15,16 +15,21 @@ export interface CampaignSummary {
 interface CampaignState {
   campaigns: CampaignSummary[];
   activeCampaignId: string | null;
+  // Zwischengespeicherte Zusammenfassung der aktiven Kampagne, damit Header/Badges
+  // auch ohne (neu-)geladene Kampagnenliste den Namen anzeigen können
+  // (z.B. Deep-Link auf /campaigns/:id oder Enter-World ohne Dashboard-Umweg).
+  activeCampaign: CampaignSummary | null;
   loading: boolean;
 
   loadCampaigns: () => Promise<void>;
   createCampaign: (worldId: string, gameSystemId: string, name: string) => Promise<CampaignSummary | null>;
-  setActiveCampaign: (id: string | null) => void;
+  setActiveCampaign: (id: string | null, summary?: CampaignSummary | null) => void;
 }
 
 export const useCampaignStore = create<CampaignState>((set) => ({
   campaigns: [],
   activeCampaignId: null,
+  activeCampaign: null,
   loading: false,
 
   loadCampaigns: async () => {
@@ -53,10 +58,17 @@ export const useCampaignStore = create<CampaignState>((set) => ({
     }
   },
 
-  setActiveCampaign: (id) => set({ activeCampaignId: id }),
+  setActiveCampaign: (id, summary) =>
+    set((state) => ({
+      activeCampaignId: id,
+      activeCampaign:
+        summary !== undefined
+          ? summary
+          : (state.campaigns.find((c) => c.id === id) ?? state.activeCampaign),
+    })),
 }));
 
 export function useActiveCampaign(): CampaignSummary | null {
-  const { campaigns, activeCampaignId } = useCampaignStore();
-  return campaigns.find((c) => c.id === activeCampaignId) ?? null;
+  const { campaigns, activeCampaignId, activeCampaign } = useCampaignStore();
+  return activeCampaign ?? campaigns.find((c) => c.id === activeCampaignId) ?? null;
 }

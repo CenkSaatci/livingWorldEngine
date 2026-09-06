@@ -33,13 +33,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatus()).body(ApiError.of(ex.getErrorCode(), ex.getMessage()));
     }
 
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<ApiError> handleNoResource(
+            org.springframework.web.servlet.resource.NoResourceFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(ApiError.of("ROUTE_NOT_FOUND", "No such endpoint: " + ex.getResourcePath()));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiError> handleServiceException(RuntimeException ex) {
         var errorCode = extractErrorCode(ex);
         if (errorCode != null) {
             return status(errorCode(ex)).body(ApiError.of(errorCode, ex.getMessage()));
         }
-        throw ex;
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(ApiError.of("SYSTEM_INTERNAL_ERROR", "An unexpected error occurred"));
     }
 
     @ExceptionHandler(Exception.class)
@@ -65,8 +73,12 @@ public class GlobalExceptionHandler {
             case EntityService.EntityException e -> e.getErrorCode();
             case AbilityService.AbilityException e -> e.getErrorCode();
             case EntityAbilityService.EntityAbilityException e -> e.getErrorCode();
-            case WorldService.WorldException e -> e.getErrorCode();
+            case RestService.RestException e -> e.getErrorCode();
+            case CampaignService.CampaignException e -> e.getErrorCode();
+            case CampaignMemberService.CampaignMemberException e -> e.getErrorCode();
             case GameSystemService.GameSystemException e -> e.getErrorCode();
+            case ItemService.ItemException e -> e.getErrorCode();
+            case WorldService.WorldException e -> e.getErrorCode();
             case WorldInviteService.InviteException e -> e.getErrorCode();
             case WorldAccess.WorldAccessException e -> e.getErrorCode();
             case null -> null;
@@ -84,6 +96,7 @@ public class GlobalExceptionHandler {
             };
             case CombatService.CombatException e -> switch (e.getErrorCode()) {
                 case "COMBAT_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                case "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
                 case "COMBAT_NOT_ACTIVE", "COMBAT_NOT_YOUR_TURN", "COMBAT_AP_INSUFFICIENT",
                      "COMBAT_RANGE_INVALID", "COMBAT_TARGET_INVALID" -> HttpStatus.UNPROCESSABLE_ENTITY;
                 case "COMBAT_INSUFFICIENT_PARTICIPANTS" -> HttpStatus.BAD_REQUEST;
@@ -121,6 +134,43 @@ public class GlobalExceptionHandler {
                 case "INVITE_EXPIRED" -> HttpStatus.GONE;
                 case "INVITE_EXHAUSTED" -> HttpStatus.CONFLICT;
                 case "ALREADY_MEMBER" -> HttpStatus.CONFLICT;
+                default -> HttpStatus.BAD_REQUEST;
+            };
+            case WorldAccess.WorldAccessException e -> switch (e.getErrorCode()) {
+                case "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
+                default -> HttpStatus.BAD_REQUEST;
+            };
+            case CampaignService.CampaignException e -> switch (e.getErrorCode()) {
+                case "CAMPAIGN_NOT_FOUND", "WORLD_NOT_FOUND", "GAME_SYSTEM_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                case "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
+                default -> HttpStatus.BAD_REQUEST;
+            };
+            case CampaignMemberService.CampaignMemberException e -> switch (e.getErrorCode()) {
+                case "CAMPAIGN_NOT_FOUND", "USER_NOT_FOUND", "MEMBER_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                case "DM_REMOVAL_DENIED", "DM_REQUIRED", "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
+                case "MEMBER_ALREADY" -> HttpStatus.CONFLICT;
+                default -> HttpStatus.BAD_REQUEST;
+            };
+            case RestService.RestException e -> switch (e.getErrorCode()) {
+                case "ENTITY_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                default -> HttpStatus.BAD_REQUEST;
+            };
+            case GameSystemService.GameSystemException e -> switch (e.getErrorCode()) {
+                case "GAME_SYSTEM_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                case "GAME_SYSTEM_VERSION_CONFLICT" -> HttpStatus.CONFLICT;
+                default -> HttpStatus.BAD_REQUEST;
+            };
+            case ItemService.ItemException e -> switch (e.getErrorCode()) {
+                case "ITEM_NOT_FOUND", "GAME_SYSTEM_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                default -> HttpStatus.BAD_REQUEST;
+            };
+            case AbilityService.AbilityException e -> switch (e.getErrorCode()) {
+                case "ABILITY_NOT_FOUND", "GAME_SYSTEM_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                default -> HttpStatus.BAD_REQUEST;
+            };
+            case GameSessionService.SessionException e -> switch (e.getErrorCode()) {
+                case "SESSION_NOT_FOUND", "WORLD_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                case "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
                 default -> HttpStatus.BAD_REQUEST;
             };
             default -> HttpStatus.BAD_REQUEST;

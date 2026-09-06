@@ -25,7 +25,12 @@
     "export": "Exportieren",
     "import": "Importieren",
     "rollProbe": "Probe würfeln",
-    "level": "Stufe"
+    "level": "Stufe",
+    "probeFailed": "Probe fehlgeschlagen",
+    "rollFailed": "Wurf fehlgeschlagen",
+    "abilityFailed": "Fähigkeit fehlgeschlagen",
+    "xpSaveFailed": "Fehler beim Speichern der XP",
+    "overrideSaveFailed": "Fehler beim Speichern des Overrides"
   },
   "attribute": {
     "modifier": "Modifikator"

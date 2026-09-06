@@ -47,7 +47,27 @@
     "created": "Created",
     "gameTime": "Game Time",
     "invite": "Invite",
-    "members": "Members"
+    "members": "Members",
+    "title": "World Editor",
+    "general": "General",
+    "aiMode": "AI Mode",
+    "time": "Time",
+    "combatChatLog": "Combat Chat Log",
+    "eventArchiving": "Event Archiving",
+    "map": "Map",
+    "clone": "Clone",
+    "invites": "Invites",
+    "dangerZone": "Danger Zone",
+    "saved": "Saved",
+    "saveFailed": "Failed to save",
+    "deleted": "Deleted",
+    "deleteFailed": "Failed to delete",
+    "cloneFailed": "Failed to clone",
+    "inviteFailed": "Failed to invite",
+    "memberAdded": "Player added",
+    "memberAddFailed": "Failed to add player",
+    "memberRemoved": "Player removed",
+    "memberRemoveFailed": "Failed to remove player"
   },
   "combat": {
     "target": "Target",
@@ -160,6 +180,14 @@
   "no_session": "No session",
   "diplomacy": "Diplomacy",
   "close": "Close",
+  "dashboard": {
+    "myWorlds": "My Worlds",
+    "settings": "Settings",
+    "gameSystems": "Game Systems",
+    "createWorld": "Create World",
+    "worldName": "World name",
+    "editWorldSettings": "Edit world settings"
+  },
   "campaign": {
     "title": "Campaigns",
     "subtitle": "World + System — the play context",
