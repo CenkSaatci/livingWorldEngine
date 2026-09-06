@@ -625,7 +625,7 @@
 - **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P3-T01, P4-T01
-- **Beschreibung:** Multi-Stage `Containerfile` für Backend, Frontend und Bot (gelesen von `podman build`). Nginx Reverse-Proxy liefert Frontend statisch aus und proxyt API/WS ans Backend.
+- **Beschreibung:** Multi-Stage `Containerfile`s für Backend (`backend/`), Frontend und Bot (gelesen von `podman build`). Nginx Reverse-Proxy liefert Frontend statisch aus und proxyt API/WS ans Backend.
 - **Akzeptanzkriterien:**
   - [ ] `podman compose -f compose.prod.yml up` läuft komplett
   - [ ] Health-Checks für alle Services
@@ -983,26 +983,31 @@
 ## Phase 13: Campaign-Features (MVP-Lücken)
 
 ### P13-T01: Einladungssystem mit Token
-- **Status:** 📋
+- **Status:** ✅ (Abweichungen siehe Bemerkungen)
 - **Aufwand:** 3h
-- **Beschreibung:** DM erzeugt Einladungslink mit Token (`POST /worlds/{id}/invite`). Empfänger klickt Link → wird Member der Welt. Token hat optionales Ablaufdatum. Benachrichtigung im Dashboard für ausstehende Einladungen.
-  - **Backend:** `world_invites` Tabelle (Token, world_id, created_by, expires_at, used_at), `POST /worlds/{id}/invite`, `POST /worlds/join?token=...`
-  - **Frontend:** "Invite"-Button im WorldEditor → Modal mit Link, "Pending Invites"-Liste im Dashboard
-  - **Tests:** Service-Test (create/use/expire invite), Controller-Test
+- **Beschreibung:** DM erzeugt Einladungslink mit Token (`POST /worlds/{id}/invites`). Empfänger klickt Link → wird Member der Welt (`POST /worlds/join?token=...`). Token hat optionales Ablaufdatum (expiresAt, maxUses).
+  - **Backend:** `world_invites` Tabelle (V085), `WorldInviteService` + `WorldInviteController`
+  - **Frontend:** "Invite"-Button im WorldEditor → Modal mit Link (worldEditor.invites)
+  - **Tests:** `WorldInviteServiceTest`
+- **Bemerkungen (2026-09-06):**
+  - Routen heißen `/invites` + `/join` (nicht `/invite` wie ursprünglich geplant)
+  - Offen: "Pending Invites"-Liste im Dashboard, Controller-Test
 
 ### P13-T02: XP-System + Progression (Level/Shop)
-- **Status:** 📋
+- **Status:** ✅ (Abweichungen siehe Bemerkungen)
 - **Aufwand:** 5h
 - **Beschreibung:** Zwei Progression-Modelle via `rules_json.progression`:
   - **`mode: "level"`** — XP → Level laut Level-Tabelle → Attributspunkte + Ability-Slots
-  - **`mode: "shop"`** — XP direkt gegen Attributspunkte eintauschbar
+  - **`mode: "shop"`** — XP direkt gegen Attributspunkte eintauschbar (`spendPoints`, keine eigene UI)
   - **Level-Tabelle:** `[{level, xp, attribute_points, ability_slots}]` im Game-System
-  - **Nur DM vergibt XP:** Keine Automatik
-  - **Reset möglich:** `POST /entities/{id}/reset-points`
-  - **Backend:** Migration `V086__entity_xp.sql`, `LevelUpService`, API-Endpunkte
-  - **Frontend:** XP/Level im CharacterSheet, Level-Up Modal, DM-Grant-Button
+  - **Reset:** `LevelUpService.resetPoints` (kein separater REST-Endpunkt)
+  - **Backend:** Migration `V086__entity_xp.sql`, `LevelUpService`, `PATCH /entities/{id}/progression`
+  - **Frontend:** XP/Level + XP-Balken im CharacterSheet, DM-XP-Vergabe in NpcViewPage ("XP granted")
   - **Tests:** LevelUpServiceTest
 - **Ersetzt:** Alten P13-T02 + P13-T06 (XP-Automatik entfällt)
+- **Bemerkungen (2026-09-06):**
+  - E2E-verifiziert: 350 XP → Level 2 (DnD-Skala), Sheet zeigt Level + XP
+  - Offen: Level-Up-Modal, dedizierte Shop-UI, DM-only-Restriktion (aktuell: Owner editiert eigene XP)
 
 ### P13-T03: Kampf-Log im Chat
 - **Status:** ✅
@@ -1021,28 +1026,21 @@
 ## Phase 14: Adventure Visual Editor + Live-DM
 
 ### P14-T01: Backend — Adventure Discovery + Override API
-- **Status:** 📋
+- **Status:** ✅ (Abweichungen siehe Bemerkungen)
 - **Aufwand:** 3h
-- **Beschreibung:** Adventures müssen auffindbar und NPC-gebunden sein. Neue Features:
-  - **Migration V088:** `adventures` um `location_id` und `giver_entity_id` (optional, FK→entities) erweitern
-  - **Listen-Endpunkte:**
-    - `GET /api/v1/adventures?worldId=X` — alle Adventures einer Welt
-    - `GET /api/v1/locations/{id}/adventures` — Adventures an einem Ort
-    - `GET /api/v1/entities/{id}/adventures` — Adventures, die ein NPC vergibt
-  - **DM-Override-Endpunkte** (Live-Editing während Spiel läuft):
-    - `POST /adventures/{id}/override-node-text` — überschreibt Text des aktuellen Nodes
-    - `POST /adventures/{id}/force-node/{nodeId}` — setzt alle Spieler auf einen Node
-    - `POST /adventures/{id}/override-skillcheck` — ändert Skill-Check einer Choice
-    - `POST /adventures/{id}/inject-choice/{nodeId}` — dynamisch neue Choice einfügen
-    - `PATCH /adventures/{id}/nodes/{nodeId}` — Node editieren (Text, Image, isEnd)
-    - `PATCH /adventures/{id}/nodes/{nodeId}/choices/{choiceId}` — Choice editieren
-  - **WebSocket-Events:** `ADVENTURE_NODE_CHANGED`, `ADVENTURE_CHOICES_CHANGED`
+- **Beschreibung:** Adventures sind auffindbar und NPC-/ortsgebunden:
+  - **Migration V088:** `adventures` um `location_id` und `giver_entity_id` erweitert
+  - **Listen-Endpunkte:** `GET /api/v1/adventures?worldId=X`, `/by-location/{id}`, `/by-giver/{id}`
+  - **DM-Override-Endpunkte:** `override-text`, `force-node/{nodeId}`, `inject-choice/{nodeId}`, `PATCH nodes/{nodeId}`, Nodes/Choices-CRUD
+  - **WebSocket-Events:** `ADVENTURE_NODE_CHANGED`, `ADVENTURE_CHOICES_CHANGED` (publiziert)
+- **Bemerkungen (2026-09-06):**
+  - Offen: `override-skillcheck`-Endpunkt, `PATCH choices/{choiceId}`, Listen-Pfade `/locations/{id}/adventures` + `/entities/{id}/adventures` (stattdessen `/by-location`, `/by-giver`)
 
 ### P14-T02: Frontend — ReactFlow Adventure Editor
-- **Status:** 📋
+- **Status:** 📋 (Basis vorhanden, E2E ausstehend)
 - **Aufwand:** 3h
-- **Beschreibung:** Visueller Node-Graph-Editor für den DM:
-  - **Canvas:** `@xyflow/react` (ReactFlow) mit Custom Nodes
+- **Beschreibung:** Visueller Node-Graph-Editor für den DM (`AdventureEditorPage` mit `@xyflow/react`):
+  - **Canvas:** ReactFlow mit Custom Nodes — **E2E-Verifikation der Toolbox/Connect/Preview-Features ausstehend**
   - **Nodes:** AdventureNodes als Karten im Graph (Titel, Text-Vorschau, Image)
   - **Edges:** Choices als Verbindungslinien mit Label
   - **Drag & Drop:** Neue Nodes aus einer Toolbox ziehen
@@ -1054,13 +1052,13 @@
   - **Save:** Änderungen werden via API persistiert
 
 ### P14-T03: Frontend — Adventure Discovery + Play Page
-- **Status:** 📋
+- **Status:** 📋 (Basis vorhanden, E2E ausstehend)
 - **Aufwand:** 2,5h
 - **Beschreibung:** Spieler finden und spielen Adventures:
-  - **Discovery (NPC):** `NpcViewPage` zeigt "[NPC] bietet ein Adventure an" mit "Start"-Button
-  - **Discovery (Location):** `LocationDetail` zeigt "📜 Available Adventures"-Liste
-  - **Available-Badge:** GameView-Sidebar zeigt ob in der aktuellen Location ein Adventure startbar ist
-  - **Play Page:** Route `/worlds/{worldId}/adventures/{adventureId}`
+  - **Discovery (NPC):** `NpcViewPage` zeigt NPC-Adventures (`/adventures/by-giver`) — **Start-Button-Flow ungeprüft**
+  - **Discovery (Location):** `LocationDetail` zeigt Adventures (`/adventures/by-location`)
+  - **Available-Badge:** GameView-Sidebar zeigt ob in der aktuellen Location ein Adventure startbar ist — **ungeprüft**
+  - **Play Page:** Route `/worlds/{worldId}/adventures/{adventureId}` (`AdventurePlayPage`) — **E2E ausstehend**
   - **Node-Ansicht:** Text + optionales Bild
   - **Choice-Buttons:** Klick → `POST /adventures/{id}/advance`
   - **Skill-Check-Indikator:** "🎲 Geschicklichkeit 12" bei entsprechenden Choices
@@ -1068,14 +1066,14 @@
   - **WebSocket-Empfang:** Live-Updates bei DM-Override
 
 ### P14-T04: Frontend — Live DM Override UI
-- **Status:** 📋
+- **Status:** 📋 (Basis vorhanden, E2E ausstehend)
 - **Aufwand:** 1h
-- **Beschreibung:** Während Spieler ein Adventure spielen, kann der DM über ein Overlay eingreifen:
-  - **Live-Status:** In der DM-Queue / GameView wird angezeigt, welcher Spieler welches Adventure spielt und an welchem Node
-  - **Override-Button:** "Edit Active Node" → öffnet Inline-Editor für Text
-  - **Force-Node-Dropdown:** DM wählt einen Ziel-Node aus dem Graphen
-  - **Inject-Choice-Form:** Fügt dynamisch eine Choice hinzu (Label + Target + Skill-Check)
-  - **WebSocket-Push:** Änderungen werden sofort an alle Spieler gesendet
+- **Beschreibung:** Während Spieler ein Adventure spielen, kann der DM über ein Overlay eingreifen (`LiveAdventurePanel` in GameView):
+  - **Live-Status:** In der DM-Queue / GameView wird angezeigt, welcher Spieler welches Adventure spielt und an welchem Node — **ungeprüft**
+  - **Override-Button:** "Edit Active Node" → Inline-Editor für Text (`override-text` verdrahtet ✅)
+  - **Force-Node-Dropdown:** DM wählt einen Ziel-Node aus dem Graphen (`force-node` verdrahtet ✅)
+  - **Inject-Choice-Form:** Fügt dynamisch eine Choice hinzu — **UI-Anbindung ungeprüft**
+  - **WebSocket-Push:** Änderungen werden sofort an alle Spieler gesendet — **ungeprüft**
 
 ---
 
@@ -1993,7 +1991,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 > Siehe [ADR-010](ADR/010-three-tier-model-system-world-campaign.md). Systeme und Welten werden entkoppelt; Items/Abilities wandern zum System; neue Kampagne verbindet Welt × System.
 
 ### P24-T01: `items.world_id` → `game_system_id`
-- **Status:** 🔜
+- **Status:** ✅ (2026-09-06 verifiziert: V090, `GameItem.gameSystemId`, Tests grün)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:**
   - Migration V090: `items` Spalte `world_id` → `game_system_id REFERENCES game_systems(id) ON DELETE CASCADE`
@@ -2006,7 +2004,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD, Migration-Test
 
 ### P24-T02: `abilities.world_id` → `game_system_id`
-- **Status:** 🔜
+- **Status:** ✅ (2026-09-06 verifiziert: V091, Tests grün)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:**
   - Migration V091: `abilities` Spalte `world_id` → `game_system_id`
@@ -2019,7 +2017,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD
 
 ### P24-T03: `campaigns`-Tabelle + Domain
-- **Status:** 🔜
+- **Status:** ✅ (2026-09-06 verifiziert: V092/V093, `Campaign.java` + Repository, Tests grün)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:**
   - Migration V092: `campaigns(id, world_id FK, game_system_id FK, name, settings_json, state_json, created_at, updated_at)`
@@ -2043,7 +2041,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD
 
 ### P24-T05: Campaign-CRUD-API
-- **Status:** 🔜
+- **Status:** ✅ (2026-09-06 verifiziert: `CampaignController` voll CRUD, Access-Checks, E2E-create + Berechtigungen getestet)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:**
   - `CampaignController` + `CampaignService`:
@@ -2061,7 +2059,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 ## Phase 25: Kampagnen-Integration (Backend)
 
 ### P25-T01: RulesLoader auf Kampagnen-Kontext
-- **Status:** 🔜
+- **Status:** ✅ (2026-09-06 verifiziert: `loadRulesByCampaign` + `loadSystemByCampaign`, Tests grün)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:** `RulesLoader` bekommt `loadRulesByCampaign(campaignId)`:
   - Kampagne → gameSystemId → rulesJson
@@ -2070,7 +2068,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD
 
 ### P25-T02: CombatService + LevelUpService auf Kampagne
-- **Status:** 🔜
+- **Status:** ✅ (2026-09-06 verifiziert: Combat-Start mit `campaignId` per UI → 201, `addXp` mit Kampagnen-Kontext, Tests grün)
 - **Aufwand:** 1,0 Tage
 - **Beschreibung:** Alle `world.getGameSystemId()`-Stellen (CombatService 4×, LevelUpService 2×) auf Kampagnen-Kontext umstellen:
   - Combat startet mit `campaignId` statt world-basiertem System
@@ -2079,7 +2077,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD, Integrationstests
 
 ### P25-T03: CharacterSheet + ProbeService auf Kampagne
-- **Status:** 🔜
+- **Status:** ✅ (2026-09-06 verifiziert: Sheet/Probe mit `campaignId`, echte Probe-Ergebnisse per UI, Tests grün)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:** `CharacterSheetService`/`ProbeService` laden System über Kampagne statt Welt:
   - Sheet-Request bekommt campaignId (oder Entity → Kampagne)
@@ -2087,7 +2085,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD
 
 ### P25-T04: Session an Kampagne binden
-- **Status:** 🔜
+- **Status:** ✅ (2026-09-06 verifiziert: V094/V095/V096, `campaignId` in Session/Combat/Events, Tests grün)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:**
   - Migration V094: `sessions.campaign_id` (statt world-only)
@@ -2096,7 +2094,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD
 
 ### P25-T05: Item-CRUD am System
-- **Status:** 🔜
+- **Status:** ✅ (2026-09-06 verifiziert: Item-CRUD per curl + UI-Inventar (equip/unequip), Tests grün)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:**
   - `GET/POST /api/v1/game-systems/{id}/items` (Items eines Systems listen/anlegen)
@@ -2106,7 +2104,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD, Security
 
 ### P25-T06: `worlds.game_system_id` entfernen
-- **Status:** 🔜 (vormals P24-T04)
+- **Status:** 📋 (vormals P24-T04; UI blendet die Auswahl bereits aus (P26-T02 ✅), aber Spalte `game_system_id` + API-Parameter existieren noch — Migration + `World.java`-Bereinigung ausstehend)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:**
   - Migration V093: Spalte `game_system_id` aus `worlds` entfernen
@@ -2139,7 +2137,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD, i18n
 
 ### P26-T03: Combat/Session/ActionBar auf Kampagnen-Kontext
-- **Status:** 🔜 (Teilumsetzung: SessionManager/StartCombatModal/useSheet/ProbeRoller/SkillList senden campaignId; ActionBar lädt action_types noch über Welt → REST, danach worlds.game_system_id entfernen)
+- **Status:** 🔜 (Teilumsetzung Stand 2026-09-06: SessionManager/StartCombatModal/useSheet/ProbeRoller/SkillList senden campaignId; ActionBar lädt action_types aus Kampagnen-Kontext; Combat-Start + Session-Start mit campaignId per UI E2E-verifiziert; Badge in GameView; Rest: `worlds.game_system_id` entfernen → P25-T06)
 - **Aufwand:** 1,0 Tage
 - **Beschreibung:**
   - Combat starten aus Kampagne (campaignId statt world→System)
