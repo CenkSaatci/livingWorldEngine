@@ -25,6 +25,7 @@ export function SessionManager({ worldId }: Props) {
     apiClient
       .get(`/worlds/${worldId}/sessions`)
       .then((r) => setSessions(r.data))
+      // Best-effort prefetch — leere Liste ist der gültige Fallback.
       .catch(() => {});
   }, [worldId]);
 

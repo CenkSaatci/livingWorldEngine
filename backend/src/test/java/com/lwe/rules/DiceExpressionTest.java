@@ -60,4 +60,34 @@ class DiceExpressionTest {
         assertThatThrownBy(() -> new DiceExpression(""))
             .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void shouldRejectZeroDice() {
+        assertThatThrownBy(() -> new DiceExpression("0d6"))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldRejectZeroSides() {
+        assertThatThrownBy(() -> new DiceExpression("2d0"))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldRejectOneSidedDie() {
+        assertThatThrownBy(() -> new DiceExpression("2d1"))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldCapDiceCount() {
+        assertThatThrownBy(() -> new DiceExpression("1001d6"))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldCapDiceSides() {
+        assertThatThrownBy(() -> new DiceExpression("2d1001"))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
 }

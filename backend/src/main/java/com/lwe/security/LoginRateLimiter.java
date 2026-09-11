@@ -16,6 +16,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class LoginRateLimiter {
 
+    /** Harte Obergrenze gegen unbegrenztes Wachstum (ein Eintrag pro IP). */
+    static final int MAX_ENTRIES = 10_000;
+
     private final int maxAttempts;
     private final Duration windowDuration;
     private final Map<String, AttemptWindow> attempts = new ConcurrentHashMap<>();
@@ -54,6 +57,16 @@ public class LoginRateLimiter {
             window.count++;
             return window;
         });
+        if (attempts.size() > MAX_ENTRIES) {
+            attempts.entrySet().removeIf(e -> e.getValue().expiresAt.isBefore(now));
+            if (attempts.size() > MAX_ENTRIES) {
+                var it = attempts.keySet().iterator();
+                while (attempts.size() > MAX_ENTRIES && it.hasNext()) {
+                    it.next();
+                    it.remove();
+                }
+            }
+        }
     }
 
     /**

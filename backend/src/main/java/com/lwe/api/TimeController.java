@@ -9,6 +9,8 @@ import com.lwe.core.domain.World;
 import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.service.WorldEventService;
 import com.lwe.time.WorldTimeService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -57,7 +59,7 @@ public class TimeController {
 
     @PostMapping("/advance")
     public ResponseEntity<TimeResponse> advance(@PathVariable UUID worldId,
-                                                 @RequestBody AdvanceRequest req,
+                                                 @Valid @RequestBody AdvanceRequest req,
                                                  @AuthenticationPrincipal User user) {
         var world = requireOwner(worldId, user.getId());
         var minutes = parseDuration(req.by());
@@ -67,7 +69,7 @@ public class TimeController {
 
     @PostMapping("/set")
     public ResponseEntity<TimeResponse> set(@PathVariable UUID worldId,
-                                             @RequestBody SetRequest req,
+                                             @Valid @RequestBody SetRequest req,
                                              @AuthenticationPrincipal User user) {
         var world = requireOwner(worldId, user.getId());
         var target = Instant.parse(req.to());
@@ -93,7 +95,7 @@ public class TimeController {
 
     @PatchMapping("/mode")
     public ResponseEntity<?> setMode(@PathVariable UUID worldId,
-                                      @RequestBody ModeRequest req,
+                                      @Valid @RequestBody ModeRequest req,
                                       @AuthenticationPrincipal User user) {
         if (!req.mode().matches("^(automatic|manual|hybrid)$")) {
             return ResponseEntity.badRequest().body(new ErrorResponse("TIME_MODE_INVALID"));
@@ -184,8 +186,8 @@ public class TimeController {
     }
 
     public record AdvanceRequest(String by) {}
-    public record SetRequest(String to) {}
-    public record ModeRequest(String mode) {}
+    public record SetRequest(@NotBlank String to) {}
+    public record ModeRequest(@NotBlank String mode) {}
     public record TimeResponse(String currentGameTime, String mode) {}
 
     public static class TimeControllerException extends RuntimeException {

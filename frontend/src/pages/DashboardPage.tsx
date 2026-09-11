@@ -141,9 +141,11 @@ export default function DashboardPage() {
                 apiClient
                   .post('/auth/resend-verification', { email: user?.email })
                   .then(() => {
-                    alert('Verification email resent (check console for token)');
+                    alert(t('verify.resent'));
                   })
-                  .catch(() => {});
+                  .catch(() => {
+                    alert(t('verify.resendFailed'));
+                  });
               }}
               className="ml-auto text-accent hover:underline"
             >

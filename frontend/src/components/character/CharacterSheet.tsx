@@ -411,7 +411,8 @@ function FormulaOverrides({ entityId, onSaved }: { entityId: string; onSaved: ()
       try {
         const meta = JSON.parse(res.data.metadataJson ?? '{}');
         setOverrides(meta.formula_overrides ?? {});
-      } catch { setOverrides({}); }
+      } catch { setOverrides({}); } // Ungültiges Metadata-JSON → Defaults.
+      // GET-Fehlschlag → Overrides bleiben leer (Formeln nutzen Defaults).
     }).catch(() => {});
   }, [entityId]);
 

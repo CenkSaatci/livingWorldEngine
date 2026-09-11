@@ -4,6 +4,10 @@ import com.lwe.api.dto.ApiResponse;
 import com.lwe.api.dto.InventoryResponse;
 import com.lwe.core.domain.User;
 import com.lwe.core.service.InventoryService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,7 +34,7 @@ public class InventoryController {
 
     @PostMapping("/add")
     public ResponseEntity<ApiResponse> addItem(@PathVariable UUID entityId,
-                                                @RequestBody AddRequest req,
+                                                @Valid @RequestBody AddRequest req,
                                                 @AuthenticationPrincipal User user) {
         inventoryService.addItem(entityId, user.getId(), req.itemId(), req.quantity());
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse("added"));
@@ -38,7 +42,7 @@ public class InventoryController {
 
     @PostMapping("/remove")
     public ResponseEntity<ApiResponse> removeItem(@PathVariable UUID entityId,
-                                                   @RequestBody RemoveRequest req,
+                                                   @Valid @RequestBody RemoveRequest req,
                                                    @AuthenticationPrincipal User user) {
         inventoryService.removeItem(entityId, user.getId(), req.itemId(), req.quantity());
         return ResponseEntity.ok(new ApiResponse("removed"));
@@ -46,7 +50,7 @@ public class InventoryController {
 
     @PostMapping("/equip")
     public ResponseEntity<InventoryResponse> equipItem(@PathVariable UUID entityId,
-                                                        @RequestBody EquipRequest req,
+                                                        @Valid @RequestBody EquipRequest req,
                                                         @AuthenticationPrincipal User user) {
         var result = inventoryService.equipItem(entityId, user.getId(), req.itemId(), req.slot());
         return ResponseEntity.ok(new InventoryResponse(result.items(), result.computedBonuses()));
@@ -54,7 +58,7 @@ public class InventoryController {
 
     @PostMapping("/unequip")
     public ResponseEntity<InventoryResponse> unequipItem(@PathVariable UUID entityId,
-                                                          @RequestBody UnequipItemRequest req,
+                                                          @Valid @RequestBody UnequipItemRequest req,
                                                           @AuthenticationPrincipal User user) {
         var result = inventoryService.unequipItem(entityId, user.getId(), req.itemId());
         return ResponseEntity.ok(new InventoryResponse(result.items(), result.computedBonuses()));
@@ -68,8 +72,8 @@ public class InventoryController {
         return ResponseEntity.ok(new ApiResponse("used"));
     }
 
-    public record AddRequest(UUID itemId, int quantity) {}
-    public record RemoveRequest(UUID itemId, int quantity) {}
-    public record EquipRequest(UUID itemId, String slot) {}
-    public record UnequipItemRequest(UUID itemId) {}
+    public record AddRequest(@NotNull UUID itemId, @Min(1) int quantity) {}
+    public record RemoveRequest(@NotNull UUID itemId, @Min(1) int quantity) {}
+    public record EquipRequest(@NotNull UUID itemId, @NotBlank String slot) {}
+    public record UnequipItemRequest(@NotNull UUID itemId) {}
 }

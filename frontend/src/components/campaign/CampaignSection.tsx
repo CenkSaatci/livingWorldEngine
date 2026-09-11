@@ -37,10 +37,12 @@ export default function CampaignSection() {
     apiClient
       .get('/worlds/accessible?page=0&size=50')
       .then((r) => setWorlds((r.data as { items: WorldOption[] }).items))
+      // Best-effort prefetch — leere Liste ist der gültige Fallback.
       .catch(() => {});
     apiClient
       .get('/game-systems')
       .then((r) => setSystems((r.data as SystemOption[]).filter((s) => s.active !== false)))
+      // Best-effort prefetch — leere Liste ist der gültige Fallback.
       .catch(() => {});
   }, [loadCampaigns]);
 

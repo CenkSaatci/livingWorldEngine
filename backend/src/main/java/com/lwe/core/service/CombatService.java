@@ -216,7 +216,7 @@ public class CombatService {
             participantRepo.save(actor);
         }
 
-        actor.setApCurrent(actor.getApCurrent() - ability.getApCost());
+        actor.setApCurrent(Math.max(0, actor.getApCurrent() - ability.getApCost()));
         participantRepo.save(actor);
 
         eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
@@ -288,7 +288,7 @@ public class CombatService {
     }
 
     private void deductAp(CombatParticipant actor) {
-        actor.setApCurrent(actor.getApCurrent() - 1);
+        actor.setApCurrent(Math.max(0, actor.getApCurrent() - 1));
         participantRepo.save(actor);
     }
 
@@ -296,7 +296,7 @@ public class CombatService {
     public CombatSession nextTurn(UUID userId, UUID sessionId) {
         var session = sessionRepo.findById(sessionId)
             .orElseThrow(() -> new CombatException("COMBAT_NOT_FOUND", "Combat session not found"));
-        requireOwnership(session.getWorldId(), userId);
+        requireWorldAccess(session.getWorldId(), userId);
 
         var participants = participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId);
         var currentIdx = -1;
@@ -330,7 +330,7 @@ public class CombatService {
     public CombatSession endCombat(UUID userId, UUID sessionId) {
         var session = sessionRepo.findById(sessionId)
             .orElseThrow(() -> new CombatException("COMBAT_NOT_FOUND", "Combat session not found"));
-        requireOwnership(session.getWorldId(), userId);
+        requireWorldAccess(session.getWorldId(), userId);
         session.setStatus("ENDED");
         session.setEndedAt(java.time.Instant.now());
         session = sessionRepo.save(session);
@@ -343,7 +343,7 @@ public class CombatService {
     public CombatSession getSession(UUID userId, UUID sessionId) {
         var session = sessionRepo.findById(sessionId)
             .orElseThrow(() -> new CombatException("COMBAT_NOT_FOUND", "Combat session not found"));
-        requireOwnership(session.getWorldId(), userId);
+        requireWorldAccess(session.getWorldId(), userId);
         return session;
     }
 
@@ -413,7 +413,9 @@ public class CombatService {
         }
     }
 
-    private void requireOwnership(UUID worldId, UUID userId) {
+    // Bewusst: Turn-Wechsel/Lesen/Ende braucht nur Welt-Mitgliedschaft (kein Owner),
+    // Aktionen zusätzlich den aktuellen Turn (validateSession). Siehe Finding F-Combat-Auth.
+    private void requireWorldAccess(UUID worldId, UUID userId) {
         worldAccess.requireAccess(worldId, userId);
     }
 

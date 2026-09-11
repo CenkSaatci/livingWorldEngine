@@ -65,16 +65,16 @@ public class RestService {
         } else if (hpExpr.endsWith("%")) {
             var pct = Integer.parseInt(hpExpr.replace("%", ""));
             var pctHeal = (int) Math.round(entity.getHpMax() * pct / 100.0);
-            healed = Math.min(pctHeal, entity.getHpMax() - entity.getHpCurrent());
+            healed = Math.max(0, Math.min(pctHeal, entity.getHpMax() - entity.getHpCurrent()));
             entity.setHpCurrent(entity.getHpCurrent() + healed);
         } else if (hpExpr.matches("\\d+")) {
             var flat = Integer.parseInt(hpExpr);
-            healed = Math.min(flat, entity.getHpMax() - entity.getHpCurrent());
+            healed = Math.max(0, Math.min(flat, entity.getHpMax() - entity.getHpCurrent()));
             entity.setHpCurrent(entity.getHpCurrent() + healed);
         } else {
             try {
                 var roll = new DiceExpression(hpExpr);
-                healed = Math.min(roll.getTotal(), entity.getHpMax() - entity.getHpCurrent());
+                healed = Math.max(0, Math.min(roll.getTotal(), entity.getHpMax() - entity.getHpCurrent()));
                 entity.setHpCurrent(entity.getHpCurrent() + healed);
             } catch (IllegalArgumentException e) {
                 throw new RestException("INVALID_HP_EXPR", "Invalid HP expression: " + hpExpr);

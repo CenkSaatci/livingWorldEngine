@@ -21,8 +21,9 @@ public class DiceExpressionParser {
 
             var m = EXPR_PATTERN.matcher(probe);
             if (!m.matches()) throw new IllegalArgumentException("Invalid dice expression: " + probe);
-            int count = Integer.parseInt(m.group(1));
-            int sides = Integer.parseInt(m.group(2));
+            var parsed = parseProbe(probe);
+            int count = parsed.count();
+            int sides = parsed.sides();
             
             if (sides == 100) return DiceSystem.THROWN;
             if (count == 1 && sides == 20) return DiceSystem.D20;
@@ -39,6 +40,18 @@ public class DiceExpressionParser {
     public static DiceProbe parseProbe(String expression) {
         var m = EXPR_PATTERN.matcher(expression.strip());
         if (!m.matches()) throw new IllegalArgumentException("Invalid dice expression: " + expression);
-        return new DiceProbe(Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)));
+        int count;
+        int sides;
+        try {
+            count = Integer.parseInt(m.group(1));
+            sides = Integer.parseInt(m.group(2));
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid dice expression: " + expression, e);
+        }
+        if (count < 1 || count > DiceExpression.MAX_COUNT)
+            throw new IllegalArgumentException("Dice count out of range: " + expression);
+        if (sides < 2 || sides > DiceExpression.MAX_SIDES)
+            throw new IllegalArgumentException("Dice sides out of range: " + expression);
+        return new DiceProbe(count, sides);
     }
 }

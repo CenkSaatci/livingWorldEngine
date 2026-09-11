@@ -32,19 +32,28 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 - Domänen-Prefixes:
   - `AUTH_` — Authentifizierung, JWT, Tokens
   - `USER_` — User-Konto, Präferenzen
-  - `WORLD_` — Welten, Mitglieder
+  - `WORLD_` — Welten, Mitglieder, Limits
   - `ENTITY_` — Charaktere, NPCs, Fraktionen
+  - `FACTION_` — Fraktionen, Diplomatie
   - `GAME_SYSTEM_` — Regelwerke
+  - `ABILITY_` — Fähigkeiten (inkl. `ALREADY_ASSIGNED`, `NOT_ASSIGNED`)
+  - `ITEM_` / `SESSION_` — Items, Spiel-Sessions
+  - `LOCATION_` / `REGION_` / `QUEST_` — Orte, Regionen, Quests
+  - `INVITE_` / `ALREADY_MEMBER` — Welt-Einladungen
+  - `LEVEL_` / `ATTRIBUTE_*` — Level-Ups, Attributpunkte
+  - `CAMPAIGN_` / `MEMBER_*` / `DM_*` — Kampagnen, Mitgliedschaft, DM-Rechte
   - `INVENTORY_` — Inventar, Items, Equip
   - `ROLL_` — Würfelproben
   - `COMBAT_` — Kampf, Turns, Aktionen
-  - `ADVENTURE_` — Abenteuer-Nodes, Choices, Progress
+  - `ADVENTURE_` — Abenteuer-Nodes, Choices, Progress (inkl. `NODE_*`)
   - `INTENT_` — NPC-Intent, Validierung
   - `EVENT_` — Welt-Events
   - `TIME_` — Weltzeit, Kalender, Ticks
+  - `WEATHER_` — Regions-Wetter
   - `ADMIN_` — Admin-Endpunkte
   - `I18N_` — Lokalisierung
   - `SYSTEM_` — Systemfehler (5xx)
+  - `RATE_*` / `ROUTE_*` — Rate-Limits, Routing
   - `WS_` — WebSocket / STOMP
 
 ---
@@ -64,6 +73,11 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `AUTH_USER_DISABLED` | 403 | User-Konto gesperrt |
 | `AUTH_EMAIL_TAKEN` | 409 | E-Mail bei Registrierung bereits vergeben |
 | `AUTH_USERNAME_TAKEN` | 409 | Username bereits vergeben |
+| `AUTH_USER_NOT_FOUND` | 400 | User zu Token/Verify-Link nicht vorhanden |
+| `AUTH_ALREADY_VERIFIED` | 400 | E-Mail wurde bereits verifiziert |
+| `AUTH_VERIFICATION_INVALID` | 400 | Verify-Token ungültig |
+| `AUTH_VERIFICATION_EXPIRED` | 400 | Verify-Token abgelaufen |
+| `AUTH_RATE_LIMITED` | 429 | Zu viele Login-Fehlversuche (pro IP) |
 | `AUTH_SERVICE_TOKEN_INVALID` | 401 | Bot-Service-Token ungültig |
 
 ### 3.2 User (`USER_*`)
@@ -85,6 +99,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `WORLD_OWNER_REQUIRED` | 403 | Nur Owner darf diese Aktion (z. B. löschen) |
 | `WORLD_MEMBER_ALREADY` | 409 | User ist bereits Mitglied |
 | `WORLD_MEMBER_LIMIT` | 422 | Mitglieder-Limit erreicht (Phase 5 Konfigurierbar) |
+| `WORLD_LIMIT_REACHED` | 403 | Welten-Limit des Plans erreicht |
 | `WORLD_GAME_SYSTEM_INACTIVE` | 422 | Referenziertes Regelwerk ist deaktiviert |
 | `MAP_NOT_FOUND` | 404 | Karte zu dieser Welt nicht vorhanden |
 
@@ -119,6 +134,8 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `INVENTORY_ITEM_TYPE_INVALID` | 422 | Item-Typ passt nicht zum Slot (z. B. Waffe in Rüstung-Slot) |
 | `INVENTORY_WEIGHT_EXCEEDED` | 422 | Gewichtslimit überschritten |
 | `INVENTORY_EQUIP_NOT_IN_INVENTORY` | 422 | Item nicht im Inventar des Charakters |
+| `INVENTORY_NOT_CONSUMABLE` | 400 | `use` auf nicht-verbrauchbarem Item |
+| `INVENTORY_NO_EFFECT` | 400 | Consumable hat keinen definierten Use-Effekt |
 
 ### 3.7 Proben / Würfel (`ROLL_*`)
 
@@ -142,6 +159,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `COMBAT_LINE_OF_SIGHT_BLOCKED` | 422 | Sichtlinie durch Fog of War / Wand blockiert |
 | `COMBAT_TARGET_INVALID` | 422 | Ziel-Entity existiert oder ist verbündet |
 | `COMBAT_ACTION_TYPE_INVALID` | 400 | `action_type` nicht bekannt |
+| `COMBAT_INSUFFICIENT_PARTICIPANTS` | 400 | Weniger als 2 Teilnehmer beim Kampfstart |
 
 ### 3.9 Adventures (`ADVENTURE_*`)
 
@@ -153,6 +171,8 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `ADVENTURE_PROGRESS_NOT_FOUND` | 404 | Kein aktiver Fortschritt für diesen Charakter |
 | `ADVENTURE_ALREADY_COMPLETED` | 422 | Abenteuer bereits abgeschlossen |
 | `ADVENTURE_NODE_TERMINAL` | 422 | Node hat keine Choices mehr (`is_end`) |
+| `NODE_NOT_FOUND` | 400 | Adventure-Node existiert nicht |
+| `NODE_NOT_IN_ADVENTURE` | 400 | Node gehört nicht zu diesem Abenteuer |
 
 ### 3.10 NPC Intents (`INTENT_*`)
 
@@ -188,6 +208,10 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `TIME_PAUSED` | 422 | Operation nicht möglich, weil Zeit pausiert ist |
 | `TIME_NOT_PAUSED` | 422 | Resume aufgerufen, aber Zeit läuft bereits |
 | `TIME_DM_OVERRIDE_REQUIRED` | 422 | Im `manual`-Modus ist automatisches Advance verboten |
+| `TIME_NOT_FOUND` | 404 | Welt für Zeit-Operation nicht vorhanden |
+| `TIME_ACCESS_DENIED` | 403 | Nur Owner darf Zeit steuern |
+| `TIME_CONFIG_MISSING` | 404 | Keine Zeit-Konfiguration in `settings_json` |
+| `TIME_CONFIG_INVALID` | 500 | Zeit-Konfiguration konnte nicht gelesen/geschrieben werden |
 
 ### 3.13 Admin (`ADMIN_*`)
 
@@ -220,6 +244,83 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `WS_AUTH_REQUIRED` | 1008 | STOMP CONNECT ohne `Authorization`-Header |
 | `WS_TOPIC_FORBIDDEN` | 1008 | User darf dieses Topic nicht abonnieren (z. B. fremde Welt) |
 | `WS_PAYLOAD_INVALID` | 1003 | STOMP-Frame konnte nicht geparsed werden |
+
+### 3.17 Fähigkeiten (`ABILITY_*`)
+
+| Code | HTTP | Bedeutung |
+|---|---|---|
+| `ABILITY_NOT_FOUND` | 404 | Ability existiert nicht |
+| `ABILITY_NOT_ACTIVE` | 400 | Ability ist keine aktive (nutzbare) Ability |
+| `ALREADY_ASSIGNED` | 409 | Ability bereits an Entity vergeben |
+| `NOT_ASSIGNED` | 400 | Ability ist nicht an Entity vergeben |
+
+### 3.18 Kampagnen (`CAMPAIGN_*`, `MEMBER_*`, `DM_*`)
+
+| Code | HTTP | Bedeutung |
+|---|---|---|
+| `CAMPAIGN_NOT_FOUND` | 404 | Kampagne existiert nicht |
+| `MEMBER_NOT_FOUND` | 404 | User ist kein Kampagnen-Mitglied |
+| `MEMBER_ALREADY` | 409 | User ist bereits Kampagnen-Mitglied |
+| `DM_REQUIRED` | 403 | Nur der DM darf diese Aktion |
+| `DM_REMOVAL_DENIED` | 403 | DM kann nicht entfernt/degradiert werden |
+
+### 3.19 Fraktionen (`FACTION_*`)
+
+| Code | HTTP | Bedeutung |
+|---|---|---|
+| `FACTION_NOT_FOUND` | 400 | Fraktion existiert nicht (Default-Mapping, siehe Hinweis unten) |
+| `FACTION_WORLD_MISMATCH` | 400 | Fraktionen liegen in verschiedenen Welten |
+
+### 3.20 Items & Sessions (`ITEM_*`, `SESSION_*`)
+
+| Code | HTTP | Bedeutung |
+|---|---|---|
+| `ITEM_NOT_FOUND` | 404 | Item existiert nicht |
+| `INVALID_ITEM_TYPE` | 400 | `type` nicht in der erlaubten Typ-Liste |
+| `SESSION_NOT_FOUND` | 404 | Spiel-Session existiert nicht |
+
+### 3.21 Orte, Regionen, Quests (`LOCATION_*`, `REGION_*`, `QUEST_*`)
+
+| Code | HTTP | Bedeutung |
+|---|---|---|
+| `LOCATION_NOT_FOUND` | 400 | Ort existiert nicht (Default-Mapping, siehe Hinweis unten) |
+| `REGION_NOT_FOUND` | 400 | Region existiert nicht (Default-Mapping) |
+| `QUEST_NOT_FOUND` | 400 | Quest existiert nicht (Default-Mapping) |
+
+### 3.22 Einladungen (`INVITE_*`, `ALREADY_MEMBER`)
+
+| Code | HTTP | Bedeutung |
+|---|---|---|
+| `INVITE_NOT_FOUND` | 404 | Einladung existiert nicht |
+| `INVITE_EXPIRED` | 410 | Einladung ist abgelaufen |
+| `INVITE_EXHAUSTED` | 409 | Einladung wurde bereits maximal oft genutzt |
+| `ALREADY_MEMBER` | 409 | User ist bereits Welt-Mitglied |
+
+### 3.23 Level & Rast (`LEVEL_*`, `ATTRIBUTE_*`, `INVALID_HP_EXPR`)
+
+| Code | HTTP | Bedeutung |
+|---|---|---|
+| `INSUFFICIENT_POINTS` | 400 | Nicht genug unverteilte Attributpunkte |
+| `ATTRIBUTE_PARSE_ERROR` | 400 | `attributes_json` konnte nicht geparsed werden |
+| `INVALID_HP_EXPR` | 400 | HP-Ausdruck der Rest-Konfiguration ungültig |
+
+### 3.24 Wetter (`WEATHER_*`)
+
+| Code | HTTP | Bedeutung |
+|---|---|---|
+| `WEATHER_NOT_FOUND` | 404 | Kein Wetter für diese Region vorhanden |
+
+### 3.25 Rate-Limit & Routing (`RATE_*`, `ROUTE_*`)
+
+| Code | HTTP | Bedeutung |
+|---|---|---|
+| `RATE_LIMIT_EXCEEDED` | 429 | Generelles Request-Limit überschritten (`Retry-After`-Header beachten) |
+| `ROUTE_NOT_FOUND` | 404 | Endpunkt existiert nicht |
+
+> **Hinweis Default-Mapping:** Codes ohne explizites Mapping im `GlobalExceptionHandler`
+> antworten derzeit mit 400 (`default -> BAD_REQUEST`). Betroffen: `FACTION_*`,
+> `LOCATION_*`, `REGION_*`, `QUEST_*`, `NODE_*`. Das ist bewusst dokumentiert —
+> ein Wechsel auf 404 wäre client-seitig beobachtbar und erfolgt ggf. separat.
 
 ---
 

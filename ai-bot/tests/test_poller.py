@@ -15,10 +15,16 @@ def poller(monkeypatch: pytest.MonkeyPatch) -> EventPoller:
     monkeypatch.setenv("AI_BOT_OLLAMA_URL", "http://test-ollama:11434")
     monkeypatch.setenv("AI_BOT_LLM_TYPE", "ollama")
     from ai_bot.config import settings
+    # Globales Singleton für den Test umbiegen + danach restaurieren
+    # (sonst leakt der Test State in andere Tests).
+    old = (settings.backend_url, settings.ollama_url, settings.llm_type)
     settings.backend_url = BASE
     settings.ollama_url = "http://test-ollama:11434"
     settings.llm_type = "ollama"
-    return EventPoller()
+    try:
+        yield EventPoller()
+    finally:
+        settings.backend_url, settings.ollama_url, settings.llm_type = old
 
 
 @respx.mock
@@ -140,3 +146,15 @@ async def test_tick_bad_event_retries_next_tick(
     assert poller.last_ids.get("w1", 0) == 0
     await poller.tick()
     assert poller.last_ids.get("w1") == 2
+
+
+def test_apply_token_budget_truncates() -> None:
+    """TDD: context_max_tokens muss als Zeichen-Budget (4 Zeichen/Token)
+    durchgesetzt werden."""
+    from ai_bot.poller import _apply_token_budget
+    long_text = "x" * 10000
+    out = _apply_token_budget(long_text, 100)
+    assert len(out) <= 400 + 100
+    assert "gekürzt" in out
+    short = "kurz"
+    assert _apply_token_budget(short, 100) == short

@@ -49,4 +49,18 @@ class DiceExpressionParserTest {
         assertThat(result.count()).isEqualTo(3);
         assertThat(result.sides()).isEqualTo(6);
     }
+
+    @Test
+    void shouldRejectZeroDiceProbe() {
+        assertThatThrownBy(() -> DiceExpressionParser.parseProbe("0d6"))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldCapProbeCountAndSides() {
+        assertThatThrownBy(() -> DiceExpressionParser.parseProbe("1001d6"))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> DiceExpressionParser.parseProbe("2d1001"))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
 }

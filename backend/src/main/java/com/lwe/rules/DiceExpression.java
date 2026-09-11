@@ -13,6 +13,10 @@ public class DiceExpression {
         "^(\\d+)d(\\d+)([+-]\\d+)?$", Pattern.CASE_INSENSITIVE
     );
 
+    /** Obergrenzen gegen DoS (z.B. "999999999d6" würde OOM verursachen). */
+    public static final int MAX_COUNT = 1000;
+    public static final int MAX_SIDES = 1000;
+
     private final int count;
     private final int sides;
     private final int modifier;
@@ -27,6 +31,11 @@ public class DiceExpression {
         this.count = Integer.parseInt(m.group(1));
         this.sides = Integer.parseInt(m.group(2));
         this.modifier = m.group(3) != null ? Integer.parseInt(m.group(3)) : 0;
+
+        if (count < 1 || count > MAX_COUNT)
+            throw new IllegalArgumentException("Dice count out of range (1-" + MAX_COUNT + "): " + expression);
+        if (sides < 2 || sides > MAX_SIDES)
+            throw new IllegalArgumentException("Dice sides out of range (2-" + MAX_SIDES + "): " + expression);
 
         this.rolls = new int[count];
         int sum = 0;

@@ -1509,6 +1509,7 @@ function CombatExpressionRow({
   onChange: (v: string) => void;
   onRoll: (expr: string) => Promise<void>;
 }) {
+  const { t } = useTranslation('systemWizard');
   const diceList = diceOptions.map((d) => d.v);
   const [selectedDice, setSelectedDice] = useState(() => {
     const m = value.match(/^(\d+d\d+)/);
@@ -1558,7 +1559,7 @@ function CombatExpressionRow({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="w-28 rounded border border-bg-elevated bg-bg-primary px-2 py-2 text-sm font-mono text-text-primary outline-none focus:border-accent"
-          placeholder="1d20+mod"
+          placeholder={t('s4_probe_placeholder')}
         />
         <button
           onClick={() => onRoll(value)}

@@ -11,6 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -78,7 +81,7 @@ public class AdminController {
     }
 
     @PutMapping("/users/{id}/role")
-    public ResponseEntity<?> updateRole(@PathVariable UUID id, @RequestBody RoleRequest req) {
+    public ResponseEntity<?> updateRole(@PathVariable UUID id, @Valid @RequestBody RoleRequest req) {
         var user = userRepo.findById(id).orElse(null);
         if (user == null) return ResponseEntity.notFound().build();
         if (!List.of("USER", "ADMIN", "BOT").contains(req.role()))
@@ -89,7 +92,7 @@ public class AdminController {
     }
 
     @PutMapping("/users/{id}/plan")
-    public ResponseEntity<?> assignPlan(@PathVariable UUID id, @RequestBody PlanAssignment req) {
+    public ResponseEntity<?> assignPlan(@PathVariable UUID id, @Valid @RequestBody PlanAssignment req) {
         var user = userRepo.findById(id).orElse(null);
         if (user == null) return ResponseEntity.notFound().build();
         var plan = planRepo.findById(req.planId()).orElse(null);
@@ -107,7 +110,7 @@ public class AdminController {
         return ResponseEntity.ok(new AdminWorldStatsResponse(totalWorlds, activeWorlds));
     }
 
-    public record RoleRequest(String role) {}
-    public record PlanAssignment(UUID planId) {}
+    public record RoleRequest(@NotBlank String role) {}
+    public record PlanAssignment(@NotNull UUID planId) {}
     public record FreePlanResponse(String plan, String limits) {}
 }

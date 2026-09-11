@@ -81,6 +81,7 @@ export function LocationDetail({ locationId, worldId, onSelectNpc, onLocationLoa
     apiClient
       .get(`/adventures/by-location/${loc.id}`)
       .then((r: any) => setAdventures(r.data as any[]))
+      // Best-effort prefetch — leere Liste ist der gültige Fallback.
       .catch(() => {});
   }, [loc]);
 

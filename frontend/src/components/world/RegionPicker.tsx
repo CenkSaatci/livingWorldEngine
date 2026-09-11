@@ -21,6 +21,7 @@ export function RegionPicker({ worldId, onSelect, onClose }: Props) {
     apiClient
       .get(`/worlds/${worldId}/regions`)
       .then((r) => setRegions(r.data))
+      // Best-effort prefetch — leere Liste ist der gültige Fallback.
       .catch(() => {});
   }, [worldId]);
 

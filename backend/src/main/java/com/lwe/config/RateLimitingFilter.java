@@ -20,6 +20,9 @@ public class RateLimitingFilter implements Filter {
 
     private static final Logger log = LoggerFactory.getLogger(RateLimitingFilter.class);
 
+    /** Harte Obergrenze gegen unbegrenztes Wachstum (ein Eintrag pro ip:path). */
+    static final int MAX_ENTRIES = 10_000;
+
     private final RateLimitProperties properties;
     private final Map<String, MutableWindow> attempts = new ConcurrentHashMap<>();
 
@@ -47,12 +50,15 @@ public class RateLimitingFilter implements Filter {
             w.count++;
             return w;
         });
+        if (attempts.size() > MAX_ENTRIES) evictExpired(now);
 
         log.debug("RATE: {} {} key={} count={} max={}", method, path, key, window.count, limit.max);
 
         if (window.count > limit.max) {
             var httpRes = (HttpServletResponse) response;
+            var retryAfter = Math.max(1, window.expiresAt.getEpochSecond() - now.getEpochSecond());
             httpRes.setStatus(429);
+            httpRes.setHeader("Retry-After", String.valueOf(retryAfter));
             httpRes.setContentType("application/json");
             httpRes.getWriter().write(
                 "{\"error\":{\"code\":\"RATE_LIMIT_EXCEEDED\",\"message\":\"Too many requests\"}}");
@@ -60,6 +66,18 @@ public class RateLimitingFilter implements Filter {
         }
 
         chain.doFilter(request, response);
+    }
+
+    /** Entfernt abgelaufene Fenster; als Notbremse auch die ältesten Einträge. */
+    private void evictExpired(Instant now) {
+        attempts.entrySet().removeIf(e -> e.getValue().expiresAt.isBefore(now));
+        if (attempts.size() > MAX_ENTRIES) {
+            var it = attempts.keySet().iterator();
+            while (attempts.size() > MAX_ENTRIES && it.hasNext()) {
+                it.next();
+                it.remove();
+            }
+        }
     }
 
     private Limit resolveLimit(String path, String method) {

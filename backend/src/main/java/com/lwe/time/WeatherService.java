@@ -130,7 +130,7 @@ public class WeatherService {
 
     public RegionWeather getWeather(UUID regionId) {
         return weatherRepo.findById(regionId)
-            .orElseThrow(() -> new RuntimeException("WEATHER_NOT_FOUND"));
+            .orElseThrow(() -> new WeatherException("WEATHER_NOT_FOUND", "No weather for region"));
     }
 
     public Map<UUID, RegionWeather> getWeatherForRegionIds(List<UUID> regionIds) {
@@ -158,5 +158,11 @@ public class WeatherService {
             case "coast" -> 18;
             default -> 15; // temperate, forest, plains
         };
+    }
+
+    public static class WeatherException extends RuntimeException {
+        private final String errorCode;
+        public WeatherException(String errorCode, String message) { super(message); this.errorCode = errorCode; }
+        public String getErrorCode() { return errorCode; }
     }
 }

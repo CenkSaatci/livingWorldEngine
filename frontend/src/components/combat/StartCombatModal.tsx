@@ -42,6 +42,7 @@ export function StartCombatModal({ worldId, onClose }: Props) {
         );
         setEntities(all);
       })
+      // Best-effort prefetch — leere Liste ist der gültige Fallback.
       .catch(() => {});
     apiClient
       .get(`/worlds/${worldId}/map`)
@@ -50,6 +51,7 @@ export function StartCombatModal({ worldId, onClose }: Props) {
         setMaps([map]);
         setSelectedMapId(map.id);
       })
+      // Best-effort prefetch — keine Karte ist der gültige Fallback.
       .catch(() => {});
   }, [worldId]);
 

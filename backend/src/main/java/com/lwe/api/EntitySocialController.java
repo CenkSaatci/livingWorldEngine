@@ -4,6 +4,9 @@ import com.lwe.api.dto.MemoryIdResponse;
 import com.lwe.core.domain.User;
 import com.lwe.core.service.MemoryService;
 import com.lwe.core.service.RelationshipService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -30,7 +33,7 @@ public class EntitySocialController {
 
     @PostMapping("/memories")
     public ResponseEntity<MemoryIdResponse> addMemory(@PathVariable UUID entityId,
-                                                       @RequestBody MemoryRequest req) {
+                                                       @Valid @RequestBody MemoryRequest req) {
         var mem = memoryService.addMemory(entityId, req.subjectId(), req.memoryType(),
             req.sentiment(), req.summary(), req.sourceEventId());
         return ResponseEntity.ok(new MemoryIdResponse(mem.getId()));
@@ -43,12 +46,12 @@ public class EntitySocialController {
 
     @PostMapping("/relationships")
     public ResponseEntity<MemoryIdResponse> setRelationship(@PathVariable UUID entityId,
-                                                             @RequestBody RelationRequest req) {
+                                                             @Valid @RequestBody RelationRequest req) {
         var rel = relationshipService.setRelationship(entityId, req.otherId(), req.relationship());
         return ResponseEntity.ok(new MemoryIdResponse(rel.getId()));
     }
 
-    public record MemoryRequest(UUID subjectId, String memoryType, int sentiment,
+    public record MemoryRequest(UUID subjectId, @NotBlank String memoryType, int sentiment,
                                 String summary, Long sourceEventId) {}
-    public record RelationRequest(UUID otherId, String relationship) {}
+    public record RelationRequest(@NotNull UUID otherId, @NotBlank String relationship) {}
 }

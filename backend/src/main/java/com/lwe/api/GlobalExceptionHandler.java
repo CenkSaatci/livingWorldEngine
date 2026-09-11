@@ -4,6 +4,7 @@ import com.lwe.api.dto.ApiError;
 import com.lwe.core.service.*;
 import com.lwe.core.util.WorldAccess;
 import com.lwe.rules.RuleSchemaValidator;
+import com.lwe.time.WeatherService;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -91,6 +92,7 @@ public class GlobalExceptionHandler {
             case WorldInviteService.InviteException e -> e.getErrorCode();
             case WorldAccess.WorldAccessException e -> e.getErrorCode();
             case LevelUpService.LevelException e -> e.getErrorCode();
+            case WeatherService.WeatherException e -> e.getErrorCode();
             case FormulaEvaluator.EvaluationException e -> "FORMULA_EXPRESSION_INVALID";
             case IllegalArgumentException e -> "INVALID_INPUT";
             case null -> null;
@@ -157,6 +159,7 @@ public class GlobalExceptionHandler {
                 case "ENTITY_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 default -> HttpStatus.BAD_REQUEST;
             };
+            case WeatherService.WeatherException e -> HttpStatus.NOT_FOUND;
             case FormulaEvaluator.EvaluationException e -> HttpStatus.BAD_REQUEST;
             case IllegalArgumentException e -> HttpStatus.BAD_REQUEST;
             case CampaignService.CampaignException e -> switch (e.getErrorCode()) {

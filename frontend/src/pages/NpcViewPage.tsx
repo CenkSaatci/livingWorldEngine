@@ -439,10 +439,10 @@ export default function NpcViewPage() {
             className="w-80 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-heading text-text-primary mb-4">Edit NPC</h3>
+            <h3 className="font-heading text-text-primary mb-4">{t('entity.editNpc')}</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Name</label>
+                <label className="block text-xs text-text-secondary mb-1">{t('entity.name')}</label>
                 <input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
@@ -450,7 +450,7 @@ export default function NpcViewPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Age</label>
+                <label className="block text-xs text-text-secondary mb-1">{t('entity.age')}</label>
                 <input
                   type="number"
                   min={0}
@@ -460,7 +460,7 @@ export default function NpcViewPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Experience Level</label>
+                <label className="block text-xs text-text-secondary mb-1">{t('entity.experience')}</label>
                 <input
                   value={editExperienceLevel}
                   onChange={(e) => setEditExperienceLevel(e.target.value)}
@@ -468,7 +468,7 @@ export default function NpcViewPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Social Standing</label>
+                <label className="block text-xs text-text-secondary mb-1">{t('entity.standing')}</label>
                 <input
                   value={editSocialStanding}
                   onChange={(e) => setEditSocialStanding(e.target.value)}
@@ -476,13 +476,13 @@ export default function NpcViewPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Faction</label>
+                <label className="block text-xs text-text-secondary mb-1">{t('entity.faction')}</label>
                 <select
                   value={editFactionId}
                   onChange={(e) => setEditFactionId(e.target.value)}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
                 >
-                  <option value="">— None —</option>
+                  <option value="">{t('entity.none')}</option>
                   {factions.map((f) => (
                     <option key={f.id} value={f.id}>
                       {f.name}
@@ -491,13 +491,13 @@ export default function NpcViewPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Location</label>
+                <label className="block text-xs text-text-secondary mb-1">{t('entity.location')}</label>
                 <select
                   value={editLocationId}
                   onChange={(e) => setEditLocationId(e.target.value)}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
                 >
-                  <option value="">— None —</option>
+                  <option value="">{t('entity.none')}</option>
                   {factionLocations.map((l) => (
                     <option key={l.id} value={l.id}>
                       {l.name}
@@ -507,7 +507,7 @@ export default function NpcViewPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Personality</label>
+                <label className="block text-xs text-text-secondary mb-1">{t('entity.personality')}</label>
                 <input
                   value={editPersonality}
                   onChange={(e) => setEditPersonality(e.target.value)}
@@ -517,7 +517,7 @@ export default function NpcViewPage() {
               </div>
               <div>
                 <label className="block text-xs text-text-secondary mb-1">
-                  Knowledge (comma-separated)
+                  {t('entity.knowledge')}
                 </label>
                 <input
                   value={editKnowledge}
@@ -528,7 +528,7 @@ export default function NpcViewPage() {
               </div>
               <div>
                 <label className="block text-xs text-text-secondary mb-1">
-                  Goals (comma-separated)
+                  {t('entity.goals')}
                 </label>
                 <input
                   value={editGoals}
@@ -538,7 +538,7 @@ export default function NpcViewPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Backstory</label>
+                <label className="block text-xs text-text-secondary mb-1">{t('entity.backstory')}</label>
                 <textarea
                   value={editBackstory}
                   onChange={(e) => setEditBackstory(e.target.value)}
@@ -551,14 +551,14 @@ export default function NpcViewPage() {
                   onClick={() => setEditing(false)}
                   className="flex-1 rounded border border-bg-elevated py-2 text-sm text-text-secondary hover:text-text-primary"
                 >
-                  Cancel
+                  {t('actions.cancel')}
                 </button>
                 <button
                   onClick={handleEdit}
                   disabled={saving || !editName.trim()}
                   className="flex-1 rounded bg-accent py-2 text-sm text-white hover:bg-accent/80 disabled:opacity-40"
                 >
-                  {saving ? 'Saving…' : 'Save'}
+                  {saving ? t('entity.saving') : t('actions.save')}
                 </button>
               </div>
             </div>
@@ -576,22 +576,22 @@ export default function NpcViewPage() {
             className="w-72 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-heading text-text-primary mb-2">Delete NPC?</h3>
+            <h3 className="font-heading text-text-primary mb-2">{t('entity.deleteTitle')}</h3>
             <p className="text-sm text-text-secondary mb-4">
-              This will permanently delete &quot;{npc.name}&quot; and all associated data.
+              {t('entity.deleteConfirm', { name: npc.name })}
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowDelete(false)}
                 className="flex-1 rounded border border-bg-elevated py-2 text-sm text-text-secondary hover:text-text-primary"
               >
-                Cancel
+                {t('actions.cancel')}
               </button>
               <button
                 onClick={handleDelete}
                 className="flex-1 rounded bg-danger py-2 text-sm text-white hover:bg-danger/80"
               >
-                Delete
+                {t('actions.delete')}
               </button>
             </div>
           </div>

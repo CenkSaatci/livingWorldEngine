@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -117,6 +118,28 @@ class RestServiceTest {
         service.shortRest(entity.getId(), userId);
 
         assertThat(entity.getHpCurrent()).isEqualTo(5); // unchanged
+    }
+
+    @Test
+    void restNeverReducesHpWhenCurrentExceedsMax() {
+        // current > max (z.B. nach max-Senkung): Rest darf HP nicht senken
+        for (var hp : List.of("50%", "5", "1d6")) {
+            var entity = entityWithHp(60, 50, 0, 2);
+            stubSystem("""
+                "dice_mechanics":{"probe":"1d20","combat":{
+                  "initiative":"1d20","damage":"1d8",
+                  "resting":{"short_rest":{"hp":"HP","ap":null,"recover":[]}}
+                }}
+                """.replace("HP", hp));
+            when(entityRepo.findById(entity.getId())).thenReturn(Optional.of(entity));
+            when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.shortRest(entity.getId(), userId);
+
+            assertThat(entity.getHpCurrent())
+                .as("hp expr %s bei current>max", hp)
+                .isEqualTo(60);
+        }
     }
 
     private GameEntity entityWithHp(int hp, int hpMax, int ap, int apMax) {

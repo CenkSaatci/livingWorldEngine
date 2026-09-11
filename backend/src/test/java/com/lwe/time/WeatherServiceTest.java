@@ -91,13 +91,14 @@ class WeatherServiceTest {
         when(weatherRepo.findById(regionId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getWeather(regionId))
-            .isInstanceOf(RuntimeException.class)
-            .hasMessageContaining("WEATHER_NOT_FOUND");
+            .isInstanceOf(WeatherService.WeatherException.class)
+            .satisfies(e -> assertThat(((WeatherService.WeatherException) e).getErrorCode())
+                .isEqualTo("WEATHER_NOT_FOUND"));
     }
 
     @Test
     void tickAllWeatherShouldRollForActiveWorlds() {
-        var world = new World("test", UUID.randomUUID(), null, "{}");
+        var world = new World("test", UUID.randomUUID(), "{}");
         world.setActive(true);
         var region = new Region(world.getId(), "test-region");
         region.setClimate("forest");

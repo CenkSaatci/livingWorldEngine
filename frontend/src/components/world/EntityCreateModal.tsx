@@ -219,7 +219,7 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
               <button
                 onClick={() => setShowFactionQuick(true)}
                 className="rounded bg-bg-elevated px-3 py-2 text-text-secondary hover:text-accent"
-                title="New faction"
+                title={t('entity.newFaction')}
               >
                 <Plus size={18} />
               </button>

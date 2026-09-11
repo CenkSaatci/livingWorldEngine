@@ -82,7 +82,8 @@
     "noParticipants": "No participants",
     "ap": "AP",
     "used": " (used)",
-    "remaining": "{{remaining}}/{{total}} remaining"
+    "remaining": "{{remaining}}/{{total}} remaining",
+    "apCost": "AP: {{cost}}"
   },
   "entityTimeline": {
     "today": "today",
@@ -114,7 +115,13 @@
     "backstory_placeholder": "e.g. orphaned by goblin raid…",
     "personality_placeholder": "e.g. arrogant, curious, fearful…",
     "knowledge_placeholder": "e.g. goblins, trade, history…",
-    "goals_placeholder": "e.g. survive, get rich…"
+    "goals_placeholder": "e.g. survive, get rich…",
+    "none": "— None —",
+    "newFaction": "New faction",
+    "editNpc": "Edit NPC",
+    "saving": "Saving…",
+    "deleteTitle": "Delete NPC?",
+    "deleteConfirm": "This will permanently delete \"{{name}}\" and all associated data."
   },
   "faction": {
     "create": "Create Faction",
@@ -167,7 +174,9 @@
   },
   "verify": {
     "banner": "Please verify your email address.",
-    "resend": "Resend verification"
+    "resend": "Resend verification",
+    "resent": "Verification email resent (check console for token)",
+    "resendFailed": "Resend failed. Please try again."
   },
   "welcome": {
     "title": "Welcome to Living World Engine!",

@@ -82,7 +82,8 @@
     "noParticipants": "Keine Teilnehmer",
     "ap": "AP",
     "used": " (verbraucht)",
-    "remaining": "{{remaining}}/{{total}} verbleibend"
+    "remaining": "{{remaining}}/{{total}} verbleibend",
+    "apCost": "AP: {{cost}}"
   },
   "entityTimeline": {
     "today": "heute",
@@ -114,7 +115,13 @@
     "backstory_placeholder": "z.B. Verlor Eltern bei Goblin-Überfall…",
     "personality_placeholder": "z.B. arrogant, neugierig, ängstlich…",
     "knowledge_placeholder": "z.B. Goblins, Handel, Geschichte…",
-    "goals_placeholder": "z.B. überleben, reich werden…"
+    "goals_placeholder": "z.B. überleben, reich werden…",
+    "none": "— Keine —",
+    "newFaction": "Neue Fraktion",
+    "editNpc": "NPC bearbeiten",
+    "saving": "Speichern…",
+    "deleteTitle": "NPC löschen?",
+    "deleteConfirm": "Dies löscht „{{name}}“ und alle zugehörigen Daten endgültig."
   },
   "faction": {
     "create": "Fraktion erstellen",
@@ -167,7 +174,9 @@
   },
   "verify": {
     "banner": "Bitte bestätige deine E-Mail-Adresse.",
-    "resend": "Verifizierung erneut senden"
+    "resend": "Verifizierung erneut senden",
+    "resent": "Verifizierungs-E-Mail erneut gesendet (Token in Konsole prüfen)",
+    "resendFailed": "Senden fehlgeschlagen. Bitte erneut versuchen."
   },
   "welcome": {
     "title": "Willkommen bei Living World Engine!",

@@ -34,6 +34,20 @@ def _safe(value: object, limit: int = _MAX_FIELD) -> str:
     return text if len(text) <= limit else text[:limit] + "…"
 
 
+def _apply_token_budget(text: str, max_tokens: int) -> str:
+    """Setzt context_max_tokens als Zeichen-Budget durch (Faustregel:
+    ~4 Zeichen pro Token). Kürzt am Ende + Hinweis, damit der LLM-Call
+    nie über das konfigurierte Budget läuft."""
+    if max_tokens <= 0:
+        return text
+    budget = max_tokens * 4
+    if len(text) <= budget:
+        return text
+    logger.warning("Prompt über Token-Budget (%d > %d Zeichen), wird gekürzt",
+                   len(text), budget)
+    return text[:budget] + "\n[… gekürzt: Token-Budget erreicht …]"
+
+
 def _validate_proposal(result: object) -> dict | None:
     """Pydantic-style Check per AI-AGENT.md §6.2: dict + erlaubte action + params-dict."""
     if not isinstance(result, dict):
@@ -136,13 +150,10 @@ class EventPoller:
         logger.info("Target event: %s → %s", event.get("event_type"), target)
         await self.handle_npc_event(world_id, target_npc, event)
 
-        # Wenn der NPC einer Fraktion angehört: Alle Faction-Mitglieder benachrichtigen
+        # Wenn der NPC einer Fraktion angehört: Der nächste Poll-Zyklus holt
+        # neue Events → NPCs reagieren (kein separater Fetch nötig).
         faction_id = _resolve_faction_id(target_npc)
         if faction_id:
-            faction_rels = await self.api.get_faction_relations(faction_id)
-            # Wir haben keine get_faction_members API, daher nutzen wir
-            # den vorhandenen Mechanismus: Events werden an die faction_id gehängt
-            # Der nächste Poll-Zyklus holt neue Events → NPCs reagieren
             logger.info("Faction %s may react to event involving member %s", faction_id, target)
 
     async def handle_event(self, world_id: str, event: dict) -> None:
@@ -234,6 +245,9 @@ class EventPoller:
                 "<<<END_TRIGGER_PAYLOAD>>>\n"
                 "Was tust du? Antworte mit JSON."
             )
+
+        # Token-Budget durchsetzen (config: context_max_tokens).
+        prompt = _apply_token_budget(prompt, settings.context_max_tokens)
 
         # 3. LLM-Aufruf (P4-T05, via P4-T01)
         system = (

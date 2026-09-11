@@ -79,6 +79,7 @@ export default function AdventureEditorPage() {
         setAdventures(r.data as { id: string; name: string }[]);
         setLoading(false);
       })
+      // Leere Liste ist der gültige Fallback — Ladezustand wird trotzdem beendet.
       .catch(() => setLoading(false));
   }, [worldId]);
 
@@ -214,6 +215,7 @@ export default function AdventureEditorPage() {
   const handleSave = async () => {
     if (!adventureId) return;
     setSaving(true);
+    let failed = false;
     // Update node texts
     for (const n of nodes) {
       try {
@@ -223,15 +225,18 @@ export default function AdventureEditorPage() {
           isEnd: n.data.isEnd,
         });
       } catch {
-        /* */
+        failed = true;
       }
     }
     // Mark first node as start
     if (nodes.length > 0) {
-      await apiClient.post(`/adventures/${adventureId}/start-node/${nodes[0].id}`).catch(() => {});
+      await apiClient.post(`/adventures/${adventureId}/start-node/${nodes[0].id}`).catch(() => {
+        failed = true;
+      });
     }
     setSaving(false);
-    toast.success('Adventure saved');
+    if (failed) toast.error('Some changes failed to save');
+    else toast.success('Adventure saved');
   };
 
   const onNodeClick = (_: React.MouseEvent, node: any) => {

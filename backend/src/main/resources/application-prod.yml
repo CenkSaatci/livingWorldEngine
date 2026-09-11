@@ -1,5 +1,8 @@
 # Produktionsprofil — aktiv via SPRING_PROFILES_ACTIVE=prod
 spring:
+  flyway:
+    # In prod niemals still auf eine fremde/lebende DB baselinen — lieber laut failen.
+    baseline-on-migrate: false
   jpa:
     show-sql: false
   devtools:

@@ -21,6 +21,7 @@ export function LiveAdventurePanel({ worldId }: Props) {
       .then((r) => {
         setAdventures(r.data as any[]);
       })
+      // Best-effort prefetch — leere Liste ist der gültige Fallback.
       .catch(() => {});
   }, [worldId]);
 
@@ -30,7 +31,7 @@ export function LiveAdventurePanel({ worldId }: Props) {
       setNodes(res.data as any[]);
       setSelectedAdv(advId);
     } catch {
-      /* */
+      toast.error('Failed to load adventure nodes');
     }
   };
 
