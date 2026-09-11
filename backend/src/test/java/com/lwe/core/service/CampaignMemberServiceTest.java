@@ -1,6 +1,7 @@
 package com.lwe.core.service;
 
 import com.lwe.core.domain.Campaign;
+import com.lwe.core.domain.World;
 import com.lwe.core.domain.CampaignMember;
 import com.lwe.core.domain.User;
 import com.lwe.core.repository.CampaignMemberRepository;
@@ -33,6 +34,7 @@ class CampaignMemberServiceTest {
     @Mock private WorldAccess worldAccess;
     @Mock private WorldMemberRepository worldMemberRepo;
     @Mock private WorldRepository worldRepo;
+    @Mock private QuotaService quotaService;
 
     private CampaignMemberService service;
     private final UUID userId = UUID.randomUUID();
@@ -44,7 +46,7 @@ class CampaignMemberServiceTest {
     @BeforeEach
     void setUp() {
         service = new CampaignMemberService(memberRepo, campaignRepo, userRepo, worldAccess,
-            worldMemberRepo, worldRepo);
+            worldMemberRepo, worldRepo, quotaService);
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
     }
 
@@ -310,6 +312,28 @@ class CampaignMemberServiceTest {
         service.removeMember(campaignId, userId, otherUserId);
 
         verify(worldMemberRepo).delete(wm);
+    }
+
+    @Test
+    void mirroringRespectsWorldMemberQuota() {
+        var campaign = campaign();
+        campaign.setForkedWorld(true);
+        var actorDm = new CampaignMember(campaignId, userId, "DM");
+        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
+        when(userRepo.findById(otherUserId)).thenReturn(Optional.of(mock(User.class)));
+        when(memberRepo.existsByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(false);
+        when(memberRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        var world = new World("Fork", userId, "{}");
+        setId(world, worldId);
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(worldMemberRepo.findByWorldIdAndUserId(worldId, otherUserId)).thenReturn(Optional.empty());
+        doThrow(new QuotaService.QuotaException("WORLD_MEMBER_LIMIT", "limit"))
+            .when(quotaService).checkCanAddMember(worldId, userId);
+
+        assertThatThrownBy(() -> service.addMember(campaignId, userId, otherUserId, "PLAYER"))
+            .isInstanceOf(QuotaService.QuotaException.class);
+        verify(worldMemberRepo, never()).save(any());
     }
 
     @Test

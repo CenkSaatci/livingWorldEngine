@@ -25,19 +25,22 @@ public class CampaignMemberService {
     private final WorldAccess worldAccess;
     private final WorldMemberRepository worldMemberRepo;
     private final WorldRepository worldRepo;
+    private final QuotaService quotaService;
 
     public CampaignMemberService(CampaignMemberRepository memberRepo,
                                  CampaignRepository campaignRepo,
                                  UserRepository userRepo,
                                  WorldAccess worldAccess,
                                  WorldMemberRepository worldMemberRepo,
-                                 WorldRepository worldRepo) {
+                                 WorldRepository worldRepo,
+                                 QuotaService quotaService) {
         this.memberRepo = memberRepo;
         this.campaignRepo = campaignRepo;
         this.userRepo = userRepo;
         this.worldAccess = worldAccess;
         this.worldMemberRepo = worldMemberRepo;
         this.worldRepo = worldRepo;
+        this.quotaService = quotaService;
     }
 
     /** P27-T03: Campaign-Rollen auf World-Members spiegeln, damit Spieler Weltzugriff haben. */
@@ -51,6 +54,10 @@ public class CampaignMemberService {
             existing.get().setRole(role);
             worldMemberRepo.save(existing.get());
         } else {
+            // Audit P27/T33-03: Welt-Mitglieder-Limit gilt auch fuer Kampagnen-Mirroring.
+            if (world != null) {
+                quotaService.checkCanAddMember(campaign.getWorldId(), world.getOwnerId());
+            }
             worldMemberRepo.save(new WorldMember(campaign.getWorldId(), userId, role));
         }
     }
