@@ -36,14 +36,14 @@ public class ItemController {
     @GetMapping("/api/v1/game-systems/{gameSystemId}/items")
     public ResponseEntity<List<ItemResponse>> listByGameSystem(@PathVariable UUID gameSystemId,
                                                                @AuthenticationPrincipal User user) {
-        var items = service.listByGameSystem(gameSystemId).stream().map(ItemResponse::from).toList();
+        var items = service.listByGameSystem(gameSystemId, user.getId(), isAdmin(user)).stream().map(ItemResponse::from).toList();
         return ResponseEntity.ok(items);
     }
 
     @GetMapping("/api/v1/items/{id}")
     public ResponseEntity<ItemResponse> getById(@PathVariable UUID id,
                                                  @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(ItemResponse.from(service.getById(id)));
+        return ResponseEntity.ok(ItemResponse.from(service.getById(id, user.getId(), isAdmin(user))));
     }
 
     @PutMapping("/api/v1/items/{id}")

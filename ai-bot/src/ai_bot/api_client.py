@@ -173,19 +173,23 @@ class BackendClient:
 
     async def submit_intent(
         self, world_id: str, npc_id: str, intent_type: str,
-        params: dict, reasoning: str,
+        params: dict, reasoning: str, campaign_id: str | None = None,
     ) -> dict | None:
+        # Wire-Format ist camelCase (Audit P27): snake_case wurde vom Backend mit 400 abgelehnt.
+        body = {
+            "worldId": world_id,
+            "npcId": npc_id,
+            "intentType": intent_type,
+            "paramsJson": params,
+            "reasoning": reasoning,
+        }
+        if campaign_id:
+            body["campaignId"] = campaign_id
         async with httpx.AsyncClient() as client:
             try:
                 resp = await client.post(
                     f"{self.base}/npc-intents",
-                    json={
-                        "world_id": world_id,
-                        "npc_id": npc_id,
-                        "intent_type": intent_type,
-                        "params_json": params,
-                        "reasoning": reasoning,
-                    },
+                    json=body,
                     headers=self.headers,
                     timeout=10,
                 )

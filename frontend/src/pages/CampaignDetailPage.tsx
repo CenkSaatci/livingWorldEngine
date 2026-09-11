@@ -169,17 +169,7 @@ export default function CampaignDetailPage() {
 
   const handleBotMode = async (mode: string) => {
     try {
-      let settings: Record<string, unknown> = {};
-      try {
-        settings = JSON.parse(campaign?.settingsJson || '{}');
-      } catch {
-        settings = {};
-      }
-      const bot = (settings.bot as Record<string, unknown>) ?? {};
-      settings.bot = { ...bot, mode };
-      const res = await apiClient.patch(`/campaigns/${campaignId}`, {
-        settingsJson: JSON.stringify(settings),
-      });
+      const res = await apiClient.patch(`/campaigns/${campaignId}`, { botMode: mode || null });
       setCampaign(res.data);
       addToast(t('campaign.botModeSaved'), 'success');
     } catch {
@@ -190,6 +180,7 @@ export default function CampaignDetailPage() {
   const handlePullSystem = async () => {
     try {
       const res = await apiClient.post(`/campaigns/${campaignId}/pull-system`);
+      setCampaign(res.data);
       useCampaignStore.getState().setActiveCampaign(res.data.id, {
         ...res.data,
         gameSystemVersion: res.data.gameSystemVersion ?? null,
@@ -281,6 +272,7 @@ export default function CampaignDetailPage() {
           </div>
         </div>
 
+        {currentIsDm && (
         <section className="mb-6 rounded-lg border border-bg-elevated bg-bg-surface p-4">
           <p className="text-xs text-text-secondary">{t('campaign.botMode')}</p>
           <select
@@ -295,6 +287,7 @@ export default function CampaignDetailPage() {
           </select>
           <p className="mt-1 text-[10px] text-text-secondary">{t('campaign.botModeHint')}</p>
         </section>
+        )}
 
         <section>
           <h2 className="mb-3 flex items-center gap-2 font-heading text-text-primary">

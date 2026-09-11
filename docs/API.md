@@ -228,7 +228,8 @@ Nur Kampagnen aus Welten, auf die der User Zugriff hat (Owner/Member).
 
 ### `GET /api/v1/campaigns/{id}` (auth, Welt-Zugriff)
 
-### `PATCH /api/v1/campaigns/{id}` (auth, Welt-Zugriff)
+### `PATCH /api/v1/campaigns/{id}` (auth, nur DM/Welt-Owner)
+**Body:** `{ "name"?, "stateJson"?, "botMode"?: "autonom"|"suggest"|"off" }` — `botMode` wird serverseitig in `settingsJson.bot.mode` gemergt (P27-T04). **Fehlercode:** `INVALID_AI_MODE` (400)
 Body (optional): `name`, `stateJson`
 
 ### `DELETE /api/v1/campaigns/{id}` (auth, Welt-Zugriff)
@@ -573,7 +574,8 @@ Wechselt Zeit-Modus. Akzeptierte Werte: `"automatic"`, `"manual"`, `"hybrid"`. P
 
 ## 11. NPC Intents (`/api/v1/npc-intents`)
 
-### `POST /api/v1/npc-intents` (auth, meist vom Bot via Service-Token)
+### `POST /api/v1/npc-intents`
+**Body:** `{ "worldId", "campaignId"?, "npcId", "intentType", "paramsJson"?, "reasoning"? }` (camelCase!). NPC/Kampagne müssen zur Welt gehören (`INTENT_WORLD_MISMATCH` 422); Modus: Kampagne (`settingsJson.bot.mode`) vor Welt-`ai_mode` (P27-T04). (auth, meist vom Bot via Service-Token)
 **Request:**
 ```json
 {

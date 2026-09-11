@@ -51,20 +51,23 @@ public class ItemService {
         return itemRepo.save(item);
     }
 
-    public List<GameItem> listByGameSystem(UUID gameSystemId) {
+    public List<GameItem> listByGameSystem(UUID gameSystemId, UUID userId, boolean isAdmin) {
         requireSystem(gameSystemId);
+        gameSystemService.requireReadableForSystem(gameSystemId, userId, isAdmin);
         return itemRepo.findByGameSystemId(gameSystemId);
     }
 
-    public GameItem getById(UUID id) {
-        return itemRepo.findById(id)
+    public GameItem getById(UUID id, UUID userId, boolean isAdmin) {
+        var item = itemRepo.findById(id)
             .orElseThrow(() -> new ItemException("ITEM_NOT_FOUND", "Item not found"));
+        gameSystemService.requireReadableForSystem(item.getGameSystemId(), userId, isAdmin);
+        return item;
     }
 
     @Transactional
     public GameItem update(UUID id, UUID userId, boolean isAdmin, String name, String type,
                            BigDecimal weight, Integer value, String bonusesJson, String metadataJson) {
-        var item = getById(id);
+        var item = getById(id, userId, isAdmin);
         gameSystemService.requireOwnerForSystem(item.getGameSystemId(), userId, isAdmin);
         if (name != null) item.setName(name);
         if (bonusesJson != null) item.setBonusesJson(bonusesJson);
@@ -74,7 +77,7 @@ public class ItemService {
 
     @Transactional
     public void delete(UUID id, UUID userId, boolean isAdmin) {
-        var item = getById(id);
+        var item = getById(id, userId, isAdmin);
         gameSystemService.requireOwnerForSystem(item.getGameSystemId(), userId, isAdmin);
         // BUG-9: equipped item löschen würde Inventare brick-en
         // (GET → 404 INVENTORY_ITEM_NOT_FOUND). Erst überall ent-equippen/entfernen.

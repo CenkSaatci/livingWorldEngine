@@ -2,6 +2,7 @@ package com.lwe.core.service;
 
 import com.lwe.core.domain.NpcIntent;
 import com.lwe.core.repository.CampaignRepository;
+import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.repository.NpcIntentRepository;
 import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.util.WorldAccess;
@@ -24,11 +25,12 @@ public class NpcIntentService {
     private final IntentExecutor executor;
     private final WorldAccess worldAccess;
     private final CampaignRepository campaignRepo;
+    private final GameEntityRepository entityRepo;
 
     public NpcIntentService(NpcIntentRepository repo, IntentValidator validator,
                             WorldEventService eventService, WorldRepository worldRepo,
                             IntentExecutor executor, WorldAccess worldAccess,
-                            CampaignRepository campaignRepo) {
+                            CampaignRepository campaignRepo, GameEntityRepository entityRepo) {
         this.repo = repo;
         this.validator = validator;
         this.eventService = eventService;
@@ -36,11 +38,26 @@ public class NpcIntentService {
         this.executor = executor;
         this.worldAccess = worldAccess;
         this.campaignRepo = campaignRepo;
+        this.entityRepo = entityRepo;
     }
 
     @Transactional
-    public NpcIntent create(UUID worldId, UUID campaignId, UUID npcId, String intentType,
-                            String paramsJson, String reasoning) {
+    public NpcIntent create(UUID userId, boolean isBot, UUID worldId, UUID campaignId,
+                            UUID npcId, String intentType, String paramsJson, String reasoning) {
+        // Audit P27: Cross-World-/Cross-Campaign-Spoofing verhindern.
+        if (!isBot) worldAccess.requireAccess(worldId, userId);
+        var npc = entityRepo.findById(npcId)
+            .orElseThrow(() -> new IntentException("NPC_NOT_FOUND", "NPC not found"));
+        if (!npc.getWorldId().equals(worldId)) {
+            throw new IntentException("INTENT_WORLD_MISMATCH", "NPC does not belong to world");
+        }
+        if (campaignId != null) {
+            var campaign = campaignRepo.findById(campaignId)
+                .orElseThrow(() -> new IntentException("CAMPAIGN_NOT_FOUND", "Campaign not found"));
+            if (!campaign.getWorldId().equals(worldId)) {
+                throw new IntentException("INTENT_WORLD_MISMATCH", "Campaign does not belong to world");
+            }
+        }
         var intent = new NpcIntent(worldId, npcId, intentType, paramsJson, reasoning);
         intent.setCampaignId(campaignId);
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import httpx
 import pytest
 import respx
@@ -166,14 +167,20 @@ async def test_get_memories_error(client: BackendClient) -> None:
 
 @respx.mock
 async def test_submit_intent_ok(client: BackendClient) -> None:
-    respx.post(f"{BASE}/npc-intents").mock(
+    route = respx.post(f"{BASE}/npc-intents").mock(
         return_value=httpx.Response(201, json={"id": "int1"})
     )
     result = await client.submit_intent(
         world_id="w1", npc_id="e1", intent_type="MOVE",
-        params={"target_id": "l2"}, reasoning="zu gefährlich",
+        params={"target_id": "l2"}, reasoning="zu gefährlich", campaign_id="c1",
     )
     assert result == {"id": "int1"}
+    sent = json.loads(route.calls.last.request.content)
+    assert sent == {
+        "worldId": "w1", "npcId": "e1", "intentType": "MOVE",
+        "paramsJson": {"target_id": "l2"}, "reasoning": "zu gefährlich",
+        "campaignId": "c1",
+    }
 
 
 @respx.mock

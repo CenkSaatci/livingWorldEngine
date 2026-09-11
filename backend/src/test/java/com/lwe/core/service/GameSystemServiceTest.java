@@ -140,6 +140,34 @@ class GameSystemServiceTest {
     }
 
     @Test
+    void ownerlessCreateIsPublic() {
+        // Audit P27: Seeds/Legacy ohne Owner muessen global sichtbar sein.
+        when(repo.existsByName("D20Lite")).thenReturn(false);
+        doNothing().when(validator).validateOrThrow(validRules, schema);
+        when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var seeded = service.create("D20Lite", 1, validRules, schema);
+
+        assertThat(seeded.getOwnerId()).isNull();
+        assertThat(seeded.getVisibility()).isEqualTo("PUBLIC");
+    }
+
+    @Test
+    void rulesChangeAutoIncrementsVersion() {
+        var gs = new GameSystem("Sys", 2, validRules, schema, UUID.randomUUID());
+        setId(gs, UUID.randomUUID());
+        when(repo.findById(any())).thenReturn(Optional.of(gs));
+        when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        doNothing().when(validator).validateOrThrow(any(), any());
+
+        var updated = service.update(gs.getId(), null, null,
+            "{\"version\":1,\"attributes\":[{\"name\":\"x\",\"type\":\"INT\",\"default\":1}],\"dice_mechanics\":{\"probe\":\"1d20\"}}",
+            gs.getOwnerId(), false);
+
+        assertThat(updated.getVersion()).isEqualTo(3);
+    }
+
+    @Test
     void getReadableRejectsForeignPrivateSystem() {
         var owner = UUID.randomUUID();
         var stranger = UUID.randomUUID();

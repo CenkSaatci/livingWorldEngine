@@ -66,6 +66,24 @@ class RulesLoaderTest {
     }
 
     @Test
+    void loadSystemByCampaignReturnsSnapshotView() {
+        var campaign = new Campaign(UUID.randomUUID(), gameSystemId, "Runde 1");
+        setId(campaign, campaignId);
+        campaign.setRulesJsonSnapshot("{\"marker\":\"pin\"}");
+        campaign.setGameSystemVersion(2);
+        var live = new GameSystem("DSA", 5, "{\"marker\":\"live\"}", "{}");
+        setId(live, gameSystemId);
+        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        when(systemRepo.findById(gameSystemId)).thenReturn(Optional.of(live));
+
+        var gs = loader.loadSystemByCampaign(campaignId);
+
+        assertThat(gs.getRulesJson()).contains("pin");
+        assertThat(gs.getVersion()).isEqualTo(2);
+        assertThat(gs.getName()).isEqualTo("DSA");
+    }
+
+    @Test
     void loadRulesByCampaignReturnsEmptyForUnknownCampaign() {
         when(campaignRepo.findById(campaignId)).thenReturn(Optional.empty());
 

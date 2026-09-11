@@ -177,6 +177,11 @@ public class GlobalExceptionHandler {
             case WeatherService.WeatherException e -> HttpStatus.NOT_FOUND;
             case FormulaEvaluator.EvaluationException e -> HttpStatus.BAD_REQUEST;
             case IllegalArgumentException e -> HttpStatus.BAD_REQUEST;
+            case NpcIntentService.IntentException e -> switch (e.getErrorCode()) {
+                case "INTENT_NOT_FOUND", "NPC_NOT_FOUND", "CAMPAIGN_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                case "INTENT_WORLD_MISMATCH" -> HttpStatus.UNPROCESSABLE_ENTITY;
+                default -> HttpStatus.BAD_REQUEST;
+            };
             case CampaignService.CampaignException e -> switch (e.getErrorCode()) {
                 case "INVALID_AI_MODE" -> HttpStatus.BAD_REQUEST;
                 case "CAMPAIGN_NOT_FOUND", "WORLD_NOT_FOUND", "GAME_SYSTEM_NOT_FOUND" -> HttpStatus.NOT_FOUND;

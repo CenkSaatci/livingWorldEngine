@@ -46,7 +46,7 @@ export function DmQueuePanel({ worldId }: Props) {
 
   const handleAction = async (id: string, action: 'approve' | 'reject') => {
     try {
-      await apiClient.post(`/npc-intents/${id}/${action}`);
+      await apiClient.post(`/npc-intents/${id}/${action}`, action === 'reject' ? { reason: '' } : undefined);
       setIntents((prev) => prev.filter((i) => i.id !== id));
     } catch {
       /* ignore */

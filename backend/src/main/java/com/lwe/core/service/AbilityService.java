@@ -42,14 +42,17 @@ public class AbilityService {
         return repo.save(ability);
     }
 
-    public List<Ability> listByGameSystem(UUID gameSystemId, UUID userId) {
+    public List<Ability> listByGameSystem(UUID gameSystemId, UUID userId, boolean isAdmin) {
         requireSystem(gameSystemId);
+        gameSystemService.requireReadableForSystem(gameSystemId, userId, isAdmin);
         return repo.findByGameSystemIdOrderByNameAsc(gameSystemId);
     }
 
-    public Ability getById(UUID id, UUID userId) {
-        return repo.findById(id)
+    public Ability getById(UUID id, UUID userId, boolean isAdmin) {
+        var ability = repo.findById(id)
             .orElseThrow(() -> new AbilityException("ABILITY_NOT_FOUND", "Ability not found"));
+        gameSystemService.requireReadableForSystem(ability.getGameSystemId(), userId, isAdmin);
+        return ability;
     }
 
     @Transactional

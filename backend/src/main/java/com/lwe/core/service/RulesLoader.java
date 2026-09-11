@@ -36,12 +36,24 @@ public class RulesLoader {
         this.objectMapper = objectMapper;
     }
 
-    /** Liefert das GameSystem einer Kampagne oder null. */
+    /** Liefert das GameSystem einer Kampagne oder null.
+     *  P27-T05: bei gepinnter Kampagne eine Snapshot-Sicht (rulesJson/Version aus dem Pin),
+     *  damit auch Kampf/Rast/Level-Up die eingefrorene System-Version nutzen. */
     public GameSystem loadSystemByCampaign(UUID campaignId) {
         if (campaignId == null) return null;
         var campaign = campaignRepo.findById(campaignId).orElse(null);
         if (campaign == null) return null;
-        return systemRepo.findById(campaign.getGameSystemId()).orElse(null);
+        var system = systemRepo.findById(campaign.getGameSystemId()).orElse(null);
+        if (system == null) return null;
+        var snapshot = campaign.getRulesJsonSnapshot();
+        if (snapshot != null && !snapshot.isBlank()) {
+            var view = new GameSystem(system.getName(),
+                campaign.getGameSystemVersion() != null ? campaign.getGameSystemVersion() : system.getVersion(),
+                snapshot, system.getSchemaJson());
+            view.setActive(system.isActive());
+            return view;
+        }
+        return system;
     }
 
     /** true, wenn die Kampagne existiert und zur angegebenen Welt gehört (Audit P28). */

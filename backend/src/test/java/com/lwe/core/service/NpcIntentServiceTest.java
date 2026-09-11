@@ -30,6 +30,7 @@ class NpcIntentServiceTest {
     @Mock private IntentExecutor executor;
     @Mock private com.lwe.core.util.WorldAccess worldAccess;
     @Mock private com.lwe.core.repository.CampaignRepository campaignRepo;
+    @Mock private com.lwe.core.repository.GameEntityRepository entityRepo;
 
     @InjectMocks private NpcIntentService npcIntentService;
     private final UUID userId = UUID.randomUUID();
@@ -39,6 +40,7 @@ class NpcIntentServiceTest {
 
     @Test
     void shouldApproveAndExecuteWhenAutonom() {
+        stubNpc();
         when(validator.validate(any())).thenReturn(new IntentValidator.ValidationResult(true, null));
         var world = new World("W", UUID.randomUUID(), "{\"ai_mode\":\"autonom\"}");
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
@@ -49,7 +51,7 @@ class NpcIntentServiceTest {
         });
         when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
-        var result = npcIntentService.create(worldId, null, npcId, "MOVE", "{\"x\":5,\"y\":5}", "moving north");
+        var result = npcIntentService.create(userId, false, worldId, null, npcId, "MOVE", "{\"x\":5,\"y\":5}", "moving north");
 
         assertThat(result.getStatus()).isEqualTo("approved");
         verify(repo).save(any());
@@ -59,6 +61,7 @@ class NpcIntentServiceTest {
 
     @Test
     void shouldSetPendingWhenSuggest() {
+        stubNpc();
         when(validator.validate(any())).thenReturn(new IntentValidator.ValidationResult(true, null));
         var world = new World("W", UUID.randomUUID(), "{\"ai_mode\":\"suggest\"}");
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
@@ -69,7 +72,7 @@ class NpcIntentServiceTest {
         });
         when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
-        var result = npcIntentService.create(worldId, null, npcId, "SPEAK", "{}", "hello");
+        var result = npcIntentService.create(userId, false, worldId, null, npcId, "SPEAK", "{}", "hello");
 
         assertThat(result.getStatus()).isEqualTo("pending");
         verify(executor, never()).execute(any());
@@ -77,6 +80,7 @@ class NpcIntentServiceTest {
 
     @Test
     void shouldRejectWhenAiModeOff() {
+        stubNpc();
         when(validator.validate(any())).thenReturn(new IntentValidator.ValidationResult(true, null));
         var world = new World("W", UUID.randomUUID(), "{\"ai_mode\":\"off\"}");
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
@@ -86,7 +90,7 @@ class NpcIntentServiceTest {
             return intent;
         });
 
-        var result = npcIntentService.create(worldId, null, npcId, "MOVE", "{}", "nope");
+        var result = npcIntentService.create(userId, false, worldId, null, npcId, "MOVE", "{}", "nope");
 
         assertThat(result.getStatus()).isEqualTo("rejected");
         assertThat(result.getRejectionReason()).isEqualTo("AI mode is off");
@@ -96,6 +100,7 @@ class NpcIntentServiceTest {
 
     @Test
     void shouldRejectWhenValidationFails() {
+        stubNpc();
         when(validator.validate(any())).thenReturn(new IntentValidator.ValidationResult(false, "NPC not found"));
         when(repo.save(any())).thenAnswer(inv -> {
             var intent = inv.<NpcIntent>getArgument(0);
@@ -104,7 +109,7 @@ class NpcIntentServiceTest {
         });
         when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
-        var result = npcIntentService.create(worldId, null, npcId, "ATTACK", "{}", "attack");
+        var result = npcIntentService.create(userId, false, worldId, null, npcId, "ATTACK", "{}", "attack");
 
         assertThat(result.getStatus()).isEqualTo("rejected");
         assertThat(result.getRejectionReason()).isEqualTo("NPC not found");
@@ -158,6 +163,18 @@ class NpcIntentServiceTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getStatus()).isEqualTo("pending");
+    }
+
+    private void stubNpc() {
+        var npc = new com.lwe.core.domain.GameEntity(worldId, "NPC", "Wirt");
+        try {
+            var f = com.lwe.core.domain.GameEntity.class.getDeclaredField("id");
+            f.setAccessible(true);
+            f.set(npc, npcId);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        when(entityRepo.findById(npcId)).thenReturn(java.util.Optional.of(npc));
     }
 
     private NpcIntent intentWithId(UUID worldId, UUID npcId, String type, String status) {

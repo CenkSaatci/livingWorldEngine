@@ -36,7 +36,7 @@ public class AbilityController {
     @GetMapping("/api/v1/game-systems/{gameSystemId}/abilities")
     public ResponseEntity<List<AbilityResponse>> listByGameSystem(@PathVariable UUID gameSystemId,
                                                                    @AuthenticationPrincipal User user) {
-        var abilities = service.listByGameSystem(gameSystemId, user.getId())
+        var abilities = service.listByGameSystem(gameSystemId, user.getId(), isAdmin(user))
             .stream().map(AbilityResponse::from).toList();
         return ResponseEntity.ok(abilities);
     }
@@ -44,7 +44,7 @@ public class AbilityController {
     @GetMapping("/api/v1/abilities/{id}")
     public ResponseEntity<AbilityResponse> getById(@PathVariable UUID id,
                                                     @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(AbilityResponse.from(service.getById(id, user.getId())));
+        return ResponseEntity.ok(AbilityResponse.from(service.getById(id, user.getId(), isAdmin(user))));
     }
 
     @PutMapping("/api/v1/abilities/{id}")

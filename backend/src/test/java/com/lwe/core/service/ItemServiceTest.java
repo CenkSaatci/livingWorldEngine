@@ -100,7 +100,7 @@ class ItemServiceTest {
         when(systemRepo.findById(gameSystemId)).thenReturn(Optional.of(new GameSystem("DSA", 1, "{}", "{}")));
         when(itemRepo.findByGameSystemId(gameSystemId)).thenReturn(java.util.List.of());
 
-        var items = service.listByGameSystem(gameSystemId);
+        var items = service.listByGameSystem(gameSystemId, userId, false);
 
         assertThat(items).isEmpty();
         verify(itemRepo).findByGameSystemId(gameSystemId);

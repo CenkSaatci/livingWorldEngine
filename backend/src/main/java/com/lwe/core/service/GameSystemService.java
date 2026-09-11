@@ -70,6 +70,8 @@ public class GameSystemService {
             ? RuleSchemaValidator.DEFAULT_SCHEMA : schemaJson;
         validator.validateOrThrow(rulesJson, schema);
         var gs = new GameSystem(name, version, rulesJson, schema, ownerId);
+        // Seeds/Legacy (kein Owner) bleiben global sichtbar (Audit P27).
+        if (ownerId == null) gs.setVisibility("PUBLIC");
         return repo.save(gs);
     }
 
@@ -100,6 +102,15 @@ public class GameSystemService {
                 "You may not read this game system");
         }
         return gs;
+    }
+
+    /** Lesen fremder System-Inhalte (Abilities/Items) unterbinden. */
+    public void requireReadableForSystem(UUID systemId, UUID userId, boolean isAdmin) {
+        var gs = getById(systemId);
+        if (!canRead(gs, userId, isAdmin)) {
+            throw new GameSystemException("GAME_SYSTEM_ACCESS_DENIED",
+                "You may not read this game system");
+        }
     }
 
     /** Fuer Kampagnen nutzbar: eigene, PUBLIC oder Legacy. */
@@ -161,9 +172,13 @@ public class GameSystemService {
         requireOwner(gs, userId, isAdmin);
         if (name != null) gs.setName(name);
         if (version != null) gs.setVersion(version);
-        if (rulesJson != null) {
+        if (rulesJson != null && !rulesJson.equals(gs.getRulesJson())) {
             validator.validateOrThrow(rulesJson, gs.getSchemaJson());
             gs.setRulesJson(rulesJson);
+            // Audit P27: Regel-Aenderung erhoeht die Version automatisch (monoton).
+            gs.setVersion(gs.getVersion() + 1);
+        } else if (version != null && version > gs.getVersion()) {
+            gs.setVersion(version);
         }
         return repo.save(gs);
     }

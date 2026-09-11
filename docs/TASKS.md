@@ -5,9 +5,10 @@
 ## Aktueller Projektstand (2026-09-11)
 
 - **P28 Engine-Bausteine** ✅ (T01–T06) · **P29 Spielgefühl + Pakete** ✅ (T01–T06) · **P23 Schadenstypen** ✅ (T01–T04, T05 optional) · **P30 Charakter-Wizard** ✅ (T01–T04) · **P31 E2E-Ausbau** ✅ (T01–T03)
-- **Tests:** Backend 362 (`mvn -B test`) · Frontend 168 (`npx vitest run`) · E2E 7 (`npm run test:e2e`) · `tsc`/Build grün
+- **Tests:** Backend 395 (`mvn -B test`) · Frontend 168 (`npx vitest run`) · E2E 7 (`npm run test:e2e`) · ai-bot 46 · `tsc`/Build grün
 - **Audits:** P28, P23/P29, P30 und ein finales Gesamt-Audit — alle HIGH/MEDIUM-Findings gefixt, Rest bewusst zurückgestellt (siehe Notizen unten)
-- **Offen (bewusst):** P27 Shared Universes (ADR-011 akzeptiert, Tasks 📋) · F8-Ticket: globale Game-Systeme ohne Owner-Check · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
+- **P27-Status:** T01 ✅ Teilstand (Shares/Welt-PUBLIC offen) · T02 ✅ · T03 ✅ Teilstand (Quest/Adventure-Fork offen) · T04 🔄 Teilstand (Bot-Runtime-Polling) · T05 ✅ · T06 🔄 Teilstand (Bulk/WS/E2E)
+- **Offen (bewusst):** P14-T02–T04 · P22 Konzept · F8 erledigt (V098) · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
 - **Nächste sinnvolle Schritte:** P27 oder F8-Berechtigungen, danach weitere Content-Pakete/Playwright-Ausbau
 
 ## Verifikation Alt-Phasen (2026-09-12)
@@ -16,7 +17,7 @@
 
 - **Vollständig umgesetzt:** P1 (T02 cancelled), P2, P8, P9, P12, P13, P15, P16, P17 (+C01–C05), P18 (T01–T04), P19, P20, P21, P24 (T04→P25-T06), P25, P26
 - **Umgesetzt mit Teilständen:** P3 (T09 Fog-Persistenz, T11 DEMO.md, T12 Key-Test), P4 (T03 NPCContext-Modell, T05 Ollama-Pause, T08 Demo-Doku 📋), P5 (T02 Redis aktiv, T04 Admin-Audit-Log, T07 i18n-Gate, T08 M5-Nachweis), P6 (T04 Schedule, T05 Kauf/Verkauf, T06 Orts-Kontext, T07 Bot-Quests/„pending"), P7 (T01 ObjectMapper-Rest, T02 IntentExecutor-Transaktion), P10 (JSON-Export), P11 (T07 Map.of-Rest), Cleanup (C06 bewusst abweichend)
-- **Weiterhin offen:** P14-T02–T04 (Editor/Play/Override-E2E + Inject-Choice), P22 (nur Konzept), P27 (T01/T03/T04/T05 offen; T02/T06 Teilstände)
+- **Weiterhin offen:** P14-T02–T04 (Editor/Play/Override-E2E + Inject-Choice), P22 (nur Konzept); P27 umgesetzt (Teilstände s. o.)
 - **Tracker-Bug behoben:** doppelte `Status:`-Zeilen in P1–P4 entfernt (Karteileichen aus `818211e4`)
 - **Offener Code-Bug (notiert, nicht P27):** `QuestLog` filtert Status „pending", den der DB-CHECK (`V030`) nicht zulässt
 

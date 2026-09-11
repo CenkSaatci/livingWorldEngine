@@ -90,28 +90,32 @@ public class CampaignService {
     }
 
     @Transactional
-    public Campaign update(UUID id, UUID userId, String name, String stateJson, String settingsJson) {
+    public Campaign update(UUID id, UUID userId, String name, String stateJson, String botMode) {
         var campaign = getById(id, userId);
         requireCampaignDmOrWorldOwner(campaign, userId);
         if (name != null) campaign.setName(name);
         if (stateJson != null) campaign.setStateJson(stateJson);
-        if (settingsJson != null) {
-            validateBotMode(settingsJson); // P27-T04
-            campaign.setSettingsJson(settingsJson);
-        }
+        if (botMode != null) mergeBotMode(campaign, botMode);
         return repo.save(campaign);
     }
 
-    private void validateBotMode(String settingsJson) {
+    /** P27-T04: serverseitiger Merge — verhindert Last-Write-Wins auf dem Settings-Blob. */
+    private void mergeBotMode(Campaign campaign, String botMode) {
+        if (!java.util.Set.of("autonom", "suggest", "off").contains(botMode)) {
+            throw new CampaignException("INVALID_AI_MODE",
+                "bot.mode must be autonom, suggest or off");
+        }
         try {
-            var mode = new com.fasterxml.jackson.databind.ObjectMapper().readTree(settingsJson)
-                .path("bot").path("mode");
-            if (mode.isMissingNode() || mode.isNull()) return;
-            if (!mode.isTextual()
-                || !java.util.Set.of("autonom", "suggest", "off").contains(mode.asText())) {
-                throw new CampaignException("INVALID_AI_MODE",
-                    "bot.mode must be autonom, suggest or off");
-            }
+            var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            var settings = campaign.getSettingsJson() == null || campaign.getSettingsJson().isBlank()
+                ? mapper.createObjectNode()
+                : (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(campaign.getSettingsJson());
+            var bot = settings.path("bot").isObject()
+                ? (com.fasterxml.jackson.databind.node.ObjectNode) settings.path("bot")
+                : mapper.createObjectNode();
+            bot.put("mode", botMode);
+            settings.set("bot", bot);
+            campaign.setSettingsJson(mapper.writeValueAsString(settings));
         } catch (CampaignException e) {
             throw e;
         } catch (Exception e) {
@@ -139,6 +143,7 @@ public class CampaignService {
         var campaign = getById(id, userId);
         requireCampaignDmOrWorldOwner(campaign, userId);
         var system = systemRepo.findById(campaign.getGameSystemId())
+            .filter(GameSystem::isActive)
             .orElseThrow(() -> new CampaignException("GAME_SYSTEM_NOT_FOUND", "Game system not found"));
         campaign.setRulesJsonSnapshot(system.getRulesJson());
         campaign.setGameSystemVersion(system.getVersion());

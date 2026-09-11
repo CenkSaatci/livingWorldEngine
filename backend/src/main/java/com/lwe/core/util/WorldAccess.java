@@ -34,6 +34,9 @@ public class WorldAccess {
         var world = worldRepo.findById(worldId)
             .orElseThrow(() -> new WorldAccessException("WORLD_NOT_FOUND", "World not found"));
         if (world.getOwnerId().equals(userId)) return;
+        if (!world.isActive()) {
+            throw new WorldAccessException("WORLD_ACCESS_DENIED", "World is deleted");
+        }
         var member = memberRepo.findByWorldIdAndUserId(worldId, userId);
         if (member.isEmpty() || !"DM".equals(member.get().getRole()))
             throw new WorldAccessException("WORLD_ACCESS_DENIED", "DM access required");

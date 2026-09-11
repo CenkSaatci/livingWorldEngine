@@ -64,7 +64,7 @@ describe('DmQueuePanel', () => {
     const approveButtons = screen.getAllByTitle('queue.approve');
     await userEvent.click(approveButtons[0]);
 
-    expect(apiClient.post).toHaveBeenCalledWith('/npc-intents/i1/approve');
+    expect(apiClient.post).toHaveBeenCalledWith('/npc-intents/i1/approve', undefined);
   });
 
   it('calls reject endpoint and removes item', async () => {
@@ -79,6 +79,6 @@ describe('DmQueuePanel', () => {
     const rejectButtons = screen.getAllByTitle('queue.reject');
     await userEvent.click(rejectButtons[0]);
 
-    expect(apiClient.post).toHaveBeenCalledWith('/npc-intents/i1/reject');
+    expect(apiClient.post).toHaveBeenCalledWith('/npc-intents/i1/reject', { reason: '' });
   });
 });

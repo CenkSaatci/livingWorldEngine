@@ -185,6 +185,13 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 
 | Code | HTTP | Bedeutung |
 |---|---|---|
+| `INTENT_NOT_FOUND` | 404 | Intent existiert nicht |
+| `NPC_NOT_FOUND` | 404 | NPC existiert nicht |
+| `INTENT_WORLD_MISMATCH` | 422 | NPC/Kampagne gehören nicht zur angegebenen Welt |
+| `CAMPAIGN_NOT_FOUND` | 404 | Kampagne existiert nicht |
+
+| Code | HTTP | Bedeutung |
+|---|---|---|
 | `INTENT_NOT_FOUND` | 404 | Intent nicht vorhanden |
 | `INTENT_TYPE_INVALID` | 400 | `intent_type` nicht in (`ATTACK`, `MOVE`, `SPEAK`, `USE_ITEM`, `IDLE`) |
 | `INTENT_PARAMS_INVALID` | 400 | `params_json` fehlerhaft (z. B. `target_id` fehlt bei `ATTACK`) |
@@ -268,6 +275,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `CAMPAIGN_NOT_FOUND` | 404 | Kampagne existiert nicht |
 | `MEMBER_NOT_FOUND` | 404 | User ist kein Kampagnen-Mitglied |
 | `MEMBER_ALREADY` | 409 | User ist bereits Kampagnen-Mitglied |
+| `INVALID_AI_MODE` | 400 | `botMode` nicht autonom/suggest/off |
 | `DM_REQUIRED` | 403 | Nur der DM darf diese Aktion |
 | `DM_REMOVAL_DENIED` | 403 | DM kann nicht entfernt/degradiert werden |
 
