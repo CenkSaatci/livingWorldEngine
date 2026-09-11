@@ -10,6 +10,16 @@
 - **Offen (bewusst):** P27 Shared Universes (ADR-011 akzeptiert, Tasks 📋) · F8-Ticket: globale Game-Systeme ohne Owner-Check · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
 - **Nächste sinnvolle Schritte:** P27 oder F8-Berechtigungen, danach weitere Content-Pakete/Playwright-Ausbau
 
+## Verifikation Alt-Phasen (2026-09-12)
+
+> Alle Phasen 1–22 und 24–27 wurden per Evidenz (Code/Tests/Migrationen) gegen den Tracker geprüft.
+
+- **Vollständig umgesetzt:** P1 (T02 cancelled), P2, P8, P9, P12, P13, P15, P16, P17 (+C01–C05), P18 (T01–T04), P19, P20, P21, P24 (T04→P25-T06), P25, P26
+- **Umgesetzt mit Teilständen:** P3 (T09 Fog-Persistenz, T11 DEMO.md, T12 Key-Test), P4 (T03 NPCContext-Modell, T05 Ollama-Pause, T08 Demo-Doku 📋), P5 (T02 Redis aktiv, T04 Admin-Audit-Log, T07 i18n-Gate, T08 M5-Nachweis), P6 (T04 Schedule, T05 Kauf/Verkauf, T06 Orts-Kontext, T07 Bot-Quests/„pending"), P7 (T01 ObjectMapper-Rest, T02 IntentExecutor-Transaktion), P10 (JSON-Export), P11 (T07 Map.of-Rest), Cleanup (C06 bewusst abweichend)
+- **Weiterhin offen:** P14-T02–T04 (Editor/Play/Override-E2E + Inject-Choice), P22 (nur Konzept), P27 (T01/T03/T04/T05 offen; T02/T06 Teilstände)
+- **Tracker-Bug behoben:** doppelte `Status:`-Zeilen in P1–P4 entfernt (Karteileichen aus `818211e4`)
+- **Offener Code-Bug (notiert, nicht P27):** `QuestLog` filtert Status „pending", den der DB-CHECK (`V030`) nicht zulässt
+
 ## Legende
 
 | Symbol | Bedeutung |
@@ -134,8 +144,7 @@
 - **Dateien:** `backend/src/main/java/com/lwe/core/domain/World.java`, `com/lwe/core/domain/WorldMember.java`, `com/lwe/core/repository/WorldRepository.java`, `com/lwe/core/repository/WorldMemberRepository.java`, `com/lwe/core/service/WorldService.java`, `com/lwe/api/WorldController.java`, `backend/src/main/resources/db/migration/V003__world_softdelete.sql`
 
 ### P1-T07: WebSocket-Konfiguration (STOMP) und Test-Topic
-- **Status:** ✅
-- **Status:** 📋
+- **Status:** ✅ (WebSocket-Config + Auth-Interceptor getestet; kein StompClient-IT — manueller Smoke TESTING §12)
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P1-T04
 - **Beschreibung:** STOMP-over-WebSocket konfigurieren. Test-Topic `/topic/world/{id}` publishable via `POST /api/test/ws/{id}`. Auth via STOMP-Header `Authorization: Bearer {jwt}`.
@@ -178,7 +187,6 @@
 
 ### P2-T01: Rule-Engine Interface und Implementierung
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 3 Tage
 - **Abhängigkeiten:** P1-T05
 - **Beschreibung:** `RuleEngine`-Interface gruntleg. Implementierung `d20` (1W20 + Mod vs. Target) und `pool` (2W6 mit Erfolgsstufen). Liest Konfiguration aus `game_systems.rules_json`. Dice-Expression-Parser (z. B. `1d20+stärke`, `2d6+intelligenz`).
@@ -191,7 +199,6 @@
 
 ### P2-T02: Probe-Service und REST `/api/rolls`
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P2-T01, P1-T06
 - **Beschreibung:** `POST /api/rolls` nimmt `ProbeRequest` (Char-Id, Skill-Name, Modifier) entgegen, ruft Rule-Engine, loggt in `world_events` (`PROBE_ROLLED`), broadcastet Ergebnis via WS `/topic/world/{id}`.
@@ -204,7 +211,6 @@
 
 ### P2-T03: Kampf-Modul (Turn-basiert)
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 4 Tage
 - **Abhängigkeiten:** P2-T02
 - **Beschreibung:** Initiative-Reihenfolge, Turn-Verwaltung, Aktionen (Angriff, Verteidigung, Zauber vorbereitet). Validierung: Reichweite, AP-Kosten, Sichtlinie (vereinfacht: nur Grid-Distanz). Endpunkte `POST /api/combat/{sessionId}/{start|nextTurn|action|end}`.
@@ -218,7 +224,6 @@
 
 ### P2-T04: Inventar-System + Equip-Berechnung
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P1-T06
 - **Beschreibung:** Items konfigurieren (Waffen, Rüstungen, Verbrauchsgüter). Inventar eines Charakters in `entities.inventory_json`. Endpunkte `/api/inventory/{charId}/{add|remove|equip|unequip}`. Rüstungsklasse / Bonus automatisch aus Equip berechnet.
@@ -231,7 +236,6 @@
 
 ### P2-T05: Abenteuer-Struktur (Node-basiert)
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 3 Tage
 - **Abhängigkeiten:** P1-T06
 - **Beschreibung:** Datenmodell für Abenteuer. `adventures`, `adventure_nodes`, `node_choices`. Jeder Node hat Text/Bilder/Multiple-Choice/Skill-Check. Skill-Check integriert über Rule-Engine. Endpunkte `POST /api/adventures`, `POST /api/adventures/{id}/start`, `POST /api/adventures/{id}/advance`.
@@ -244,7 +248,6 @@
 
 ### P2-T06: Choice-Auswertung + Skill-Check in Adventures
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P2-T05, P2-T02
 - **Beschreibung:** Choice wird ausgewertet: bedingte nächste Node (via Bedingung wie Skill-Check-Erfolg) oder direkte Skill-Check-Integration. Adventure-State pro Charakter in `adventure_progress` (Pseudonym: neue Tabelle).
@@ -257,7 +260,6 @@
 
 ### P2-T07: Event-Log-Architektur (`world_events`)
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P1-T03
 - **Beschreibung:** Zentraler Service `WorldEventService`, der über allen anderen Services liegt. Jede spiel-relevante Aktion erzeugt ein `WorldEvent`. Idempotenz über `event_hash` (verhinderung von Duplikaten).
@@ -270,7 +272,6 @@
 
 ### P2-T08: Integrationstests für Regel-Engine
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P2-T01 … P2-T07
 - **Beschreibung:** End-to-End Integrationstests kombiniert: `Game-System hochladen → Welt erstellen → Charakter anlegen → Probe würfeln → Kampf → event-log prüfen`.
@@ -281,8 +282,7 @@
 - **Dateien:** `backend/src/test/java/com/lwe/integration/RuleEngineFlowIT.java`
 
 ### P2-T09: Time Engine (Weltzeit & Kalender)
-- **Status:** ✅
-- **Status:** 📋
+- **Status:** ✅ (Abweichung: Spalten in V001 statt V007, DayPhase als inneres Enum statt Calculator)
 - **Aufwand:** 3 Tage
 - **Abhängigkeiten:** P1-T06, P2-T07
 - **Beschreibung:** Implementiert `WorldTimeService` laut [`ADR/009`](ADR/009-world-time-calendar-system.md). Spalten `current_game_time` und `last_tick_at` in `worlds` via Flyway `V007__world_time.sql`. Drei Modi (automatic/manual/hybrid). Scheduled Task advanced automatisch tickende Welten. Events `TIME_ADVANCED`, `TIME_PAUSED`, `TIME_RESUMED`, `TIME_MODE_CHANGED`. Endpunkte `GET/POST /api/v1/worlds/{id}/time/*`.
@@ -330,7 +330,6 @@
 
 ### P3-T03: Auth-UI (Login/Register)
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P3-T02
 - **Beschreibung:** Login- und Register-Seite. Form-Validation. Redirect zu `/worlds` bei Erfolg. Alle UI-Strings via `useTranslation('auth')` — keine hartkodierten Texte.
@@ -346,7 +345,6 @@
 
 ### P3-T04: Dashboard + Welt-Management
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P3-T03
 - **Beschreibung:** Dashboard „Meine Welten" mit CRUD. Welt erstellen/bearbeiten, Regelwerk auswählen, Einladungslink kopieren.
@@ -359,7 +357,6 @@
 
 ### P3-T05: Charakterbogen (dynamisch aus Regelwerk)
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 3 Tage
 - **Abhängigkeiten:** P3-T04, P2-T01
 - **Beschreibung:** Rendering des Bogens basiert auf `game_system.attributes_json` — dynamische Felder pro Welt. Würfel-Button pro Skill. WS-Antwort wird angezeigt.
@@ -372,7 +369,6 @@
 
 ### P3-T06: Inventar-UI
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P3-T05, P2-T04
 - **Beschreibung:** Drag-and-drop-Items zwischen Inventar und Equip-Slots. Live-Aktualisierung von `armor_class`.
@@ -385,7 +381,6 @@
 
 ### P3-T07: PixiJS-Canvas-Grundgerüst + Grid
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P3-T02
 - **Beschreibung:** PixiJS-Application in `<MapCanvas>`. Konfigurierbares Grid (quadratisch/hex), Hintergrund-Textur, Zoom + Pan. Token werden via @pixi/react gerendert.
@@ -399,7 +394,6 @@
 
 ### P3-T08: Token-Management (Drag, Selection)
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P3-T07
 - **Beschreibung:** Token können vom Sidebar-Favorite auf die Karte gezogen werden. Auf Karte dragbar. Selektion (single + rectangular multi). Position via WS zu allen Teilnehmern.
@@ -411,8 +405,7 @@
 - **Dateien:** `frontend/src/components/map/Token.tsx`, `frontend/src/components/map/TokenDragManager.ts`
 
 ### P3-T09: Fog of War (Canvas Compositing)
-- **Status:** ✅
-- **Status:** 📋
+- **Status:** ✅ (Teilstand: Fog-Overlay; Persistenz/Polygon/Undo offen → A03)
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P3-T08
 - **Beschreibung:** Fog of War als separate PixiJS-Layer. DM hat Tools (freehand, polygon, revert). Spieler sehen nur visible mask. Mask-Updates asynchron via WS.
@@ -425,7 +418,6 @@
 
 ### P3-T10: Chat + Wurf-Logs UI
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P3-T05
 - **Beschreibung:** Chat mit Inline-Befehlen (`/r 1d20+5` für Wurf, `/me lacht` für Aktion). Wurf-Log als chronologische Liste. WS `~all` events gehen ein.
@@ -437,8 +429,7 @@
 - **Dateien:** `frontend/src/components/chat/ChatPanel.tsx`, `frontend/src/components/chat/RollLog.tsx`, `frontend/src/components/chat/DiceParser.ts`
 
 ### P3-T11: Integrationstest + M3 Meilenstein
-- **Status:** ✅
-- **Status:** 📋
+- **Status:** ✅ (Teilstand: Flow läuft; `docs/DEMO.md` fehlt)
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P3-T01 … P3-T10
 - **Beschreibung:** End-to-End-Demo dokumentiert: Login → Welt erstellen → Charakter anlegen → Karte anzeigen → Token bewegen → Wurf → Chat. M3-Auslöser.
@@ -448,8 +439,7 @@
 - **Dateien:** `docs/DEMO.md`
 
 ### P3-T12: Frontend i18n-Durchgang + Sprachumschalter
-- **Status:** ✅
-- **Status:** 📋
+- **Status:** ✅ (Teilstand: i18n-Key-Konsistenztest fehlt; Sprachschalter in Settings)
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P3-T03 … P3-T10
 - **Beschreibung:** Stell sicher, dass **alle** UI-Strings via `t('key')` referenziert werden, in allen Komponenten. Sprachumschalter (Globe-Icon in TopBar) verdrahtet: Persistenz in `users.locale` via `POST /api/users/me/preferences`, aktive Locale im authStore. Siehe [`ADR/007`](ADR/007-internationalization-strategy.md) und [`UI-UX.md`](UI-UX.md) Abschnitt 14.
@@ -467,7 +457,6 @@
 
 ### P4-T01: Python/FastAPI Bot-Service Setup
 - **Status:** ✅
-- **Status:** ✅
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** —
 - **Erledigt:** 2026-07-13
@@ -482,7 +471,6 @@
 
 ### P4-T02: Event-Polling (Bot → Server)
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P4-T01, P2-T07
 - **Beschreibung:** Asyncio-Loop pollt `GET /api/worlds/{id}/events?since=<timestamp>` für jede aktive Welt. \`since\` ist `last_event_id`-basiert (nicht Zeit, um Race-Conditions zu vermeiden).
@@ -494,8 +482,7 @@
 - **Dateien:** `ai-bot/src/ai_bot/poller.py`, `ai-bot/src/ai_bot/state.py`
 
 ### P4-T03: NPC-Kontext-Loader
-- **Status:** ✅
-- **Status:** 📋
+- **Status:** ✅ (Teilstand: Kontext inline im Poller, kein NPCContext-Modell)
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P4-T02
 - **Beschreibung:** Für relevantes Event, lade NPC + sein Umfeld (lokation, benachbarte Entities, letzte Ereignisse). Stellt `NPCContext` als Pydantic-Modell zur Verfügung.
@@ -507,7 +494,6 @@
 
 ### P4-T04: Prompt-Templates pro NPC-Typ
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P4-T03
 - **Beschreibung:** Jinja2-Templates für `aggressiv`, `neutral`, `vorsichtig` und `magier` (Beispiel). Output-Format zwingend JSON, validiert gegen Pydantic-Model.
@@ -519,8 +505,7 @@
 - **Dateien:** `ai-bot/src/ai_bot/prompts/templates.py`, `ai-bot/src/ai_bot/models.py`
 
 ### P4-T05: Ollama-Integration
-- **Status:** ✅
-- **Status:** 📋
+- **Status:** ✅ (Teilstand: kein Pausieren der Welt bei Ollama-down)
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P4-T04
 - **Beschreibung:** Client für Ollama-REST-API (`/api/generate`). Model-Streaming deaktiviert (rein JSON-Response gewüäännscht). Abfangen von Fehlern (Modell nicht geladen, Ollama down).
@@ -533,7 +518,6 @@
 
 ### P4-T06: NPC-Intent REST-Endpoint + Validator
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 3 Tage
 - **Abhängigkeiten:** P4-T05, P2-T03
 - **Beschreibung:** `POST /api/npc-intents` nimmt Intent-Anfragen vom Bot. Validator prüft gegen Spielregeln: Reichweite, Sicht, AP, Inventar-Verfügbarkeit. `npc_intents`-Eintrag wird persistiert.
@@ -546,7 +530,6 @@
 
 ### P4-T07: Human-Fallback im DM-Interface
 - **Status:** ✅
-- **Status:** 📋
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P4-T06, P3-T10
 - **Beschreibung:** DM sieht pending intents in einem Panel in der UI. Approve/Reject. `suggest`-Modus: intents werden nur ausgeführt, wenn DM approved.
@@ -558,8 +541,7 @@
 - **Dateien:** `frontend/src/components/dm/NpcIntentQueue.tsx`, `frontend/src/store/intentStore.ts`
 
 ### P4-T08: M4 Meilenstein-Demo
-- **Status:** ✅
-- **Status:** 📋
+- **Status:** 📋 (Demo-Doku `docs/LIVING-WORLD-DEMO.md` fehlt)
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P4-T01 … P4-T07
 - **Beschreibung:** Demo-Skript: Spieler entzündet Lagerfeuer → NPC in NPC-Properties `aggressiv` ist in Radius → KI generiert `ATTACK`-Intent → Validator approved → NPC greift an. DM sieht es im Log.
@@ -574,7 +556,7 @@
 ## Phase 5: SaaS & Polishing
 
 ### P5-T01: Multi-Tenancy Isolation (Row-Level Security)
-- **Status:** 📋
+- **Status:** ✅ (V010 + TenantInterceptor; dedizierter Cross-Tenant-Test offen)
 - **Aufwand:** 3 Tage
 - **Abhängigkeiten:** P4-T01 … P4-T07
 - **Beschreibung:** RLS-Policies in Postgres. Jeder Request setzt `SET LOCAL app.tenant_id = {owner_id}`. Repository-Methoden prüfen implizit.
@@ -586,7 +568,7 @@
 - **Dateien:** `db/migration/V010__tenant_rls.sql`, `TenantInterceptor.java`
 
 ### P5-T02: Redis-Cache für Regelwerke + Welt-Status
-- **Status:** 📋
+- **Status:** ✅ (Teilstand: CacheManager in-memory, Redis-Dependency ungenutzt)
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P5-T01
 - **Beschreibung:** Spring Cache mit Redis. Game-System und warm-world-status cachen. Invalidation bei Update.
@@ -597,7 +579,7 @@
 - **Dateien:** `CacheConfig.java`, `compose.yml` (Redis-Service)
 
 ### P5-T03: Event-Archivierung
-- **Status:** 📋
+- **Status:** ✅ (EventArchiveJob + Test + Admin-Endpoint)
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P5-T01
 - **Beschreibung:** Scheduled Job (Spring `@Scheduled`) archiviert Events älter als 30 Tage. Tabelle `world_events_archive_v{YYYY_MM}`. Lesend/rückholbar.
@@ -608,7 +590,7 @@
 - **Dateien:** `EventArchiveJob.java`, `EventArchiveService.java`, `db/migration/V011__events_archive.sql`
 
 ### P5-T04: Admin-Dashboard Backend
-- **Status:** 📋
+- **Status:** ✅ (Teilstand: kein Audit-Log für Admin-Aktionen)
 - **Aufwand:** 3 Tage
 - **Abhängigkeiten:** P5-T01
 - **Beschreibung:** Endpunkte für Admin: User-Liste, Bot-Status (pro Welt), System-Metriken, Regelwerk-Uploads verwalten.
@@ -619,7 +601,7 @@
 - **Dateien:** `AdminController.java`, `AdminUserService.java`
 
 ### P5-T05: Admin-Dashboard Frontend
-- **Status:** 📋
+- **Status:** ✅ (AdminPage + Rollen-Guard)
 - **Aufwand:** 3 Tage
 - **Abhängigkeiten:** P5-T04
 - **Beschreibung:** React-Seiten für Admin-Views. Routing ` /admin/*` mit Role-Guard.
@@ -630,7 +612,7 @@
 - **Dateien:** `frontend/src/pages/admin/*`
 
 ### P5-T06: Production Containerfile + Nginx-Setup
-- **Status:** 📋
+- **Status:** ✅ (Containerfiles + Nginx + compose.prod; TLS in DEPLOYMENT.md)
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P3-T01, P4-T01
 - **Beschreibung:** Multi-Stage `Containerfile`s für Backend (`backend/`), Frontend und Bot (gelesen von `podman build`). Nginx Reverse-Proxy liefert Frontend statisch aus und proxyt API/WS ans Backend.
@@ -642,7 +624,7 @@
 - **Dateien:** `backend/Containerfile`, `frontend/Containerfile`, `ai-bot/Containerfile`, `nginx/nginx.conf`, `compose.prod.yml`
 
 ### P5-T07: CI/CD (GitHub Actions)
-- **Status:** 📋
+- **Status:** ✅ (CI/Deploy-Workflows; i18n-Key-Gate fehlt)
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P5-T06
 - **Beschreibung:** Workflows: auf PR → Build + Test (Backend, Frontend, Bot). Auf `main` → Podman-Build + Push zu OCI-Registry (z. B. quay.io). Manuelle Deploy-Stufen.
@@ -655,7 +637,7 @@
 - **Dateien:** `.github/workflows/{ci,deploy}.yml`
 
 ### P5-T08: M5 Meilenstein-Demo (Invited Third Party)
-- **Status:** 📋
+- **Status:** ✅ (USER-GUIDE vorhanden; M5-Demo-Nachweis fehlt)
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P5-T01 … P5-T07
 - **Beschreibung:** Dritter testet vollständigen Onboarding-Ablauf: Register → Game-System hochladen → Welt erstellen → Freunde einladen → Session spielen.
@@ -670,7 +652,7 @@
 ## Phase 6: Welt-Tiefe & Ereignis-Logs
 
 ### P6-T01: Entity-Event-Log (entity_events)
-- **Status:** 📋
+- **Status:** ✅ (V020 + EntityEventService/Controller + Test)
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P1-T03
 - **Beschreibung:** Tabelle `entity_events` mit entity_type/entity_id-Discriminator. Ereignis-Log für Regionen, Orte und NPCs. `EntityEventService` zum Publishen + Abfragen. REST-Endpunkte `POST/GET /api/v1/entity-events`. Siehe [`WORLD-DEPTH.md`](WORLD-DEPTH.md).
@@ -683,7 +665,7 @@
 - **Dateien:** `db/migration/V020__entity_events.sql`, `EntityEvent.java`, `EntityEventRepository.java`, `EntityEventService.java`, `EntityEventController.java`
 
 ### P6-T02: Regionen-Datenmodell + CRUD
-- **Status:** 📋
+- **Status:** ✅ (V021 + RegionService + Test)
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P6-T01
 - **Beschreibung:** Tabelle `regions` mit Geschichte, Gefahrenlevel, Klima, Ressourcen, Fraktionen. JPA-Entity, CRUD-Endpunkte. Regionen werden pro Welt angelegt.
@@ -694,7 +676,7 @@
 - **Dateien:** `V021__regions.sql`, `Region.java`, `RegionController.java`
 
 ### P6-T03: Orte-Datenmodell + CRUD
-- **Status:** 📋
+- **Status:** ✅ (V022 + LocationService + Test)
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P6-T02
 - **Beschreibung:** Tabelle `locations` mit Typ, Geschichte, Wohlstand, Dienstleistungen. JPA-Entity, CRUD-Endpunkte. Orte gehören zu Regionen.
@@ -705,7 +687,7 @@
 - **Dateien:** `V022__locations.sql`, `Location.java`, `LocationController.java`
 
 ### P6-T04: NPC-Ort-Zuweisung + Services
-- **Status:** 📋
+- **Status:** ✅ (Teilstand: Schedule-Verfügbarkeit fehlt)
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P6-T03
 - **Beschreibung:** NPCs können via `PATCH /entities/{id}` einem Ort zugewiesen werden (`metadata_json.location_id` + `occupation`). Endpunkt `GET /locations/{id}/npcs` listet NPCs am Ort. `GET /locations/{id}/services` listet verfügbare Dienste.
@@ -717,7 +699,7 @@
 - **Dateien:** `EntityService.java` (erweitert), `LocationNpcController.java`
 
 ### P6-T05: Wirtschaft & Preise
-- **Status:** 📋
+- **Status:** ✅ (Teilstand: keine Kauf/Verkauf-Integration mit Inventar)
 - **Aufwand:** 2 Tage
 - **Abhängigkeiten:** P6-T04
 - **Beschreibung:** Preiskalkulation basierend auf Orts-Wohlstand + NPC-Preis-Modifier. `GET /locations/{id}/market` zeigt Items + Preise.
@@ -728,7 +710,7 @@
 - **Dateien:** `EconomyService.java`, `MarketController.java`
 
 ### P6-T06: KI-Kontextaufbau Regionen
-- **Status:** 📋
+- **Status:** ✅ (Teilstand: Location/Schedule nicht im Bot-Prompt)
 - **Aufwand:** 1 Tag
 - **Abhängigkeiten:** P6-T01 … P6-T04
 - **Beschreibung:** AI-Bot lädt beim Prompt-Bau Entity-Events für Region + Location + NPC. Erweiterung der Prompt-Templates um Orts- und Regions-Kontext.
@@ -739,7 +721,7 @@
 - **Dateien:** `ai-bot/src/ai_bot/context_loader.py`, `prompts/*.j2` (erweitert)
 
 ### P6-T07: Einfache Quest-Generierung
-- **Status:** 📋
+- **Status:** ✅ (Teilstand: Bot generiert keine Quests; UI filtert `pending`, DB-CHECK V030 kennt es nicht — Bug notiert)
 - **Aufwand:** 3 Tage
 - **Abhängigkeiten:** P6-T06
 - **Beschreibung:** KI generiert Quests basierend auf Regionen-Zustand + Events. Quest-Typen: Töte-X, Bringe-Y, Eskortiere-Z. Quests werden in neuer Tabelle `quests` persistiert und können von Spielern angenommen werden.
@@ -755,13 +737,13 @@
 ## Phase 7: Architektur & Code-Qualität (Post-Mortem-Analyse)
 
 ### P7-T01: ObjectMapper zentralisieren
-- **Status:** ✅
+- **Status:** ✅ (Teilstand: 6 ad-hoc `new ObjectMapper()` verblieben)
 - **Aufwand:** 1h
 - **Beschreibung:** 19 ad-hoc `new ObjectMapper()` durch zentralen `@Bean` in `JacksonConfig` ersetzt.
 - **Dateien:** `JacksonConfig.java`, 7 Services (nach und nach per DI)
 
 ### P7-T02: @Transactional-Lücken schließen
-- **Status:** ✅
+- **Status:** ✅ (Teilstand: `IntentExecutor.execute()` ohne `@Transactional`)
 - **Aufwand:** 0,5h
 - **Beschreibung:** `WorldTimeService.tickAllWorlds()` + `MemoryCleanupJob.decayMemories()` + `IntentExecutor.execute()` mit `@Transactional` versehen.
 
@@ -848,42 +830,42 @@
 - **Beschreibung:** Seite `/worlds/:id/entities` mit Liste aller NPCs und PCs einer Welt. Filter nach Typ (PC/NPC), Text-Suche, Klick → NpcViewPage. "Create Entity"-Button mit EntityCreateModal. Delete-Button mit Bestätigung.
 
 ### ✅ Welten-Clone/Export
-- **Status:** 📋
+- **Status:** ✅ (Teilstand: Clone fertig, JSON-Export fehlt)
 - **Aufwand:** 2h
 - **Beschreibung:** Backend: `POST /worlds/{id}/clone` erzeugt Kopie einer Welt (inkl. Regionen, Orte, NPCs, Fraktionen). Frontend: "Clone"-Button im WorldEditor. Export als JSON-Download.
 
 ### P10-T04: Email-Verifikation
-- **Status:** 📋
+- **Status:** ✅ (V082 + VerifyEmailPage)
 - **Aufwand:** 2h
 - **Beschreibung:** Bei Registrierung `email_verified_at = null` setzen. Verifikationstoken generieren und speichern. `POST /auth/verify-email` mit Token. Ungültige Email → resenden. Frontend: VerifyEmailPage.
 
 ### P10-T05: Dashboard Pagination
-- **Status:** 📋
+- **Status:** ✅ (PaginatedWorldResponse + Load-More)
 - **Aufwand:** 1h
 - **Beschreibung:** Backend: `GET /worlds/accessible` mit `page`/`size`-Parametern. Frontend: "Load more"-Button oder Infinite-Scroll.
 
 ### P10-T06: Onboarding für neue User
-- **Status:** 📋
+- **Status:** ✅ (WelcomePage + Register-Flow)
 - **Aufwand:** 2h
 - **Beschreibung:** Erstanmelde-Flow: Willkommensseite → "Erstelle deine erste Welt" → Tutorial-Tooltips in GameView. Checkliste für erste Schritte.
 
 ### P10-T07: Map Background Upload persistieren
-- **Status:** 📋
+- **Status:** ✅ (V080 + FileUploadController)
 - **Aufwand:** 2h
 - **Beschreibung:** Backend: FileUploadController mit MultipartFile → Speicherung auf Disk (später S3). `world_maps.image_url` zeigt auf gespeicherte Datei. Frontend: Upload-UI im MapEditor speichert tatsächlich.
 
 ### P10-T08: Mobile Responsiveness
-- **Status:** 📋
+- **Status:** ✅ (useMediaQuery + GameView)
 - **Aufwand:** 4h
 - **Beschreibung:** Sidebar/RightPanel klappen auf <768px automatisch zu. GameView layout passt sich an. Touch-Unterstützung für Token-Drag. Map Canvas minimale Höhe anpassen.
 
 ### P10-T09: Soundeffekte (optional)
-- **Status:** 📋
+- **Status:** ✅ (utils/sound + Settings-Toggle)
 - **Aufwand:** 2h
 - **Beschreibung:** Würfelgeräusche beim Roll (CSS Dice + 3D). Chat-Nachricht-Ton. Kampf-Aktion-Ton. Umschaltbar in Settings.
 
 ### P10-T10: JSON-Editor Syntax-Highlighting
-- **Status:** 📋
+- **Status:** ✅ (SyntaxHighlightedTextarea im GameSystemPage)
 - **Aufwand:** 2h
 - **Beschreibung:** Ersetze das reine `<textarea>` im JSON-Editor durch einen einfachen Code-Editor (CodeMirror oder Monaco Editor light). Zeigt Syntax-Fehler direkt an.
 
@@ -892,42 +874,42 @@
 ## Phase 11: Architektur & Infrastruktur
 
 ### P11-T01: SessionController konsolidieren
-- **Status:** 📋
+- **Status:** ✅ (GameSessionController + StompController)
 - **Aufwand:** 1h
 - **Beschreibung:** Zwei Controller mit überlappenden Funktionen: `SessionController` (publiziert nur Events) und `GameSessionController` (persistiert Sessions). `SessionController` entfernen oder auf `GameSessionService` umleiten.
 
 ### P11-T02: RuleEngine Plugin-Registry
-- **Status:** 📋
+- **Status:** ✅ (RuleEngine-Enum-Map in CombatService)
 - **Aufwand:** 2h
 - **Beschreibung:** Engine-Erkennung per `className.contains("pool")`/`"fudge"` ist fragil. Stattdessen: `Map<DiceSystem, RuleEngine>` via `@PostConstruct` in einer zentralen Registry registrieren. Neue Engines registrieren sich selbst via `@Component` + Interface.
 
 ### P11-T03: GameSystem-Caching
-- **Status:** 📋
+- **Status:** ✅ (@Cacheable("gameSystems"))
 - **Aufwand:** 2h
 - **Beschreibung:** Jeder Wurf (RollService, CombatService) lädt das GameSystem aus der DB → N+1 Problem. Cache per `@Cacheable` auf `gameSystemRepository.findById()`. Redis ist bereits in `compose.prod.yml` konfiguriert.
 
 ### P11-T04: Event-Archivierung testen + aktivieren
-- **Status:** 📋
+- **Status:** ✅ (EventArchiveJobTest + Admin-Endpoint)
 - **Aufwand:** 1h
 - **Beschreibung:** `EventArchiveJob` läuft täglich um 03:00 UTC, aber es gibt keinen Test und kein Monitoring. Test schreiben + Logging ergänzen + manuell triggerbaren Endpunkt `POST /admin/events/archive`.
 
 ### P11-T05: API-Rate-Limiting pro Endpunkt
-- **Status:** 📋
+- **Status:** ✅ (RateLimitProperties je Endpunktgruppe)
 - **Aufwand:** 2h
 - **Beschreibung:** Aktuell nur globales Limit (100/IP/min) + Login-Limit (5/IP/min). Per-Endpunkt-Limits für world-creation, combat-actions, und AI-bot-endpoints.
 
 ### P11-T06: Health-Check für Abhängigkeiten
-- **Status:** 📋
+- **Status:** ✅ (BotHealthIndicator + Actuator)
 - **Aufwand:** 1h
 - **Beschreibung:** Spring Boot Actuator `/actuator/health` zeigt nur den Status der App an. Erweitern um DB-Connectivity, Redis-Ping, AI-Bot-Connectivity (optional). Custom HealthIndicator.
 
 ### P11-T07: ~72 Map.of() → DTOs
-- **Status:** 📋
+- **Status:** ✅ (Teilstand: 17 `Map.of` in 8 Dateien verblieben)
 - **Aufwand:** 6h
 - **Beschreibung:** Alle Controller ersetzen ad-hoc `Map.of()`-Responses durch dedizierte Response-DTOs/Records. Ermöglicht OpenAPI-Schema-Generierung und Type-Safety. Betrifft ~27 Controller.
 
 ### P11-T08: Frontend Komponenten-Tests
-- **Status:** 📋
+- **Status:** ✅ (AuthForm/EntityCreateModal/ChatPanel/ActionBar/StatusBar-Tests)
 - **Aufwand:** 4h
 - **Beschreibung:** Vitest + Testing Library für kritische Komponenten: AuthForm, EntityCreateModal, ChatPanel, ActionBar, StatusBar. Grundlegende Render-Tests + Interaktions-Tests.
 
@@ -1089,7 +1071,7 @@
 
 | ID | Was | Aufwand | Priorität |
 |---|---|---|---|
-| ⭕ | **🚀 Deploy-Workflow** (GitHub Actions für prod) | 0,5h | Ganz ans Ende |
+| ✅ | **Deploy-Workflow** (`.github/workflows/deploy.yml`) | erledigt | — |
 
 ---
 
@@ -1505,7 +1487,7 @@ Nach Abschluss der Review vom 2026-07-24 identifizierte und behobene Mängel:
 - **Aufwand:** ~10 min
 
 ### P17-C06: Abilities-UI (verschoben)
-- **Status:** 🔜 (Phase 18)
+- **Status:** ⏭️ ersetzt durch P20 (Abilities-UI)
 - **Beschreibung:** Der `abilitiesComingSoon`-Placeholder im CharacterSheet bleibt bestehen.  
   Geplant: Abilities aus der Datenbank laden + anzeigen (aus P16 vorbereitet).
 
@@ -1702,7 +1684,7 @@ Probendefinitionen (Talente, Fähigkeiten, Proben, Attacken) beziehen sich immer
 ## Phase 17/19 Cleanup (Review-Nacharbeiten)
 
 ### C01: API.md — fehlende Endpunkte dokumentieren
-- **Status:** 🔜
+- **Status:** ✅ (API.md-Endpunkte ergänzt)
 - **Aufwand:** 30 min
 - **Beschreibung:** Drei Endpunkte sind nicht in API.md:
   - `PATCH /entities/{entityId}/override` — Formel-Overrides
@@ -1713,7 +1695,7 @@ Probendefinitionen (Talente, Fähigkeiten, Proben, Attacken) beziehen sich immer
   - Fehlercodes dokumentiert
 
 ### C02: FormulaOverrides i18n
-- **Status:** 🔜
+- **Status:** ✅ (FormulaOverrides i18n DE/EN)
 - **Aufwand:** 15 min
 - **Beschreibung:** Die `FormulaOverrides`-Komponente verwendet hartcodierte Labels statt i18n-Keys:
   - `t('sheet.overridesTitle')`, `t('sheet.overridesName')`, `t('sheet.overridesValue')`
@@ -1723,7 +1705,7 @@ Probendefinitionen (Talente, Fähigkeiten, Proben, Attacken) beziehen sich immer
   - DE + EN vorhanden
 
 ### C03: Passive Abilities in EntityAbilityController anzeigen
-- **Status:** 🔜
+- **Status:** ✅ (optionaler Ability-Typ-Filter)
 - **Aufwand:** 30 min
 - **Beschreibung:** `EntityAbilityController.list()` filtert mit `.filter(a -> "ACTIVE".equals(a.type))` → passive Abilities werden aus der API-Antwort entfernt.
   - Fix: Beide Typen ausliefern, Frontend filtert selbst
@@ -1733,7 +1715,7 @@ Probendefinitionen (Talente, Fähigkeiten, Proben, Attacken) beziehen sich immer
   - Bestehende Nutzer (ActionBar) brechen nicht
 
 ### C04: FormulaOverrides Test
-- **Status:** 🔜
+- **Status:** ✅ (CharacterSheet.test)
 - **Aufwand:** 30 min
 - **Beschreibung:** Frontend-Test für die FormulaOverrides-Komponente:
   - Rendert ohne Overrides → "No overrides" message
@@ -1743,7 +1725,7 @@ Probendefinitionen (Talente, Fähigkeiten, Proben, Attacken) beziehen sich immer
   - Test existiert und ist grün
 
 ### C05: CharacterSheetService Test-Coverage
-- **Status:** 🔜
+- **Status:** ✅ (CharacterSheetServiceTest umfangreich)
 - **Aufwand:** 1,0 Tag
 - **Beschreibung:** Aktuell nur 2 Tests für den SheetService:
   - Test mit per-character skill values (vorhanden)
@@ -1754,7 +1736,7 @@ Probendefinitionen (Talente, Fähigkeiten, Proben, Attacken) beziehen sich immer
   - Edge-Cases abgedeckt
 
 ### C06: InventoryService.useConsumable via RollService
-- **Status:** 🔜
+- **Status:** ✅ (bewusste Abweichung: direkte DiceExpression, System-Mods sollen nicht gelten — Code-Kommentar)
 - **Aufwand:** 1,0 Tag
 - **Beschreibung:** `useConsumable()` verwendet `new DiceExpression(effect.heal)` direkt statt `rollService.executeRoll()`:
   - Ignoriert System-spezifische Würfelmechaniken (Pool, Fudge, etc.)
@@ -1904,6 +1886,8 @@ Schadensarten (`damage_type`) gehören nicht auf Systemebene, sondern zu Items, 
 
 ## Gesamtstatistik
 
+> Historischer Stand der jeweiligen Planung. Aktueller Stand: siehe „Aktueller Projektstand" oben und die Phasen-Status.
+
 | Phase | Tasks | Sum Aufwand |
 |---|---|---|
 | 17 (Character-Edit & Kampf) | 6 | 11,0 Tage |
@@ -2041,7 +2025,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD
 
 ### P24-T04: `worlds.game_system_id` entfernen
-- **Status:** ⏸️ (verschoben → P25-T06 — erfordert Kampagnen-Kontext in RulesLoader/Combat/LevelUp/Sheet, sonst bricht der Build)
+- **Status:** ⏭️ erledigt via P25-T06 (V097)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:**
   - Migration V093: Spalte `game_system_id` aus `worlds` entfernen
@@ -2182,7 +2166,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD, Security
 
 ### P27-T02: Campaign-Rollen härten (Spieler + Spielleiter)
-- **Status:** 📋
+- **Status:** 🔄 Teilstand: DM-Schutz vorhanden; Rollen-Enum/Promote-Demote offen (Umsetzung in P27)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:**
   - Rollen-Enum `DM`/`PLAYER` statt freiem String (Backend-Validierung in `addMember`)
@@ -2223,7 +2207,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD
 
 ### P27-T06: DM-Queue fertig + Abnahme
-- **Status:** 📋
+- **Status:** 🔄 Teilstand: Approve/Reject + Polling; DM-Gate/Bulk/WS/E2E offen (Umsetzung in P27)
 - **Aufwand:** 1 Tag
 - **Beschreibung:**
   - Aktionsliste: Bulk-Freigabe/Ablehnung, Filter (Typ/Status), WS-Live-Update statt 5s-Polling wo sinnvoll
@@ -2235,6 +2219,8 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 ---
 
 ## Gesamtstatistik (aktualisiert)
+
+> Historischer Stand der jeweiligen Planung. Aktueller Stand: siehe „Aktueller Projektstand" oben und die Phasen-Status.
 
 | Phase | Tasks | Sum Aufwand |
 |---|---|---|
