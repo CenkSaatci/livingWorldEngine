@@ -21,6 +21,10 @@ public class World {
     @Column(name = "owner_id", nullable = false)
     private UUID ownerId;
 
+    /** PRIVATE | INVITE_ONLY | PUBLIC (ADR-011); Default = heutiges Verhalten. */
+    @Column(nullable = false, length = 20)
+    private String visibility = "INVITE_ONLY";
+
     @JsonProperty("settings_json")
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "settings_json", nullable = false)
@@ -54,6 +58,8 @@ public class World {
     public UUID getId() { return id; }
     public String getName() { return name; }
     public UUID getOwnerId() { return ownerId; }
+    public String getVisibility() { return visibility; }
+    public void setVisibility(String v) { this.visibility = v; }
     public String getSettingsJson() { return settingsJson; }
     public Instant getCurrentGameTime() { return currentGameTime; }
     public void setCurrentGameTime(Instant v) { this.currentGameTime = v; }

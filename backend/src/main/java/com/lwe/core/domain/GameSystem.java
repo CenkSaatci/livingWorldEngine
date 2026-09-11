@@ -38,6 +38,13 @@ public class GameSystem {
     @Column(name = "schema_json", nullable = false)
     private String schemaJson;
 
+    @Column(name = "owner_id")
+    private UUID ownerId;
+
+    /** PRIVATE | INVITE_ONLY | PUBLIC (ADR-011). Legacy-Systeme: PUBLIC, Owner NULL. */
+    @Column(nullable = false, length = 20)
+    private String visibility = "PRIVATE";
+
     @Column(nullable = false)
     private boolean active = true;
 
@@ -49,11 +56,18 @@ public class GameSystem {
 
     protected GameSystem() {}
 
+    /** Legacy/Seed: kein Owner, global sichtbar (nur Admin schreibbar). */
     public GameSystem(String name, int version, String rulesJson, String schemaJson) {
+        this(name, version, rulesJson, schemaJson, null);
+        this.visibility = "PUBLIC";
+    }
+
+    public GameSystem(String name, int version, String rulesJson, String schemaJson, UUID ownerId) {
         this.name = name;
         this.version = version;
         this.rulesJson = rulesJson;
         this.schemaJson = schemaJson;
+        this.ownerId = ownerId;
     }
 
     @PreUpdate
@@ -67,6 +81,10 @@ public class GameSystem {
     public String getRulesJson() { return rulesJson; }
     public void setRulesJson(String v) { this.rulesJson = v; }
     public String getSchemaJson() { return schemaJson; }
+    public UUID getOwnerId() { return ownerId; }
+    public void setOwnerId(UUID v) { this.ownerId = v; }
+    public String getVisibility() { return visibility; }
+    public void setVisibility(String v) { this.visibility = v; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
     public Instant getCreatedAt() { return createdAt; }

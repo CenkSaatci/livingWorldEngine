@@ -41,10 +41,15 @@ public class GameSystemService {
 
     /**
      * Neues Regelwerk anlegen. {@code rulesJson} wird vor Persistenz gegen
-     * {@code schemaJson} validiert.
+     * {@code schemaJson} validiert. Ohne Owner (Seed/Legacy) = PUBLIC, sonst PRIVATE.
      */
     @Transactional
     public GameSystem create(String name, int version, String rulesJson, String schemaJson) {
+        return create(name, version, rulesJson, schemaJson, null);
+    }
+
+    @Transactional
+    public GameSystem create(String name, int version, String rulesJson, String schemaJson, UUID ownerId) {
         if (repo.existsByName(name)) {
             throw new GameSystemException("GAME_SYSTEM_VERSION_CONFLICT",
                 "A game system with name '" + name + "' already exists");
@@ -52,8 +57,17 @@ public class GameSystemService {
         var schema = "{}".equals(schemaJson) || schemaJson == null
             ? RuleSchemaValidator.DEFAULT_SCHEMA : schemaJson;
         validator.validateOrThrow(rulesJson, schema);
-        var gs = new GameSystem(name, version, rulesJson, schema);
+        var gs = new GameSystem(name, version, rulesJson, schema, ownerId);
         return repo.save(gs);
+    }
+
+    /** F8/P27-T01: Schreiben nur Owner oder Admin; Legacy (Owner NULL) nur Admin. */
+    private void requireOwner(GameSystem gs, UUID userId, boolean isAdmin) {
+        if (isAdmin) return;
+        if (gs.getOwnerId() == null || !gs.getOwnerId().equals(userId)) {
+            throw new GameSystemException("GAME_SYSTEM_ACCESS_DENIED",
+                "Only the owner may modify this game system");
+        }
     }
 
     /**
@@ -61,6 +75,12 @@ public class GameSystemService {
      */
     public List<GameSystem> listActive() {
         return repo.findByActiveTrue();
+    }
+
+    /** Fuer den User sichtbare Systeme (ADMIN sieht alle). */
+    public List<GameSystem> listVisible(UUID userId, boolean isAdmin) {
+        if (isAdmin) return repo.findByActiveTrue();
+        return repo.findVisibleForUser(userId);
     }
 
     /**
@@ -81,8 +101,10 @@ public class GameSystemService {
     }
 
     @Transactional
-    public GameSystem update(UUID id, String name, Integer version, String rulesJson) {
+    public GameSystem update(UUID id, String name, Integer version, String rulesJson,
+                             UUID userId, boolean isAdmin) {
         var gs = getById(id);
+        requireOwner(gs, userId, isAdmin);
         if (name != null) gs.setName(name);
         if (version != null) gs.setVersion(version);
         if (rulesJson != null) {
@@ -93,17 +115,19 @@ public class GameSystemService {
     }
 
     @Transactional
-    public void delete(UUID id) {
+    public void delete(UUID id, UUID userId, boolean isAdmin) {
         var gs = getById(id);
+        requireOwner(gs, userId, isAdmin);
         gs.setActive(false);
         repo.save(gs);
     }
 
     @Transactional
-    public GameSystem clone(UUID id) {
+    public GameSystem clone(UUID id, UUID userId, boolean isAdmin) {
         var original = getById(id);
+        requireOwner(original, userId, isAdmin);
         var copy = new GameSystem(original.getName() + " (Copy)", original.getVersion(),
-            original.getRulesJson(), original.getSchemaJson());
+            original.getRulesJson(), original.getSchemaJson(), userId);
         // Ensure unique name
         if (repo.existsByName(copy.getName())) {
             copy.setName(copy.getName() + " " + System.currentTimeMillis());

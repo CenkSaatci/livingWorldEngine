@@ -1,6 +1,7 @@
 package com.lwe.api;
 
 import com.lwe.api.dto.GameSystemInfoResponse;
+import com.lwe.core.domain.User;
 import com.lwe.core.service.GameSystemService;
 import com.lwe.rules.RuleSchemaValidator;
 import jakarta.validation.Valid;
@@ -26,15 +27,22 @@ public class GameSystemController {
     }
 
     @PostMapping
-    public ResponseEntity<GameSystemInfoResponse> create(@Valid @RequestBody CreateRequest req) {
-        var gs = service.create(req.name(), req.version(), req.rulesJson(), req.schemaJson());
+    public ResponseEntity<GameSystemInfoResponse> create(@Valid @RequestBody CreateRequest req,
+                                                         @org.springframework.security.core.annotation.AuthenticationPrincipal User user) {
+        var gs = service.create(req.name(), req.version(), req.rulesJson(), req.schemaJson(), user.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(GameSystemInfoResponse.from(gs));
     }
 
     @GetMapping
-    public ResponseEntity<List<GameSystemInfoResponse>> list() {
-        var list = service.listActive().stream().map(GameSystemInfoResponse::from).toList();
+    public ResponseEntity<List<GameSystemInfoResponse>> list(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal User user) {
+        var list = service.listVisible(user.getId(), isAdmin(user))
+            .stream().map(GameSystemInfoResponse::from).toList();
         return ResponseEntity.ok(list);
+    }
+
+    private static boolean isAdmin(User user) {
+        return "ADMIN".equals(user.getRole());
     }
 
     @GetMapping("/{id}")
@@ -46,8 +54,9 @@ public class GameSystemController {
 
     @PatchMapping("/{id}")
     public ResponseEntity<GameSystemInfoResponse> update(@PathVariable UUID id,
-                                                          @Valid @RequestBody CreateRequest req) {
-        var gs = service.update(id, req.name(), req.version(), req.rulesJson());
+                                                          @Valid @RequestBody CreateRequest req,
+                                                          @org.springframework.security.core.annotation.AuthenticationPrincipal User user) {
+        var gs = service.update(id, req.name(), req.version(), req.rulesJson(), user.getId(), isAdmin(user));
         return ResponseEntity.ok(GameSystemInfoResponse.from(gs));
     }
 
@@ -63,14 +72,16 @@ public class GameSystemController {
     }
 
     @PostMapping("/{id}/clone")
-    public ResponseEntity<GameSystemInfoResponse> clone(@PathVariable UUID id) {
-        var gs = service.clone(id);
+    public ResponseEntity<GameSystemInfoResponse> clone(@PathVariable UUID id,
+                                                        @org.springframework.security.core.annotation.AuthenticationPrincipal User user) {
+        var gs = service.clone(id, user.getId(), isAdmin(user));
         return ResponseEntity.ok(GameSystemInfoResponse.from(gs));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        service.delete(id);
+    public ResponseEntity<Void> delete(@PathVariable UUID id,
+                                       @org.springframework.security.core.annotation.AuthenticationPrincipal User user) {
+        service.delete(id, user.getId(), isAdmin(user));
         return ResponseEntity.noContent().build();
     }
 

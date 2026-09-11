@@ -73,6 +73,82 @@ class GameSystemServiceTest {
     }
 
     @Test
+    void createWithOwnerIsPrivateAndOwned() {
+        when(repo.existsByName("D20Lite")).thenReturn(false);
+        doNothing().when(validator).validateOrThrow(validRules, schema);
+        when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        var owner = UUID.randomUUID();
+
+        var result = service.create("D20Lite", 1, validRules, schema, owner);
+
+        assertThat(result.getOwnerId()).isEqualTo(owner);
+        assertThat(result.getVisibility()).isEqualTo("PRIVATE");
+    }
+
+    @Test
+    void updateRequiresOwnerOrAdmin() {
+        var owner = UUID.randomUUID();
+        var stranger = UUID.randomUUID();
+        var gs = new GameSystem("Owned", 1, validRules, schema, owner);
+        when(repo.findById(any())).thenReturn(Optional.of(gs));
+        when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        // Fremder -> 403-Code
+        assertThatThrownBy(() -> service.update(gs.getId(), "Neu", null, null, stranger, false))
+            .isInstanceOf(GameSystemService.GameSystemException.class)
+            .matches(e -> ((GameSystemService.GameSystemException) e).getErrorCode()
+                .equals("GAME_SYSTEM_ACCESS_DENIED"));
+
+        // Owner + Admin duerfen
+        service.update(gs.getId(), "Neu", null, null, owner, false);
+        service.update(gs.getId(), "Neu2", null, null, stranger, true);
+        assertThat(gs.getName()).isEqualTo("Neu2");
+    }
+
+    @Test
+    void legacySystemWithoutOwnerIsAdminOnly() {
+        var gs = new GameSystem("Legacy", 1, validRules, schema); // owner null, PUBLIC
+        when(repo.findById(any())).thenReturn(Optional.of(gs));
+
+        assertThatThrownBy(() -> service.delete(gs.getId(), UUID.randomUUID(), false))
+            .isInstanceOf(GameSystemService.GameSystemException.class)
+            .matches(e -> ((GameSystemService.GameSystemException) e).getErrorCode()
+                .equals("GAME_SYSTEM_ACCESS_DENIED"));
+
+        when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        service.delete(gs.getId(), UUID.randomUUID(), true);
+        assertThat(gs.isActive()).isFalse();
+    }
+
+    @Test
+    void cloneRequiresOwnershipAndAssignsCloner() {
+        var owner = UUID.randomUUID();
+        var stranger = UUID.randomUUID();
+        var gs = new GameSystem("Owned", 1, validRules, schema, owner);
+        when(repo.findById(any())).thenReturn(Optional.of(gs));
+
+        assertThatThrownBy(() -> service.clone(gs.getId(), stranger, false))
+            .isInstanceOf(GameSystemService.GameSystemException.class);
+
+        when(repo.existsByName(any())).thenReturn(false);
+        when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        var copy = service.clone(gs.getId(), owner, false);
+        assertThat(copy.getOwnerId()).isEqualTo(owner);
+    }
+
+    @Test
+    void listVisibleUsesFilterForNonAdmin() {
+        var userId = UUID.randomUUID();
+        when(repo.findVisibleForUser(userId)).thenReturn(List.of());
+        assertThat(service.listVisible(userId, false)).isEmpty();
+        verify(repo).findVisibleForUser(userId);
+
+        when(repo.findByActiveTrue()).thenReturn(List.of());
+        assertThat(service.listVisible(userId, true)).isEmpty();
+        verify(repo).findByActiveTrue();
+    }
+
+    @Test
     void shouldThrowOnMissingId() {
         when(repo.findById(any())).thenReturn(Optional.empty());
 

@@ -65,6 +65,24 @@ class DatabaseMigrationTest {
     }
 
     @Test
+    void gameSystemsTableHasOwnershipAndVisibilityColumns() throws SQLException {
+        try (var conn = dataSource.getConnection()) {
+            var owner = conn.getMetaData().getColumns(null, "public", "game_systems", "owner_id");
+            assertThat(owner.next()).as("V098: game_systems.owner_id (P27-T01/F8)").isTrue();
+            var visibility = conn.getMetaData().getColumns(null, "public", "game_systems", "visibility");
+            assertThat(visibility.next()).as("V098: game_systems.visibility").isTrue();
+        }
+    }
+
+    @Test
+    void worldsTableHasVisibilityColumn() throws SQLException {
+        try (var conn = dataSource.getConnection()) {
+            var visibility = conn.getMetaData().getColumns(null, "public", "worlds", "visibility");
+            assertThat(visibility.next()).as("V098: worlds.visibility").isTrue();
+        }
+    }
+
+    @Test
     void itemsTableHasGameSystemIdColumn() throws SQLException {
         try (var conn = dataSource.getConnection()) {
             var rs = conn.getMetaData()

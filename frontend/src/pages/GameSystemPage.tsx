@@ -20,12 +20,15 @@ import { useToast } from '../hooks/useToast';
 import { SystemWizard, type SystemWizardHandle, type WizardData } from '../components/game/SystemWizard';
 import { fromRulesJson } from '../types/gameSystem';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { useAuthStore } from '../store/authStore';
 
 interface GameSystem {
   id: string;
   name: string;
   version: number;
   active?: boolean;
+  ownerId?: string | null;
+  visibility?: string;
 }
 
 interface GameSystemDetail extends GameSystem {
@@ -140,6 +143,7 @@ const TEMPLATES: Record<string, string> = {
 export default function GameSystemPage() {
   const navigate = useNavigate();
   const toast = useToast();
+  const currentUser = useAuthStore((s2) => s2.user);
   const [systems, setSystems] = useState<GameSystem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEditor, setShowEditor] = useState(false);
@@ -391,12 +395,27 @@ export default function GameSystemPage() {
           <LoadingSpinner />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {systems.map((sys) => (
+            {systems.map((sys) => {
+              const canEdit = currentUser?.role === 'ADMIN'
+                || (!sys.ownerId || sys.ownerId === currentUser?.id);
+              return (
               <div key={sys.id} className="rounded-lg border border-bg-elevated bg-bg-surface p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-heading text-text-primary">{sys.name}</h3>
-                    <p className="text-xs text-text-secondary">v{sys.version}</p>
+                    <p className="text-xs text-text-secondary">
+                      v{sys.version}
+                      {sys.visibility === 'PUBLIC' && (
+                        <span className="ml-2 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] text-accent">
+                          Public
+                        </span>
+                      )}
+                      {sys.visibility && sys.visibility !== 'PUBLIC' && (
+                        <span className="ml-2 rounded bg-bg-elevated px-1.5 py-0.5 text-[10px] text-text-secondary">
+                          Privat
+                        </span>
+                      )}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -413,27 +432,32 @@ export default function GameSystemPage() {
                     >
                       <Copy size={14} />
                     </button>
-                    <button
-                      onClick={() => handleEdit(sys)}
-                      aria-label={`Edit ${sys.name}`}
-                      className="text-text-secondary hover:text-accent"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      onClick={() => setDeleting(sys.id)}
-                      aria-label={`Delete ${sys.name}`}
-                      className="text-text-secondary hover:text-danger"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    {canEdit && (
+                      <button
+                        onClick={() => handleEdit(sys)}
+                        aria-label={`Edit ${sys.name}`}
+                        className="text-text-secondary hover:text-accent"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    )}
+                    {canEdit && (
+                      <button
+                        onClick={() => setDeleting(sys.id)}
+                        aria-label={`Delete ${sys.name}`}
+                        className="text-text-secondary hover:text-danger"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                     <span
                       className={`h-2 w-2 rounded-full ${sys.active ? 'bg-success' : 'bg-text-secondary'}`}
                     />
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
             {systems.length === 0 && (
               <p className="col-span-2 text-center text-sm text-text-secondary py-8">
                 No game systems yet
