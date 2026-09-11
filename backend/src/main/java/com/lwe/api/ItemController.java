@@ -28,7 +28,7 @@ public class ItemController {
     public ResponseEntity<ItemResponse> create(@PathVariable UUID gameSystemId,
                                                 @Valid @RequestBody CreateRequest req,
                                                 @AuthenticationPrincipal User user) {
-        var item = service.create(gameSystemId, user.getId(), req.name(), req.type(),
+        var item = service.create(gameSystemId, user.getId(), isAdmin(user), req.name(), req.type(),
             req.weight(), req.value(), req.bonusesJson(), req.metadataJson());
         return ResponseEntity.status(HttpStatus.CREATED).body(ItemResponse.from(item));
     }
@@ -50,7 +50,7 @@ public class ItemController {
     public ResponseEntity<ItemResponse> update(@PathVariable UUID id,
                                                 @Valid @RequestBody UpdateRequest req,
                                                 @AuthenticationPrincipal User user) {
-        var item = service.update(id, req.name(), req.type(), req.weight(),
+        var item = service.update(id, user.getId(), isAdmin(user), req.name(), req.type(), req.weight(),
             req.value(), req.bonusesJson(), req.metadataJson());
         return ResponseEntity.ok(ItemResponse.from(item));
     }
@@ -58,8 +58,12 @@ public class ItemController {
     @DeleteMapping("/api/v1/items/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id,
                                         @AuthenticationPrincipal User user) {
-        service.delete(id);
+        service.delete(id, user.getId(), isAdmin(user));
         return ResponseEntity.noContent().build();
+    }
+
+    private static boolean isAdmin(User user) {
+        return "ADMIN".equals(user.getRole());
     }
 
     public record CreateRequest(

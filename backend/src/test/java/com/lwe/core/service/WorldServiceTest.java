@@ -14,6 +14,10 @@ import com.lwe.core.repository.WorldMapRepository;
 import com.lwe.core.repository.RegionWeatherRepository;
 import com.lwe.core.repository.EntityAbilityRepository;
 import com.lwe.core.domain.GameEntity;
+import com.lwe.core.domain.Region;
+import com.lwe.core.domain.Location;
+import com.lwe.core.domain.RegionWeather;
+import com.lwe.core.domain.Faction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -229,6 +233,76 @@ class WorldServiceTest {
         assertThat(copied.getExperiencePoints()).isEqualTo(250);
         assertThat(copied.getHpCurrent()).isEqualTo(7);
         assertThat(copied.getHpMax()).isEqualTo(11);
+    }
+
+    @Test
+    void cloneCopiesCapitalWeatherDescriptionAndLeader() {
+        var original = worldWithId("Detailwelt", ownerId);
+        setId(original, UUID.randomUUID());
+
+        var region = new Region(original.getId(), "Nord");
+        setId(region, UUID.randomUUID());
+        var loc = new Location(region.getId(), "Stadt", "Hauptstadt");
+        loc.setCapital(true);
+        setId(loc, UUID.randomUUID());
+        var weather = new RegionWeather(region.getId());
+        weather.setDescription("Regnerisch");
+        var leader = new GameEntity(original.getId(), "NPC", "Baron");
+        setId(leader, UUID.randomUUID());
+        var faction = new Faction(original.getId(), "Barons");
+        faction.setLeaderEntityId(leader.getId());
+        setId(faction, UUID.randomUUID());
+
+        when(worldRepo.findById(original.getId())).thenReturn(Optional.of(original));
+        when(worldRepo.save(any())).thenAnswer(inv -> {
+            var w = inv.<World>getArgument(0);
+            if (w.getId() == null) setId(w, UUID.randomUUID());
+            return w;
+        });
+        when(regionRepo.findByWorldIdOrderByNameAsc(original.getId())).thenReturn(List.of(region));
+        when(regionRepo.save(any())).thenAnswer(inv -> {
+            var r = inv.<Region>getArgument(0);
+            setId(r, UUID.randomUUID());
+            return r;
+        });
+        when(locationRepo.findByRegionIdIn(any())).thenReturn(List.of(loc));
+        when(locationRepo.save(any())).thenAnswer(inv -> {
+            var l = inv.<Location>getArgument(0);
+            setId(l, UUID.randomUUID());
+            return l;
+        });
+        when(regionWeatherRepo.findByRegionIdIn(any())).thenReturn(List.of(weather));
+        when(factionRepo.findByWorldIdOrderByNameAsc(original.getId())).thenReturn(List.of(faction));
+        when(factionRepo.save(any())).thenAnswer(inv -> {
+            var f = inv.<Faction>getArgument(0);
+            if (f.getId() == null) setId(f, UUID.randomUUID());
+            return f;
+        });
+        when(entityRepo.findByWorldIdAndActiveTrue(original.getId())).thenReturn(List.of(leader));
+        when(entityRepo.save(any())).thenAnswer(inv -> {
+            var e = inv.<GameEntity>getArgument(0);
+            if (e.getId() == null) setId(e, UUID.randomUUID());
+            return e;
+        });
+        when(factionRepo.findById(any())).thenAnswer(inv -> {
+            var f = new Faction(UUID.randomUUID(), "Barons");
+            setId(f, inv.getArgument(0));
+            return Optional.of(f);
+        });
+
+        worldService.cloneForCampaign(original.getId(), memberId);
+
+        var locCaptor = org.mockito.ArgumentCaptor.forClass(Location.class);
+        verify(locationRepo, atLeastOnce()).save(locCaptor.capture());
+        assertThat(locCaptor.getAllValues().stream().anyMatch(Location::isCapital))
+            .as("Hauptstadt-Flag muss mitkopiert werden").isTrue();
+
+        var weatherCaptor = org.mockito.ArgumentCaptor.forClass(RegionWeather.class);
+        verify(regionWeatherRepo).save(weatherCaptor.capture());
+        assertThat(weatherCaptor.getValue().getDescription()).isEqualTo("Regnerisch");
+
+        var factionCaptor = org.mockito.ArgumentCaptor.forClass(Faction.class);
+        verify(factionRepo, atLeastOnce()).save(factionCaptor.capture());
     }
 
     // -- helpers --

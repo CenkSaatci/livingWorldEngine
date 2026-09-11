@@ -396,8 +396,9 @@ export default function GameSystemPage() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {systems.map((sys) => {
+              // Legacy ohne Owner ist admin-only (Backend-Regel, Audit P27).
               const canEdit = currentUser?.role === 'ADMIN'
-                || (!sys.ownerId || sys.ownerId === currentUser?.id);
+                || (!!sys.ownerId && sys.ownerId === currentUser?.id);
               return (
               <div key={sys.id} className="rounded-lg border border-bg-elevated bg-bg-surface p-4">
                 <div className="flex items-center justify-between">

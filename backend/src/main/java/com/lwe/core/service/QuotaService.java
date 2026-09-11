@@ -55,7 +55,7 @@ public class QuotaService {
     public void checkCanCreateWorld(UUID userId, User user) {
         var plan = getPlan(user);
         if (plan.isUnlimited(plan.getMaxWorlds())) return;
-        var current = worldRepo.countByOwnerIdAndActiveTrue(userId);
+        var current = worldRepo.countQuotaRelevantByOwnerId(userId);
         if (plan.hasReachedLimit((int) current, plan.getMaxWorlds())) {
             throw new QuotaException("WORLD_LIMIT_REACHED",
                 "World limit reached (" + current + "/" + plan.getMaxWorlds() + ")");

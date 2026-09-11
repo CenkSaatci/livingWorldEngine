@@ -42,7 +42,7 @@ class CampaignServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CampaignService(repo, worldRepo, memberRepo, systemRepo, worldAccess, memberService, worldService);
+        service = new CampaignService(repo, worldRepo, memberRepo, systemRepo, worldAccess, memberService, worldService, mock(GameSystemService.class));
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
     }
 
@@ -111,6 +111,7 @@ class CampaignServiceTest {
         var campaign = new Campaign(worldId, gameSystemId, "Runde 1");
         setId(campaign, UUID.randomUUID());
         when(repo.findById(campaign.getId())).thenReturn(Optional.of(campaign));
+        when(memberService.isDm(campaign.getId(), userId)).thenReturn(true);
         when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var updated = service.update(campaign.getId(), userId, "Runde 2", "{\"war\":\"active\"}");
@@ -136,6 +137,7 @@ class CampaignServiceTest {
         var campaign = new Campaign(worldId, gameSystemId, "Runde 1");
         setId(campaign, UUID.randomUUID());
         when(repo.findById(campaign.getId())).thenReturn(Optional.of(campaign));
+        when(memberService.isDm(campaign.getId(), userId)).thenReturn(true);
 
         service.delete(campaign.getId(), userId);
 

@@ -2154,7 +2154,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 > Geteilte Templates (Systeme/Welten mit Sichtbarkeit), Kampagnen als geforkte Universen, Bot pro Kampagne. Siehe [`ADR/011`](ADR/011-shared-universes-visibility.md). Entscheidungen (2026-09-11): Clone-on-Create (kein Copy-on-Write), Sichtbarkeit privat/Einladungsliste/öffentlich, Version-Pinning mit manuellem Nachziehen, Bot pro Kampagne (Abo-Gate später).
 
 ### P27-T01: Visibility-Modell + Ownership (Systeme + Welten)
-- **Status:** 📋
+- **Status:** ✅ Teilstand (V098: `game_systems.owner_id/visibility`, Backfill Owner/PUBLIC; Owner/Admin-Schreibschutz inkl. Abilities/Items; Lese-Guard inkl. Kampagnen-Zugriff; Kampagnen nur mit eigenen/PUBLIC/Legacy-Systemen (F8); Grant/Clone-Policy. Offen: `INVITE_ONLY`-Shares, PUBLIC-Lesepfad für Welten)
 - **Aufwand:** 1 Tag
 - **Beschreibung:**
   - `visibility` (`PRIVATE`/`INVITE_ONLY`/`PUBLIC`) auf `game_systems` + `worlds` (Migration)
@@ -2166,7 +2166,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD, Security
 
 ### P27-T02: Campaign-Rollen härten (Spieler + Spielleiter)
-- **Status:** 🔄 Teilstand: DM-Schutz vorhanden; Rollen-Enum/Promote-Demote offen (Umsetzung in P27)
+- **Status:** ✅ (Rollen-Validierung `INVALID_ROLE` 400, `PATCH /campaigns/{id}/members/{userId}` Promote/Demote, Invariante „letzter DM" als `LAST_DM` 409 mit Pessimistic-Lock; Abweichung vom alten Wortlaut: Degradierung liefert `LAST_DM` statt `DM_REMOVAL_DENIED`)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:**
   - Rollen-Enum `DM`/`PLAYER` statt freiem String (Backend-Validierung in `addMember`)
@@ -2176,7 +2176,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD, Security
 
 ### P27-T03: Fork bei Kampagnen-Erstellung (eigenes Universum)
-- **Status:** 📋
+- **Status:** ✅ Teilstand (Fork beim Kampagnen-Start inkl. Feldlücken-Fix Skills/XP/HP/AP/Abilities/Fraktionsanführer/Hauptstadt/Wetter; Mirroring Campaign→World-Rollen (nur Fork-Welten); Quota zählt Forks nicht; Kampagne-Delete soft-deletet Fork. Offen/dokumentiert: Quests/Adventures werden nicht mitgeklont, Mirroring umgeht Welt-Member-Quota)
 - **Aufwand:** 1 Tag
 - **Beschreibung:**
   - Kampagne anlegen = Welt tief kopieren (`WorldService.clone`: Regionen, Orte, NPCs, Fraktionen, Entities, Karten), Kampagne zeigt auf den Fork

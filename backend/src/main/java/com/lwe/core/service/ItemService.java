@@ -24,19 +24,23 @@ public class ItemService {
     private final GameSystemRepository systemRepo;
     private final GameEntityRepository entityRepo;
     private final ObjectMapper objectMapper;
+    private final GameSystemService gameSystemService;
 
     public ItemService(GameItemRepository itemRepo, GameSystemRepository systemRepo,
-                       GameEntityRepository entityRepo, ObjectMapper objectMapper) {
+                       GameEntityRepository entityRepo, ObjectMapper objectMapper,
+                       GameSystemService gameSystemService) {
         this.itemRepo = itemRepo;
         this.systemRepo = systemRepo;
         this.entityRepo = entityRepo;
         this.objectMapper = objectMapper;
+        this.gameSystemService = gameSystemService;
     }
 
     @Transactional
-    public GameItem create(UUID gameSystemId, UUID userId, String name, String type,
+    public GameItem create(UUID gameSystemId, UUID userId, boolean isAdmin, String name, String type,
                            BigDecimal weight, int value, String bonusesJson, String metadataJson) {
         requireSystem(gameSystemId);
+        gameSystemService.requireOwnerForSystem(gameSystemId, userId, isAdmin);
         if (!VALID_TYPES.contains(type)) {
             throw new ItemException("INVALID_ITEM_TYPE", "Type must be one of " + VALID_TYPES);
         }
@@ -58,9 +62,10 @@ public class ItemService {
     }
 
     @Transactional
-    public GameItem update(UUID id, String name, String type, BigDecimal weight,
-                           Integer value, String bonusesJson, String metadataJson) {
+    public GameItem update(UUID id, UUID userId, boolean isAdmin, String name, String type,
+                           BigDecimal weight, Integer value, String bonusesJson, String metadataJson) {
         var item = getById(id);
+        gameSystemService.requireOwnerForSystem(item.getGameSystemId(), userId, isAdmin);
         if (name != null) item.setName(name);
         if (bonusesJson != null) item.setBonusesJson(bonusesJson);
         if (metadataJson != null) item.setMetadataJson(metadataJson);
@@ -68,8 +73,9 @@ public class ItemService {
     }
 
     @Transactional
-    public void delete(UUID id) {
+    public void delete(UUID id, UUID userId, boolean isAdmin) {
         var item = getById(id);
+        gameSystemService.requireOwnerForSystem(item.getGameSystemId(), userId, isAdmin);
         // BUG-9: equipped item löschen würde Inventare brick-en
         // (GET → 404 INVENTORY_ITEM_NOT_FOUND). Erst überall ent-equippen/entfernen.
         for (var entity : entityRepo.findAll()) {

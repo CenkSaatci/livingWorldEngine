@@ -31,7 +31,7 @@ class AbilityServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AbilityService(repo, systemRepo);
+        service = new AbilityService(repo, systemRepo, mock(GameSystemService.class));
     }
 
     private void stubSystemExists() {
@@ -49,7 +49,7 @@ class AbilityServiceTest {
             return a;
         });
 
-        var ability = service.create(gameSystemId, userId, "Feuerball", AbilityType.ACTIVE,
+        var ability = service.create(gameSystemId, userId, false, "Feuerball", AbilityType.ACTIVE,
             "Ein mächtiger Feuerzauber", "{\"damage\":\"3d6\"}", null, 2, 0, "enemy");
 
         assertThat(ability.getName()).isEqualTo("Feuerball");
@@ -63,7 +63,7 @@ class AbilityServiceTest {
         stubSystemExists();
         when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        var ability = service.create(gameSystemId, userId, "Zäher Hund", AbilityType.PASSIVE,
+        var ability = service.create(gameSystemId, userId, false, "Zäher Hund", AbilityType.PASSIVE,
             "Erhöht max HP um 10", null, "{\"hp_max\":10,\"regeneration\":2}", 0, 0, null);
 
         assertThat(ability.getName()).isEqualTo("Zäher Hund");
@@ -72,11 +72,24 @@ class AbilityServiceTest {
     }
 
     @Test
+    void createChecksSystemOwnership() {
+        stubSystemExists();
+        var gameSystemService = mock(GameSystemService.class);
+        var scoped = new AbilityService(repo, systemRepo, gameSystemService);
+        doThrow(new GameSystemService.GameSystemException("GAME_SYSTEM_ACCESS_DENIED", "denied"))
+            .when(gameSystemService).requireOwnerForSystem(gameSystemId, userId, false);
+
+        assertThatThrownBy(() -> scoped.create(gameSystemId, userId, false, "X",
+            AbilityType.ACTIVE, null, "{}", null, 1, 0, null))
+            .isInstanceOf(GameSystemService.GameSystemException.class);
+    }
+
+    @Test
     void shouldRejectUnknownSystem() {
         when(systemRepo.findById(gameSystemId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() ->
-            service.create(gameSystemId, userId, "X", AbilityType.ACTIVE, null, "{}", null, 1, 0, null))
+            service.create(gameSystemId, userId, false, "X", AbilityType.ACTIVE, null, "{}", null, 1, 0, null))
             .isInstanceOf(AbilityService.AbilityException.class)
             .matches(e -> ((AbilityService.AbilityException) e).getErrorCode().equals("GAME_SYSTEM_NOT_FOUND"));
     }

@@ -119,6 +119,10 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 
 | Code | HTTP | Bedeutung |
 |---|---|---|
+| `GAME_SYSTEM_ACCESS_DENIED` | 403 | Kein Schreib-/Lesezugriff (Owner/Admin/Public-Regeln, F8) |
+
+| Code | HTTP | Bedeutung |
+|---|---|---|
 | `GAME_SYSTEM_NOT_FOUND` | 404 | Regelwerk nicht vorhanden |
 | `GAME_SYSTEM_SCHEMA_INVALID` | 400 | JSON nicht schema-konform |
 | `GAME_SYSTEM_ATTRIBUTE_REF_INVALID` | 400 | Skill/Dice-Expression referenziert unbekanntes Attribut |

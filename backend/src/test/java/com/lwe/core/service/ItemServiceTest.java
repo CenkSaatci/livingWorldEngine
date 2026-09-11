@@ -35,7 +35,7 @@ class ItemServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ItemService(itemRepo, systemRepo, entityRepo, new ObjectMapper());
+        service = new ItemService(itemRepo, systemRepo, entityRepo, new ObjectMapper(), mock(GameSystemService.class));
     }
 
     private void stubSystemExists() {
@@ -53,7 +53,7 @@ class ItemServiceTest {
             return i;
         });
 
-        var item = service.create(gameSystemId, userId, "Kurzschwert", "WEAPON",
+        var item = service.create(gameSystemId, userId, false, "Kurzschwert", "WEAPON",
             new BigDecimal("1.50"), 10, "{\"damage\":\"1d6\"}", "{}");
 
         assertThat(item.getName()).isEqualTo("Kurzschwert");
@@ -66,17 +66,30 @@ class ItemServiceTest {
     void shouldRejectUnknownSystem() {
         when(systemRepo.findById(gameSystemId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.create(gameSystemId, userId, "X", "WEAPON",
+        assertThatThrownBy(() -> service.create(gameSystemId, userId, false, "X", "WEAPON",
             BigDecimal.ONE, 1, "{}", "{}"))
             .isInstanceOf(ItemService.ItemException.class)
             .matches(e -> ((ItemService.ItemException) e).getErrorCode().equals("GAME_SYSTEM_NOT_FOUND"));
     }
 
     @Test
+    void createChecksSystemOwnership() {
+        stubSystemExists();
+        var gameSystemService = mock(GameSystemService.class);
+        var scoped = new ItemService(itemRepo, systemRepo, entityRepo, new ObjectMapper(), gameSystemService);
+        doThrow(new GameSystemService.GameSystemException("GAME_SYSTEM_ACCESS_DENIED", "denied"))
+            .when(gameSystemService).requireOwnerForSystem(gameSystemId, userId, false);
+
+        assertThatThrownBy(() -> scoped.create(gameSystemId, userId, false, "X", "WEAPON",
+            BigDecimal.ONE, 1, null, null))
+            .isInstanceOf(GameSystemService.GameSystemException.class);
+    }
+
+    @Test
     void shouldRejectInvalidType() {
         stubSystemExists();
 
-        assertThatThrownBy(() -> service.create(gameSystemId, userId, "X", "WAND",
+        assertThatThrownBy(() -> service.create(gameSystemId, userId, false, "X", "WAND",
             BigDecimal.ONE, 1, "{}", "{}"))
             .isInstanceOf(ItemService.ItemException.class)
             .matches(e -> ((ItemService.ItemException) e).getErrorCode().equals("INVALID_ITEM_TYPE"));
@@ -100,7 +113,7 @@ class ItemServiceTest {
         when(itemRepo.findById(item.getId())).thenReturn(Optional.of(item));
         when(itemRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        var updated = service.update(item.getId(), "Langschwert", null, null, null, null, null);
+        var updated = service.update(item.getId(), userId, false, "Langschwert", null, null, null, null, null);
 
         assertThat(updated.getName()).isEqualTo("Langschwert");
         assertThat(updated.getValue()).isEqualTo(10);
@@ -112,7 +125,7 @@ class ItemServiceTest {
         setId(item, UUID.randomUUID());
         when(itemRepo.findById(item.getId())).thenReturn(Optional.of(item));
 
-        service.delete(item.getId());
+        service.delete(item.getId(), userId, false);
 
         verify(itemRepo).delete(item);
     }
@@ -133,7 +146,7 @@ class ItemServiceTest {
         when(entityRepo.findAll()).thenReturn(java.util.List.of(entity));
         when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        service.delete(itemId);
+        service.delete(itemId, userId, false);
 
         var inv = mapper.readTree(entity.getInventoryJson());
         assertThat(inv.size()).isEqualTo(0);

@@ -23,6 +23,9 @@ class GameSystemServiceTest {
 
     @Mock private GameSystemRepository repo;
     @Mock private RuleSchemaValidator validator;
+    @Mock private com.lwe.core.repository.CampaignRepository campaignRepo;
+    @Mock private com.lwe.core.repository.CampaignMemberRepository campaignMemberRepo;
+    @Mock private com.lwe.core.repository.WorldRepository worldRepo;
 
     private GameSystemService service;
 
@@ -33,7 +36,7 @@ class GameSystemServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new GameSystemService(repo, validator);
+        service = new GameSystemService(repo, validator, campaignRepo, campaignMemberRepo, worldRepo);
     }
 
     @Test
@@ -137,6 +140,68 @@ class GameSystemServiceTest {
     }
 
     @Test
+    void getReadableRejectsForeignPrivateSystem() {
+        var owner = UUID.randomUUID();
+        var stranger = UUID.randomUUID();
+        var gs = new GameSystem("Privat", 1, validRules, schema, owner); // PRIVATE
+        setId(gs, UUID.randomUUID());
+        when(repo.findById(gs.getId())).thenReturn(Optional.of(gs));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> service.getReadable(gs.getId(), stranger, false))
+            .isInstanceOf(GameSystemService.GameSystemException.class)
+            .matches(e -> ((GameSystemService.GameSystemException) e).getErrorCode()
+                .equals("GAME_SYSTEM_ACCESS_DENIED"));
+
+        assertThat(service.getReadable(gs.getId(), owner, false)).isSameAs(gs);
+        assertThat(service.getReadable(gs.getId(), stranger, true)).isSameAs(gs);
+    }
+
+    @Test
+    void campaignMemberMayReadSystemOfTheirCampaign() {
+        var owner = UUID.randomUUID();
+        var player = UUID.randomUUID();
+        var gs = new GameSystem("Privat", 1, validRules, schema, owner);
+        setId(gs, UUID.randomUUID());
+        var campaignId = UUID.randomUUID();
+        when(repo.findById(gs.getId())).thenReturn(Optional.of(gs));
+        var campaign = new com.lwe.core.domain.Campaign(UUID.randomUUID(), gs.getId(), "Runde");
+        setId(campaign, campaignId);
+        when(campaignRepo.findByGameSystemId(gs.getId())).thenReturn(List.of(campaign));
+        when(campaignMemberRepo.existsByCampaignIdAndUserId(campaignId, player)).thenReturn(true);
+
+        assertThat(service.getReadable(gs.getId(), player, false)).isSameAs(gs);
+    }
+
+    @Test
+    void requireUsableForCampaignRejectsForeignPrivate() {
+        var gs = new GameSystem("Privat", 1, validRules, schema, UUID.randomUUID());
+        setId(gs, UUID.randomUUID());
+        when(repo.findById(gs.getId())).thenReturn(Optional.of(gs));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> service.requireUsableForCampaign(gs.getId(), UUID.randomUUID(), false))
+            .isInstanceOf(GameSystemService.GameSystemException.class);
+    }
+
+    @Test
+    void cloneAllowsPublicSystemAndAssignsCloner() {
+        var owner = UUID.randomUUID();
+        var cloner = UUID.randomUUID();
+        var gs = new GameSystem("Oeffentlich", 1, validRules, schema, owner);
+        gs.setVisibility("PUBLIC");
+        setId(gs, UUID.randomUUID());
+        when(repo.findById(gs.getId())).thenReturn(Optional.of(gs));
+        when(repo.existsByName(any())).thenReturn(false);
+        when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var copy = service.clone(gs.getId(), cloner, false);
+
+        assertThat(copy.getOwnerId()).isEqualTo(cloner);
+        assertThat(copy.getVisibility()).isEqualTo("PRIVATE");
+    }
+
+    @Test
     void listVisibleUsesFilterForNonAdmin() {
         var userId = UUID.randomUUID();
         when(repo.findVisibleForUser(userId)).thenReturn(List.of());
@@ -156,5 +221,13 @@ class GameSystemServiceTest {
             .isInstanceOf(GameSystemService.GameSystemException.class)
             .matches(e -> ((GameSystemService.GameSystemException) e).getErrorCode()
                 .equals("GAME_SYSTEM_NOT_FOUND"));
+    }
+
+    private void setId(Object obj, UUID id) {
+        try {
+            var f = obj.getClass().getDeclaredField("id");
+            f.setAccessible(true);
+            f.set(obj, id);
+        } catch (Exception e) { throw new RuntimeException(e); }
     }
 }

@@ -15,6 +15,11 @@ public interface WorldRepository extends JpaRepository<World, UUID> {
     List<World> findByActiveTrue();
     long countByOwnerIdAndActiveTrue(UUID ownerId);
 
+    /** Wie countByOwnerIdAndActiveTrue, aber ohne Kampagnen-Fork-Welten (P27-T03/Audit). */
+    @Query("SELECT COUNT(w) FROM World w WHERE w.ownerId = :ownerId AND w.active = true "
+        + "AND NOT EXISTS (SELECT c FROM Campaign c WHERE c.worldId = w.id AND c.forkedWorld = true)")
+    long countQuotaRelevantByOwnerId(@Param("ownerId") UUID ownerId);
+
     @Query(value = """
         (SELECT * FROM worlds WHERE owner_id = :userId AND active = true)
         UNION

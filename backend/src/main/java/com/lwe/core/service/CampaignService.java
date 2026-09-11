@@ -24,6 +24,7 @@ public class CampaignService {
     private final WorldAccess worldAccess;
     private final CampaignMemberService memberService;
     private final WorldService worldService;
+    private final GameSystemService gameSystemService;
 
     public CampaignService(CampaignRepository repo,
                            WorldRepository worldRepo,
@@ -31,7 +32,8 @@ public class CampaignService {
                            GameSystemRepository systemRepo,
                            WorldAccess worldAccess,
                            CampaignMemberService memberService,
-                           WorldService worldService) {
+                           WorldService worldService,
+                           GameSystemService gameSystemService) {
         this.repo = repo;
         this.worldRepo = worldRepo;
         this.memberRepo = memberRepo;
@@ -39,6 +41,7 @@ public class CampaignService {
         this.worldAccess = worldAccess;
         this.memberService = memberService;
         this.worldService = worldService;
+        this.gameSystemService = gameSystemService;
     }
 
     /** Erstellt die Kampagne auf einer eigenen Welt-Kopie (Fork, P27-T03). */
@@ -50,6 +53,8 @@ public class CampaignService {
         systemRepo.findById(gameSystemId)
             .filter(GameSystem::isActive)
             .orElseThrow(() -> new CampaignException("GAME_SYSTEM_NOT_FOUND", "Game system not found or inactive"));
+        // F8/P27: fremde PRIVATE Systeme sind fuer Kampagnen nicht nutzbar.
+        gameSystemService.requireUsableForCampaign(gameSystemId, userId, false);
 
         var fork = worldService.cloneForCampaign(worldId, userId);
         var campaign = new Campaign(fork.getId(), gameSystemId, name);
@@ -85,6 +90,7 @@ public class CampaignService {
     @Transactional
     public Campaign update(UUID id, UUID userId, String name, String stateJson) {
         var campaign = getById(id, userId);
+        requireCampaignDmOrWorldOwner(campaign, userId);
         if (name != null) campaign.setName(name);
         if (stateJson != null) campaign.setStateJson(stateJson);
         return repo.save(campaign);
@@ -93,6 +99,7 @@ public class CampaignService {
     @Transactional
     public void delete(UUID id, UUID userId) {
         var campaign = getById(id, userId);
+        requireCampaignDmOrWorldOwner(campaign, userId);
         // Fork-Welt der Kampagne mit entfernen (soft-delete), Template bleibt unberuehrt.
         if (campaign.isForkedWorld()) {
             worldRepo.findById(campaign.getWorldId()).ifPresent(w -> {
@@ -101,6 +108,16 @@ public class CampaignService {
             });
         }
         repo.delete(campaign);
+    }
+
+    /** Aenderungen nur DM der Kampagne oder Welt-Owner (Audit P27). */
+    private void requireCampaignDmOrWorldOwner(Campaign campaign, UUID userId) {
+        var isWorldOwner = worldRepo.findById(campaign.getWorldId())
+            .map(w -> w.getOwnerId().equals(userId)).orElse(false);
+        if (isWorldOwner) return;
+        if (!memberService.isDm(campaign.getId(), userId)) {
+            throw new CampaignException("DM_REQUIRED", "Only the DM may modify this campaign");
+        }
     }
 
     public static class CampaignException extends RuntimeException {

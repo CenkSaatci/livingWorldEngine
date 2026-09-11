@@ -149,6 +149,8 @@ Listet alle aktiven Regelwerke.
 ```
 
 ### `GET /api/v1/game-systems/{id}` (auth)
+Lesbar für Owner/Admin, PUBLIC/Legacy-Systeme sowie Mitglieder einer Kampagne mit diesem System (`GAME_SYSTEM_ACCESS_DENIED` sonst).
+**Ownership:** `POST` setzt den Ersteller als Owner (PRIVATE); `PATCH/DELETE` nur Owner/Admin; `clone` auch für PUBLIC; Legacy ohne Owner nur Admin (F8/P27-T01).
 Liefert vollständiges Regelwerk.
 
 ### `POST /api/v1/game-systems/{id}/validate` (auth)
@@ -209,6 +211,7 @@ Alle Endpunkte auth und user-scoped (Tenant-Isolation via JWT `user_id`, siehe [
 Kampagnen verbinden eine **Welt** mit einem **System** (ADR-010). Der Ersteller wird automatisch **DM**; Spieler werden vom DM hinzugefügt/entfernt. Dynamische Spiel-Zustände (Krieg, Eroberungen) gehören in `state_json`.
 
 ### `POST /api/v1/campaigns` (auth, Welt-Owner/Member)
+Erstellt die Kampagne auf einer **eigenen Fork-Kopie** der Welt (P27-T03); die Antwort enthält die Fork-`worldId`. Die Vorlage bleibt unverändert. System muss eigen/PUBLIC/Legacy sein (`GAME_SYSTEM_ACCESS_DENIED`).
 **Request:**
 ```json
 {
@@ -233,6 +236,10 @@ Body (optional): `name`, `stateJson`
 ### `POST /api/v1/campaigns/{id}/members` (auth, nur DM)
 **Request:** `{ "userId": "uuid", "role": "PLAYER" }` (role: `PLAYER` | `DM`)
 **Fehlercodes:** `USER_NOT_FOUND`, `MEMBER_ALREADY`, `DM_REQUIRED`
+
+### `PATCH /api/v1/campaigns/{id}/members/{userId}` (auth, nur DM)
+**Request:** `{ "role": "DM" | "PLAYER" }` — Promote/Demote; letzter DM geschützt.
+**Fehlercodes:** `INVALID_ROLE` (400), `LAST_DM` (409), `DM_REQUIRED` (403)
 
 ### `GET /api/v1/campaigns/{id}/members` (auth, Welt-Zugriff)
 

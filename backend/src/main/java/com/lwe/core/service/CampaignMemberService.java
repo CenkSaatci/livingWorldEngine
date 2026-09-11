@@ -42,6 +42,8 @@ public class CampaignMemberService {
 
     /** P27-T03: Campaign-Rollen auf World-Members spiegeln, damit Spieler Weltzugriff haben. */
     private void syncWorldMember(Campaign campaign, UUID userId, String role) {
+        // Nur Fork-Welten gehoeren der Kampagne; Legacy-Kampagnen zeigen auf geteilte Templates (Audit P27).
+        if (!campaign.isForkedWorld()) return;
         var world = worldRepo.findById(campaign.getWorldId()).orElse(null);
         if (world != null && world.getOwnerId().equals(userId)) return; // Owner ist implizit DM
         var existing = worldMemberRepo.findByWorldIdAndUserId(campaign.getWorldId(), userId);
@@ -54,6 +56,7 @@ public class CampaignMemberService {
     }
 
     private void removeWorldMember(Campaign campaign, UUID userId) {
+        if (!campaign.isForkedWorld()) return;
         worldMemberRepo.findByWorldIdAndUserId(campaign.getWorldId(), userId)
             .ifPresent(worldMemberRepo::delete);
     }
@@ -97,7 +100,7 @@ public class CampaignMemberService {
     /** DM kann Mitglieder entfernen; der letzte DM bleibt geschützt (P27-T02). */
     @Transactional
     public void removeMember(UUID campaignId, UUID actorUserId, UUID targetUserId) {
-        var campaign = requireCampaign(campaignId);
+        var campaign = requireCampaignLocked(campaignId);
         worldAccess.requireAccess(campaign.getWorldId(), actorUserId);
         var member = memberRepo.findByCampaignIdAndUserId(campaignId, targetUserId)
             .orElseThrow(() -> new CampaignMemberException("MEMBER_NOT_FOUND", "Member not found"));
@@ -112,7 +115,7 @@ public class CampaignMemberService {
     /** Rolle aendern (P27-T02): DM kann befoerdern/degradieren; letzter DM geschuetzt. */
     @Transactional
     public CampaignMember updateRole(UUID campaignId, UUID actorUserId, UUID targetUserId, String role) {
-        var campaign = requireCampaign(campaignId);
+        var campaign = requireCampaignLocked(campaignId);
         worldAccess.requireAccess(campaign.getWorldId(), actorUserId);
         requireDm(campaignId, actorUserId);
         validateRole(role);
@@ -146,6 +149,12 @@ public class CampaignMemberService {
 
     private Campaign requireCampaign(UUID campaignId) {
         return campaignRepo.findById(campaignId)
+            .orElseThrow(() -> new CampaignMemberException("CAMPAIGN_NOT_FOUND", "Campaign not found"));
+    }
+
+    /** Mit Schreib-Lock: schuetzt die "letzter DM"-Invariante vor parallelen Requests. */
+    private Campaign requireCampaignLocked(UUID campaignId) {
+        return campaignRepo.findByIdForUpdate(campaignId)
             .orElseThrow(() -> new CampaignMemberException("CAMPAIGN_NOT_FOUND", "Campaign not found"));
     }
 

@@ -21,9 +21,9 @@ public interface GameSystemRepository extends JpaRepository<GameSystem, UUID> {
 
     List<GameSystem> findByActiveTrue();
 
-    /** Sichtbar fuer User: eigene + PUBLIC + Legacy (Owner NULL). */
+    /** Sichtbar fuer User: eigene + PUBLIC (Legacy-Seeds sind PUBLIC; NULL+PRIVATE bleibt admin-only). */
     @Query("SELECT gs FROM GameSystem gs WHERE gs.active = true AND "
-        + "(gs.ownerId = :userId OR gs.visibility = 'PUBLIC' OR gs.ownerId IS NULL)")
+        + "(gs.ownerId = :userId OR gs.visibility = 'PUBLIC')")
     List<GameSystem> findVisibleForUser(@Param("userId") UUID userId);
 
     boolean existsByName(String name);

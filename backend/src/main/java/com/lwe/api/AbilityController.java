@@ -27,7 +27,7 @@ public class AbilityController {
     public ResponseEntity<AbilityResponse> create(@PathVariable UUID gameSystemId,
                                                     @Valid @RequestBody CreateRequest req,
                                                     @AuthenticationPrincipal User user) {
-        var ability = service.create(gameSystemId, user.getId(), req.name(), req.type(),
+        var ability = service.create(gameSystemId, user.getId(), isAdmin(user), req.name(), req.type(),
             req.description(), req.effectsJson(), req.statBonusesJson(),
             req.apCost(), req.cooldownRounds(), req.targetType());
         return ResponseEntity.status(HttpStatus.CREATED).body(AbilityResponse.from(ability));
@@ -51,7 +51,7 @@ public class AbilityController {
     public ResponseEntity<AbilityResponse> update(@PathVariable UUID id,
                                                     @Valid @RequestBody UpdateRequest req,
                                                     @AuthenticationPrincipal User user) {
-        var ability = service.update(id, user.getId(), req.name(), req.description(),
+        var ability = service.update(id, user.getId(), isAdmin(user), req.name(), req.description(),
             req.effectsJson(), req.statBonusesJson(), req.apCost(), req.cooldownRounds(), req.targetType());
         return ResponseEntity.ok(AbilityResponse.from(ability));
     }
@@ -59,8 +59,12 @@ public class AbilityController {
     @DeleteMapping("/api/v1/abilities/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id,
                                         @AuthenticationPrincipal User user) {
-        service.delete(id, user.getId());
+        service.delete(id, user.getId(), isAdmin(user));
         return ResponseEntity.noContent().build();
+    }
+
+    private static boolean isAdmin(User user) {
+        return "ADMIN".equals(user.getRole());
     }
 
     public record CreateRequest(

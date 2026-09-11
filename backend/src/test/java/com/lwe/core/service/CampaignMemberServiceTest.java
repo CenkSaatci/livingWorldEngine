@@ -85,7 +85,8 @@ class CampaignMemberServiceTest {
         var campaign = campaign();
         var user = new User("spieler@test.de", "spieler", "hash", "PLAYER", "de");
         setId(user, otherUserId);
-        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
         when(userRepo.findById(otherUserId)).thenReturn(Optional.of(user));
         when(memberRepo.existsByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(false);
         when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(new CampaignMember(campaignId, userId, "DM")));
@@ -100,7 +101,8 @@ class CampaignMemberServiceTest {
     @Test
     void onlyDmCanAddMembers() {
         var campaign = campaign();
-        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.empty());
         when(userRepo.findById(otherUserId)).thenReturn(Optional.of(new User("x@test.de", "x", "hash", "PLAYER", "de")));
 
@@ -112,7 +114,8 @@ class CampaignMemberServiceTest {
     @Test
     void addMemberRejectsUnknownUser() {
         var campaign = campaign();
-        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
         when(userRepo.findById(otherUserId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.addMember(campaignId, userId, otherUserId, "PLAYER"))
@@ -123,7 +126,8 @@ class CampaignMemberServiceTest {
     @Test
     void addMemberRejectsDuplicate() {
         var campaign = campaign();
-        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
         when(userRepo.findById(otherUserId)).thenReturn(Optional.of(new User("x@test.de", "x", "hash", "PLAYER", "de")));
         when(memberRepo.existsByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(true);
 
@@ -137,7 +141,8 @@ class CampaignMemberServiceTest {
         var campaign = campaign();
         var member = new CampaignMember(campaignId, otherUserId, "PLAYER");
         setId(member, UUID.randomUUID());
-        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(Optional.of(member));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(new CampaignMember(campaignId, userId, "DM")));
 
@@ -151,7 +156,8 @@ class CampaignMemberServiceTest {
         var campaign = campaign();
         var member = new CampaignMember(campaignId, otherUserId, "PLAYER");
         setId(member, UUID.randomUUID());
-        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(Optional.of(member));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.empty());
 
@@ -166,7 +172,8 @@ class CampaignMemberServiceTest {
         var dmMember = new CampaignMember(campaignId, otherUserId, "DM");
         setId(dmMember, UUID.randomUUID());
         var actorDm = new CampaignMember(campaignId, userId, "DM");
-        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(Optional.of(dmMember));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
         when(memberRepo.countByCampaignIdAndRole(campaignId, "DM")).thenReturn(1L);
@@ -182,7 +189,8 @@ class CampaignMemberServiceTest {
         var dmMember = new CampaignMember(campaignId, otherUserId, "DM");
         setId(dmMember, UUID.randomUUID());
         var actorDm = new CampaignMember(campaignId, userId, "DM");
-        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(Optional.of(dmMember));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
         when(memberRepo.countByCampaignIdAndRole(campaignId, "DM")).thenReturn(2L);
@@ -196,7 +204,8 @@ class CampaignMemberServiceTest {
     void addMemberRejectsInvalidRole() {
         var campaign = campaign();
         var actorDm = new CampaignMember(campaignId, userId, "DM");
-        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
         when(userRepo.findById(otherUserId)).thenReturn(Optional.of(mock(User.class)));
         when(memberRepo.existsByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(false);
@@ -212,7 +221,8 @@ class CampaignMemberServiceTest {
         var actorDm = new CampaignMember(campaignId, userId, "DM");
         var player = new CampaignMember(campaignId, otherUserId, "PLAYER");
         setId(player, UUID.randomUUID());
-        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(Optional.of(player));
         when(memberRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -229,7 +239,8 @@ class CampaignMemberServiceTest {
     void updateRoleProtectsLastDm() {
         var campaign = campaign();
         var actorDm = new CampaignMember(campaignId, userId, "DM");
-        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
         when(memberRepo.countByCampaignIdAndRole(campaignId, "DM")).thenReturn(1L);
 
@@ -241,8 +252,10 @@ class CampaignMemberServiceTest {
     @Test
     void addMemberMirrorsWorldMember() {
         var campaign = campaign();
+        campaign.setForkedWorld(true);
         var actorDm = new CampaignMember(campaignId, userId, "DM");
-        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
         when(userRepo.findById(otherUserId)).thenReturn(Optional.of(mock(User.class)));
         when(memberRepo.existsByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(false);
@@ -261,10 +274,12 @@ class CampaignMemberServiceTest {
     @Test
     void promoteUpdatesWorldMemberRole() {
         var campaign = campaign();
+        campaign.setForkedWorld(true);
         var actorDm = new CampaignMember(campaignId, userId, "DM");
         var player = new CampaignMember(campaignId, otherUserId, "PLAYER");
         setId(player, UUID.randomUUID());
-        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(Optional.of(player));
         when(memberRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -281,10 +296,12 @@ class CampaignMemberServiceTest {
     @Test
     void removeMemberDeletesWorldMember() {
         var campaign = campaign();
+        campaign.setForkedWorld(true);
         var actorDm = new CampaignMember(campaignId, userId, "DM");
         var player = new CampaignMember(campaignId, otherUserId, "PLAYER");
         setId(player, UUID.randomUUID());
-        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(Optional.of(player));
         var wm = new com.lwe.core.domain.WorldMember(worldId, otherUserId, "PLAYER");
@@ -293,6 +310,23 @@ class CampaignMemberServiceTest {
         service.removeMember(campaignId, userId, otherUserId);
 
         verify(worldMemberRepo).delete(wm);
+    }
+
+    @Test
+    void legacyCampaignDoesNotTouchWorldMembers() {
+        // Audit P27: Legacy-Kampagnen zeigen auf geteilte Templates -> kein Mirroring.
+        var campaign = campaign(); // forkedWorld = false
+        var actorDm = new CampaignMember(campaignId, userId, "DM");
+        lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
+        when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
+        when(userRepo.findById(otherUserId)).thenReturn(Optional.of(mock(User.class)));
+        when(memberRepo.existsByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(false);
+        when(memberRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.addMember(campaignId, userId, otherUserId, "PLAYER");
+
+        verifyNoInteractions(worldMemberRepo);
     }
 
     @Test
@@ -313,7 +347,8 @@ class CampaignMemberServiceTest {
     @Test
     void worldAccessDeniedPropagates() {
         var campaign = campaign();
-        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
         doThrow(new WorldAccessException("WORLD_ACCESS_DENIED", "Access denied"))
             .when(worldAccess).requireAccess(worldId, userId);
 

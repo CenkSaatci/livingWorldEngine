@@ -38,7 +38,7 @@ class QuotaServiceTest {
         var user = new User("t@t.com", "t", "h", "USER", "de");
         var p = createPlan(3, 5);
         when(planRepo.findByName("FREE")).thenReturn(Optional.of(p));
-        when(worldRepo.countByOwnerIdAndActiveTrue(any())).thenReturn(2L);
+        when(worldRepo.countQuotaRelevantByOwnerId(any())).thenReturn(2L);
 
         service.checkCanCreateWorld(UUID.randomUUID(), user);
     }
@@ -48,7 +48,7 @@ class QuotaServiceTest {
         var user = new User("t@t.com", "t", "h", "USER", "de");
         var p = createPlan(3, 5);
         when(planRepo.findByName("FREE")).thenReturn(Optional.of(p));
-        when(worldRepo.countByOwnerIdAndActiveTrue(any())).thenReturn(3L);
+        when(worldRepo.countQuotaRelevantByOwnerId(any())).thenReturn(3L);
 
         assertThatThrownBy(() -> service.checkCanCreateWorld(UUID.randomUUID(), user))
             .isInstanceOf(QuotaService.QuotaException.class)

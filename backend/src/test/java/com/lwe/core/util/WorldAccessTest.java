@@ -61,6 +61,20 @@ class WorldAccessTest {
     }
 
     @Test
+    void deletedWorldIsDenied() {
+        var ownerId = UUID.randomUUID();
+        var worldId = UUID.randomUUID();
+        var world = world(ownerId);
+        world.setActive(false);
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> new WorldAccess(memberRepo, worldRepo).requireAccess(worldId, ownerId))
+            .isInstanceOf(WorldAccess.WorldAccessException.class)
+            .matches(e -> ((WorldAccess.WorldAccessException) e).getErrorCode().equals("WORLD_ACCESS_DENIED"));
+    }
+
+    @Test
     void missingWorldThrowsNotFound() {
         var worldId = UUID.randomUUID();
         when(worldRepo.findById(worldId)).thenReturn(Optional.empty());

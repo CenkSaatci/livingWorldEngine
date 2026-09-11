@@ -160,6 +160,7 @@ public class WorldService {
             copy.setServices(loc.getServices());
             copy.setFactions(loc.getFactions());
             copy.setPositionJson(loc.getPositionJson());
+            copy.setCapital(loc.isCapital());
             var saved = locationRepo.save(copy);
             locationIdMap.put(loc.getId(), saved.getId());
         }
@@ -232,6 +233,19 @@ public class WorldService {
             }
         }
 
+        // Fraktions-Anfuehrer auf kopierte Entities remappen (Audit P27)
+        for (var f : factionRepo.findByWorldIdOrderByNameAsc(worldId)) {
+            if (f.getLeaderEntityId() == null) continue;
+            var mapped = entityIdMap.get(f.getLeaderEntityId());
+            var newFactionId = factionIdMap.get(f.getId());
+            if (mapped != null && newFactionId != null) {
+                factionRepo.findById(newFactionId).ifPresent(copy -> {
+                    copy.setLeaderEntityId(mapped);
+                    factionRepo.save(copy);
+                });
+            }
+        }
+
         // World maps
         var finalCloneId = clone.getId();
         worldMapRepo.findByWorldId(worldId).ifPresent(m -> {
@@ -251,6 +265,7 @@ public class WorldService {
                 copy.setTemperature(rw.getTemperature());
                 copy.setWind(rw.getWind());
                 copy.setWeatherType(rw.getWeatherType());
+                copy.setDescription(rw.getDescription());
                 regionWeatherRepo.save(copy);
             }
         }

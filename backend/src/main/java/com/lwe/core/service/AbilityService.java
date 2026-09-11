@@ -15,17 +15,21 @@ public class AbilityService {
 
     private final AbilityRepository repo;
     private final GameSystemRepository systemRepo;
+    private final GameSystemService gameSystemService;
 
-    public AbilityService(AbilityRepository repo, GameSystemRepository systemRepo) {
+    public AbilityService(AbilityRepository repo, GameSystemRepository systemRepo,
+                          GameSystemService gameSystemService) {
         this.repo = repo;
         this.systemRepo = systemRepo;
+        this.gameSystemService = gameSystemService;
     }
 
     @Transactional
-    public Ability create(UUID gameSystemId, UUID userId, String name, AbilityType type,
+    public Ability create(UUID gameSystemId, UUID userId, boolean isAdmin, String name, AbilityType type,
                           String description, String effectsJson, String statBonusesJson,
                           int apCost, int cooldownRounds, String targetType) {
         requireSystem(gameSystemId);
+        gameSystemService.requireOwnerForSystem(gameSystemId, userId, isAdmin);
 
         var ability = new Ability(gameSystemId, name, type);
         if (description != null) ability.setDescription(description);
@@ -49,12 +53,13 @@ public class AbilityService {
     }
 
     @Transactional
-    public Ability update(UUID id, UUID userId, String name, String description,
+    public Ability update(UUID id, UUID userId, boolean isAdmin, String name, String description,
                           String effectsJson, String statBonusesJson,
                           Integer apCost, Integer cooldownRounds, String targetType) {
         var ability = repo.findById(id)
             .orElseThrow(() -> new AbilityException("ABILITY_NOT_FOUND", "Ability not found"));
         requireSystem(ability.getGameSystemId());
+        gameSystemService.requireOwnerForSystem(ability.getGameSystemId(), userId, isAdmin);
 
         if (name != null) ability.setName(name);
         if (description != null) ability.setDescription(description);
@@ -68,10 +73,11 @@ public class AbilityService {
     }
 
     @Transactional
-    public void delete(UUID id, UUID userId) {
+    public void delete(UUID id, UUID userId, boolean isAdmin) {
         var ability = repo.findById(id)
             .orElseThrow(() -> new AbilityException("ABILITY_NOT_FOUND", "Ability not found"));
         requireSystem(ability.getGameSystemId());
+        gameSystemService.requireOwnerForSystem(ability.getGameSystemId(), userId, isAdmin);
         repo.delete(ability);
     }
 

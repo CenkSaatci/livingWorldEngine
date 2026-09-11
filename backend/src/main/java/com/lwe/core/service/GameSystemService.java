@@ -1,7 +1,10 @@
 package com.lwe.core.service;
 
 import com.lwe.core.domain.GameSystem;
+import com.lwe.core.repository.CampaignMemberRepository;
+import com.lwe.core.repository.CampaignRepository;
 import com.lwe.core.repository.GameSystemRepository;
+import com.lwe.core.repository.WorldRepository;
 import com.lwe.rules.RuleSchemaValidator;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
@@ -15,10 +18,19 @@ public class GameSystemService {
 
     private final GameSystemRepository repo;
     private final RuleSchemaValidator validator;
+    private final CampaignRepository campaignRepo;
+    private final CampaignMemberRepository campaignMemberRepo;
+    private final WorldRepository worldRepo;
 
-    public GameSystemService(GameSystemRepository repo, RuleSchemaValidator validator) {
+    public GameSystemService(GameSystemRepository repo, RuleSchemaValidator validator,
+                             CampaignRepository campaignRepo,
+                             CampaignMemberRepository campaignMemberRepo,
+                             WorldRepository worldRepo) {
         this.repo = repo;
         this.validator = validator;
+        this.campaignRepo = campaignRepo;
+        this.campaignMemberRepo = campaignMemberRepo;
+        this.worldRepo = worldRepo;
     }
 
     @PostConstruct
@@ -59,6 +71,48 @@ public class GameSystemService {
         validator.validateOrThrow(rulesJson, schema);
         var gs = new GameSystem(name, version, rulesJson, schema, ownerId);
         return repo.save(gs);
+    }
+
+    /** F8/P27-T01: Fremdsystem-Schreibzugriff verhindern (Abilities/Items/Update). */
+    public void requireOwnerForSystem(UUID systemId, UUID userId, boolean isAdmin) {
+        var gs = getById(systemId);
+        requireOwner(gs, userId, isAdmin);
+    }
+
+    /** Lesen: Owner, Admin, PUBLIC/Legacy oder Nutzer einer Kampagne mit diesem System. */
+    public boolean canRead(GameSystem gs, UUID userId, boolean isAdmin) {
+        if (isAdmin) return true;
+        if (gs.getOwnerId() != null && gs.getOwnerId().equals(userId)) return true;
+        if ("PUBLIC".equals(gs.getVisibility())) return true;
+        for (var c : campaignRepo.findByGameSystemId(gs.getId())) {
+            if (campaignMemberRepo.existsByCampaignIdAndUserId(c.getId(), userId)) return true;
+            var owner = worldRepo.findById(c.getWorldId())
+                .map(w -> w.getOwnerId().equals(userId)).orElse(false);
+            if (owner) return true;
+        }
+        return false;
+    }
+
+    public GameSystem getReadable(UUID id, UUID userId, boolean isAdmin) {
+        var gs = getById(id);
+        if (!canRead(gs, userId, isAdmin)) {
+            throw new GameSystemException("GAME_SYSTEM_ACCESS_DENIED",
+                "You may not read this game system");
+        }
+        return gs;
+    }
+
+    /** Fuer Kampagnen nutzbar: eigene, PUBLIC oder Legacy. */
+    public void requireUsableForCampaign(UUID systemId, UUID userId, boolean isAdmin) {
+        var gs = getById(systemId);
+        if (isAdmin) return;
+        boolean ok = "PUBLIC".equals(gs.getVisibility())
+            || gs.getOwnerId() == null
+            || gs.getOwnerId().equals(userId);
+        if (!ok) {
+            throw new GameSystemException("GAME_SYSTEM_ACCESS_DENIED",
+                "This game system is private");
+        }
     }
 
     /** F8/P27-T01: Schreiben nur Owner oder Admin; Legacy (Owner NULL) nur Admin. */
@@ -125,7 +179,13 @@ public class GameSystemService {
     @Transactional
     public GameSystem clone(UUID id, UUID userId, boolean isAdmin) {
         var original = getById(id);
-        requireOwner(original, userId, isAdmin);
+        if (!isAdmin
+            && !"PUBLIC".equals(original.getVisibility())
+            && original.getOwnerId() != null
+            && !original.getOwnerId().equals(userId)) {
+            throw new GameSystemException("GAME_SYSTEM_ACCESS_DENIED",
+                "You may not clone this game system");
+        }
         var copy = new GameSystem(original.getName() + " (Copy)", original.getVersion(),
             original.getRulesJson(), original.getSchemaJson(), userId);
         // Ensure unique name

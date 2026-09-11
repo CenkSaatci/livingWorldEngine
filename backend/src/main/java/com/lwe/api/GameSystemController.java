@@ -46,8 +46,9 @@ public class GameSystemController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getById(@PathVariable UUID id) {
-        var gs = service.getById(id);
+    public ResponseEntity<?> getById(@PathVariable UUID id,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal User user) {
+        var gs = service.getReadable(id, user.getId(), isAdmin(user));
         return ResponseEntity.ok(new GameSystemDetailResponse(
             gs.getId(), gs.getName(), gs.getVersion(), gs.getRulesJson(), gs.isActive()));
     }

@@ -23,6 +23,10 @@ public class WorldAccess {
         if (!world.getOwnerId().equals(userId) && !memberRepo.existsByWorldIdAndUserId(worldId, userId)) {
             throw new WorldAccessException("WORLD_ACCESS_DENIED", "Access denied");
         }
+        // Geloeschte (soft-deleted) Welten sind gesperrt (Audit P27).
+        if (!world.isActive()) {
+            throw new WorldAccessException("WORLD_ACCESS_DENIED", "World is deleted");
+        }
     }
 
     /** DM-Rechte: Welt-Owner oder Mitglied mit Rolle DM. */
