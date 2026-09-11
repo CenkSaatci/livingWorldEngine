@@ -39,7 +39,9 @@ export default function EntityListPage() {
   const [charRules, setCharRules] = useState<WizardData | null>(null);
   const [showWizard, setShowWizard] = useState(false);
   const activeCampaign = useActiveCampaign();
-  const activeGameSystemId = activeCampaign?.gameSystemId;
+  // Nur die zur Welt passende Kampagne darf den Wizard steuern (Audit P30).
+  const activeGameSystemId =
+    activeCampaign && activeCampaign.worldId === worldId ? activeCampaign.gameSystemId : undefined;
 
   const filtered = (entities ?? []).filter((e) => {
     if (e.entityType === 'FACTION') return false;
@@ -50,7 +52,8 @@ export default function EntityListPage() {
 
   // Charakter-Wizard anbieten, wenn das aktive System Erstellungsdaten hat (P30).
   useEffect(() => {
-    if (!activeGameSystemId) { setCharRules(null); return; }
+    setCharRules(null);
+    if (!activeGameSystemId) return;
     let cancelled = false;
     apiClient.get(`/game-systems/${activeGameSystemId}`).then((res) => {
       if (cancelled) return;
@@ -59,7 +62,7 @@ export default function EntityListPage() {
         parsed.creationBudget != null || (parsed.packages?.length ?? 0) > 0
       );
       setCharRules(usable ? parsed : null);
-    }).catch(() => setCharRules(null));
+    }).catch(() => { if (!cancelled) setCharRules(null); });
     return () => { cancelled = true; };
   }, [activeGameSystemId]);
 

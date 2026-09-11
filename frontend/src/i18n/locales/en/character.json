@@ -77,6 +77,19 @@
     "back": "Back",
     "next": "Next",
     "save": "Save",
-    "saveFailed": "Could not save character"
+    "saveFailed": "Could not save character",
+    "codeBuildOverBudget": "Budget exceeded",
+    "codeAttrRange": "Attribute out of range: {{a}}",
+    "codeAttrCap": "Attribute above system maximum: {{a}}",
+    "codeAttrTotalCap": "Attribute total above system maximum",
+    "codeAdvantageCap": "Advantage budget exceeded",
+    "codeTraitExcludes": "Traits exclude each other: {{a}} / {{b}}",
+    "codeTraitRequires": "{{a}} requires {{b}}",
+    "codeChoiceCount": "Choice group incomplete: {{a}}",
+    "codeChoiceInvalid": "Invalid choice for {{a}}: {{b}}",
+    "codeDuplicateKind": "Multiple packages of the same kind: {{a}}",
+    "codeRestricted": "{{a}} is restricted with {{b}}",
+    "codeUnknown": "Unknown package: {{a}}",
+    "codeRecommended": "Recommended for {{a}}: {{b}}"
   }
 }

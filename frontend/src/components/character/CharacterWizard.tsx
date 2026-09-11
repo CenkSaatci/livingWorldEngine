@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ArrowRight, Check, X } from 'lucide-react';
 import { apiClient } from '../../api/client';
@@ -37,6 +37,17 @@ export function CharacterWizard({ worldId, rules, onCreated, onClose }: Props) {
     traits: [],
   });
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    dialogRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !saving) onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [saving, onClose]);
+
   const cost = buildCost(rules, build);
   const issues = buildIssues(rules, build);
   const warnings = packageSelectionWarnings(rules, build.packageSelections);
@@ -73,9 +84,13 @@ export function CharacterWizard({ worldId, rules, onCreated, onClose }: Props) {
 
   const toggleTrait = (defName: string) => {
     const exists = build.traits.some((tr) => tr.name === defName);
+    const def = (rules.traits ?? []).find((tr) => tr.name === defName);
+    const tiers = def?.costs ?? [];
     setBuild({
       ...build,
-      traits: exists ? build.traits.filter((tr) => tr.name !== defName) : [...build.traits, { name: defName }],
+      traits: exists
+        ? build.traits.filter((tr) => tr.name !== defName)
+        : [...build.traits, { name: defName, ...(tiers.length > 1 ? { tier: tiers[0].tier } : {}) }],
     });
   };
 
@@ -115,6 +130,28 @@ export function CharacterWizard({ worldId, rules, onCreated, onClose }: Props) {
     }
   };
 
+  const CODE_KEYS: Record<string, string> = {
+    build_over_budget: 'codeBuildOverBudget',
+    build_attr_range: 'codeAttrRange',
+    build_attr_cap: 'codeAttrCap',
+    build_attr_total_cap: 'codeAttrTotalCap',
+    build_advantage_cap: 'codeAdvantageCap',
+    build_trait_excludes: 'codeTraitExcludes',
+    build_trait_requires: 'codeTraitRequires',
+    choice_count: 'codeChoiceCount',
+    choice_invalid: 'codeChoiceInvalid',
+    duplicate_kind: 'codeDuplicateKind',
+    restricted: 'codeRestricted',
+    unknown: 'codeUnknown',
+    recommended: 'codeRecommended',
+  };
+
+  const codeText = (code: string) => {
+    const [key, a = '', b = ''] = code.split(':');
+    const mapped = CODE_KEYS[key];
+    return mapped ? t(`wizard.${mapped}`, { a, b }) : code;
+  };
+
   const budgetLabel = cost.budget != null
     ? `${cost.total} / ${cost.budget} ${t('wizard.ap')}`
     : `${cost.total} ${t('wizard.ap')}`;
@@ -122,18 +159,24 @@ export function CharacterWizard({ worldId, rules, onCreated, onClose }: Props) {
   return (
     <div
       className="modal-overlay fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 pt-10"
-      onClick={onClose}
+      onClick={() => { if (!saving) onClose(); }}
     >
       <div
-        className="w-full max-w-2xl rounded-lg border border-bg-elevated bg-bg-surface p-5"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('wizard.title')}
+        ref={dialogRef}
+        tabIndex={-1}
+        className="w-full max-w-2xl rounded-lg border border-bg-elevated bg-bg-surface p-5 outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-heading text-lg text-text-primary">{t('wizard.title')}</h2>
           <button
             onClick={onClose}
+            disabled={saving}
             aria-label={t('wizard.close')}
-            className="text-text-secondary hover:text-danger"
+            className="text-text-secondary hover:text-danger disabled:opacity-40"
           >
             <X size={18} />
           </button>
@@ -243,7 +286,7 @@ export function CharacterWizard({ worldId, rules, onCreated, onClose }: Props) {
                   <span className="w-8 text-center font-mono text-text-primary">{a.purchased}</span>
                   <button
                     aria-label={`${a.name} +`}
-                    onClick={() => purchase(a.name, Math.min(def.max, a.purchased + 1))}
+                    onClick={() => purchase(a.name, Math.min(def.max, rules.creationBudget?.maxAttrValue ?? def.max, a.purchased + 1))}
                     className="rounded border border-bg-elevated px-2 text-text-secondary hover:text-accent"
                   >
                     +
@@ -347,10 +390,10 @@ export function CharacterWizard({ worldId, rules, onCreated, onClose }: Props) {
               </div>
             </div>
             {issues.map((code) => (
-              <p key={code} className="text-xs text-danger">{t('wizard.issue')}: {code.split(':').join(' · ')}</p>
+              <p key={code} className="text-xs text-danger">{t('wizard.issue')}: {codeText(code)}</p>
             ))}
             {warnings.map((code) => (
-              <p key={code} className="text-xs text-warning">{t('wizard.warning')}: {code.split(':').join(' · ')}</p>
+              <p key={code} className="text-xs text-warning">{t('wizard.warning')}: {codeText(code)}</p>
             ))}
           </div>
         )}
@@ -359,7 +402,8 @@ export function CharacterWizard({ worldId, rules, onCreated, onClose }: Props) {
         <div className="mt-5 flex items-center justify-between">
           <button
             onClick={() => (step === 0 ? onClose() : setStep(step - 1))}
-            className="flex items-center gap-1 rounded border border-bg-elevated px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary"
+            disabled={saving}
+            className="flex items-center gap-1 rounded border border-bg-elevated px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary disabled:opacity-40"
           >
             <ArrowLeft size={14} /> {step === 0 ? t('wizard.cancel') : t('wizard.back')}
           </button>

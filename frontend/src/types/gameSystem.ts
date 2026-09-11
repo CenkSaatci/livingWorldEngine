@@ -310,18 +310,37 @@ export function buildFinalTraits(data: WizardData, build: CharacterBuild): strin
 /** Build-Fehler: Paket-Auswahl (P29) + Attributgrenzen + Budget + Trait-Exklusionen. */
 export function buildIssues(data: WizardData, build: CharacterBuild): string[] {
   const issues = [...packageSelectionIssues(data, build.packageSelections)];
-  for (const a of data.attributes) {
-    const v = purchasedValue(data, build, a.name);
-    if (v < a.min || v > a.max) issues.push(`build_attr_range:${a.name}`);
+  const budget = data.creationBudget;
+  const finals = buildFinalAttributes(data, build);
+  for (const a of finals) {
+    const def = data.attributes.find((x) => x.name === a.name);
+    if (def && (a.value < def.min || a.value > def.max)) issues.push(`build_attr_range:${a.name}`);
+    if (budget?.maxAttrValue != null && a.value > budget.maxAttrValue) {
+      issues.push(`build_attr_cap:${a.name}`);
+    }
+  }
+  if (budget?.maxAttrTotal != null
+    && finals.reduce((sum, a) => sum + a.value, 0) > budget.maxAttrTotal) {
+    issues.push('build_attr_total_cap');
   }
   if (buildCost(data, build).over) issues.push('build_over_budget');
 
   const names = build.traits.map((tr) => tr.name);
+  let advantageAp = 0;
   for (const sel of build.traits) {
     const def = (data.traits ?? []).find((tr) => tr.name === sel.name);
-    for (const ex of def?.excludes ?? []) {
+    if (!def) continue;
+    const c = traitCost(def, sel.tier);
+    if (c > 0) advantageAp += c;
+    for (const ex of def.excludes ?? []) {
       if (names.includes(ex)) issues.push(`build_trait_excludes:${sel.name}:${ex}`);
     }
+    for (const req of def.requires ?? []) {
+      if (!names.includes(req)) issues.push(`build_trait_requires:${sel.name}:${req}`);
+    }
+  }
+  if (budget?.maxAdvantageAp != null && advantageAp > budget.maxAdvantageAp) {
+    issues.push('build_advantage_cap');
   }
   return [...new Set(issues)];
 }

@@ -68,6 +68,35 @@ describe('Charakter-Build (P30-T01)', () => {
     expect(buildFinalTraits(data, manual)).toEqual(['Nachtsicht']);
   });
 
+  it('prueft Endwerte nach Mods und System-Caps (Audit P30)', () => {
+    const data = base();
+    data.attributes = data.attributes.map((a) => ({ ...a, min: 8, default: 8 }));
+    // min 8, Default 8, Elf-Choice -1 → final 7 < min
+    const belowMin: CharacterBuild = { ...build, packageSelections: [{ name: 'Elf', choices: ['klugheit'] }] };
+    expect(buildIssues(data, belowMin)).toContain('build_attr_range:klugheit');
+
+    // maxAttrValue 15: mut 8→15 ok, 16 nicht
+    data.creationBudget = { ap: 1000, attrBase: 8, maxAttrValue: 15, maxAttrTotal: 40, maxAdvantageAp: 10 };
+    const tooHigh: CharacterBuild = { ...build, attributes: { mut: 16 } };
+    expect(buildIssues(data, tooHigh)).toContain('build_attr_cap:mut');
+    const sumHigh: CharacterBuild = {
+      ...build,
+      attributes: { mut: 15, klugheit: 15, koerperkraft: 15 }, // Summe 45 > 40
+    };
+    expect(buildIssues(data, sumHigh)).toContain('build_attr_total_cap');
+    const advHigh: CharacterBuild = { ...build, traits: [{ name: 'Zauberer' }] }; // 25 > 10
+    expect(buildIssues(data, advHigh)).toContain('build_advantage_cap');
+  });
+
+  it('meldet fehlende Trait-Voraussetzungen (requires)', () => {
+    const data = base();
+    data.traits!.push({ name: 'Meisterlicher Zauberer', kind: 'advantage', costs: [{ tier: 'I', cost: 10 }], requires: ['Zauberer'] });
+    const withoutReq: CharacterBuild = { ...build, traits: [{ name: 'Meisterlicher Zauberer' }] };
+    expect(buildIssues(data, withoutReq)).toContain('build_trait_requires:Meisterlicher Zauberer:Zauberer');
+    const withReq: CharacterBuild = { ...build, traits: [{ name: 'Zauberer' }, { name: 'Meisterlicher Zauberer' }] };
+    expect(buildIssues(data, withReq)).not.toContain('build_trait_requires:Meisterlicher Zauberer:Zauberer');
+  });
+
   it('meldet Budget-Over, Bereichsfehler und Trait-Exklusionen', () => {
     const data = base();
     const over: CharacterBuild = { ...build, attributes: { mut: 18 } }; // 8→18 = 14 AP, total 57 > 40-Budget

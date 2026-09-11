@@ -49,7 +49,7 @@ function loadPersistedActive(): PersistedActive | null {
 
 const persistedActive = loadPersistedActive();
 
-export const useCampaignStore = create<CampaignState>((set) => ({
+export const useCampaignStore = create<CampaignState>((set, get) => ({
   campaigns: [],
   activeCampaignId: persistedActive?.id ?? null,
   activeCampaign: persistedActive?.summary ?? null,
@@ -60,6 +60,11 @@ export const useCampaignStore = create<CampaignState>((set) => ({
     try {
       const res = await apiClient.get<CampaignSummary[]>('/campaigns');
       set({ campaigns: res.data });
+      // Geloeschte/nicht mehr zugaengliche aktive Kampagne aufraeumen (Audit P30).
+      const { activeCampaignId } = get();
+      if (activeCampaignId && !res.data.some((c) => c.id === activeCampaignId)) {
+        get().setActiveCampaign(null);
+      }
     } catch {
       useToastStore.getState().addToast('Failed to load campaigns', 'error');
     } finally {
@@ -89,10 +94,14 @@ export const useCampaignStore = create<CampaignState>((set) => ({
           ? summary
           : (state.campaigns.find((c) => c.id === id) ?? state.activeCampaign);
       if (typeof localStorage !== 'undefined') {
-        if (!id) {
-          localStorage.removeItem(ACTIVE_KEY);
-        } else if (nextSummary) {
-          localStorage.setItem(ACTIVE_KEY, JSON.stringify({ id, summary: nextSummary }));
+        try {
+          if (!id) {
+            localStorage.removeItem(ACTIVE_KEY);
+          } else if (nextSummary) {
+            localStorage.setItem(ACTIVE_KEY, JSON.stringify({ id, summary: nextSummary }));
+          }
+        } catch {
+          // Storage voll/blockiert: Persistenz ist Best-Effort.
         }
       }
       return {

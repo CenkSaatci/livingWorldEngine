@@ -73,6 +73,16 @@ describe('campaignStore', () => {
     expect(useCampaignStore.getState().activeCampaignId).toBe('c1');
   });
 
+  it('raeumt geloeschte aktive Kampagne beim Laden auf (Audit P30)', async () => {
+    useCampaignStore.getState().setActiveCampaign('c1', campaign());
+    (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [campaign({ id: 'c2' })] });
+
+    await useCampaignStore.getState().loadCampaigns();
+
+    expect(useCampaignStore.getState().activeCampaignId).toBeNull();
+    expect(localStorage.getItem('lwe:activeCampaign')).toBeNull();
+  });
+
   it('persistiert die aktive Kampagne fuer Reloads (P30)', () => {
     useCampaignStore.getState().setActiveCampaign('c1', campaign());
 

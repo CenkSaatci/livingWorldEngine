@@ -21,8 +21,13 @@ test.describe('Charakter-Wizard (P30-T04)', () => {
   const campaignName = `E2E CW Runde ${stamp}`;
   let systemId = '';
   let campaignId = '';
+  let worldId = '';
+  let entityId = '';
 
   test.afterAll(async ({ request }) => {
+    if (entityId && worldId) {
+      await request.delete(`${API}/api/v1/worlds/${worldId}/entities/${entityId}`, { headers: auth() });
+    }
     if (campaignId) await request.delete(`${API}/api/v1/campaigns/${campaignId}`, { headers: auth() });
     if (systemId) await request.delete(`${API}/api/v1/game-systems/${systemId}`, { headers: auth() });
   });
@@ -57,8 +62,8 @@ test.describe('Charakter-Wizard (P30-T04)', () => {
     const worlds = await request.get(`${API}/api/v1/worlds`, { headers: auth() });
     expect(worlds.ok()).toBeTruthy();
     const worldList = (await worlds.json()) as { id: string; name: string }[];
-    expect(worldList.length).toBeGreaterThan(0);
-    const worldId = worldList[0].id;
+    expect(worldList.length, 'Keine Welt im Testaccount — E2E braucht mindestens eine (Limit 1)').toBeGreaterThan(0);
+    worldId = worldList[0].id;
 
     const campaign = await request.post(`${API}/api/v1/campaigns`, {
       headers: auth(), data: { worldId, gameSystemId: systemId, name: campaignName },
@@ -93,7 +98,7 @@ test.describe('Charakter-Wizard (P30-T04)', () => {
     await expect(page).toHaveURL(/\/characters\/[0-9a-f-]+$/, { timeout: 10_000 });
     await expect(page.getByRole('heading', { name: 'E2E Held' })).toBeVisible();
 
-    const entityId = page.url().split('/').pop()!;
+    entityId = page.url().split('/').pop()!;
     const sheet = await request.get(
       `${API}/api/v1/entities/${entityId}/sheet?campaignId=${campaignId}`,
       { headers: auth() },

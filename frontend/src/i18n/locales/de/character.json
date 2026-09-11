@@ -77,6 +77,19 @@
     "back": "Zurück",
     "next": "Weiter",
     "save": "Speichern",
-    "saveFailed": "Charakter konnte nicht gespeichert werden"
+    "saveFailed": "Charakter konnte nicht gespeichert werden",
+    "codeBuildOverBudget": "Budget überschritten",
+    "codeAttrRange": "Attribut außerhalb des Bereichs: {{a}}",
+    "codeAttrCap": "Attribut über System-Maximum: {{a}}",
+    "codeAttrTotalCap": "Attributsumme über System-Maximum",
+    "codeAdvantageCap": "Vorteils-Budget überschritten",
+    "codeTraitExcludes": "Merkmale schließen sich aus: {{a}} / {{b}}",
+    "codeTraitRequires": "{{a}} benötigt {{b}}",
+    "codeChoiceCount": "Auswahl-Gruppe unvollständig: {{a}}",
+    "codeChoiceInvalid": "Ungültige Auswahl bei {{a}}: {{b}}",
+    "codeDuplicateKind": "Mehrere Pakete gleicher Art: {{a}}",
+    "codeRestricted": "{{a}} ist eingeschränkt mit {{b}}",
+    "codeUnknown": "Unbekanntes Paket: {{a}}",
+    "codeRecommended": "Empfohlen für {{a}}: {{b}}"
   }
 }

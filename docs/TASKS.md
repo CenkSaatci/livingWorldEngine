@@ -2413,7 +2413,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD
 
 ### P30-T04: Abnahme — DSA-Heldenbau E2E
-- **Status:** ✅ (Playwright `character-wizard.spec.ts`: System/Kampagne seeden → Wizard (Elf + Choice + Attributkauf + Zauberer) → Save → Sheet-API prüft mut 10 / klugheit 7 / fate 3; campaignStore persistiert aktive Kampagne reload-safe; Login-Setup nutzt gültigen State bei 429)
+- **Status:** ✅ (Audit-Fixes: Caps `maxAttrValue`/`maxAttrTotal`/`maxAdvantageAp` + Endwert-Prüfung nach Mods + `requires`-Prüfung; Kampagnen-Reconcile beim Laden + Welt-Guard; Race/Stale im Rules-Fetch; Tier-Default, Close-während-Save, Escape/Dialog-Semantik, Code-i18n; E2E-Cleanup. Playwright `character-wizard.spec.ts`: System/Kampagne seeden → Wizard (Elf + Choice + Attributkauf + Zauberer) → Save → Sheet-API prüft mut 10 / klugheit 7 / fate 3; campaignStore persistiert aktive Kampagne reload-safe; Login-Setup nutzt gültigen State bei 429)
 - **Beschreibung:** Playwright: System/Welt/Kampagne per API seeden → Charakter-Wizard → Elf+Waldelf, Attribute kaufen, Trait wählen → Speichern → Sheet prüft Werte; TESTING-Checkpoint
 - **Akzeptanzkriterien:** E2E grün; Doku aktualisiert
 - **Qualitäts-Check:** E2E (Playwright)
