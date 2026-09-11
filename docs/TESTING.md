@@ -733,4 +733,4 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 - [x] Sheet-E2E (DSA-Referenz): sk=7, asp nur mit Zauberer, Rüstung (P31-T01)
 - [x] Kampf-E2E: Session im UI starten → Manöver + AP-Gate (P31-T02); offen: Zustands-Tick + Schadensarten-Log
 - [x] Wizard-Save-Gate-E2E: ohne Attribute blockiert mit Toast (P31-T03)
-- [ ] CombatPage-Rerender prüfen: Ziel-Buttons „not stable" in Playwright (force-Click als Workaround) — möglicher WS-Render-Loop
+- [x] CombatPage-Stabilität: Ursache war kein WS-Loop, sondern eine ResizeObserver-Schleife in `usePixiApp` (Border-Box statt Content-Box → Canvas wuchs kontinuierlich). Fix: `clientWidth/Height`; E2E klickt wieder ohne `force` (finaler Audit F1)

@@ -33,7 +33,7 @@ vi.mock('../../store/campaignStore', () => ({
       sel ? sel({ activeCampaignId: 'c1' }) : { activeCampaignId: 'c1' }),
     { getState: () => ({ campaigns: [], setActiveCampaign: vi.fn() }) },
   ),
-  useActiveCampaign: () => ({ gameSystemId: 'gs1' }),
+  useActiveCampaign: () => ({ gameSystemId: 'gs1', worldId: 'w1' }),
 }));
 
 describe('ActionBar', () => {

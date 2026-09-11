@@ -3,7 +3,7 @@ import { X, Swords } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api/client';
-import { useCampaignStore } from '../../store/campaignStore';
+import { useActiveCampaign } from '../../store/campaignStore';
 
 interface EntitySummary {
   id: string;
@@ -24,7 +24,8 @@ interface Props {
 export function StartCombatModal({ worldId, onClose }: Props) {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
-  const activeCampaignId = useCampaignStore((s) => s.activeCampaignId);
+  const activeCampaign = useActiveCampaign();
+  const campaignForWorld = activeCampaign && activeCampaign.worldId === worldId ? activeCampaign : null;
   const [entities, setEntities] = useState<EntitySummary[]>([]);
   const [maps, setMaps] = useState<MapSummary[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -74,7 +75,7 @@ export function StartCombatModal({ worldId, onClose }: Props) {
     try {
       const body: Record<string, unknown> = { worldId, participantIds: [...selectedIds] };
       if (selectedMapId) body.mapId = selectedMapId;
-      if (activeCampaignId) body.campaignId = activeCampaignId;
+      if (campaignForWorld?.id) body.campaignId = campaignForWorld.id;
       const res = await apiClient.post('/combat/start', body);
       if (res.status === 201) {
         navigate(`/combat/${worldId}`);

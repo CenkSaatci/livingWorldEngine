@@ -5,6 +5,8 @@ import { test, expect } from '@playwright/test';
  * (kein API-Call, nichts wird gespeichert).
  */
 test.describe('Wizard-Save-Gate (P31-T03)', () => {
+  const name = `E2E Gate ${Date.now()}`;
+
   test('blockiert Speichern ohne Attribute mit Prüfbericht-Toast', async ({ page }) => {
     await page.goto('/game-systems');
     await page.getByRole('button', { name: 'New System' }).click();
@@ -12,7 +14,7 @@ test.describe('Wizard-Save-Gate (P31-T03)', () => {
     // Step 0 (System) -> Step 1 (Basic): Namen setzen, damit nur das Attribut-Gate greift
     await page.getByRole('button', { name: 'Weiter', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Basic Information' })).toBeVisible();
-    await page.getByRole('textbox').first().fill('E2E Gate System');
+    await page.getByRole('textbox').first().fill(name);
 
     const uebersicht = page.getByRole('heading', { name: 'Übersicht & Speichern' });
     for (let i = 0; i < 14 && !(await uebersicht.isVisible().catch(() => false)); i++) {
@@ -28,6 +30,6 @@ test.describe('Wizard-Save-Gate (P31-T03)', () => {
 
     // Kein neues System angelegt: frische Liste zeigt keinen Edit-Button
     await page.goto('/game-systems');
-    await expect(page.getByRole('button', { name: 'Edit E2E Gate System' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: `Edit ${name}` })).toHaveCount(0);
   });
 });

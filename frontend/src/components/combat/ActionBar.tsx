@@ -41,7 +41,9 @@ export function ActionBar({ worldId }: Props) {
   // GameView-Badge-Pattern: gecachte activeCampaign zuerst (Deep-Link/Reload),
   // campaigns[]-Liste ist dann ggf. noch leer.
   const activeCampaign = useActiveCampaign();
-  const activeGameSystemId = activeCampaign?.gameSystemId;
+  // Nur die zur Welt passende Kampagne darf Aktionen/System bestimmen (finaler Audit).
+  const campaignForWorld = activeCampaign && activeCampaign.worldId === worldId ? activeCampaign : null;
+  const activeGameSystemId = campaignForWorld?.gameSystemId;
 
   const currentActor = participants.find((p) => p.entityId === session?.currentTurnEntityId);
 
@@ -63,7 +65,7 @@ export function ActionBar({ worldId }: Props) {
       }).catch(() => {});
     };
     const campaign = useCampaignStore.getState().campaigns.find(
-      (c) => c.id === activeCampaignId,
+      (c) => c.id === activeCampaignId && c.worldId === worldId,
     );
     // 1) Gecachte aktive Kampagne zuerst (Deep-Link/Refresh: CampaignDetail
     //    cacht die Summary, campaigns[] ist nie geladen).
@@ -83,7 +85,7 @@ export function ActionBar({ worldId }: Props) {
         if (cancelled) return;
         const c = res.data;
         if (c?.id) useCampaignStore.getState().setActiveCampaign(c.id, c);
-        if (c?.gameSystemId) loadActions(c.gameSystemId);
+        if (c?.gameSystemId && c?.worldId === worldId) loadActions(c.gameSystemId);
       }).catch(() => {
         if (!cancelled) {
           setActionTypes([]);

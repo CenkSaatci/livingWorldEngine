@@ -65,6 +65,11 @@ public class CharacterSheetService {
             .orElseThrow(() -> new RuntimeException("WORLD_NOT_FOUND"));
 
         worldAccess.requireAccess(entity.getWorldId(), userId);
+        // Fremde Kampagne darf das Sheet nicht mit ihrem System rechnen (finaler Audit).
+        if (campaignId != null && !rulesLoader.campaignBelongsToWorld(campaignId, entity.getWorldId())) {
+            throw new EntityService.EntityException("WORLD_ACCESS_DENIED",
+                "Campaign does not belong to world");
+        }
 
         var rules = rulesLoader.loadRules(campaignId, entity.getWorldId());
         var attributeValues = parseAttributes(entity);

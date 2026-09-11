@@ -49,6 +49,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(ApiError.of("INVALID_INPUT", "Malformed request body"));
     }
 
+    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> handleTypeMismatch(
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ex) {
+        return ResponseEntity.badRequest()
+            .body(ApiError.of("INVALID_INPUT", "Malformed query parameter: " + ex.getName()));
+    }
+
     @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
     public ResponseEntity<ApiError> handleNoResource(
             org.springframework.web.servlet.resource.NoResourceFoundException ex) {

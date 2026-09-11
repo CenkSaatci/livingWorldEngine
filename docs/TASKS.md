@@ -1880,7 +1880,9 @@ Schadensarten (`damage_type`) gehören nicht auf Systemebene, sondern zu Items, 
 ### P23-T05: Skill-Kategorien (optional)
 - **Status:** ⏭️ zurückgestellt (optional, keine Gameplay-Auswirkung; nicht blockierend für P29 — aufnehmen, wenn Sheet-Gruppierung gewünscht)
 
-> **Bewusst zurückgestellt (P23/P29-Audit):** `baseValues` in Paketen ist schema-only (Anwendung erst mit Charakter-Erstellung); `attackMalus` wirkt erst mit Attack-Roll-Modell; Fate-Reroll ist client-vertrauensbasiert; Spieler-Rollensicht auf Zustände; Aktions-Sperren bei Zuständen.
+> **Offenes Ticket (finaler Audit F8):** globale Game-Systeme haben keinen Owner — jeder authentifizierte User kann sie per PATCH/DELETE ändern (Bestand vor P28, mit der neuen Mächtigkeit der Regeln relevant). Gehört in eine Berechtigungs-Phase (P32+).
+
+> **Bewusst zurückgestellt (P23/P29-Audit):** `baseValues` in Paketen ist weiterhin schema-only (auch nach P30 — der Charakter-Wizard wendet sie noch nicht an); `attackMalus` wirkt erst mit Attack-Roll-Modell; Fate-Reroll ist client-vertrauensbasiert; Spieler-Rollensicht auf Zustände; Aktions-Sperren bei Zuständen.
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:** Skills erhalten optionales `category`-Feld:
   - `rulesJson.skills[].category`: `"strength" | "dexterity" | "knowledge" | "social" | "combat" | ...`
@@ -2260,7 +2262,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Beschreibung:**
   - `creationBudget`: AP-Topf, Maxima (Attribute gesamt/einzeln, Skills, Kampf, Zauber), Startwerte, Schicksalspunkte-Basis
   - Kostenstaffel pro Attribut (z. B. 15 AP bis 14, dann 30/45/60/… wie DSA)
-  - Wizard-Step mit Live-Kostenanzeige + Budget-Balken; Backend lehnt überzogene Systeme mit 400 ab
+  - Wizard-Step mit Live-Kostenanzeige + Budget-Balken; Budget-Gate im Frontend (Prüfbericht), Backend validiert das Schema (keine Budget-Prüfung — s. Bemerkungen)
 - **Akzeptanzkriterien:** 100-AP-Paket nachbaubar (DSA: 8×8 Start, Summe ≤ Max); Überziehung wird rot + blockiert Save; Tests grün
 - **Qualitäts-Check:** TDD
 - **Bemerkungen (2026-09-11) — vertagte Teile:**
@@ -2347,7 +2349,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD
 
 ### P29-T03: Kampfmanöver-Framework
-- **Status:** ✅ (`dice_mechanics.combat.maneuvers[]`: apCost+effects[dmg]; POST /combat/{id}/maneuver + ActionBar-Buttons mit AP-Gate; TDD Backend 350/Frontend 150) — Teilstand: `attackMalus` ohne Wirkung (kein Attack-Roll-Modell), voller Playwright-E2E im E2E-Paket nach P29
+- **Status:** ✅ (`dice_mechanics.combat.maneuvers[]`: apCost+effects[dmg]; POST /combat/{id}/maneuver + ActionBar-Buttons mit AP-Gate; TDD Backend 350/Frontend 150 zum Task-Abschluss, heute 360/168) — Teilstand: `attackMalus` ohne Wirkung (kein Attack-Roll-Modell), voller Playwright-E2E im E2E-Paket nach P29
 - **Aufwand:** 1,5 Tage
 - **Beschreibung:**
   - Generisches Tausch-Prinzip: Angriffsmalus gegen Effekt (Schaden+, Spezial) — Wuchtschlag/Finte als Content, Framework als Engine

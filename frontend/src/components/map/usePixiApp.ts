@@ -25,9 +25,12 @@ export function usePixiApp(containerRef: React.RefObject<HTMLDivElement | null>)
 
     const observer = new ResizeObserver(() => {
       if (!el || !appRef.current) return;
-      const r = el.getBoundingClientRect();
-      if (r.width > 0 && r.height > 0) {
-        appRef.current.renderer.resize(r.width, r.height);
+      // clientWidth/Height = Content-Box: getBoundingClientRect (Border-Box) wuerde
+      // durch den 1px-Rahmen eine endlose Resize-Schleife erzeugen (finaler Audit).
+      const width = el.clientWidth;
+      const height = el.clientHeight;
+      if (width > 0 && height > 0) {
+        appRef.current.renderer.resize(width, height);
       }
     });
     observer.observe(el);

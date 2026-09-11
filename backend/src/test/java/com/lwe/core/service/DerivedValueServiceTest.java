@@ -67,6 +67,21 @@ class DerivedValueServiceTest {
     }
 
     @Test
+    void nonNumericTableRowsReportErrorInsteadOfCrashing() {
+        // Audit final: kaputte Zeilen (String min, fehlender value) dürfen keinen 500er werfen.
+        var defs = List.of(Map.<String, Object>of(
+            "name", "broken", "input", "mut",
+            "table", List.of(
+                Map.of("min", "x", "max", 10, "value", 5),
+                Map.of("min", 11, "max", 20))));
+
+        var result = service.evaluate(defs, Map.of("mut", 14));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().error()).contains("Invalid table row");
+    }
+
+    @Test
     void requiresTraitOmitsEntryWhenMissing() {
         var defs = List.of(Map.<String, Object>of(
             "name", "asp", "formula", "20+mut", "requiresTrait", "Zauberer"));

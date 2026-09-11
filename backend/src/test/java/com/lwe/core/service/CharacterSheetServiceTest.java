@@ -303,6 +303,23 @@ class CharacterSheetServiceTest {
     }
 
     @Test
+    void getSheet_rejectsForeignCampaign() {
+        // Finaler Audit: fremde Kampagne darf das Sheet nicht mit ihrem System rechnen.
+        var campaignId = UUID.randomUUID();
+        var entity = mock(GameEntity.class);
+        when(entity.getWorldId()).thenReturn(worldId);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        mockWorld(UUID.randomUUID());
+        when(rulesLoader.campaignBelongsToWorld(campaignId, worldId)).thenReturn(false);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> service.getSheet(entityId, userId, campaignId))
+            .isInstanceOf(EntityService.EntityException.class)
+            .satisfies(e -> org.assertj.core.api.Assertions.assertThat(
+                ((EntityService.EntityException) e).getErrorCode()).isEqualTo("WORLD_ACCESS_DENIED"));
+    }
+
+    @Test
     void getSheet_computesDsa5Example() throws Exception {
         // P29-T06 Abnahme: DSA-Referenz (Tabelle sk, requiresTrait asp, damageType).
         var entity = mockEntity("{\"mut\":14,\"klugheit\":13,\"intuition\":12,\"konstitution\":12,\"koerperkraft\":12}", null);

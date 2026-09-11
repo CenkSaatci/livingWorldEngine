@@ -70,27 +70,49 @@ public class DerivedValueService {
 
     private SheetResponse.DerivedValueInfo lookup(String name, double value,
                                                   List<Map<String, Object>> table) {
-        List<Map<String, Object>> matches = new java.util.ArrayList<>();
+        List<Double> matches = new java.util.ArrayList<>();
         boolean invalidRange = false;
+        boolean invalidRow = false;
         for (var row : table) {
-            var min = ((Number) row.getOrDefault("min", Double.NEGATIVE_INFINITY)).doubleValue();
-            var max = ((Number) row.getOrDefault("max", Double.POSITIVE_INFINITY)).doubleValue();
-            if (min > max) invalidRange = true;
-            if (value >= min && value <= max) matches.add(row);
+            // Custom-Schema erlaubt Nicht-Zahlen (Audit final): als Fehlerzeile werten, nicht crashen.
+            var minN = numberOrNull(row.get("min"));
+            var maxN = numberOrNull(row.get("max"));
+            var valueN = numberOrNull(row.get("value"));
+            if ((row.containsKey("min") && minN == null)
+                || (row.containsKey("max") && maxN == null)
+                || (row.containsKey("value") && valueN == null)
+                || (valueN == null && !row.containsKey("value"))) {
+                invalidRow = true;
+                continue;
+            }
+            double min = minN != null ? minN : Double.NEGATIVE_INFINITY;
+            double max = maxN != null ? maxN : Double.POSITIVE_INFINITY;
+            if (min > max) {
+                invalidRange = true;
+                continue;
+            }
+            if (value >= min && value <= max) {
+                matches.add(valueN != null ? valueN : 0.0);
+            }
         }
         if (matches.size() > 1) {
             return new SheetResponse.DerivedValueInfo(name, 0,
                 "Overlapping table rows for value " + (long) value);
         }
         if (matches.size() == 1) {
-            var result = ((Number) matches.get(0).getOrDefault("value", 0)).doubleValue();
-            return new SheetResponse.DerivedValueInfo(name, result, null);
+            return new SheetResponse.DerivedValueInfo(name, matches.getFirst(), null);
         }
         // Audit P28: kaputte Zeilen (min > max) nicht als "Luecke" verkaufen.
-        var reason = invalidRange
-            ? "Invalid table row (min > max)"
-            : "No table row for value " + (long) value;
+        var reason = invalidRow
+            ? "Invalid table row (non-numeric)"
+            : invalidRange
+                ? "Invalid table row (min > max)"
+                : "No table row for value " + (long) value;
         return new SheetResponse.DerivedValueInfo(name, 0, reason);
+    }
+
+    private static Double numberOrNull(Object o) {
+        return o instanceof Number n ? n.doubleValue() : null;
     }
 
     /** Tier-Suffixe werden ignoriert: "Zauberer II" erfüllt requiresTrait "Zauberer". */

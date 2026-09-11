@@ -20,9 +20,13 @@ test.describe('Kampf-E2E Manöver (P31-T02)', () => {
   let systemId = '';
   let campaignId = '';
   let worldId = '';
+  let combatSessionId = '';
   const entityIds: string[] = [];
 
   test.afterAll(async ({ request }) => {
+    if (combatSessionId) {
+      await request.post(`${API}/api/v1/combat/${combatSessionId}/end`, { headers: auth() });
+    }
     for (const id of entityIds) {
       if (id && worldId) {
         await request.delete(`${API}/api/v1/worlds/${worldId}/entities/${id}`, { headers: auth() });
@@ -95,11 +99,18 @@ test.describe('Kampf-E2E Manöver (P31-T02)', () => {
     // Ziel waehlen (ohne Ziel sind Angriffs-Buttons gesperrt) — der aktuelle
     // Actor wird aus der Zielliste ausgeschlossen, daher erster Eintrag.
     const targetSection = page.getByText('Ziel', { exact: true }).locator('..');
-    await targetSection.getByRole('button').first().click({ force: true });
+    await targetSection.getByRole('button').first().click();
     await expect(page.getByRole('button', { name: /Wuchtschlag/ })).toBeEnabled();
 
-    // AP-Kosten 2 bei apMax 2: nach Ausführung ist der Button fuer den Actor gesperrt
-    await page.getByRole('button', { name: /Wuchtschlag/ }).click({ force: true });
+    // AP-Kosten 2 bei apMax 2: Response beweist die Ausfuehrung (Actor bei 0 AP)
+    const [maneuverResponse] = await Promise.all([
+      page.waitForResponse((r) => r.url().includes('/maneuver') && r.request().method() === 'POST'),
+      page.getByRole('button', { name: /Wuchtschlag/ }).click(),
+    ]);
+    expect(maneuverResponse.ok()).toBeTruthy();
+    const body = await maneuverResponse.json();
+    combatSessionId = body.session.id;
+    expect(body.participants.some((p: { apCurrent: number }) => p.apCurrent === 0)).toBe(true);
     await expect(page.getByRole('button', { name: /Wuchtschlag/ })).toBeDisabled({ timeout: 10_000 });
   });
 });
