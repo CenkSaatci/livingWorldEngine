@@ -33,6 +33,7 @@ class CampaignServiceTest {
     @Mock private GameSystemRepository systemRepo;
     @Mock private WorldAccess worldAccess;
     @Mock private CampaignMemberService memberService;
+    @Mock private WorldService worldService;
 
     private CampaignService service;
     private final UUID userId = UUID.randomUUID();
@@ -41,7 +42,7 @@ class CampaignServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CampaignService(repo, worldRepo, memberRepo, systemRepo, worldAccess, memberService);
+        service = new CampaignService(repo, worldRepo, memberRepo, systemRepo, worldAccess, memberService, worldService);
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
     }
 
@@ -53,6 +54,9 @@ class CampaignServiceTest {
         setId(system, gameSystemId);
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(systemRepo.findById(gameSystemId)).thenReturn(Optional.of(system));
+        var fork = new World("Aventurien (Kampagne)", userId, "{}");
+        setId(fork, UUID.randomUUID());
+        when(worldService.cloneForCampaign(worldId, userId)).thenReturn(fork);
         when(repo.save(any())).thenAnswer(inv -> {
             var c = inv.<Campaign>getArgument(0);
             setId(c, UUID.randomUUID());
@@ -62,9 +66,11 @@ class CampaignServiceTest {
         var campaign = service.create(worldId, gameSystemId, "Runde 1", userId);
 
         assertThat(campaign.getName()).isEqualTo("Runde 1");
-        assertThat(campaign.getWorldId()).isEqualTo(worldId);
+        assertThat(campaign.getWorldId()).isEqualTo(fork.getId());
+        assertThat(campaign.isForkedWorld()).isTrue();
         assertThat(campaign.getGameSystemId()).isEqualTo(gameSystemId);
         verify(worldAccess).requireAccess(worldId, userId);
+        verify(worldService).cloneForCampaign(worldId, userId);
     }
 
     @Test

@@ -44,13 +44,15 @@ test.describe('Sheet-E2E DSA-Referenz (P31-T01)', () => {
     const worlds = await request.get(`${API}/api/v1/worlds`, { headers: auth() });
     const worldList = (await worlds.json()) as { id: string }[];
     expect(worldList.length, 'E2E braucht eine bestehende Welt (Limit 1)').toBeGreaterThan(0);
-    worldId = worldList[0].id;
+    const templateWorldId = worldList[0].id;
 
     const campaign = await request.post(`${API}/api/v1/campaigns`, {
-      headers: auth(), data: { worldId, gameSystemId: systemId, name: `E2E DSA Runde ${stamp}` },
+      headers: auth(), data: { worldId: templateWorldId, gameSystemId: systemId, name: `E2E DSA Runde ${stamp}` },
     });
     expect(campaign.ok()).toBeTruthy();
-    campaignId = (await campaign.json()).id;
+    const campaignBody = await campaign.json();
+    campaignId = campaignBody.id;
+    worldId = campaignBody.worldId; // Fork (P27-T03)
 
     const attrs = JSON.stringify({
       mut: 14, klugheit: 13, intuition: 12, konstitution: 12, koerperkraft: 12,

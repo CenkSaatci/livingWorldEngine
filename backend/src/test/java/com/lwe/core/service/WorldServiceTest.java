@@ -12,6 +12,8 @@ import com.lwe.core.repository.FactionRepository;
 import com.lwe.core.repository.FactionRelationRepository;
 import com.lwe.core.repository.WorldMapRepository;
 import com.lwe.core.repository.RegionWeatherRepository;
+import com.lwe.core.repository.EntityAbilityRepository;
+import com.lwe.core.domain.GameEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +42,7 @@ class WorldServiceTest {
     @Mock private FactionRelationRepository factionRelationRepo;
     @Mock private WorldMapRepository worldMapRepo;
     @Mock private RegionWeatherRepository regionWeatherRepo;
+    @Mock private EntityAbilityRepository entityAbilityRepo;
 
     private WorldService worldService;
     private final UUID ownerId = UUID.randomUUID();
@@ -49,7 +52,7 @@ class WorldServiceTest {
     void setUp() {
         worldService = new WorldService(worldRepo, memberRepo, quotaService,
             regionRepo, locationRepo, entityRepo, factionRepo, factionRelationRepo,
-            worldMapRepo, regionWeatherRepo);
+            worldMapRepo, regionWeatherRepo, entityAbilityRepo);
     }
 
     @Test
@@ -189,6 +192,45 @@ class WorldServiceTest {
         assertThat(clone.getOwnerId()).isEqualTo(ownerId);
     }
 
+    @Test
+    void cloneForCampaignSkipsQuotaAndCopiesRuntimeFields() {
+        var original = worldWithId("Schattental", ownerId);
+        setId(original, UUID.randomUUID());
+        var npc = new GameEntity(original.getId(), "PC", "Held");
+        npc.setSkillsJson("{\"Klettern\":12}");
+        npc.setExperiencePoints(250);
+        npc.setHpCurrent(7);
+        npc.setHpMax(11);
+        setId(npc, UUID.randomUUID());
+
+        when(worldRepo.findById(original.getId())).thenReturn(Optional.of(original));
+        when(worldRepo.save(any())).thenAnswer(inv -> {
+            var w = inv.<World>getArgument(0);
+            if (w.getId() == null) setId(w, UUID.randomUUID());
+            return w;
+        });
+        when(entityRepo.findByWorldIdAndActiveTrue(original.getId())).thenReturn(List.of(npc));
+        when(entityRepo.save(any())).thenAnswer(inv -> {
+            var e = inv.<GameEntity>getArgument(0);
+            if (e.getId() == null) setId(e, UUID.randomUUID());
+            return e;
+        });
+
+        var fork = worldService.cloneForCampaign(original.getId(), memberId);
+
+        assertThat(fork.getName()).contains("(Kampagne)");
+        assertThat(fork.getOwnerId()).isEqualTo(memberId);
+        verify(quotaService, never()).checkCanCreateWorld(any(), any());
+        var captor = org.mockito.ArgumentCaptor.forClass(GameEntity.class);
+        verify(entityRepo, atLeastOnce()).save(captor.capture());
+        var copied = captor.getAllValues().stream()
+            .filter(e2 -> "Held".equals(e2.getName())).findFirst().orElseThrow();
+        assertThat(copied.getSkillsJson()).isEqualTo("{\"Klettern\":12}");
+        assertThat(copied.getExperiencePoints()).isEqualTo(250);
+        assertThat(copied.getHpCurrent()).isEqualTo(7);
+        assertThat(copied.getHpMax()).isEqualTo(11);
+    }
+
     // -- helpers --
 
     private World worldWithId(String name, UUID owner) {
@@ -197,11 +239,11 @@ class WorldServiceTest {
         return w;
     }
 
-    private void setId(World w, UUID id) {
+    private void setId(Object obj, UUID id) {
         try {
-            var f = World.class.getDeclaredField("id");
+            var f = obj.getClass().getDeclaredField("id");
             f.setAccessible(true);
-            f.set(w, id);
+            f.set(obj, id);
         } catch (Exception e) { throw new RuntimeException(e); }
     }
 }

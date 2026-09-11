@@ -52,7 +52,7 @@ class PerCharacterSkillFlowTest {
         var gs = gameSystemRepo.save(new GameSystem("PCTest_" + tag, 1, GENERIC_RULES, schema));
         var world = worldRepo.save(new World("PCWorld_" + tag, user.getId(), "{}"));
         var campaign = campaignService.create(world.getId(), gs.getId(), "Camp_" + tag, user.getId());
-        var entity = entityRepo.save(new GameEntity(world.getId(), "PC", "PCHero_" + tag));
+        var entity = entityRepo.save(new GameEntity(campaign.getWorldId(), "PC", "PCHero_" + tag));
         entity.setAttributesJson("{\"staerke\":10}");
         entity.setSkillsJson("{\"Athletik\":5}");
         entity = entityRepo.save(entity);
@@ -75,7 +75,7 @@ class PerCharacterSkillFlowTest {
         var gs = gameSystemRepo.save(new GameSystem("FbTest_" + tag, 1, GENERIC_RULES, schema));
         var world = worldRepo.save(new World("FbWorld_" + tag, user.getId(), "{}"));
         var campaign = campaignService.create(world.getId(), gs.getId(), "Camp_" + tag, user.getId());
-        var entity = entityRepo.save(new GameEntity(world.getId(), "PC", "FbHero_" + tag));
+        var entity = entityRepo.save(new GameEntity(campaign.getWorldId(), "PC", "FbHero_" + tag));
         entity.setAttributesJson("{\"staerke\":10}");
         entity = entityRepo.save(entity);
 
@@ -96,7 +96,7 @@ class PerCharacterSkillFlowTest {
         var gs = gameSystemRepo.save(new GameSystem("ShTest_" + tag, 1, GENERIC_RULES, schema));
         var world = worldRepo.save(new World("ShWorld_" + tag, user.getId(), "{}"));
         var campaign = campaignService.create(world.getId(), gs.getId(), "Camp_" + tag, user.getId());
-        var entity = entityRepo.save(new GameEntity(world.getId(), "PC", "ShHero_" + tag));
+        var entity = entityRepo.save(new GameEntity(campaign.getWorldId(), "PC", "ShHero_" + tag));
         entity.setAttributesJson("{\"staerke\":10}");
         entity.setSkillsJson("{\"Athletik\":7}");
         entity = entityRepo.save(entity);
@@ -119,7 +119,7 @@ class PerCharacterSkillFlowTest {
         var gs = gameSystemRepo.save(new GameSystem("SfTest_" + tag, 1, GENERIC_RULES, schema));
         var world = worldRepo.save(new World("SfWorld_" + tag, user.getId(), "{}"));
         var campaign = campaignService.create(world.getId(), gs.getId(), "Camp_" + tag, user.getId());
-        var entity = entityRepo.save(new GameEntity(world.getId(), "PC", "SfHero_" + tag));
+        var entity = entityRepo.save(new GameEntity(campaign.getWorldId(), "PC", "SfHero_" + tag));
         entity.setAttributesJson("{\"staerke\":10}");
         entity = entityRepo.save(entity);
 

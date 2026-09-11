@@ -63,13 +63,16 @@ test.describe('Charakter-Wizard (P30-T04)', () => {
     expect(worlds.ok()).toBeTruthy();
     const worldList = (await worlds.json()) as { id: string; name: string }[];
     expect(worldList.length, 'Keine Welt im Testaccount — E2E braucht mindestens eine (Limit 1)').toBeGreaterThan(0);
-    worldId = worldList[0].id;
+    const templateWorldId = worldList[0].id;
 
     const campaign = await request.post(`${API}/api/v1/campaigns`, {
-      headers: auth(), data: { worldId, gameSystemId: systemId, name: campaignName },
+      headers: auth(), data: { worldId: templateWorldId, gameSystemId: systemId, name: campaignName },
     });
     expect(campaign.ok()).toBeTruthy();
-    campaignId = (await campaign.json()).id;
+    const campaignBody = await campaign.json();
+    campaignId = campaignBody.id;
+    // P27-T03: Kampagne laeuft auf ihrer eigenen Fork-Welt
+    worldId = campaignBody.worldId;
 
     // Aktive Kampagne setzen (CampaignDetail cachet sie im Store), dann Welt-Entities öffnen
     await page.goto(`/campaigns/${campaignId}`);

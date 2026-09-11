@@ -23,6 +23,7 @@ public class WorldService {
     private final FactionRelationRepository factionRelationRepo;
     private final WorldMapRepository worldMapRepo;
     private final RegionWeatherRepository regionWeatherRepo;
+    private final EntityAbilityRepository entityAbilityRepo;
 
     public WorldService(WorldRepository worldRepo, WorldMemberRepository memberRepo,
                         QuotaService quotaService,
@@ -30,7 +31,8 @@ public class WorldService {
                         GameEntityRepository entityRepo, FactionRepository factionRepo,
                         FactionRelationRepository factionRelationRepo,
                         WorldMapRepository worldMapRepo,
-                        RegionWeatherRepository regionWeatherRepo) {
+                        RegionWeatherRepository regionWeatherRepo,
+                        EntityAbilityRepository entityAbilityRepo) {
         this.worldRepo = worldRepo;
         this.memberRepo = memberRepo;
         this.quotaService = quotaService;
@@ -41,6 +43,7 @@ public class WorldService {
         this.factionRelationRepo = factionRelationRepo;
         this.worldMapRepo = worldMapRepo;
         this.regionWeatherRepo = regionWeatherRepo;
+        this.entityAbilityRepo = entityAbilityRepo;
     }
 
     @Transactional
@@ -107,9 +110,20 @@ public class WorldService {
     public World clone(UUID worldId, UUID userId, User user) {
         var original = requireOwner(worldId, userId);
         quotaService.checkCanCreateWorld(userId, user);
+        return cloneWorld(original, userId, original.getName() + " (Copy)");
+    }
 
-        var clone = new World(original.getName() + " (Copy)", userId,
-            original.getSettingsJson());
+    /** Fork fuer Kampagnen (P27-T03): bewusst ohne Welt-Quota, da die Kopie zur Kampagne gehoert. */
+    @Transactional
+    public World cloneForCampaign(UUID worldId, UUID userId) {
+        var original = worldRepo.findById(worldId)
+            .orElseThrow(() -> new WorldException("WORLD_NOT_FOUND", "World not found"));
+        return cloneWorld(original, userId, original.getName() + " (Kampagne)");
+    }
+
+    private World cloneWorld(World original, UUID userId, String name) {
+        var worldId = original.getId();
+        var clone = new World(name, userId, original.getSettingsJson());
         clone.setCurrentGameTime(original.getCurrentGameTime());
         clone = worldRepo.save(clone);
 
@@ -186,7 +200,8 @@ public class WorldService {
             }
         }
 
-        // Entities
+        // Entities (inkl. Skills/XP/HP/AP — Fork muss spielbar sein)
+        var entityIdMap = new HashMap<UUID, UUID>();
         for (var e : entityRepo.findByWorldIdAndActiveTrue(worldId)) {
             var newFactionId = e.getFactionId() != null ? factionIdMap.get(e.getFactionId()) : null;
             var copy = new GameEntity(clone.getId(), e.getEntityType(), e.getName());
@@ -194,12 +209,27 @@ public class WorldService {
             copy.setInventoryJson(e.getInventoryJson());
             copy.setPositionJson(e.getPositionJson());
             copy.setMetadataJson(e.getMetadataJson());
+            copy.setSkillsJson(e.getSkillsJson());
+            copy.setExperiencePoints(e.getExperiencePoints());
+            copy.setUnspentAttributePoints(e.getUnspentAttributePoints());
+            copy.setHpCurrent(e.getHpCurrent());
+            copy.setHpMax(e.getHpMax());
+            copy.setApCurrent(e.getApCurrent());
+            copy.setApMax(e.getApMax());
             copy.setFactionId(newFactionId);
             copy.setBackstory(e.getBackstory());
             copy.setAge(e.getAge());
             copy.setExperienceLevel(e.getExperienceLevel());
             copy.setSocialStanding(e.getSocialStanding());
-            entityRepo.save(copy);
+            var saved = entityRepo.save(copy);
+            entityIdMap.put(e.getId(), saved.getId());
+        }
+
+        // Entity-Abilities (join table) mitkopieren
+        for (var entry : entityIdMap.entrySet()) {
+            for (var ea : entityAbilityRepo.findByEntityId(entry.getKey())) {
+                entityAbilityRepo.save(new EntityAbility(entry.getValue(), ea.getAbilityId()));
+            }
         }
 
         // World maps

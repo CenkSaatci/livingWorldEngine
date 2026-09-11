@@ -2,9 +2,12 @@ package com.lwe.core.service;
 
 import com.lwe.core.domain.Campaign;
 import com.lwe.core.domain.CampaignMember;
+import com.lwe.core.domain.WorldMember;
 import com.lwe.core.repository.CampaignMemberRepository;
 import com.lwe.core.repository.CampaignRepository;
 import com.lwe.core.repository.UserRepository;
+import com.lwe.core.repository.WorldMemberRepository;
+import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,15 +23,39 @@ public class CampaignMemberService {
     private final CampaignRepository campaignRepo;
     private final UserRepository userRepo;
     private final WorldAccess worldAccess;
+    private final WorldMemberRepository worldMemberRepo;
+    private final WorldRepository worldRepo;
 
     public CampaignMemberService(CampaignMemberRepository memberRepo,
                                  CampaignRepository campaignRepo,
                                  UserRepository userRepo,
-                                 WorldAccess worldAccess) {
+                                 WorldAccess worldAccess,
+                                 WorldMemberRepository worldMemberRepo,
+                                 WorldRepository worldRepo) {
         this.memberRepo = memberRepo;
         this.campaignRepo = campaignRepo;
         this.userRepo = userRepo;
         this.worldAccess = worldAccess;
+        this.worldMemberRepo = worldMemberRepo;
+        this.worldRepo = worldRepo;
+    }
+
+    /** P27-T03: Campaign-Rollen auf World-Members spiegeln, damit Spieler Weltzugriff haben. */
+    private void syncWorldMember(Campaign campaign, UUID userId, String role) {
+        var world = worldRepo.findById(campaign.getWorldId()).orElse(null);
+        if (world != null && world.getOwnerId().equals(userId)) return; // Owner ist implizit DM
+        var existing = worldMemberRepo.findByWorldIdAndUserId(campaign.getWorldId(), userId);
+        if (existing.isPresent()) {
+            existing.get().setRole(role);
+            worldMemberRepo.save(existing.get());
+        } else {
+            worldMemberRepo.save(new WorldMember(campaign.getWorldId(), userId, role));
+        }
+    }
+
+    private void removeWorldMember(Campaign campaign, UUID userId) {
+        worldMemberRepo.findByWorldIdAndUserId(campaign.getWorldId(), userId)
+            .ifPresent(worldMemberRepo::delete);
     }
 
     /** Beim Erstellen der Kampagne wird der Ersteller automatisch DM. */
@@ -37,7 +64,9 @@ public class CampaignMemberService {
         if (memberRepo.existsByCampaignIdAndUserId(campaign.getId(), userId)) {
             return memberRepo.findByCampaignIdAndUserId(campaign.getId(), userId).orElseThrow();
         }
-        return memberRepo.save(new CampaignMember(campaign.getId(), userId, "DM"));
+        var member = memberRepo.save(new CampaignMember(campaign.getId(), userId, "DM"));
+        syncWorldMember(campaign, userId, "DM");
+        return member;
     }
 
     private static final Set<String> ROLES = Set.of("PLAYER", "DM");
@@ -60,7 +89,9 @@ public class CampaignMemberService {
         }
         requireDm(campaignId, actorUserId);
         validateRole(role);
-        return memberRepo.save(new CampaignMember(campaignId, targetUserId, role));
+        var saved = memberRepo.save(new CampaignMember(campaignId, targetUserId, role));
+        syncWorldMember(campaign, targetUserId, role);
+        return saved;
     }
 
     /** DM kann Mitglieder entfernen; der letzte DM bleibt geschützt (P27-T02). */
@@ -75,6 +106,7 @@ public class CampaignMemberService {
             throw new CampaignMemberException("DM_REMOVAL_DENIED", "The last DM cannot be removed");
         }
         memberRepo.delete(member);
+        removeWorldMember(campaign, targetUserId);
     }
 
     /** Rolle aendern (P27-T02): DM kann befoerdern/degradieren; letzter DM geschuetzt. */
@@ -91,7 +123,9 @@ public class CampaignMemberService {
             throw new CampaignMemberException("LAST_DM", "At least one DM must remain");
         }
         member.setRole(role);
-        return memberRepo.save(member);
+        var saved = memberRepo.save(member);
+        syncWorldMember(campaign, targetUserId, role);
+        return saved;
     }
 
     public List<CampaignMember> listMembers(UUID campaignId, UUID actorUserId) {

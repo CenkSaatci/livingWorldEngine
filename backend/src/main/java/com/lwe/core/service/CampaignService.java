@@ -23,31 +23,38 @@ public class CampaignService {
     private final GameSystemRepository systemRepo;
     private final WorldAccess worldAccess;
     private final CampaignMemberService memberService;
+    private final WorldService worldService;
 
     public CampaignService(CampaignRepository repo,
                            WorldRepository worldRepo,
                            WorldMemberRepository memberRepo,
                            GameSystemRepository systemRepo,
                            WorldAccess worldAccess,
-                           CampaignMemberService memberService) {
+                           CampaignMemberService memberService,
+                           WorldService worldService) {
         this.repo = repo;
         this.worldRepo = worldRepo;
         this.memberRepo = memberRepo;
         this.systemRepo = systemRepo;
         this.worldAccess = worldAccess;
         this.memberService = memberService;
+        this.worldService = worldService;
     }
 
+    /** Erstellt die Kampagne auf einer eigenen Welt-Kopie (Fork, P27-T03). */
     @Transactional
     public Campaign create(UUID worldId, UUID gameSystemId, String name, UUID userId) {
-        var world = worldRepo.findById(worldId)
+        worldRepo.findById(worldId)
             .orElseThrow(() -> new CampaignException("WORLD_NOT_FOUND", "World not found"));
         worldAccess.requireAccess(worldId, userId);
         systemRepo.findById(gameSystemId)
             .filter(GameSystem::isActive)
             .orElseThrow(() -> new CampaignException("GAME_SYSTEM_NOT_FOUND", "Game system not found or inactive"));
 
-        var campaign = repo.save(new Campaign(worldId, gameSystemId, name));
+        var fork = worldService.cloneForCampaign(worldId, userId);
+        var campaign = new Campaign(fork.getId(), gameSystemId, name);
+        campaign.setForkedWorld(true);
+        campaign = repo.save(campaign);
         memberService.addCreatorAsDm(campaign, userId);
         return campaign;
     }
@@ -86,6 +93,13 @@ public class CampaignService {
     @Transactional
     public void delete(UUID id, UUID userId) {
         var campaign = getById(id, userId);
+        // Fork-Welt der Kampagne mit entfernen (soft-delete), Template bleibt unberuehrt.
+        if (campaign.isForkedWorld()) {
+            worldRepo.findById(campaign.getWorldId()).ifPresent(w -> {
+                w.setActive(false);
+                worldRepo.save(w);
+            });
+        }
         repo.delete(campaign);
     }
 

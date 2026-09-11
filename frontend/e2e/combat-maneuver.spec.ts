@@ -67,13 +67,15 @@ test.describe('Kampf-E2E Manöver (P31-T02)', () => {
     const worlds = await request.get(`${API}/api/v1/worlds`, { headers: auth() });
     const worldList = (await worlds.json()) as { id: string }[];
     expect(worldList.length, 'E2E braucht eine bestehende Welt (Limit 1)').toBeGreaterThan(0);
-    worldId = worldList[0].id;
+    const templateWorldId = worldList[0].id;
 
     const campaign = await request.post(`${API}/api/v1/campaigns`, {
-      headers: auth(), data: { worldId, gameSystemId: systemId, name: `E2E Kampf Runde ${stamp}` },
+      headers: auth(), data: { worldId: templateWorldId, gameSystemId: systemId, name: `E2E Kampf Runde ${stamp}` },
     });
     expect(campaign.ok()).toBeTruthy();
-    campaignId = (await campaign.json()).id;
+    const campaignBody = await campaign.json();
+    campaignId = campaignBody.id;
+    worldId = campaignBody.worldId; // Fork (P27-T03)
 
     for (const [name, type] of [[`E2E Kaempfer ${stamp}`, 'PC'], [`E2E Ork ${stamp}`, 'NPC']] as const) {
       const res = await request.post(`${API}/api/v1/worlds/${worldId}/entities`, {

@@ -140,6 +140,9 @@ export default function CampaignSection() {
                 </option>
               ))}
             </select>
+            <p className="mb-4 rounded bg-bg-primary/60 px-3 py-2 text-xs text-text-secondary">
+              {t('campaign.forkHint')}
+            </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => {

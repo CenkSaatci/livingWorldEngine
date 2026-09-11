@@ -239,7 +239,8 @@
     "makeDm": "Make DM",
     "makePlayer": "Make player",
     "memberRoleChanged": "Role changed",
-    "memberRoleChangeFailed": "Could not change role"
+    "memberRoleChangeFailed": "Could not change role",
+    "forkHint": "Creating a campaign forks your own copy of the world — changes do not affect the template."
   },
   "settings": {
     "title": "Settings",

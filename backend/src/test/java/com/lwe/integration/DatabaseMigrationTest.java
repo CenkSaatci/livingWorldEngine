@@ -83,6 +83,14 @@ class DatabaseMigrationTest {
     }
 
     @Test
+    void campaignsTableHasForkedWorldColumn() throws SQLException {
+        try (var conn = dataSource.getConnection()) {
+            var col = conn.getMetaData().getColumns(null, "public", "campaigns", "forked_world");
+            assertThat(col.next()).as("V099: campaigns.forked_world (P27-T03)").isTrue();
+        }
+    }
+
+    @Test
     void itemsTableHasGameSystemIdColumn() throws SQLException {
         try (var conn = dataSource.getConnection()) {
             var rs = conn.getMetaData()

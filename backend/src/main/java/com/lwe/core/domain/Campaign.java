@@ -43,6 +43,10 @@ public class Campaign {
 
     protected Campaign() {}
 
+    /** True, wenn worldId eine beim Erstellen erzeugte Fork-Kopie ist (P27-T03). */
+    @Column(name = "forked_world", nullable = false)
+    private boolean forkedWorld = false;
+
     public Campaign(UUID worldId, UUID gameSystemId, String name) {
         this.worldId = worldId;
         this.gameSystemId = gameSystemId;
@@ -62,4 +66,7 @@ public class Campaign {
     public void setStateJson(String v) { this.stateJson = v; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+
+    public boolean isForkedWorld() { return forkedWorld; }
+    public void setForkedWorld(boolean v) { this.forkedWorld = v; }
 }

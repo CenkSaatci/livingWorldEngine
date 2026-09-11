@@ -6,6 +6,8 @@ import com.lwe.core.domain.User;
 import com.lwe.core.repository.CampaignMemberRepository;
 import com.lwe.core.repository.CampaignRepository;
 import com.lwe.core.repository.UserRepository;
+import com.lwe.core.repository.WorldMemberRepository;
+import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.util.WorldAccess;
 import com.lwe.core.util.WorldAccess.WorldAccessException;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +31,8 @@ class CampaignMemberServiceTest {
     @Mock private CampaignRepository campaignRepo;
     @Mock private UserRepository userRepo;
     @Mock private WorldAccess worldAccess;
+    @Mock private WorldMemberRepository worldMemberRepo;
+    @Mock private WorldRepository worldRepo;
 
     private CampaignMemberService service;
     private final UUID userId = UUID.randomUUID();
@@ -39,7 +43,8 @@ class CampaignMemberServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CampaignMemberService(memberRepo, campaignRepo, userRepo, worldAccess);
+        service = new CampaignMemberService(memberRepo, campaignRepo, userRepo, worldAccess,
+            worldMemberRepo, worldRepo);
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
     }
 
@@ -231,6 +236,63 @@ class CampaignMemberServiceTest {
         assertThatThrownBy(() -> service.updateRole(campaignId, userId, userId, "PLAYER"))
             .isInstanceOf(CampaignMemberService.CampaignMemberException.class)
             .matches(e -> ((CampaignMemberService.CampaignMemberException) e).getErrorCode().equals("LAST_DM"));
+    }
+
+    @Test
+    void addMemberMirrorsWorldMember() {
+        var campaign = campaign();
+        var actorDm = new CampaignMember(campaignId, userId, "DM");
+        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
+        when(userRepo.findById(otherUserId)).thenReturn(Optional.of(mock(User.class)));
+        when(memberRepo.existsByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(false);
+        when(memberRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.empty());
+        when(worldMemberRepo.findByWorldIdAndUserId(worldId, otherUserId)).thenReturn(Optional.empty());
+
+        service.addMember(campaignId, userId, otherUserId, "PLAYER");
+
+        var captor = org.mockito.ArgumentCaptor.forClass(com.lwe.core.domain.WorldMember.class);
+        verify(worldMemberRepo).save(captor.capture());
+        assertThat(captor.getValue().getRole()).isEqualTo("PLAYER");
+        assertThat(captor.getValue().getWorldId()).isEqualTo(worldId);
+    }
+
+    @Test
+    void promoteUpdatesWorldMemberRole() {
+        var campaign = campaign();
+        var actorDm = new CampaignMember(campaignId, userId, "DM");
+        var player = new CampaignMember(campaignId, otherUserId, "PLAYER");
+        setId(player, UUID.randomUUID());
+        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
+        when(memberRepo.findByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(Optional.of(player));
+        when(memberRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.empty());
+        var wm = new com.lwe.core.domain.WorldMember(worldId, otherUserId, "PLAYER");
+        when(worldMemberRepo.findByWorldIdAndUserId(worldId, otherUserId)).thenReturn(Optional.of(wm));
+
+        service.updateRole(campaignId, userId, otherUserId, "DM");
+
+        assertThat(wm.getRole()).isEqualTo("DM");
+        verify(worldMemberRepo).save(wm);
+    }
+
+    @Test
+    void removeMemberDeletesWorldMember() {
+        var campaign = campaign();
+        var actorDm = new CampaignMember(campaignId, userId, "DM");
+        var player = new CampaignMember(campaignId, otherUserId, "PLAYER");
+        setId(player, UUID.randomUUID());
+        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
+        when(memberRepo.findByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(Optional.of(player));
+        var wm = new com.lwe.core.domain.WorldMember(worldId, otherUserId, "PLAYER");
+        when(worldMemberRepo.findByWorldIdAndUserId(worldId, otherUserId)).thenReturn(Optional.of(wm));
+
+        service.removeMember(campaignId, userId, otherUserId);
+
+        verify(worldMemberRepo).delete(wm);
     }
 
     @Test
