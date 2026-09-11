@@ -1,5 +1,4 @@
 {
-  "description": "Das Schwarze Auge 5. Edition — Beispielkonfiguration",
   "version": 1,
   "progressionType": "xp",
   "probeType": "d20_3attr",
@@ -10,104 +9,834 @@
     "criticalHits": true,
     "armorPenalty": true
   },
+  "creationBudget": {
+    "ap": 1100,
+    "apCarryoverMax": 10,
+    "fatePoints": 3,
+    "attrBase": 8,
+    "maxAttrTotal": 100,
+    "maxAttrValue": 21,
+    "maxSkillValue": 21,
+    "maxCombatValue": 21,
+    "maxAdvantageAp": 80
+  },
+  "attributeCosts": {
+    "default": [
+      {
+        "upTo": 14,
+        "cost": 1
+      },
+      {
+        "upTo": 19,
+        "cost": 2
+      },
+      {
+        "upTo": 21,
+        "cost": 4
+      }
+    ]
+  },
   "attributes": [
-    { "name": "mut", "type": "INT", "min": 1, "max": 21, "default": 8 },
-    { "name": "klugheit", "type": "INT", "min": 1, "max": 21, "default": 8 },
-    { "name": "intuition", "type": "INT", "min": 1, "max": 21, "default": 8 },
-    { "name": "charisma", "type": "INT", "min": 1, "max": 21, "default": 8 },
-    { "name": "fingerfertigkeit", "type": "INT", "min": 1, "max": 21, "default": 8 },
-    { "name": "gewandtheit", "type": "INT", "min": 1, "max": 21, "default": 8 },
-    { "name": "konstitution", "type": "INT", "min": 1, "max": 21, "default": 8 },
-    { "name": "koerperkraft", "type": "INT", "min": 1, "max": 21, "default": 8 }
+    {
+      "name": "mut",
+      "type": "INT",
+      "min": 1,
+      "max": 21,
+      "default": 8
+    },
+    {
+      "name": "klugheit",
+      "type": "INT",
+      "min": 1,
+      "max": 21,
+      "default": 8
+    },
+    {
+      "name": "intuition",
+      "type": "INT",
+      "min": 1,
+      "max": 21,
+      "default": 8
+    },
+    {
+      "name": "charisma",
+      "type": "INT",
+      "min": 1,
+      "max": 21,
+      "default": 8
+    },
+    {
+      "name": "fingerfertigkeit",
+      "type": "INT",
+      "min": 1,
+      "max": 21,
+      "default": 8
+    },
+    {
+      "name": "gewandtheit",
+      "type": "INT",
+      "min": 1,
+      "max": 21,
+      "default": 8
+    },
+    {
+      "name": "konstitution",
+      "type": "INT",
+      "min": 1,
+      "max": 21,
+      "default": 8
+    },
+    {
+      "name": "koerperkraft",
+      "type": "INT",
+      "min": 1,
+      "max": 21,
+      "default": 8
+    }
   ],
   "derived_values": [
-    { "name": "lep", "formula": "(konstitution+koerperkraft)/2+5" },
-    { "name": "asp", "formula": "(mut+klugheit+intuition)/2" },
-    { "name": "kp", "formula": "1" },
-    { "name": "ini", "formula": "(mut+gewandtheit)/2" }
+    {
+      "name": "sk",
+      "input": "mut+klugheit+intuition",
+      "table": [
+        {
+          "min": 24,
+          "max": 26,
+          "value": 4
+        },
+        {
+          "min": 27,
+          "max": 32,
+          "value": 5
+        },
+        {
+          "min": 33,
+          "max": 38,
+          "value": 6
+        },
+        {
+          "min": 39,
+          "max": 44,
+          "value": 7
+        },
+        {
+          "min": 45,
+          "max": 50,
+          "value": 8
+        }
+      ]
+    },
+    {
+      "name": "lep",
+      "formula": "(konstitution+koerperkraft)/2+5"
+    },
+    {
+      "name": "asp",
+      "formula": "(mut+klugheit+intuition)/2",
+      "requiresTrait": "Zauberer"
+    },
+    {
+      "name": "kp",
+      "formula": "1"
+    },
+    {
+      "name": "ini",
+      "formula": "(mut+gewandtheit)/2"
+    }
   ],
   "skills": [
-    { "name": "Fliegen", "attributes": ["klugheit", "intuition", "koerperkraft"], "bonus": 0 },
-    { "name": "Gaukeleien", "attributes": ["mut", "charisma", "fingerfertigkeit"], "bonus": 0 },
-    { "name": "Klettern", "attributes": ["mut", "gewandtheit", "koerperkraft"], "bonus": 0 },
-    { "name": "Körperbeherrschung", "attributes": ["klugheit", "gewandtheit", "konstitution"], "bonus": 0 },
-    { "name": "Kraftakt", "attributes": ["intuition", "koerperkraft", "konstitution"], "bonus": 0 },
-    { "name": "Reiten", "attributes": ["charisma", "gewandtheit", "koerperkraft"], "bonus": 0 },
-    { "name": "Schwimmen", "attributes": ["klugheit", "gewandtheit", "koerperkraft"], "bonus": 0 },
-    { "name": "Selbstbeherrschung", "attributes": ["mut", "klugheit", "intuition"], "bonus": 0 },
-    { "name": "Singen", "attributes": ["klugheit", "charisma", "konstitution"], "bonus": 0 },
-    { "name": "Sinnesschärfe", "attributes": ["klugheit", "intuition", "gewandtheit"], "bonus": 0 },
-    { "name": "Tanzen", "attributes": ["klugheit", "charisma", "gewandtheit"], "bonus": 0 },
-    { "name": "Taschendiebstahl", "attributes": ["mut", "intuition", "fingerfertigkeit"], "bonus": 0 },
-    { "name": "Verbergen", "attributes": ["mut", "intuition", "gewandtheit"], "bonus": 0 },
-    { "name": "Zechen", "attributes": ["klugheit", "konstitution", "koerperkraft"], "bonus": 0 },
-    { "name": "Bekehren/Überzeugen", "attributes": ["mut", "klugheit", "charisma"], "bonus": 0 },
-    { "name": "Betören", "attributes": ["charisma", "intuition", "gewandtheit"], "bonus": 0 },
-    { "name": "Einschüchtern", "attributes": ["mut", "intuition", "koerperkraft"], "bonus": 0 },
-    { "name": "Etikette", "attributes": ["klugheit", "intuition", "charisma"], "bonus": 0 },
-    { "name": "Gassenwissen", "attributes": ["mut", "klugheit", "intuition"], "bonus": 0 },
-    { "name": "Menschenkenntnis", "attributes": ["klugheit", "intuition", "charisma"], "bonus": 0 },
-    { "name": "Überreden", "attributes": ["mut", "intuition", "charisma"], "bonus": 0 },
-    { "name": "Vortragen", "attributes": ["mut", "klugheit", "charisma"], "bonus": 0 },
-    { "name": "Fälschen", "attributes": ["intuition", "fingerfertigkeit", "klugheit"], "bonus": 0 },
-    { "name": "Heilkunde (Gift)", "attributes": ["mut", "klugheit", "intuition"], "bonus": 0 },
-    { "name": "Heilkunde (Krankheiten)", "attributes": ["intuition", "klugheit", "konstitution"], "bonus": 0 },
-    { "name": "Heilkunde (Seele)", "attributes": ["intuition", "charisma", "klugheit"], "bonus": 0 },
-    { "name": "Heilkunde (Wunden)", "attributes": ["klugheit", "intuition", "fingerfertigkeit"], "bonus": 0 },
-    { "name": "Holzfällern", "attributes": ["koerperkraft", "gewandtheit", "konstitution"], "bonus": 0 },
-    { "name": "Lebensmittelbearbeitung", "attributes": ["intuition", "fingerfertigkeit", "klugheit"], "bonus": 0 },
-    { "name": "Metallbearbeitung", "attributes": ["klugheit", "fingerfertigkeit", "koerperkraft"], "bonus": 0 },
-    { "name": "Steinbearbeitung", "attributes": ["koerperkraft", "klugheit", "fingerfertigkeit"], "bonus": 0 },
-    { "name": "Holzbearbeitung", "attributes": ["intuition", "fingerfertigkeit", "koerperkraft"], "bonus": 0 },
-    { "name": "Geographie", "attributes": ["klugheit", "intuition", "intuition"], "bonus": 0 },
-    { "name": "Geschichtswissen", "attributes": ["klugheit", "intuition", "charisma"], "bonus": 0 },
-    { "name": "Götter und Kulte", "attributes": ["klugheit", "intuition", "charisma"], "bonus": 0 },
-    { "name": "Kriegskunst", "attributes": ["mut", "klugheit", "intuition"], "bonus": 0 },
-    { "name": "Wildnisleben", "attributes": ["mut", "klugheit", "intuition"], "bonus": 0 },
-    { "name": "Magiekunde", "attributes": ["klugheit", "intuition", "klugheit"], "bonus": 0 },
-    { "name": "Pflanzenkunde", "attributes": ["klugheit", "intuition", "konstitution"], "bonus": 0 },
-    { "name": "Tierkunde", "attributes": ["charisma", "klugheit", "intuition"], "bonus": 0 },
-    { "name": "Schätzen", "attributes": ["klugheit", "intuition", "intuition"], "bonus": 0 },
-    { "name": "Sprachenkunde", "attributes": ["klugheit", "intuition", "charisma"], "bonus": 0 },
-    { "name": "Handel", "attributes": ["klugheit", "intuition", "charisma"], "bonus": 0 }
+    {
+      "name": "Fliegen",
+      "attributes": [
+        "klugheit",
+        "intuition",
+        "koerperkraft"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Gaukeleien",
+      "attributes": [
+        "mut",
+        "charisma",
+        "fingerfertigkeit"
+      ],
+      "bonus": 0,
+      "costColumn": "A"
+    },
+    {
+      "name": "Klettern",
+      "attributes": [
+        "mut",
+        "gewandtheit",
+        "koerperkraft"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Körperbeherrschung",
+      "attributes": [
+        "klugheit",
+        "gewandtheit",
+        "konstitution"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Kraftakt",
+      "attributes": [
+        "intuition",
+        "koerperkraft",
+        "konstitution"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Reiten",
+      "attributes": [
+        "charisma",
+        "gewandtheit",
+        "koerperkraft"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Schwimmen",
+      "attributes": [
+        "klugheit",
+        "gewandtheit",
+        "koerperkraft"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Selbstbeherrschung",
+      "attributes": [
+        "mut",
+        "klugheit",
+        "intuition"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Singen",
+      "attributes": [
+        "klugheit",
+        "charisma",
+        "konstitution"
+      ],
+      "bonus": 0,
+      "costColumn": "A"
+    },
+    {
+      "name": "Sinnesschärfe",
+      "attributes": [
+        "klugheit",
+        "intuition",
+        "gewandtheit"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Tanzen",
+      "attributes": [
+        "klugheit",
+        "charisma",
+        "gewandtheit"
+      ],
+      "bonus": 0,
+      "costColumn": "A"
+    },
+    {
+      "name": "Taschendiebstahl",
+      "attributes": [
+        "mut",
+        "intuition",
+        "fingerfertigkeit"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Verbergen",
+      "attributes": [
+        "mut",
+        "intuition",
+        "gewandtheit"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Zechen",
+      "attributes": [
+        "klugheit",
+        "konstitution",
+        "koerperkraft"
+      ],
+      "bonus": 0,
+      "costColumn": "A"
+    },
+    {
+      "name": "Bekehren/Überzeugen",
+      "attributes": [
+        "mut",
+        "klugheit",
+        "charisma"
+      ],
+      "bonus": 0,
+      "costColumn": "C"
+    },
+    {
+      "name": "Betören",
+      "attributes": [
+        "charisma",
+        "intuition",
+        "gewandtheit"
+      ],
+      "bonus": 0,
+      "costColumn": "C"
+    },
+    {
+      "name": "Einschüchtern",
+      "attributes": [
+        "mut",
+        "intuition",
+        "koerperkraft"
+      ],
+      "bonus": 0,
+      "costColumn": "C"
+    },
+    {
+      "name": "Etikette",
+      "attributes": [
+        "klugheit",
+        "intuition",
+        "charisma"
+      ],
+      "bonus": 0,
+      "costColumn": "C"
+    },
+    {
+      "name": "Gassenwissen",
+      "attributes": [
+        "mut",
+        "klugheit",
+        "intuition"
+      ],
+      "bonus": 0,
+      "costColumn": "C"
+    },
+    {
+      "name": "Menschenkenntnis",
+      "attributes": [
+        "klugheit",
+        "intuition",
+        "charisma"
+      ],
+      "bonus": 0,
+      "costColumn": "C"
+    },
+    {
+      "name": "Überreden",
+      "attributes": [
+        "mut",
+        "intuition",
+        "charisma"
+      ],
+      "bonus": 0,
+      "costColumn": "C"
+    },
+    {
+      "name": "Vortragen",
+      "attributes": [
+        "mut",
+        "klugheit",
+        "charisma"
+      ],
+      "bonus": 0,
+      "costColumn": "C"
+    },
+    {
+      "name": "Fälschen",
+      "attributes": [
+        "intuition",
+        "fingerfertigkeit",
+        "klugheit"
+      ],
+      "bonus": 0,
+      "costColumn": "C"
+    },
+    {
+      "name": "Heilkunde (Gift)",
+      "attributes": [
+        "mut",
+        "klugheit",
+        "intuition"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Heilkunde (Krankheiten)",
+      "attributes": [
+        "intuition",
+        "klugheit",
+        "konstitution"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Heilkunde (Seele)",
+      "attributes": [
+        "intuition",
+        "charisma",
+        "klugheit"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Heilkunde (Wunden)",
+      "attributes": [
+        "klugheit",
+        "intuition",
+        "fingerfertigkeit"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Holzfällern",
+      "attributes": [
+        "koerperkraft",
+        "gewandtheit",
+        "konstitution"
+      ],
+      "bonus": 0,
+      "costColumn": "A"
+    },
+    {
+      "name": "Lebensmittelbearbeitung",
+      "attributes": [
+        "intuition",
+        "fingerfertigkeit",
+        "klugheit"
+      ],
+      "bonus": 0,
+      "costColumn": "A"
+    },
+    {
+      "name": "Metallbearbeitung",
+      "attributes": [
+        "klugheit",
+        "fingerfertigkeit",
+        "koerperkraft"
+      ],
+      "bonus": 0,
+      "costColumn": "A"
+    },
+    {
+      "name": "Steinbearbeitung",
+      "attributes": [
+        "koerperkraft",
+        "klugheit",
+        "fingerfertigkeit"
+      ],
+      "bonus": 0,
+      "costColumn": "A"
+    },
+    {
+      "name": "Holzbearbeitung",
+      "attributes": [
+        "intuition",
+        "fingerfertigkeit",
+        "koerperkraft"
+      ],
+      "bonus": 0,
+      "costColumn": "A"
+    },
+    {
+      "name": "Geographie",
+      "attributes": [
+        "klugheit",
+        "intuition",
+        "intuition"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Geschichtswissen",
+      "attributes": [
+        "klugheit",
+        "intuition",
+        "charisma"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Götter und Kulte",
+      "attributes": [
+        "klugheit",
+        "intuition",
+        "charisma"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Kriegskunst",
+      "attributes": [
+        "mut",
+        "klugheit",
+        "intuition"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Wildnisleben",
+      "attributes": [
+        "mut",
+        "klugheit",
+        "intuition"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Magiekunde",
+      "attributes": [
+        "klugheit",
+        "intuition",
+        "klugheit"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Pflanzenkunde",
+      "attributes": [
+        "klugheit",
+        "intuition",
+        "konstitution"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Tierkunde",
+      "attributes": [
+        "charisma",
+        "klugheit",
+        "intuition"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Schätzen",
+      "attributes": [
+        "klugheit",
+        "intuition",
+        "intuition"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Sprachenkunde",
+      "attributes": [
+        "klugheit",
+        "intuition",
+        "charisma"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    },
+    {
+      "name": "Handel",
+      "attributes": [
+        "klugheit",
+        "intuition",
+        "charisma"
+      ],
+      "bonus": 0,
+      "costColumn": "B"
+    }
+  ],
+  "traits": [
+    {
+      "name": "Zauberer",
+      "kind": "advantage",
+      "costs": [
+        {
+          "tier": "I",
+          "cost": 25
+        }
+      ],
+      "effects": []
+    },
+    {
+      "name": "Nachtsicht",
+      "kind": "advantage",
+      "costs": [
+        {
+          "tier": "I",
+          "cost": 6
+        }
+      ],
+      "effects": [
+        {
+          "target": "probe:sinnesschärfe",
+          "op": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "name": "Zäher Hund",
+      "kind": "disadvantage",
+      "costs": [
+        {
+          "tier": "I",
+          "cost": -12
+        }
+      ],
+      "effects": []
+    },
+    {
+      "name": "Angst vor Feuer",
+      "kind": "disadvantage",
+      "costs": [
+        {
+          "tier": "I",
+          "cost": -10
+        }
+      ],
+      "excludes": [],
+      "effects": [
+        {
+          "target": "probe:mut",
+          "op": "add",
+          "value": -2
+        }
+      ]
+    }
+  ],
+  "advancement": {
+    "columns": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "maxRule": "highestAttributePlus2",
+    "table": [
+      {
+        "from": 1,
+        "to": 12,
+        "costs": {
+          "A": 1,
+          "B": 2,
+          "C": 3,
+          "D": 4
+        }
+      },
+      {
+        "from": 13,
+        "to": 13,
+        "costs": {
+          "A": 2,
+          "B": 4,
+          "C": 6,
+          "D": 8
+        }
+      }
+    ]
+  },
+  "packages": [
+    {
+      "name": "Elf",
+      "kind": "species",
+      "cost": 18,
+      "attributeMods": [
+        {
+          "attr": "mut",
+          "value": 1
+        },
+        {
+          "attr": "gewandtheit",
+          "value": 1
+        },
+        {
+          "choice": [
+            "klugheit",
+            "intuition"
+          ],
+          "value": -1
+        }
+      ],
+      "autoTraits": [
+        "Nachtsicht"
+      ],
+      "recommended": [
+        "Waldelf"
+      ],
+      "restricted": [
+        "Zwerg"
+      ]
+    },
+    {
+      "name": "Waldelf",
+      "kind": "culture",
+      "cost": 0,
+      "recommended": [
+        "Jäger"
+      ],
+      "restricted": [
+        "Zwerg"
+      ]
+    },
+    {
+      "name": "Zwerg",
+      "kind": "species",
+      "cost": 0,
+      "autoTraits": [
+        "Zäher Hund"
+      ],
+      "restricted": [
+        "Elf",
+        "Waldelf"
+      ]
+    },
+    {
+      "name": "Jäger",
+      "kind": "profession",
+      "cost": 100,
+      "attributeMods": [
+        {
+          "choice": "*",
+          "value": 1
+        }
+      ],
+      "autoTraits": [
+        "Nachtsicht"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "Wunde",
+      "rounds": 3,
+      "effects": [
+        {
+          "target": "probe",
+          "op": "add",
+          "value": -4
+        }
+      ]
+    },
+    {
+      "name": "Betäubt",
+      "effects": [
+        {
+          "target": "damage",
+          "op": "add",
+          "value": -2
+        }
+      ]
+    },
+    {
+      "name": "Blutrausch",
+      "rounds": 2,
+      "effects": [
+        {
+          "target": "damage",
+          "op": "add",
+          "value": 2
+        }
+      ]
+    }
   ],
   "abilities": [
     {
-      "name": "Angriff (AT)", "type": "active",
-      "costType": "AP", "cost": 1,
+      "name": "Angriff (AT)",
+      "type": "active",
+      "costType": "AP",
+      "cost": 1,
       "diceExpression": "1d20+mut",
+      "damageType": "slashing",
       "effect": "AT-Probe, bei Erfolg Schaden",
       "bonus": "",
-      "tags": ["attack", "melee"],
+      "tags": [
+        "attack",
+        "melee"
+      ],
       "category": "ability"
     },
     {
-      "name": "Parade (PA)", "type": "active",
-      "costType": "AP", "cost": 0,
+      "name": "Parade (PA)",
+      "type": "active",
+      "costType": "AP",
+      "cost": 0,
       "diceExpression": "1d20+mut",
       "effect": "PA-Probe als Reaktion",
       "bonus": "",
-      "tags": ["defensive", "reaction"],
+      "tags": [
+        "defensive",
+        "reaction"
+      ],
       "category": "ability"
     },
     {
-      "name": "Nachladen", "type": "passive",
-      "costType": "", "cost": 0,
+      "name": "Nachladen",
+      "type": "passive",
+      "costType": "",
+      "cost": 0,
       "diceExpression": "",
       "effect": "",
       "bonus": "action_cost:-1",
-      "tags": ["ranged"],
+      "tags": [
+        "ranged"
+      ],
       "category": "advantage"
     }
   ],
   "progression": {
     "levels": [],
     "xpCosts": [
-      { "name": "Talent (A)", "cost": 50 },
-      { "name": "Talent (B)", "cost": 100 },
-      { "name": "Talent (C)", "cost": 200 },
-      { "name": "Zauber", "cost": 150 },
-      { "name": "Sonderfertigkeit", "cost": 300 }
+      {
+        "name": "Talent (A)",
+        "cost": 50
+      },
+      {
+        "name": "Talent (B)",
+        "cost": 100
+      },
+      {
+        "name": "Talent (C)",
+        "cost": 200
+      },
+      {
+        "name": "Zauber",
+        "cost": 150
+      },
+      {
+        "name": "Sonderfertigkeit",
+        "cost": 300
+      }
     ],
     "improvements": []
   },
@@ -143,7 +872,37 @@
     "combat": {
       "initiative": "1d20+mut",
       "damage": "1d6+koerperkraft",
-      "action_points": { "standard": 1, "max": 1 }
+      "action_points": {
+        "standard": 1,
+        "max": 1
+      },
+      "maneuvers": [
+        {
+          "name": "Wuchtschlag",
+          "attackMalus": 4,
+          "apCost": 2,
+          "damageType": "bludgeoning",
+          "effects": [
+            {
+              "target": "damage",
+              "op": "add",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "name": "Finte",
+          "attackMalus": 4,
+          "apCost": 2,
+          "effects": [
+            {
+              "target": "damage",
+              "op": "add",
+              "value": 2
+            }
+          ]
+        }
+      ]
     }
   }
 }

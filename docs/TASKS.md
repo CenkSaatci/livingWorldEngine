@@ -2374,7 +2374,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD
 
 ### P29-T06: DSA-Referenzcontent + Abnahme
-- **Status:** 📋
+- **Status:** ✅ `docs/examples/dsa5.json` auf P23/P28/P29-Format (Budget, Staffeln, Traits, Matrix, Tabellen-Derived, Pakete inkl. 100-AP-Profession, Zustände, Manöver, Schadensarten); Abnahme-Tests: Schema, Sheet (sk-Tabelle 7, asp requiresTrait), 3W20 mit FW-Ausgleich, Paket-Auswahl (Elf/Waldelf/Jäger, restricted); TESTING.md §15 Checkpoints
 - **Aufwand:** 1 Tag
 - **Beschreibung:**
   - `docs/examples/dsa5.json` auf neues Format heben (Budget, Staffeln, Traits, Matrix, Tabellen-Derived, Pakete)

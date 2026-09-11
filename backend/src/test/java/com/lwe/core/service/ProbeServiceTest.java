@@ -132,6 +132,26 @@ class ProbeServiceTest {
     }
 
     @Test
+    void dsaThreeAttrProbeCompensatesFailuresWithFw() throws Exception {
+        // P29-T06 Abnahme: 3W20 mit FW-Ausgleich — FW 60 deckt maximal 3*19 ab.
+        var entity = entityWithAttrs("{\"mut\":1,\"klugheit\":1,\"intuition\":1,\"staerke\":10}");
+        entity.setSkillsJson("{\"Sinnesschärfe\":60}");
+        var world = new World("W", userId, "{}");
+        try { var f = World.class.getDeclaredField("id"); f.setAccessible(true); f.set(world, worldId); }
+        catch (Exception ex) { throw new RuntimeException(ex); }
+        when(entityRepo.findById(entityId)).thenReturn(java.util.Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(java.util.Optional.of(world));
+        when(rulesLoader.loadRules(any(), any())).thenAnswer(inv ->
+            objectMapper.readValue(java.nio.file.Files.readString(
+                java.nio.file.Path.of("../docs/examples/dsa5.json")), Map.class));
+
+        var result = service.executeProbe(entityId, userId, "Sinnesschärfe", 10, false, null);
+
+        assertThat(result.success()).as("FW 60 muss jede 3W20-Probe ausgleichen").isTrue();
+        assertThat(result.dice()).hasSize(3);
+    }
+
+    @Test
     void conditionMalusAppliesToProbe() {
         var entity = entityWithAttrs("{\"staerke\":10}");
         entity.setMetadataJson("{\"conditions\":[{\"name\":\"Wunde\",\"rounds\":2}]}");

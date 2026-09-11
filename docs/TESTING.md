@@ -699,3 +699,31 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 - [ ] 1 Ability (Feuerball) am System
 
 **Ergebnis-Erfassung:** Abgehakte Checkpoints + gefundene Fehler mit Reproduktionsschritten hier unten notieren (Datum, Ticket-Nummer).
+
+---
+
+## 15. P28/P29 Wizard-Engine Checkpoints
+
+> Stand P29-T06. Backend-Tests: `mvn -B test` (356); Frontend: `npx vitest run` (155); E2E-Automation folgt im Playwright-Paket (nach P29).
+
+### 15.1 Autorierung (SystemWizard)
+- [ ] P28: Budget/Kostenkurven/Traits/Steigerungs-Matrix/Tabellen-Derived/Pakete setzen → Save gated bei Fehlern (Übersicht zeigt Prüfbericht)
+- [ ] P29-Pakete: Elf anlegen (18 AP, Mods `mut+1`, `gewandtheit+1`, Choice `klugheit/intuition −1`, Auto-Trait Nachtsicht, restricted Zwerg)
+- [ ] Vorschau: Elf + Waldelf + Jäger wählen → Kosten 118 AP, Mods + Auto-Traits korrekt, Wahl-Gruppen auflösbar
+- [ ] Warnungen erscheinen: Elf ohne Waldelf → „recommended"; Zwerg + Elf → „restricted" (rot)
+
+### 15.2 Sheet (DSA-Referenz `docs/examples/dsa5.json`)
+- [ ] Derived-Tabelle: MU14+KL13+IN12=39 → `sk` = 7
+- [ ] `asp` erscheint nur mit Trait Zauberer (19,5)
+- [ ] Ability „Angriff (AT)" zeigt Schadensart `slashing`
+
+### 15.3 Kampf (P23/P29)
+- [ ] Zustand „Wunde" (DM) → Probe-Malus −4; Tick beim Zugbeginn (nach `rounds` weg)
+- [ ] Schicksalspunkt ausgeben → Re-Roll; bei 0 → 422 und Toast
+- [ ] Manöver „Wuchtschlag" → ActionBar-Button, AP-Kosten 2, Schaden +4 (Log mit `(bludgeoning)`)
+- [ ] System ohne Manöver → ActionBar unverändert
+- [ ] Waffe mit `damage_type: fire` vs. Feuer-resistent (Metadaten) → halber Schaden; Verwundbar → doppelt; `damage_armor: 3` → −3 vor Resistenz
+
+### 15.4 Regression
+- [ ] Alte Systeme (D20Lite/TwoDicePool/Fudge/dnd5e/coc7e) laden/bauen unverändert
+- [ ] `docs/examples/dsa5.json` validiert gegen `DEFAULT_SCHEMA` (Backend-Test)

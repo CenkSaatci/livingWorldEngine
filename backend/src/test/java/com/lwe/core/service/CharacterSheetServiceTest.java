@@ -303,6 +303,41 @@ class CharacterSheetServiceTest {
     }
 
     @Test
+    void getSheet_computesDsa5Example() throws Exception {
+        // P29-T06 Abnahme: DSA-Referenz (Tabelle sk, requiresTrait asp, damageType).
+        var entity = mockEntity("{\"mut\":14,\"klugheit\":13,\"intuition\":12,\"konstitution\":12,\"koerperkraft\":12}", null);
+        mockWorld(systemId);
+        stubRules(java.nio.file.Files.readString(
+            java.nio.file.Path.of("../docs/examples/dsa5.json")));
+
+        var sheet = service.getSheet(entityId, userId);
+
+        // sk: 14+13+12 = 39 -> Zeile 39-44 -> 7
+        var sk = sheet.derivedValues().stream().filter(d -> d.name().equals("sk")).findFirst().orElseThrow();
+        assertThat(sk.value()).isEqualTo(7.0);
+        // asp braucht Trait Zauberer -> fehlt ohne
+        assertThat(sheet.derivedValues()).extracting(d -> d.name()).doesNotContain("asp");
+        // Ability-Schadensart (P23) aus dem Content
+        var at = sheet.abilities().stream().filter(a -> a.name().equals("Angriff (AT)")).findFirst().orElseThrow();
+        assertThat(at.damageType()).isEqualTo("slashing");
+    }
+
+    @Test
+    void getSheet_appliesDsa5PackageTraitAndAsp() throws Exception {
+        var entity = mockEntity("{\"mut\":14,\"klugheit\":13,\"intuition\":12,\"konstitution\":12,\"koerperkraft\":12}", null);
+        when(entity.getMetadataJson()).thenReturn("{\"traits\":[\"Zauberer\"]}");
+        mockWorld(systemId);
+        stubRules(java.nio.file.Files.readString(
+            java.nio.file.Path.of("../docs/examples/dsa5.json")));
+
+        var sheet = service.getSheet(entityId, userId);
+
+        // asp: (14+13+12)/2 = 19.5
+        var asp = sheet.derivedValues().stream().filter(d -> d.name().equals("asp")).findFirst().orElseThrow();
+        assertThat(asp.value()).isEqualTo(19.5);
+    }
+
+    @Test
     void getSheet_omitsRequiresTraitEntryWhenMissing() throws Exception {
         var entity = mockEntity("{\"mut\":14,\"klugheit\":12,\"intuition\":14,\"konstitution\":10,\"koerperkraft\":10}", null);
         mockWorld(systemId);

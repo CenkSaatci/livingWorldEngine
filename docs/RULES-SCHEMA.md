@@ -107,7 +107,7 @@ Response enthält: Würfelergebnis, Modifikator, Erfolg, Detail-Infos (z.B. bei 
 Siehe [`docs/examples/`](examples/) für drei vollständige Beispielsysteme:
 - [`dnd5e.json`](examples/dnd5e.json) — D&D 5th Edition
 - [`coc7e.json`](examples/coc7e.json) — Call of Cthulhu 7th Edition
-- [`dsa5.json`](examples/dsa5.json) — Das Schwarze Auge 5. Edition
+- [`dsa5.json`](examples/dsa5.json) — Das Schwarze Auge 5. Edition (P29-T06-Referenz: Budget, Staffeln, Traits, Matrix, Tabellen-Derived, Pakete, Zustände, Manöver, Schadensarten)
 
 ---
 

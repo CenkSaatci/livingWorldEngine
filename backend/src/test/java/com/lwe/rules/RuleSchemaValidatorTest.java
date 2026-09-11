@@ -261,6 +261,14 @@ class RuleSchemaValidatorTest {
     }
 
     @Test
+    void shouldValidateDsa5ExampleAgainstDefaultSchema() throws IOException {
+        // P29-T06: Referenz-Content (P23/P28/P29) muss schema-valide sein.
+        var json = java.nio.file.Files.readString(java.nio.file.Path.of("../docs/examples/dsa5.json"));
+        assertThat(validator.validate(json, RuleSchemaValidator.DEFAULT_SCHEMA))
+            .as("DSA5-Referenz muss gegen DEFAULT_SCHEMA validieren").isEmpty();
+    }
+
+    @Test
     void shouldValidateP28ReferenceAgainstDefaultSchema() throws IOException {
         // P28-T06: Referenz-System nutzt alle P28-Bloecke.
         var json = loadFixture("p28-reference.json");

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import dsa5json from '../../../docs/examples/dsa5.json';
 import { defaultWizardData, toRulesJson, fromRulesJson, attrPointCost, calcBudget, traitCost, danglingTraitRefs, traitSelectionErrors, advanceCost, skillAdvanceCost, wizardIssues, resolvePackageMods, packageCost, packageAutoTraits, packageSelectionIssues, packageSelectionWarnings, type PackageSelection } from './gameSystem';
 
 describe('gameSystem roundtrip', () => {
@@ -301,5 +302,37 @@ describe('packages (P29-T05)', () => {
 
     const noCulture = packageSelectionWarnings(data, [{ name: 'Elf', choices: ['KK'] }]);
     expect(noCulture).toContain('recommended:Elf:Waldelf');
+  });
+});
+
+describe('DSA5-Referenz (P29-T06)', () => {
+  it('parses the reference system and applies an Elf package selection', () => {
+    const data = fromRulesJson(JSON.stringify(dsa5json))!;
+    expect(data.packages).toHaveLength(4);
+    expect(data.packages!.map((p) => p.name)).toEqual(['Elf', 'Waldelf', 'Zwerg', 'Jäger']);
+
+    const sel: PackageSelection[] = [
+      { name: 'Elf', choices: ['klugheit'] },
+      { name: 'Waldelf' },
+      { name: 'Jäger', choices: ['mut'] },
+    ];
+    const mods = resolvePackageMods(data.packages!, sel);
+    expect(mods.get('mut')).toBe(2);          // Elf +1, Jäger +1
+    expect(mods.get('gewandtheit')).toBe(1);  // Elf +1
+    expect(mods.get('klugheit')).toBe(-1);    // Elf wählt KL -1
+    expect(packageCost(data.packages!, sel)).toBe(118); // 18 + 0 + 100
+    expect(packageAutoTraits(data.packages!, sel)).toEqual(['Nachtsicht']);
+    expect(packageSelectionIssues(data, sel)).toEqual([]);
+    expect(packageSelectionWarnings(data, sel)).toEqual([]);
+  });
+
+  it('flags restricted species combos and missing culture', () => {
+    const data = fromRulesJson(JSON.stringify(dsa5json))!;
+    const bad: PackageSelection[] = [{ name: 'Zwerg' }, { name: 'Elf', choices: ['intuition'] }];
+    expect(packageSelectionIssues(data, bad)).toContain('restricted:Zwerg:Elf');
+    expect(packageSelectionIssues(data, bad)).toContain('duplicate_kind:species');
+
+    const noCulture: PackageSelection[] = [{ name: 'Elf', choices: ['intuition'] }];
+    expect(packageSelectionWarnings(data, noCulture)).toContain('recommended:Elf:Waldelf');
   });
 });
