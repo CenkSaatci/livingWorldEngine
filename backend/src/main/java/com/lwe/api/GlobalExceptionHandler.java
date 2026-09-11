@@ -56,6 +56,13 @@ public class GlobalExceptionHandler {
             .body(ApiError.of("INVALID_INPUT", "Malformed query parameter: " + ex.getName()));
     }
 
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiError> handleMethodNotSupported(
+            org.springframework.web.HttpRequestMethodNotSupportedException ex) {
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+            .body(ApiError.of("METHOD_NOT_ALLOWED", "Method not allowed: " + ex.getMethod()));
+    }
+
     @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
     public ResponseEntity<ApiError> handleNoResource(
             org.springframework.web.servlet.resource.NoResourceFoundException ex) {
