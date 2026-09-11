@@ -194,6 +194,8 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `INTENT_NOT_FOUND` | 404 | Intent existiert nicht |
 | `NPC_NOT_FOUND` | 404 | NPC existiert nicht |
 | `INTENT_WORLD_MISMATCH` | 422 | NPC/Kampagne gehören nicht zur angegebenen Welt |
+| `NODE_NOT_IN_ADVENTURE` | 422 | Node gehört nicht zum angegebenen Adventure |
+| `QUEST_TYPE_INVALID` | 400 | Quest-Typ nicht kill/fetch/escort/deliver/explore/talk |
 | `CAMPAIGN_NOT_FOUND` | 404 | Kampagne existiert nicht |
 
 | Code | HTTP | Bedeutung |
@@ -205,7 +207,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `INTENT_VALIDATION_VISIBILITY` | 422 | Validator Stage 2: Sicht verdeckt |
 | `INTENT_VALIDATION_RANGE` | 422 | Validator Stage 3: Außerhalb Reichweite |
 | `INTENT_VALIDATION_RESOURCE` | 422 | Validator Stage 4: Ressource fehlt (Item/HP) |
-| `INTENT_ALREADY_PROCESSED` | 409 | Intent wurde schon approved/rejected/executed |
+| `INTENT_NOT_PENDING` | 409 | Intent wurde bereits approved/rejected/executed |
 | `INTENT_APPROVAL_REQUIRED` | 422 | Welt ist im `suggest`-Modus, DM-Approval fehlt |
 | `INTENT_REJECTED_BY_DM` | 422 | DM hat Intent abgelehnt (in `rejection_reason` begründet) |
 

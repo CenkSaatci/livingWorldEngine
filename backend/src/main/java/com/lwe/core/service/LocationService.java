@@ -66,6 +66,7 @@ public class LocationService {
                            Integer wealth, String services, String factions,
                            Boolean isCapital, String positionJson) {
         var loc = getById(locationId, userId);
+        requireAccess(loc.getRegionId(), userId); // F1: Write-Guard
         if (type != null) loc.setType(type);
         if (name != null) loc.setName(name);
         if (description != null) loc.setDescription(description);
@@ -82,12 +83,14 @@ public class LocationService {
     @Transactional
     public void delete(UUID locationId, UUID userId) {
         var loc = getById(locationId, userId);
+        requireAccess(loc.getRegionId(), userId); // F1: Write-Guard
         repo.delete(loc);
     }
 
     @Transactional
     public void updatePosition(UUID locationId, UUID userId, String positionJson) {
         var loc = getById(locationId, userId);
+        requireAccess(loc.getRegionId(), userId); // F1: Write-Guard
         loc.setPositionJson(positionJson);
         repo.save(loc);
     }

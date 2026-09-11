@@ -37,6 +37,25 @@ public class WorldMapService {
         return mapRepo.save(map);
     }
 
+    /** F5-Audit: reiner Read fuer Owner und PUBLIC-Welten (erzeugt keine Map). */
+    public WorldMap getMap(UUID worldId, UUID userId) {
+        var world = worldRepo.findById(worldId)
+            .orElseThrow(() -> new WorldAccess.WorldAccessException("WORLD_NOT_FOUND", "World not found"));
+        boolean canRead = world.getOwnerId().equals(userId)
+            || "PUBLIC".equals(world.getVisibility());
+        if (!canRead) {
+            throw new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "Access denied");
+        }
+        return mapRepo.findByWorldId(worldId).orElse(null);
+    }
+
+    /** Nur der Owner darf die Map (an)legen — Fallback fuer GET ohne vorhandene Map. */
+    public boolean canWrite(UUID worldId, UUID userId) {
+        return worldRepo.findById(worldId)
+            .map(w -> w.getOwnerId().equals(userId))
+            .orElse(false);
+    }
+
     public WorldMap getById(UUID mapId, UUID userId) {
         var map = mapRepo.findById(mapId)
             .orElseThrow(() -> new WorldAccess.WorldAccessException("MAP_NOT_FOUND", "Map not found"));

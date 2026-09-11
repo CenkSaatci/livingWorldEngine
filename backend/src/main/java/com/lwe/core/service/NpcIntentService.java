@@ -134,7 +134,7 @@ public class NpcIntentService {
         var unique = new java.util.ArrayList<>(new java.util.LinkedHashSet<>(ids));
         for (var id : unique) {
             try {
-                var intent = repo.findById(id)
+                var intent = repo.findByIdForUpdate(id)
                     .orElseThrow(() -> new IntentException("INTENT_NOT_FOUND", "Intent not found: " + id));
                 worldAccess.requireDm(intent.getWorldId(), userId);
                 if ("approve".equalsIgnoreCase(action)) {
@@ -156,7 +156,7 @@ public class NpcIntentService {
 
     @Transactional
     public NpcIntent approve(UUID intentId, UUID userId) {
-        var intent = repo.findById(intentId)
+        var intent = repo.findByIdForUpdate(intentId)
             .orElseThrow(() -> new IntentException("INTENT_NOT_FOUND", "Intent not found"));
         worldAccess.requireDm(intent.getWorldId(), userId);
         if (!"pending".equals(intent.getStatus())) {
@@ -178,7 +178,7 @@ public class NpcIntentService {
 
     @Transactional
     public NpcIntent reject(UUID intentId, String reason, UUID userId) {
-        var intent = repo.findById(intentId)
+        var intent = repo.findByIdForUpdate(intentId)
             .orElseThrow(() -> new IntentException("INTENT_NOT_FOUND", "Intent not found"));
         worldAccess.requireDm(intent.getWorldId(), userId);
         if (!"pending".equals(intent.getStatus())) {

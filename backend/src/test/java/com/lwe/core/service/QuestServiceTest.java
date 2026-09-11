@@ -45,13 +45,21 @@ class QuestServiceTest {
         when(eventService.publish(any(), any(), any(), any(), any(), anyInt(), any())).thenReturn(null);
 
         var quest = service.create(worldId, userId, "Find the Gem", "Retrieve the ancient gem from the dragon",
-            "MAIN", null, null, "[{\"task\":\"defeat_dragon\"}]", "{\"xp\":500}", false);
+            "fetch", null, null, "[{\"task\":\"defeat_dragon\"}]", "{\"xp\":500}", false);
 
         assertThat(quest.getTitle()).isEqualTo("Find the Gem");
-        assertThat(quest.getType()).isEqualTo("MAIN");
+        assertThat(quest.getType()).isEqualTo("fetch");
         assertThat(quest.getObjectives()).isEqualTo("[{\"task\":\"defeat_dragon\"}]");
         verify(repo).save(any());
         verify(eventService).publish(any(), any(), any(), any(), any(), anyInt(), any());
+    }
+
+    @Test
+    void createRejectsUnknownType() {
+        assertThatThrownBy(() -> service.create(worldId, userId, "T", null, "SIDE",
+                null, null, "[]", "{}", false))
+            .isInstanceOf(QuestService.QuestException.class)
+            .matches(e -> ((QuestService.QuestException) e).getErrorCode().equals("QUEST_TYPE_INVALID"));
     }
 
     @Test

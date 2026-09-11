@@ -78,9 +78,6 @@ public class EntityService {
                               String socialStanding, UUID factionId) {
         var entity = getById(entityId, userId);
         requireWorldAccess(entity.getWorldId(), userId);
-        requireWorldAccess(entity.getWorldId(), userId);
-        requireWorldAccess(entity.getWorldId(), userId);
-        requireWorldAccess(entity.getWorldId(), userId);
         if (name != null) entity.setName(name);
         if (nonBlank(attributesJson)) entity.setAttributesJson(attributesJson);
         if (nonBlank(inventoryJson)) entity.setInventoryJson(inventoryJson);
@@ -97,6 +94,7 @@ public class EntityService {
     @Transactional
     public GameEntity updateAttributes(UUID entityId, UUID userId, Map<String, Integer> newAttrs) {
         var entity = getById(entityId, userId);
+        requireWorldAccess(entity.getWorldId(), userId); // F1: Write-Guard
         try {
             var raw = entity.getAttributesJson();
             if (raw == null || raw.isBlank()) raw = "{}";
@@ -112,6 +110,7 @@ public class EntityService {
     @Transactional
     public GameEntity updateProgression(UUID entityId, UUID userId, int experiencePoints, Integer level) {
         var entity = getById(entityId, userId);
+        requireWorldAccess(entity.getWorldId(), userId); // F1: Write-Guard
         entity.setExperiencePoints(experiencePoints);
         return entityRepo.save(entity);
     }
@@ -287,6 +286,7 @@ public class EntityService {
     @Transactional
     public GameEntity updateOverrides(UUID entityId, UUID userId, Map<String, Object> overrides) {
         var entity = getById(entityId, userId);
+        requireWorldAccess(entity.getWorldId(), userId); // F1: Write-Guard
         try {
             var meta = entity.getMetadataJson() != null
                 ? objectMapper.readTree(entity.getMetadataJson())

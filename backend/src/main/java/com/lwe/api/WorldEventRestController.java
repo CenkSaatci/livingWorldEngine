@@ -15,9 +15,11 @@ import java.util.UUID;
 public class WorldEventRestController {
 
     private final WorldEventRepository eventRepo;
+    private final com.lwe.core.util.WorldAccess worldAccess;
 
-    public WorldEventRestController(WorldEventRepository eventRepo) {
+    public WorldEventRestController(WorldEventRepository eventRepo, com.lwe.core.util.WorldAccess worldAccess) {
         this.eventRepo = eventRepo;
+        this.worldAccess = worldAccess;
     }
 
     @GetMapping
@@ -25,6 +27,10 @@ public class WorldEventRestController {
                                                               @RequestParam(defaultValue = "0") long since,
                                                               @RequestParam(defaultValue = "50") int limit,
                                                               @AuthenticationPrincipal User user) {
+        // P2-Audit: Events nur fuer Welt-Mitglieder; BOT/ADMIN fuer Polling.
+        if (!"BOT".equals(user.getRole()) && !"ADMIN".equals(user.getRole())) {
+            worldAccess.requireAccess(worldId, user.getId());
+        }
         var raw = eventRepo.findByWorldIdAndIdGreaterThanOrderByIdAsc(worldId, since);
         var events = raw.size() > limit ? raw.subList(0, limit) : raw;
         return ResponseEntity.ok(new WorldEventListResponse(events.stream()

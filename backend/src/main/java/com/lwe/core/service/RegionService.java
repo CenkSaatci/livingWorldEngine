@@ -66,6 +66,7 @@ public class RegionService {
                          String resources, String factions, Integer population,
                          String positionJson, String polygonPoints) {
         var region = getById(regionId, userId);
+        requireOwner(region.getWorldId(), userId); // F1: Write-Guard
         if (name != null) region.setName(name);
         if (description != null) region.setDescription(description);
         if (history != null) region.setHistory(history);
@@ -82,6 +83,7 @@ public class RegionService {
     @Transactional
     public void delete(UUID regionId, UUID userId) {
         var region = getById(regionId, userId);
+        requireOwner(region.getWorldId(), userId); // F1: Write-Guard
         repo.delete(region);
     }
 

@@ -35,8 +35,10 @@ public class AdventureController {
 
     // -- Discovery --
     @GetMapping
-    public ResponseEntity<List<AdventureResponse>> listByWorld(@RequestParam UUID worldId) {
-        var list = adventureService.listByWorld(worldId).stream().map(AdventureResponse::from).toList();
+    public ResponseEntity<List<AdventureResponse>> listByWorld(@RequestParam UUID worldId,
+                                                                @AuthenticationPrincipal User user) {
+        var list = adventureService.listByWorld(worldId, user.getId())
+            .stream().map(AdventureResponse::from).toList();
         return ResponseEntity.ok(list);
     }
 
@@ -53,8 +55,9 @@ public class AdventureController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AdventureResponse> getById(@PathVariable UUID id) {
-        var adv = adventureService.getById(id);
+    public ResponseEntity<AdventureResponse> getById(@PathVariable UUID id,
+                                                      @AuthenticationPrincipal User user) {
+        var adv = adventureService.getById(id, user.getId());
         return ResponseEntity.ok(AdventureResponse.from(adv));
     }
 
@@ -106,7 +109,7 @@ public class AdventureController {
                                                               @PathVariable UUID nodeId,
                                                               @Valid @RequestBody ChoiceRequest req,
                                                               @AuthenticationPrincipal User user) {
-        var choice = adventureService.addChoice(nodeId, user.getId(), req.label(),
+        var choice = adventureService.addChoice(id, nodeId, user.getId(), req.label(),
             req.targetNodeId(), req.skillCheckJson(), req.onSuccessNodeId(), req.onFailureNodeId());
         return ResponseEntity.status(HttpStatus.CREATED).body(AdventureChoiceResponse.created(choice));
     }

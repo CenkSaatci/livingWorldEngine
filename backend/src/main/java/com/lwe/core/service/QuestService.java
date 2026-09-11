@@ -24,11 +24,18 @@ public class QuestService {
         this.eventService = eventService;
     }
 
+    private static final java.util.Set<String> TYPES =
+        java.util.Set.of("kill", "fetch", "escort", "deliver", "explore", "talk");
+
     @Transactional
     public Quest create(UUID worldId, UUID userId, String title, String description,
                         String type, UUID giverId, UUID locationId,
                         String objectives, String rewards, boolean aiGenerated) {
         requireOwner(worldId, userId);
+        if (type == null || !TYPES.contains(type)) {
+            throw new QuestException("QUEST_TYPE_INVALID",
+                "type must be one of " + TYPES);
+        }
 
         var quest = new Quest(worldId, title, type, objectives, rewards);
         if (description != null) quest.setDescription(description);
@@ -60,6 +67,7 @@ public class QuestService {
     @Transactional
     public Quest updateStatus(UUID questId, UUID userId, String status) {
         var quest = getById(questId, userId);
+        requireOwner(quest.getWorldId(), userId); // F1: Write-Guard
         quest.setStatus(status);
         quest = repo.save(quest);
 
@@ -71,6 +79,7 @@ public class QuestService {
     @Transactional
     public void delete(UUID questId, UUID userId) {
         var quest = getById(questId, userId);
+        requireOwner(quest.getWorldId(), userId); // F1: Write-Guard
         repo.delete(quest);
     }
 

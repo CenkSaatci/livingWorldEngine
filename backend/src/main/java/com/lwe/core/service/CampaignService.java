@@ -75,7 +75,11 @@ public class CampaignService {
     public List<Campaign> listAccessible(UUID userId) {
         var owned = worldRepo.findByOwnerIdAndActiveTrue(userId).stream()
             .map(World::getId).toList();
-        var memberWorldIds = memberRepo.findWorldIdsByUserId(userId);
+        // F6-Audit: PRIVATE-Welten zaehlen nur fuer den Owner, nicht fuer Mitglieder.
+        var memberWorldIds = worldRepo.findAllById(memberRepo.findWorldIdsByUserId(userId)).stream()
+            .filter(World::isActive)
+            .filter(w -> !"PRIVATE".equals(w.getVisibility()))
+            .map(World::getId).toList();
         var worldIds = java.util.stream.Stream.concat(owned.stream(), memberWorldIds.stream())
             .distinct().toList();
         if (worldIds.isEmpty()) return List.of();

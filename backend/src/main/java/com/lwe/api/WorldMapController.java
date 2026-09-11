@@ -22,7 +22,11 @@ public class WorldMapController {
     @GetMapping("/worlds/{worldId}/map")
     public ResponseEntity<?> getMap(@PathVariable UUID worldId,
                                     @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(mapService.getOrCreate(worldId, user.getId()));
+        var map = mapService.getMap(worldId, user.getId());
+        if (map == null && mapService.canWrite(worldId, user.getId())) {
+            map = mapService.getOrCreate(worldId, user.getId());
+        }
+        return map != null ? ResponseEntity.ok(map) : ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/worlds/{worldId}/map")

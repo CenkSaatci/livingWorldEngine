@@ -191,6 +191,11 @@ public class GlobalExceptionHandler {
                 default -> HttpStatus.BAD_REQUEST;
             };
             case WeatherService.WeatherException e -> HttpStatus.NOT_FOUND;
+            case QuestService.QuestException e -> switch (e.getErrorCode()) {
+                case "QUEST_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                case "QUEST_TYPE_INVALID" -> HttpStatus.BAD_REQUEST;
+                default -> HttpStatus.BAD_REQUEST;
+            };
             case FormulaEvaluator.EvaluationException e -> HttpStatus.BAD_REQUEST;
             case IllegalArgumentException e -> HttpStatus.BAD_REQUEST;
             case NpcIntentService.IntentException e -> switch (e.getErrorCode()) {

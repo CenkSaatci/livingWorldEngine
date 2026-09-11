@@ -59,13 +59,44 @@ class AdventureServiceTest {
     void injectChoicePublishesEventForWorldNotAdventure() {
         // Audit T33-09: worldId im Event, sonst FK-Crash in world_events.
         var actorId = UUID.randomUUID();
+        var node = new AdventureNode(adventure.getId(), "Start", false);
+        setId(node, startNodeId);
         when(adventureRepo.findById(adventure.getId())).thenReturn(java.util.Optional.of(adventure));
+        when(nodeRepo.findById(startNodeId)).thenReturn(java.util.Optional.of(node));
         when(choiceRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.injectChoice(adventure.getId(), actorId, startNodeId, "Weiter", null, null);
 
         verify(eventService).publish(eq(worldId),
             eq(WorldEventService.EventType.ADVENTURE_CHOICES_CHANGED), any(), any(), any());
+    }
+
+    @Test
+    void injectChoiceRejectsNodeFromOtherAdventure() {
+        var otherNode = new AdventureNode(UUID.randomUUID(), "Fremd", false);
+        setId(otherNode, UUID.randomUUID());
+        when(adventureRepo.findById(adventure.getId())).thenReturn(java.util.Optional.of(adventure));
+        when(nodeRepo.findById(otherNode.getId())).thenReturn(java.util.Optional.of(otherNode));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.injectChoice(
+                adventure.getId(), userId, otherNode.getId(), "X", null, null))
+            .isInstanceOf(AdventureService.AdventureException.class)
+            .matches(e -> ((AdventureService.AdventureException) e).getErrorCode()
+                .equals("NODE_NOT_IN_ADVENTURE"));
+    }
+
+    @Test
+    void forceNodeRejectsNodeFromOtherAdventure() {
+        var otherNode = new AdventureNode(UUID.randomUUID(), "Fremd", false);
+        setId(otherNode, UUID.randomUUID());
+        when(adventureRepo.findById(adventure.getId())).thenReturn(java.util.Optional.of(adventure));
+        when(nodeRepo.findById(otherNode.getId())).thenReturn(java.util.Optional.of(otherNode));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.forceNode(
+                adventure.getId(), userId, otherNode.getId()))
+            .isInstanceOf(AdventureService.AdventureException.class)
+            .matches(e -> ((AdventureService.AdventureException) e).getErrorCode()
+                .equals("NODE_NOT_IN_ADVENTURE"));
     }
 
     @Test

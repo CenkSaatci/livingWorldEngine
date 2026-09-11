@@ -226,6 +226,10 @@ class CampaignServiceTest {
         var memberCampaign = new Campaign(otherWorldId, gameSystemId, "Gast");
         when(worldRepo.findByOwnerIdAndActiveTrue(userId)).thenReturn(List.of());
         when(memberRepo.findWorldIdsByUserId(userId)).thenReturn(List.of(otherWorldId));
+        var otherWorld = new World("Gastwelt", UUID.randomUUID(), "{}");
+        setId(otherWorld, otherWorldId);
+        otherWorld.setVisibility("INVITE_ONLY");
+        when(worldRepo.findAllById(List.of(otherWorldId))).thenReturn(List.of(otherWorld));
         when(repo.findByWorldIdIn(List.of(otherWorldId))).thenReturn(List.of(memberCampaign));
 
         var result = service.listAccessible(userId);

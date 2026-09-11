@@ -700,11 +700,13 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 
 **Ergebnis-Erfassung:** Abgehakte Checkpoints + gefundene Fehler mit Reproduktionsschritten hier unten notieren (Datum, Ticket-Nummer).
 
+**Bekannte Dev-DB-Altlasten (P34-T02):** E2E-Läufe hinterlassen soft-deleted Fork-Welten mit geklonten Inhalten, inaktive Systeme/Items, verwaiste NPC-Intents und Test-User. Vor einem DB-Reset/Release einmal aufräumen (Cleanup-Skript geplant).
+
 ---
 
 ## 15. P28/P29 Wizard-Engine Checkpoints
 
-> Stand P31 + Audits. Backend-Tests: `mvn -B test` (411); Frontend: `npx vitest run` (169); E2E: `cd frontend && npm run test:e2e` (Playwright, 11 Tests — inkl. Adventure-Inject — Login-Setup, Wizard-Pakete, Charakter-Wizard, Sheet-DSA, Kampf-Manöver, Kampf-Zustände/Schadensart, DM-Queue, System-Pin, Save-Gate, Dashboard-Smoke). Voraussetzung: pm2 `lwe-frontend`/`lwe-backend` laufen, `npx playwright install chromium` einmalig; Zugang via `E2E_EMAIL`/`E2E_PASSWORD` (Default devbe).
+> Stand P31 + Audits. Backend-Tests: `mvn -B test` (414); Frontend: `npx vitest run` (169); E2E: `cd frontend && npm run test:e2e` (Playwright, 11 Tests — inkl. Adventure-Inject — Login-Setup, Wizard-Pakete, Charakter-Wizard, Sheet-DSA, Kampf-Manöver, Kampf-Zustände/Schadensart, DM-Queue, System-Pin, Save-Gate, Dashboard-Smoke). Voraussetzung: pm2 `lwe-frontend`/`lwe-backend` laufen, `npx playwright install chromium` einmalig; Zugang via `E2E_EMAIL`/`E2E_PASSWORD` (Default devbe).
 
 ### 15.1 Autorierung (SystemWizard)
 - [x] **Automatisiert (Playwright):** Paket-Step zeigt gespeicherte Pakete (Name/Kosten/Auto-Merkmale/Restriktionen), Live-Vorschau rechnet („Kosten: 18 AP · staerke +1 · Nachtsicht"), Save öffnet die Übersicht erfolgreich

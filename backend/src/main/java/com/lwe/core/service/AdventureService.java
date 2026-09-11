@@ -51,7 +51,8 @@ public class AdventureService {
         return adventureRepo.save(adv);
     }
 
-    public List<Adventure> listByWorld(UUID worldId) {
+    public List<Adventure> listByWorld(UUID worldId, UUID userId) {
+        worldAccess.requireRead(worldId, userId); // P1-Audit
         return adventureRepo.findByWorldId(worldId);
     }
 
@@ -93,8 +94,10 @@ public class AdventureService {
     }
 
     @Transactional
-    public NodeChoice addChoice(UUID nodeId, UUID userId, String label, UUID targetNodeId,
-                                String skillCheckJson, UUID onSuccess, UUID onFailure) {
+    public NodeChoice addChoice(UUID adventureId, UUID nodeId, UUID userId, String label,
+                                UUID targetNodeId, String skillCheckJson, UUID onSuccess, UUID onFailure) {
+        verifyAdventureAccess(adventureId, userId); // F2: Zugriff + Node-Zugehoerigkeit
+        verifyNodeInAdventure(adventureId, nodeId);
         // Skill-Check-JSON validieren, falls vorhanden
         if (skillCheckJson != null && !skillCheckJson.isBlank()) {
             try {
@@ -241,8 +244,7 @@ public class AdventureService {
     @Transactional
     public void forceNode(UUID adventureId, UUID userId, UUID nodeId) {
         verifyAdventureAccess(adventureId, userId);
-        var node = nodeRepo.findById(nodeId)
-            .orElseThrow(() -> new AdventureException("ADVENTURE_NODE_NOT_FOUND", "Node not found"));
+        var node = verifyNodeInAdventure(adventureId, nodeId); // F2
         var progresses = progressRepo.findByAdventureIdAndStatus(adventureId, "ACTIVE");
         for (var p : progresses) {
             p.setCurrentNodeId(nodeId);
@@ -258,6 +260,7 @@ public class AdventureService {
     public NodeChoice injectChoice(UUID adventureId, UUID userId, UUID nodeId, String label,
                                     UUID targetNodeId, String skillCheckJson) {
         verifyAdventureAccess(adventureId, userId);
+        verifyNodeInAdventure(adventureId, nodeId); // F2
         var choice = new NodeChoice(nodeId, label, targetNodeId);
         if (skillCheckJson != null) choice.setSkillCheck(skillCheckJson);
         choice = choiceRepo.save(choice);
@@ -272,13 +275,32 @@ public class AdventureService {
             .orElseThrow(() -> new AdventureException("ADVENTURE_NOT_FOUND", "Adventure not found"));
     }
 
+    /** P1-Audit: Lesezugriff auf ein Adventure pruefen (PUBLIC-Welten inklusive). */
+    public Adventure getById(UUID id, UUID userId) {
+        var adv = getById(id);
+        worldAccess.requireRead(adv.getWorldId(), userId);
+        return adv;
+    }
+
     public java.util.List<NodeChoice> getChoices(UUID nodeId, UUID userId) {
-        return choiceRepo.findByNodeId(nodeId);
+        var node = getNodeById(nodeId, userId); // inkl. Zugriff
+        return choiceRepo.findByNodeId(node.getId());
     }
 
     public AdventureNode getNodeById(UUID nodeId, UUID userId) {
         var node = nodeRepo.findById(nodeId)
             .orElseThrow(() -> new AdventureException("ADVENTURE_NODE_NOT_FOUND", "Node not found"));
+        var adv = getById(node.getAdventureId());
+        worldAccess.requireRead(adv.getWorldId(), userId); // P1-Audit
+        return node;
+    }
+
+    private AdventureNode verifyNodeInAdventure(UUID adventureId, UUID nodeId) {
+        var node = nodeRepo.findById(nodeId)
+            .orElseThrow(() -> new AdventureException("ADVENTURE_NODE_NOT_FOUND", "Node not found"));
+        if (!node.getAdventureId().equals(adventureId)) {
+            throw new AdventureException("NODE_NOT_IN_ADVENTURE", "Node does not belong to this adventure");
+        }
         return node;
     }
 
