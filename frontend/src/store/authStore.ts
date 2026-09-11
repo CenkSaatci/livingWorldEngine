@@ -75,6 +75,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.removeItem('lwe:user');
       localStorage.removeItem('lwe:currentWorldId');
       localStorage.removeItem('lwe:combatId');
+      localStorage.removeItem('lwe:activeCampaign');
     }
     set({ user: null, isAuthenticated: false });
     useWorldStore.setState({

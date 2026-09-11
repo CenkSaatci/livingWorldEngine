@@ -104,7 +104,6 @@ export function CharacterWizard({ worldId, rules, onCreated, onClose }: Props) {
         entityType: 'PC',
         name: name.trim(),
         attributesJson,
-        skillsJson: '{}',
         metadataJson,
       });
       onCreated(res.data.id);

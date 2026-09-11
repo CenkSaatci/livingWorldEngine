@@ -24,7 +24,8 @@ const campaign = (over: Partial<CampaignSummary> = {}): CampaignSummary => ({
 
 describe('campaignStore', () => {
   beforeEach(() => {
-    useCampaignStore.setState({ campaigns: [], activeCampaignId: null, loading: false });
+    useCampaignStore.setState({ campaigns: [], activeCampaignId: null, activeCampaign: null, loading: false });
+    localStorage.clear();
     vi.clearAllMocks();
   });
 
@@ -70,5 +71,16 @@ describe('campaignStore', () => {
     await useCampaignStore.getState().loadCampaigns();
 
     expect(useCampaignStore.getState().activeCampaignId).toBe('c1');
+  });
+
+  it('persistiert die aktive Kampagne fuer Reloads (P30)', () => {
+    useCampaignStore.getState().setActiveCampaign('c1', campaign());
+
+    const raw = localStorage.getItem('lwe:activeCampaign');
+    expect(raw).toBeTruthy();
+    expect(JSON.parse(raw!).summary.name).toBe('Runde 1');
+
+    useCampaignStore.getState().setActiveCampaign(null);
+    expect(localStorage.getItem('lwe:activeCampaign')).toBeNull();
   });
 });

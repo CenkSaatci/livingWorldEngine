@@ -123,7 +123,7 @@
     "saving": "Speichern…",
     "deleteTitle": "NPC löschen?",
     "deleteConfirm": "Dies löscht „{{name}}“ und alle zugehörigen Daten endgültig.",
-    "createCharacter": "Charakter erstellen"
+    "createCharacter": "Charakter-Wizard"
   },
   "faction": {
     "create": "Fraktion erstellen",
