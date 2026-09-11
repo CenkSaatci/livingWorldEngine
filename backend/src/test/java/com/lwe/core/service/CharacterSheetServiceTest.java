@@ -159,6 +159,33 @@ class CharacterSheetServiceTest {
     }
 
     @Test
+    void getSheet_includesAdvanceCost() throws Exception {
+        mockEntity("{\"staerke\":14}", "{\"Athletik\":5}");
+        mockWorld(systemId);
+        stubRules("""
+            {
+                "attributes": [{"name":"staerke","type":"INT","default":10}],
+                "skills": [{"name":"Athletik","attributes":["staerke"],"bonus":0,"costColumn":"C"}],
+                "advancement": {
+                    "columns":["A","B","C","D"],
+                    "table":[
+                        {"from":1,"to":12,"costs":{"C":3}},
+                        {"from":13,"to":13,"costs":{"C":6}}
+                    ],
+                    "maxRule":"highestAttributePlus2"
+                },
+                "dice_mechanics":{"probe":"1d20+mod"}
+            }
+            """);
+
+        var sheet = service.getSheet(entityId, userId);
+
+        var athletik = sheet.skills().stream().filter(s -> s.name().equals("Athletik")).findFirst().orElseThrow();
+        // gespeicherter Wert 5 → naechster Schritt (6) liegt in Zeile 1-12 → 3 AP
+        assertThat(athletik.advanceCost()).isEqualTo(3);
+    }
+
+    @Test
     void getSheet_includesAbilities() throws Exception {
         mockEntity("{}", null);
         mockWorld(systemId);

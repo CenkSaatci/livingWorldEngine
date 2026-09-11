@@ -4,6 +4,7 @@ import { Heart, Shield, Zap, Sparkles, Check, X, Plus, Loader2 } from 'lucide-re
 import { apiClient } from '../../api/client';
 import { useSheet, type SheetData } from '../../hooks/useSheet';
 import { useToast } from '../../hooks/useToast';
+import { useCampaignStore } from '../../store/campaignStore';
 import { ProbeRoller } from './ProbeRoller';
 
 const VALUE_ICONS: Record<string, React.ReactNode> = {
@@ -272,6 +273,7 @@ function SkillRow({ skill, entityId, skillOverrides, setSkillOverrides, onSaved 
   onSaved: () => void;
 }) {
   const toast = useToast();
+  const { t } = useTranslation('character');
   const [editing, setEditing] = useState(false);
   const [editVal, setEditVal] = useState(String(skill.total));
   const [saving, setSaving] = useState(false);
@@ -282,7 +284,11 @@ function SkillRow({ skill, entityId, skillOverrides, setSkillOverrides, onSaved 
     setSaving(true);
     try {
       const updated = { ...skillOverrides, [skill.name]: newVal };
-      await apiClient.patch(`/entities/${entityId}/skills`, updated);
+      const campaignId = useCampaignStore.getState().activeCampaignId;
+      await apiClient.patch(
+        `/entities/${entityId}/skills${campaignId ? `?campaignId=${campaignId}` : ''}`,
+        updated,
+      );
       setSkillOverrides(updated);
       onSaved();
       setEditing(false);
@@ -314,6 +320,9 @@ function SkillRow({ skill, entityId, skillOverrides, setSkillOverrides, onSaved 
             </span>
             {skill.perCharacterValue != null && (
               <span className="text-[9px] text-accent/60 italic">override</span>
+            )}
+            {skill.advanceCost != null && (
+              <span className="text-[9px] text-text-secondary">{t('sheet.advanceCost', { cost: skill.advanceCost })}</span>
             )}
           </button>
         )}

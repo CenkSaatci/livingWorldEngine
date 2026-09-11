@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { defaultWizardData, toRulesJson, fromRulesJson, attrPointCost, calcBudget, traitCost, danglingTraitRefs, traitSelectionErrors } from './gameSystem';
+import { defaultWizardData, toRulesJson, fromRulesJson, attrPointCost, calcBudget, traitCost, danglingTraitRefs, traitSelectionErrors, advanceCost, skillAdvanceCost } from './gameSystem';
 
 describe('gameSystem roundtrip', () => {
   it('toRulesJson/fromRulesJson preserves all ability fields', () => {
@@ -187,5 +187,34 @@ describe('traits (P28-T03)', () => {
       { trait: 'Nix', issue: 'unknown', detail: '' },
     ]);
     expect(traitSelectionErrors(catalog, ['Glück II', 'Tradition'])).toEqual([]);
+  });
+});
+
+describe('advancement (P28-T04)', () => {
+  const adv = {
+    columns: ['A', 'B', 'C', 'D'],
+    table: [
+      { from: 1, to: 12, costs: { A: 1, B: 2, C: 3, D: 4 } },
+      { from: 13, to: 13, costs: { A: 2, B: 4, C: 6, D: 8 } },
+    ],
+    maxRule: 'highestAttributePlus2',
+  };
+
+  it('advanceCost finds row by target value and column', () => {
+    expect(advanceCost(adv, 'A', 12)).toBe(1);
+    expect(advanceCost(adv, 'C', 13)).toBe(6);
+    expect(advanceCost(adv, 'A', 14)).toBeNull();
+    expect(advanceCost({ columns: [], table: [] }, 'A', 5)).toBeNull();
+    expect(advanceCost(undefined, 'A', 5)).toBeNull();
+  });
+
+  it('skillAdvanceCost covers activation and next step', () => {
+    const spell = { name: 'Ignifaxius', attributes: ['klugheit'], bonus: 0, costColumn: 'C', activationCost: 3 };
+    const talent = { name: 'Athletik', attributes: ['staerke'], bonus: 0, costColumn: 'B' };
+    expect(skillAdvanceCost(adv, spell, 0)).toBe(3); // activation
+    expect(skillAdvanceCost(adv, spell, 3)).toBe(3); // next step 4 → row 1-12, C=3
+    expect(skillAdvanceCost(adv, talent, 12)).toBe(4); // next step 13 → B=4
+    expect(skillAdvanceCost(adv, talent, 13)).toBeNull(); // beyond table
+    expect(skillAdvanceCost(undefined, talent, 5)).toBeNull();
   });
 });

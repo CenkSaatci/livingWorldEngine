@@ -46,7 +46,11 @@ public class RuleSchemaValidator {
             } },
             "packages":         { "type": "array", "items": { "type": "object" } },
             "traits":           { "type": "array", "items": { "$ref": "#/$defs/trait" } },
-            "advancement":      { "type": "object" },
+            "advancement":      { "type": "object", "properties": {
+              "columns":   { "type": "array", "items": { "type": "string" } },
+              "table":     { "type": "array", "items": { "$ref": "#/$defs/advancementRow" } },
+              "maxRule":   { "type": "string" }
+            } },
             "derived_values":   { "type": "array", "items": { "type": "object" } },
             "abilities":        { "type": "array", "items": { "type": "object" } },
             "progression":      { "type": "object" },
@@ -95,7 +99,9 @@ public class RuleSchemaValidator {
                 "name":       { "type": "string" },
                 "attribute":  { "type": "string", "description": "Legacy single attribute reference" },
                 "attributes": { "type": "array", "items": { "type": "string" }, "description": "Multi-attribute reference" },
-                "bonus":      { "type": "integer", "default": 0 }
+                "bonus":      { "type": "integer", "default": 0 },
+                "costColumn": { "type": "string" },
+                "activationCost": { "type": "integer", "minimum": 0 }
               }
             },
             "combat": {
@@ -169,6 +175,15 @@ public class RuleSchemaValidator {
                 "target": { "type": "string" },
                 "op":     { "enum": ["add"] },
                 "value":  { "type": "number" }
+              }
+            },
+            "advancementRow": {
+              "type": "object",
+              "required": ["from", "to"],
+              "properties": {
+                "from":  { "type": "integer" },
+                "to":    { "type": "integer" },
+                "costs": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } }
               }
             },
             "diceExpression": {

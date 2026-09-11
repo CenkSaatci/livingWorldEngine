@@ -149,7 +149,8 @@ export interface TraitDef {
 
 export interface AdvancementDef {
   columns?: string[];
-  table?: Record<string, unknown>[];
+  table?: { from: number; to: number; costs: Record<string, number> }[];
+  maxRule?: string;
 }
 
 export interface WizardData {
@@ -346,6 +347,31 @@ export function traitSelectionErrors(traits: TraitDef[], selected: string[]): Tr
     }
   }
   return issues;
+}
+
+// --- Advancement (P28-T04): Kosten der nächsten Steigerung ---
+
+/** Kosten, um `target` (Zielwert) in `column` zu erreichen. null = außerhalb der Matrix. */
+export function advanceCost(
+  advancement: AdvancementDef | undefined,
+  column: string,
+  target: number,
+): number | null {
+  const row = advancement?.table?.find((r) => target >= r.from && target <= r.to);
+  if (!row) return null;
+  const cost = row.costs?.[column];
+  return typeof cost === 'number' ? cost : null;
+}
+
+/** Kosten des nächsten Schritts für einen Skill: Aktivierung oder Matrix-Zeile. */
+export function skillAdvanceCost(
+  advancement: AdvancementDef | undefined,
+  skill: SkillDef,
+  fromValue: number,
+): number | null {
+  if (skill.activationCost != null && fromValue <= 0) return skill.activationCost;
+  if (!skill.costColumn) return null;
+  return advanceCost(advancement, skill.costColumn, fromValue + 1);
 }
 
 /** WizardData → rulesJson (Backend-Wire-Format). */

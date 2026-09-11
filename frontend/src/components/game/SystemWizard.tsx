@@ -445,6 +445,37 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   className="w-14 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
                 />
               </div>
+              <div>
+                <label className="block text-[10px] text-text-secondary mb-1">{t('sa_column')}</label>
+                <select
+                  value={skill.costColumn ?? ''}
+                  onChange={(e) => {
+                    const s = [...data.skills];
+                    s[i] = { ...s[i], costColumn: e.target.value || undefined };
+                    update('skills', s);
+                  }}
+                  className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                >
+                  <option value="">—</option>
+                  {(data.advancement?.columns ?? ['A', 'B', 'C', 'D']).map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] text-text-secondary mb-1">{t('sa_activation')}</label>
+                <input
+                  type="number"
+                  value={skill.activationCost ?? ''}
+                  placeholder="—"
+                  onChange={(e) => {
+                    const s = [...data.skills];
+                    s[i] = { ...s[i], activationCost: e.target.value === '' ? undefined : Number(e.target.value) };
+                    update('skills', s);
+                  }}
+                  className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                />
+              </div>
               <button
                 onClick={() =>
                   update('skills', data.skills.filter((_, j) => j !== i))
@@ -467,6 +498,85 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           >
             <Plus size={14} /> {t('s3_add_skill')}
           </button>
+
+          {/* Steigerungs-Matrix (P28-T04) */}
+          <details className="rounded border border-bg-elevated bg-bg-primary/40 p-3">
+            <summary className="cursor-pointer text-xs font-medium text-text-secondary">
+              {t('sa_title')} · {t('sa_max_rule')}: {t('sa_max_attr')}
+            </summary>
+            <div className="mt-3 space-y-2">
+              <p className="text-[10px] text-text-secondary">{t('sa_hint')}</p>
+              {(data.advancement?.table ?? []).map((row, ri) => (
+                <div key={ri} className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase text-text-secondary">{t('sa_from')}</span>
+                  <input
+                    type="number"
+                    value={row.from}
+                    onChange={(e) => {
+                      const table = [...(data.advancement?.table ?? [])];
+                      table[ri] = { ...table[ri], from: Number(e.target.value) };
+                      update('advancement', { ...data.advancement, table });
+                    }}
+                    className="w-14 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                  <span className="text-[10px] uppercase text-text-secondary">{t('sa_to')}</span>
+                  <input
+                    type="number"
+                    value={row.to}
+                    onChange={(e) => {
+                      const table = [...(data.advancement?.table ?? [])];
+                      table[ri] = { ...table[ri], to: Number(e.target.value) };
+                      update('advancement', { ...data.advancement, table });
+                    }}
+                    className="w-14 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                  {(data.advancement?.columns ?? ['A', 'B', 'C', 'D']).map((col) => (
+                    <div key={col} className="flex items-center gap-1">
+                      <span className="text-[10px] text-text-secondary">{col}</span>
+                      <input
+                        type="number"
+                        value={row.costs?.[col] ?? ''}
+                        placeholder="—"
+                        onChange={(e) => {
+                          const table = [...(data.advancement?.table ?? [])];
+                          const costs = { ...(row.costs ?? {}) };
+                          if (e.target.value === '') delete costs[col];
+                          else costs[col] = Number(e.target.value);
+                          table[ri] = { ...table[ri], costs };
+                          update('advancement', { ...data.advancement, table });
+                        }}
+                        className="w-14 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                      />
+                    </div>
+                  ))}
+                  <button
+                    aria-label={t('sb_delete')}
+                    onClick={() =>
+                      update('advancement', {
+                        ...data.advancement,
+                        table: (data.advancement?.table ?? []).filter((_, j) => j !== ri),
+                      })
+                    }
+                    className="text-danger hover:text-danger/80"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={() =>
+                  update('advancement', {
+                    columns: data.advancement?.columns ?? ['A', 'B', 'C', 'D'],
+                    maxRule: data.advancement?.maxRule ?? 'highestAttributePlus2',
+                    table: [...(data.advancement?.table ?? []), { from: 1, to: 12, costs: {} }],
+                  })
+                }
+                className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+              >
+                <Plus size={12} /> {t('sa_add_row')}
+              </button>
+            </div>
+          </details>
         </div>
       )}
 

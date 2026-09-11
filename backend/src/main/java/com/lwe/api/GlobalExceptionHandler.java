@@ -141,6 +141,7 @@ public class GlobalExceptionHandler {
             case EntityService.EntityException e -> switch (e.getErrorCode()) {
                 case "ENTITY_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 case "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
+                case "SKILL_MAX_EXCEEDED" -> HttpStatus.UNPROCESSABLE_ENTITY;
                 default -> HttpStatus.BAD_REQUEST;
             };
             case EntityAbilityService.EntityAbilityException e -> switch (e.getErrorCode()) {

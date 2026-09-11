@@ -135,7 +135,8 @@ public class CharacterSheetService {
                     ? perCharSkills.get(name) : globalBonus;
                 var total = (int) Math.round(effectiveBonus + attrMod);
                 var perCharVal = perCharSkills.get(name);
-                return new SheetResponse.SkillInfo(name, total, perCharVal);
+                var advanceCost = skillAdvanceCost(rules, s, effectiveBonus);
+                return new SheetResponse.SkillInfo(name, total, perCharVal, advanceCost);
             })
             .collect(Collectors.toList());
 
@@ -244,6 +245,29 @@ public class CharacterSheetService {
             var add = adds.get(dv.name());
             return add != null ? new SheetResponse.DerivedValueInfo(dv.name(), dv.value() + add) : dv;
         }).collect(Collectors.toList());
+    }
+
+    /** Nächster Steigerungsschritt (P28-T04): Aktivierung oder Matrix-Zeile. */
+    private Integer skillAdvanceCost(Map<String, Object> rules, Map<String, Object> skillDef,
+                                     int currentValue) {
+        var activation = skillDef.get("activationCost");
+        if (activation instanceof Number n && currentValue <= 0) return n.intValue();
+        var adv = rules.get("advancement");
+        if (!(adv instanceof Map<?, ?> advMap)) return null;
+        var column = skillDef.get("costColumn");
+        if (!(column instanceof String col) || col.isBlank()) return null;
+        if (!(advMap.get("table") instanceof List<?> rows)) return null;
+        int target = currentValue + 1;
+        for (var row : rows) {
+            if (!(row instanceof Map<?, ?> r)) continue;
+            if (!(r.get("from") instanceof Number f) || !(r.get("to") instanceof Number t)) continue;
+            if (target < f.intValue() || target > t.intValue()) continue;
+            if (r.get("costs") instanceof Map<?, ?> costs && costs.get(col) instanceof Number cost) {
+                return cost.intValue();
+            }
+            return null;
+        }
+        return null;
     }
 
     private Map<String, Integer> initDefaultAttributes(Map<String, Object> rules) {        var attrs = (List<Map<String, Object>>) rules.getOrDefault("attributes", List.of());

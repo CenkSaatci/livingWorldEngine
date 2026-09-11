@@ -20,13 +20,15 @@ public class EntityService {
     private final GameEntityRepository entityRepo;
     private final WorldAccess worldAccess;
     private final ObjectMapper objectMapper;
+    private final RulesLoader rulesLoader;
     private static final TypeReference<Map<String, Integer>> ATTR_MAP = new TypeReference<>() {};
 
     public EntityService(GameEntityRepository entityRepo, WorldAccess worldAccess,
-                        ObjectMapper objectMapper) {
+                        ObjectMapper objectMapper, RulesLoader rulesLoader) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldAccess = worldAccess;
+        this.rulesLoader = rulesLoader;
     }
 
     @Transactional
@@ -109,7 +111,19 @@ public class EntityService {
 
     @Transactional
     public GameEntity updateSkills(UUID entityId, UUID userId, Map<String, Integer> skills) {
+        return updateSkills(entityId, userId, skills, null);
+    }
+
+    /**
+     * Skill-Werte setzen. Mit campaignId + advancement.maxRule wird die
+     * Max-Regel geprüft (Skill ≤ höchstes beteiligtes Attribut + 2).
+     */
+    // ponytail: Max gilt für den gespeicherten Skill-Wert (Override), nicht die
+    // Sheet-Anzeige inkl. Attributs-Modifikator — Heldenbau präzisiert das später.
+    @Transactional
+    public GameEntity updateSkills(UUID entityId, UUID userId, Map<String, Integer> skills, UUID campaignId) {
         var entity = getById(entityId, userId);
+        enforceSkillMax(entity, skills, campaignId);
         try {
             var existing = entity.getSkillsJson() != null && !entity.getSkillsJson().isBlank()
                 ? objectMapper.readValue(entity.getSkillsJson(), ATTR_MAP)
@@ -119,6 +133,41 @@ public class EntityService {
             return entityRepo.save(entity);
         } catch (Exception e) {
             throw new RuntimeException("Failed to update skills", e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void enforceSkillMax(GameEntity entity, Map<String, Integer> skills, UUID campaignId) {
+        if (campaignId == null || skills.isEmpty()) return;
+        var rules = rulesLoader.loadRules(campaignId, entity.getWorldId());
+        var adv = rules.get("advancement");
+        if (!(adv instanceof Map<?, ?> advMap)
+            || !"highestAttributePlus2".equals(advMap.get("maxRule"))) return;
+        var skillDefs = (List<Map<String, Object>>) rules.getOrDefault("skills", List.of());
+        var attrs = parseAttrs(entity);
+        for (var e : skills.entrySet()) {
+            var def = skillDefs.stream()
+                .filter(d -> e.getKey().equals(d.get("name")))
+                .findFirst().orElse(null);
+            if (def == null) continue;
+            var involved = (List<String>) def.getOrDefault("attributes", List.of());
+            var max = involved.stream()
+                .map(attrs::get).filter(java.util.Objects::nonNull)
+                .mapToInt(Integer::intValue).max().orElse(-1);
+            if (max >= 0 && e.getValue() > max + 2) {
+                throw new EntityException("SKILL_MAX_EXCEEDED",
+                    "Skill " + e.getKey() + " exceeds max " + (max + 2));
+            }
+        }
+    }
+
+    private Map<String, Integer> parseAttrs(GameEntity entity) {
+        try {
+            var raw = entity.getAttributesJson();
+            if (raw == null || raw.isBlank()) return Map.of();
+            return objectMapper.readValue(raw, ATTR_MAP);
+        } catch (Exception e) {
+            return Map.of();
         }
     }
 

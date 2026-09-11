@@ -31,7 +31,8 @@
     "abilityFailed": "Fähigkeit fehlgeschlagen",
     "xpSaveFailed": "Fehler beim Speichern der XP",
     "overrideSaveFailed": "Fehler beim Speichern des Overrides",
-    "dragToEquip": "Ziehen zum Ausrüsten"
+    "dragToEquip": "Ziehen zum Ausrüsten",
+    "advanceCost": "nächste: {{cost}} AP"
   },
   "attribute": {
     "modifier": "Modifikator"

@@ -172,6 +172,36 @@ class RuleSchemaValidatorTest {
     }
 
     @Test
+    void shouldRejectInvalidAdvancementShapes() {
+        // P28-T04: advancement + skill.costColumn/activationCost streng typisiert.
+        var badRow = """
+            {"version":1,"attributes":[{"name":"x","type":"INT","default":1}],
+             "dice_mechanics":{"probe":"1d20"},
+             "advancement":{"columns":["A"],"table":[{"from":1,"to":12,"costs":{"A":-3}}]}}
+            """;
+        assertThat(validator.validate(badRow, RuleSchemaValidator.DEFAULT_SCHEMA))
+            .as("negative advancement cost should fail").isNotEmpty();
+
+        var badActivation = """
+            {"version":1,"attributes":[{"name":"x","type":"INT","default":1}],
+             "dice_mechanics":{"probe":"1d20"},
+             "skills":[{"name":"Zauber","attributes":["x"],"activationCost":"viel"}]}
+            """;
+        assertThat(validator.validate(badActivation, RuleSchemaValidator.DEFAULT_SCHEMA))
+            .as("string activationCost should fail").isNotEmpty();
+
+        var ok = """
+            {"version":1,"attributes":[{"name":"x","type":"INT","default":1}],
+             "dice_mechanics":{"probe":"1d20"},
+             "skills":[{"name":"Zauber","attributes":["x"],"costColumn":"B","activationCost":3}],
+             "advancement":{"columns":["A","B"],"maxRule":"highestAttributePlus2",
+               "table":[{"from":1,"to":12,"costs":{"A":1,"B":2}},{"from":13,"to":13,"costs":{"A":2,"B":4}}]}}
+            """;
+        assertThat(validator.validate(ok, RuleSchemaValidator.DEFAULT_SCHEMA))
+            .as("valid advancement should pass").isEmpty();
+    }
+
+    @Test
     void shouldThrowOnInvalidInput() {
         assertThatThrownBy(() -> validator.validateOrThrow("not json", schemaJson))
             .isInstanceOf(RuleSchemaValidator.SchemaValidationException.class);

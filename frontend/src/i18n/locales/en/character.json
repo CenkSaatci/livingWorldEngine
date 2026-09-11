@@ -31,7 +31,8 @@
     "abilityFailed": "Ability failed",
     "xpSaveFailed": "Failed to save XP",
     "overrideSaveFailed": "Failed to save override",
-    "dragToEquip": "Drag to equip"
+    "dragToEquip": "Drag to equip",
+    "advanceCost": "next: {{cost}} AP"
   },
   "attribute": {
     "modifier": "Modifier"

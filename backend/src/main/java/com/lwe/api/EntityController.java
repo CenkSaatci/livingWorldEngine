@@ -82,8 +82,9 @@ public class EntityController {
     public ResponseEntity<EntityResponse> updateSkills(@PathVariable UUID worldId,
                                                        @PathVariable UUID entityId,
                                                        @RequestBody Map<String, Integer> skills,
+                                                       @RequestParam(required = false) UUID campaignId,
                                                        @AuthenticationPrincipal User user) {
-        var entity = entityService.updateSkills(entityId, user.getId(), skills);
+        var entity = entityService.updateSkills(entityId, user.getId(), skills, campaignId);
         return ResponseEntity.ok(EntityResponse.from(entity));
     }
 
