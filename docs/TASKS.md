@@ -2240,16 +2240,20 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 > Wizard bildet generische Mechanik ab (kein DSA-Klon). Referenz: DSA-Heldenerschaffung + Grundregeln (Regelwiki). Leitprinzip: **Engine, nicht Inhalt**. Siehe [`ADR/012`](ADR/012-generic-wizard-engine.md). **Detail-Design (Datenmodell, Backend, UI/UX, Tests): [`WIZARD-PLAN.md`](WIZARD-PLAN.md) §3.** Voraussetzung: P23 (`damageType`) vor R4-bezogenen Arbeiten.
 
 ### P28-T01: Schema + Wire-Format öffnen
-- **Status:** 📋
+- **Status:** ✅ (2026-09-11: DEFAULT_SCHEMA akzeptiert die neuen Keys; Roundtrip-Tests; alte Systeme unverändert; committed `cb50ac9`)
 - **Aufwand:** 1 Tag
 - **Beschreibung:**
   - Neue Top-Level-Keys im Backend-Schema (`additionalProperties: false` beachten): `creationBudget`, `attributeCosts`, `packages`, `traits`, `advancement`, erweiterte `derived_values`-Einträge — strikt abwärtskompatibel (alte Systeme validieren weiter)
   - `toRulesJson`/`fromRulesJson` für alle neuen Blöcke; Backend-Konsumenten (RulesLoader, ProbeService, Sheet, LevelUp, Validator) kennen die Keys
 - **Akzeptanzkriterien:** Altes D20Lite-System validiert + läuft unverändert; neues Minimalbeispiel mit allen Keys validiert; Tests grün
 - **Qualitäts-Check:** TDD
+- **Bemerkungen (2026-09-11):**
+  - Vertagt (bewusst): strenge Shapes für `packages`/`traits`/`advancement`-Einträge — kommen in T03/T04 mit ihren Features (permissive Container bis dahin)
+  - Backend-Konsumenten brauchten keine Änderung: alle Reads sind bereits defensiv (`.path()`/Defaults)
+  - Kein UI (reine Grundlage)
 
 ### P28-T02: AP-Budget + Caps + Attribut-Kostenkurven
-- **Status:** 📋
+- **Status:** ✅ (2026-09-11: Schema-Shapes, `calcBudget`/`attrPointCost` (11 Tests), Budget-Step mit Caps/Kurven-Editor/BudgetBar, Save-Block bei Überziehung; Browser-Smoke ok; committed `c88f992`)
 - **Aufwand:** 1 Tag
 - **Beschreibung:**
   - `creationBudget`: AP-Topf, Maxima (Attribute gesamt/einzeln, Skills, Kampf, Zauber), Startwerte, Schicksalspunkte-Basis
@@ -2257,6 +2261,12 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
   - Wizard-Step mit Live-Kostenanzeige + Budget-Balken; Backend lehnt überzogene Systeme mit 400 ab
 - **Akzeptanzkriterien:** 100-AP-Paket nachbaubar (DSA: 8×8 Start, Summe ≤ Max); Überziehung wird rot + blockiert Save; Tests grün
 - **Qualitäts-Check:** TDD
+- **Bemerkungen (2026-09-11) — vertagte Teile:**
+  - **Per-Attribut-Kostenkurven-Editor (UI):** Modell (`attribute.costs`) + Serialisierung existieren, Wizard editiert nur die globale Kurve (`attributeCosts.default`). Nachziehen, sobald ein System unterschiedliche Kurven pro Attribut braucht
+  - **Kosten-Vorschau pro Attribut-Zeile:** nur Aggregat-BudgetBar; Zeilen-Vorschau („8→14 = 90 AP") nachrüsten mit dem Heldenbau
+  - **Budget-Enforcement im Backend:** bewusst nicht — System-Save validiert nur Shapes; Durchsetzung gehört in den Heldenbau (später)
+  - **`calcBudget` zählt nur Attribute:** Skills/Traits/Zauber fließen in T03/T04 in die Summe ein; bis dahin kann die Anzeige zu niedrig sein
+  - **Cap-Prüfung:** `maxAttrValue` & Co. werden validiert (Shape), aber (noch) nicht im Wizard erzwungen
 
 ### P28-T03: Traits-Katalog (Vor-/Nachteile)
 - **Status:** 📋

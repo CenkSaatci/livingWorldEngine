@@ -270,6 +270,7 @@ export interface BudgetResult {
 }
 
 /** Summiert Attribut-Ausgaben (ab attrBase bzw. min) und prüft Budget/Caps. */
+// ponytail: zählt nur Attribute — Skills/Traits/Zauber kommen mit T03/T04 in die Summe.
 export function calcBudget(data: WizardData): BudgetResult {
   const perAttr: Record<string, number> = {};
   let spend = 0;
