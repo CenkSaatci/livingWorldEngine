@@ -45,7 +45,7 @@ public class RuleSchemaValidator {
               "default": { "type": "array", "items": { "$ref": "#/$defs/costTier" } }
             } },
             "packages":         { "type": "array", "items": { "type": "object" } },
-            "traits":           { "type": "array", "items": { "type": "object" } },
+            "traits":           { "type": "array", "items": { "$ref": "#/$defs/trait" } },
             "advancement":      { "type": "object" },
             "derived_values":   { "type": "array", "items": { "type": "object" } },
             "abilities":        { "type": "array", "items": { "type": "object" } },
@@ -140,6 +140,35 @@ public class RuleSchemaValidator {
               "properties": {
                 "upTo": { "type": "integer" },
                 "cost": { "type": "integer", "minimum": 0 }
+              }
+            },
+            "trait": {
+              "type": "object",
+              "required": ["name", "kind"],
+              "properties": {
+                "name":     { "type": "string", "minLength": 1 },
+                "kind":     { "enum": ["advantage", "disadvantage"] },
+                "costs":    { "type": "array", "items": { "$ref": "#/$defs/traitCost" } },
+                "requires": { "type": "array", "items": { "type": "string" } },
+                "excludes": { "type": "array", "items": { "type": "string" } },
+                "effects":  { "type": "array", "items": { "$ref": "#/$defs/traitEffect" } }
+              }
+            },
+            "traitCost": {
+              "type": "object",
+              "required": ["tier", "cost"],
+              "properties": {
+                "tier": { "type": "string" },
+                "cost": { "type": "integer" }
+              }
+            },
+            "traitEffect": {
+              "type": "object",
+              "required": ["target", "op", "value"],
+              "properties": {
+                "target": { "type": "string" },
+                "op":     { "enum": ["add"] },
+                "value":  { "type": "number" }
               }
             },
             "diceExpression": {

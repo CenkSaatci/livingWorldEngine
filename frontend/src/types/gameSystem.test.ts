@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { defaultWizardData, toRulesJson, fromRulesJson, attrPointCost, calcBudget } from './gameSystem';
+import { defaultWizardData, toRulesJson, fromRulesJson, attrPointCost, calcBudget, traitCost, danglingTraitRefs, traitSelectionErrors } from './gameSystem';
 
 describe('gameSystem roundtrip', () => {
   it('toRulesJson/fromRulesJson preserves all ability fields', () => {
@@ -149,5 +149,43 @@ describe('budget (P28-T02)', () => {
     const data = defaultWizardData();
     const res = calcBudget(data);
     expect(res.over).toBe(false);
+  });
+});
+
+describe('traits (P28-T03)', () => {
+  const catalog = [
+    { name: 'Zauberer', kind: 'advantage', requires: ['Tradition'] },
+    { name: 'Tradition', kind: 'advantage' },
+    { name: 'Glück', kind: 'advantage', costs: [{ tier: 'I', cost: 30 }, { tier: 'II', cost: 60 }], excludes: ['Pech'] },
+    { name: 'Pech', kind: 'disadvantage' },
+  ];
+
+  it('traitCost picks tier or first, 0 without costs', () => {
+    const glueck = catalog[2];
+    expect(traitCost(glueck)).toBe(30);
+    expect(traitCost(glueck, 'II')).toBe(60);
+    expect(traitCost(glueck, 'III')).toBe(0);
+    expect(traitCost(catalog[0])).toBe(0);
+  });
+
+  it('danglingTraitRefs finds unknown references', () => {
+    const dangling = danglingTraitRefs([
+      ...catalog,
+      { name: 'Riese', kind: 'advantage', requires: ['Feenblut'], excludes: ['Pech'] },
+    ]);
+    expect(dangling).toEqual([{ name: 'Riese', missing: ['Feenblut'] }]);
+  });
+
+  it('traitSelectionErrors catches unknown, requires, excluded', () => {
+    expect(traitSelectionErrors(catalog, ['Zauberer'])).toEqual([
+      { trait: 'Zauberer', issue: 'requires', detail: 'Tradition' },
+    ]);
+    expect(traitSelectionErrors(catalog, ['Glück', 'Pech'])).toEqual([
+      { trait: 'Glück', issue: 'excludes', detail: 'Pech' },
+    ]);
+    expect(traitSelectionErrors(catalog, ['Nix'])).toEqual([
+      { trait: 'Nix', issue: 'unknown', detail: '' },
+    ]);
+    expect(traitSelectionErrors(catalog, ['Glück II', 'Tradition'])).toEqual([]);
   });
 });

@@ -294,6 +294,60 @@ export function calcBudget(data: WizardData): BudgetResult {
   };
 }
 
+// --- Traits (P28-T03): reine Helper für UI + spätere Heldenauswahl ---
+
+export function traitCost(def: TraitDef, tier?: string): number {
+  const costs = def.costs ?? [];
+  if (!costs.length) return 0;
+  return (tier ? costs.find((c) => c.tier === tier) : costs[0])?.cost ?? 0;
+}
+
+export function danglingTraitRefs(traits: TraitDef[]): { name: string; missing: string[] }[] {
+  const names = new Set(traits.map((t) => t.name));
+  const out: { name: string; missing: string[] }[] = [];
+  for (const t of traits) {
+    const missing = [...new Set([...(t.requires ?? []), ...(t.excludes ?? [])].filter((n) => !names.has(n)))];
+    if (missing.length) out.push({ name: t.name, missing });
+  }
+  return out;
+}
+
+export interface TraitIssue {
+  trait: string;
+  issue: 'unknown' | 'requires' | 'excludes';
+  detail: string;
+}
+
+/** Prüft eine Trait-Auswahl (Held): unbekannt, fehlende Voraussetzung, Ausschluss.
+ *  Tier-Suffixe ("Glück II") werden wie im Backend ignoriert. */
+export function traitSelectionErrors(traits: TraitDef[], selected: string[]): TraitIssue[] {
+  const issues: TraitIssue[] = [];
+  const matches = (name: string, candidate: string) =>
+    candidate === name || candidate.startsWith(name + ' ');
+  const defOf = (sel: string) => traits.find((t) => matches(t.name, sel));
+  for (const sel of selected) {
+    const def = defOf(sel);
+    if (!def) {
+      issues.push({ trait: sel, issue: 'unknown', detail: '' });
+      continue;
+    }
+    for (const req of def.requires ?? []) {
+      if (!selected.some((s) => matches(req, s))) {
+        issues.push({ trait: def.name, issue: 'requires', detail: req });
+      }
+    }
+  }
+  for (const def of traits) {
+    if (!selected.some((s) => matches(def.name, s))) continue;
+    for (const ex of def.excludes ?? []) {
+      if (selected.some((s) => matches(ex, s))) {
+        issues.push({ trait: def.name, issue: 'excludes', detail: ex });
+      }
+    }
+  }
+  return issues;
+}
+
 /** WizardData → rulesJson (Backend-Wire-Format). */
 export function toRulesJson(data: WizardData): string {
   const probeExpr =

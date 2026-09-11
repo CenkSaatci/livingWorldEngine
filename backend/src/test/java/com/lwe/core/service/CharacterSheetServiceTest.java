@@ -124,6 +124,41 @@ class CharacterSheetServiceTest {
     }
 
     @Test
+    void getSheet_appliesSelectedTraitEffects() throws Exception {
+        var entity = mockEntity("{\"staerke\":15}", null);
+        when(entity.getMetadataJson()).thenReturn("{\"traits\":[\"Hohe Lebenskraft III\",\"Zauberer\"]}");
+        mockWorld(systemId);
+        stubRules("""
+            {
+                "attributes": [{"name":"staerke","type":"INT","default":10}],
+                "derived_values": [
+                    {"name":"hp","formula":"10+@{staerke}"},
+                    {"name":"asp","formula":"20+@{staerke}"}
+                ],
+                "traits": [
+                    {"name":"Hohe Lebenskraft","kind":"advantage",
+                     "effects":[{"target":"derived:hp","op":"add","value":3}]},
+                    {"name":"Zauberer","kind":"advantage",
+                     "effects":[{"target":"attribute:staerke","op":"add","value":1}]}
+                ],
+                "dice_mechanics":{"probe":"1d20+mod"}
+            }
+            """);
+
+        var sheet = service.getSheet(entityId, userId);
+
+        // Attribut-Effekt: 15 + 1 (Trait, Tier-Suffix wird ignoriert)
+        var staerke = sheet.attributes().stream().filter(a -> a.name().equals("staerke")).findFirst().orElseThrow();
+        assertThat(staerke.value()).isEqualTo(16);
+        // hp = 10 + 16 + 3 (Trait-Effekt nach Formel) = 29
+        var hp = sheet.derivedValues().stream().filter(d -> d.name().equals("hp")).findFirst().orElseThrow();
+        assertThat(hp.value()).isEqualTo(29.0);
+        // asp ohne Effekt = 20 + 16
+        var asp = sheet.derivedValues().stream().filter(d -> d.name().equals("asp")).findFirst().orElseThrow();
+        assertThat(asp.value()).isEqualTo(36.0);
+    }
+
+    @Test
     void getSheet_includesAbilities() throws Exception {
         mockEntity("{}", null);
         mockWorld(systemId);

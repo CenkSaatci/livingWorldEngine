@@ -69,6 +69,8 @@ public class CharacterSheetService {
         if (attributeValues.isEmpty()) {
             attributeValues = initDefaultAttributes(rules);
         }
+        // Trait-Effekte (P28-T03): Attribut-Boni vor Modifiern/Derived anwenden
+        applyTraitAttributeEffects(rules, entity, attributeValues);
         var allowed = attributeValues.keySet();
 
         // Modifier
@@ -113,6 +115,9 @@ public class CharacterSheetService {
                 })
                 .collect(Collectors.toList());
         }
+
+        // Trait-Effekte (P28-T03): Derived-Boni (z. B. Hohe Lebenskraft +3 hp)
+        derivedValues = applyTraitDerivedEffects(rules, entity, derivedValues);
 
         // Skills (total = Basis + Attribut-Modifier)
         var perCharSkills = parsePerCharacterSkills(entity);
@@ -175,8 +180,73 @@ public class CharacterSheetService {
         }
     }
 
-    private Map<String, Integer> initDefaultAttributes(Map<String, Object> rules) {
-        var attrs = (List<Map<String, Object>>) rules.getOrDefault("attributes", List.of());
+    /** Ausgewählte Traits des Charakters (metadataJson.traits, z. B. ["Glück II", "Zauberer"]). */
+    private List<String> selectedTraits(GameEntity entity) {
+        if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank()) return List.of();
+        try {
+            var node = objectMapper.readTree(entity.getMetadataJson()).path("traits");
+            if (!node.isArray()) return List.of();
+            var list = new java.util.ArrayList<String>();
+            node.forEach(n -> {
+                if (n.isTextual()) list.add(n.asText());
+            });
+            return list;
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> traitDefs(Map<String, Object> rules) {
+        var raw = rules.get("traits");
+        return raw instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
+    }
+
+    /** Tier-Suffix wird ignoriert: "Hohe Lebenskraft III" wählt "Hohe Lebenskraft". */
+    private boolean traitSelected(List<String> selected, String defName) {
+        return selected.stream().anyMatch(s -> s.equals(defName) || s.startsWith(defName + " "));
+    }
+
+    private void applyTraitAttributeEffects(Map<String, Object> rules, GameEntity entity,
+                                            Map<String, Integer> attrs) {
+        var selected = selectedTraits(entity);
+        for (var def : traitDefs(rules)) {
+            if (!traitSelected(selected, (String) def.getOrDefault("name", ""))) continue;
+            var effects = (List<Map<String, Object>>) def.getOrDefault("effects", List.of());
+            for (var e : effects) {
+                var target = (String) e.getOrDefault("target", "");
+                if (target.startsWith("attribute:") && "add".equals(e.get("op"))) {
+                    attrs.merge(target.substring("attribute:".length()),
+                        ((Number) e.getOrDefault("value", 0)).intValue(), Integer::sum);
+                }
+            }
+        }
+    }
+
+    private List<SheetResponse.DerivedValueInfo> applyTraitDerivedEffects(
+            Map<String, Object> rules, GameEntity entity,
+            List<SheetResponse.DerivedValueInfo> values) {
+        var selected = selectedTraits(entity);
+        var adds = new java.util.HashMap<String, Double>();
+        for (var def : traitDefs(rules)) {
+            if (!traitSelected(selected, (String) def.getOrDefault("name", ""))) continue;
+            var effects = (List<Map<String, Object>>) def.getOrDefault("effects", List.of());
+            for (var e : effects) {
+                var target = (String) e.getOrDefault("target", "");
+                if ("add".equals(e.get("op")) && target.startsWith("derived:")) {
+                    adds.merge(target.substring("derived:".length()),
+                        ((Number) e.getOrDefault("value", 0)).doubleValue(), Double::sum);
+                }
+            }
+        }
+        if (adds.isEmpty()) return values;
+        return values.stream().map(dv -> {
+            var add = adds.get(dv.name());
+            return add != null ? new SheetResponse.DerivedValueInfo(dv.name(), dv.value() + add) : dv;
+        }).collect(Collectors.toList());
+    }
+
+    private Map<String, Integer> initDefaultAttributes(Map<String, Object> rules) {        var attrs = (List<Map<String, Object>>) rules.getOrDefault("attributes", List.of());
         if (attrs.isEmpty()) return Map.of();
         var map = new java.util.LinkedHashMap<String, Integer>();
         for (var a : attrs) {

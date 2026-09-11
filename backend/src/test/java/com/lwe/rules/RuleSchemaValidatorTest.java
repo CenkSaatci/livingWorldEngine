@@ -141,6 +141,37 @@ class RuleSchemaValidatorTest {
     }
 
     @Test
+    void shouldRejectInvalidTraitShapes() {
+        // P28-T03: Traits sind jetzt streng typisiert.
+        var badKind = """
+            {"version":1,"attributes":[{"name":"x","type":"INT","default":1}],
+             "dice_mechanics":{"probe":"1d20"},
+             "traits":[{"name":"Glück","kind":"banana"}]}
+            """;
+        assertThat(validator.validate(badKind, RuleSchemaValidator.DEFAULT_SCHEMA))
+            .as("unknown kind should fail").isNotEmpty();
+
+        var badOp = """
+            {"version":1,"attributes":[{"name":"x","type":"INT","default":1}],
+             "dice_mechanics":{"probe":"1d20"},
+             "traits":[{"name":"Glück","kind":"advantage","effects":[{"target":"derived:hp","op":"multiply","value":2}]}]}
+            """;
+        assertThat(validator.validate(badOp, RuleSchemaValidator.DEFAULT_SCHEMA))
+            .as("unknown effect op should fail").isNotEmpty();
+
+        var ok = """
+            {"version":1,"attributes":[{"name":"x","type":"INT","default":1}],
+             "dice_mechanics":{"probe":"1d20"},
+             "traits":[{"name":"Glück","kind":"advantage",
+               "costs":[{"tier":"I","cost":30}],
+               "requires":["Zauberer"],"excludes":["Pech"],
+               "effects":[{"target":"derived:hp","op":"add","value":3}]}]}
+            """;
+        assertThat(validator.validate(ok, RuleSchemaValidator.DEFAULT_SCHEMA))
+            .as("valid trait should pass").isEmpty();
+    }
+
+    @Test
     void shouldThrowOnInvalidInput() {
         assertThatThrownBy(() -> validator.validateOrThrow("not json", schemaJson))
             .isInstanceOf(RuleSchemaValidator.SchemaValidationException.class);

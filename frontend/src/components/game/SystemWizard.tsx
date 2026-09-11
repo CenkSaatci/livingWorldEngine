@@ -9,14 +9,16 @@ import {
   testExpression,
   toRulesJson,
   calcBudget,
+  danglingTraitRefs,
   type AttributeDef,
   type ConditionalDef,
+  type TraitDef,
   type WizardData,
 } from '../../types/gameSystem';
 
 export type { WizardData };
 
-const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_dv', 'step_label_3', 'step_label_5a', 'step_label_6', 'step_label_7', 'step_label_8', 'step_label_4', 'step_label_budget', 'step_label_5'];
+const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_dv', 'step_label_3', 'step_label_5a', 'step_label_6', 'step_label_7', 'step_label_8', 'step_label_4', 'step_label_budget', 'step_label_traits', 'step_label_5'];
 
 const DICE_PRESETS = [
   { v: '1d2', l: '1d2' }, { v: '1d3', l: '1d3' }, { v: '1d4', l: '1d4' }, { v: '1d6', l: '1d6' },
@@ -1401,7 +1403,177 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         </div>
       )}
 
+      {/* Step 11: Traits (P28-T03) */}
       {step === 11 && (
+        <div className="space-y-4">
+          <h3 className="font-heading text-text-primary">{t('st_title')}</h3>
+          <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('st_hint') }} />
+
+          {danglingTraitRefs(data.traits ?? []).length > 0 && (
+            <div className="rounded border border-warning/40 bg-warning/10 p-2 text-xs text-warning">
+              {t('st_dangling')}:{' '}
+              {danglingTraitRefs(data.traits ?? [])
+                .map((d) => `${d.name} → ${d.missing.join(', ')}`)
+                .join(' · ')}
+            </div>
+          )}
+
+          {(data.traits ?? []).map((tr, i) => {
+            const setTrait = (next: Partial<TraitDef>) => {
+              const list = [...(data.traits ?? [])];
+              list[i] = { ...list[i], ...next };
+              update('traits', list);
+            };
+            const listOf = (v: string) =>
+              v.split(',').map((s) => s.trim()).filter(Boolean);
+            return (
+              <div key={i} className="space-y-2 rounded border border-bg-elevated bg-bg-primary/40 p-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    value={tr.name}
+                    onChange={(e) => setTrait({ name: e.target.value })}
+                    placeholder={t('st_name')}
+                    className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                  <select
+                    value={tr.kind}
+                    onChange={(e) => setTrait({ kind: e.target.value })}
+                    className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  >
+                    <option value="advantage">{t('st_advantage')}</option>
+                    <option value="disadvantage">{t('st_disadvantage')}</option>
+                  </select>
+                  <button
+                    aria-label={t('st_delete')}
+                    onClick={() => update('traits', (data.traits ?? []).filter((_, j) => j !== i))}
+                    className="text-danger hover:text-danger/80"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+
+                <div>
+                  <p className="mb-1 text-[10px] uppercase text-text-secondary">{t('st_costs')}</p>
+                  {(tr.costs ?? []).map((c, ci) => (
+                    <div key={ci} className="mb-1 flex items-center gap-2">
+                      <input
+                        value={c.tier}
+                        onChange={(e) => {
+                          const costs = [...(tr.costs ?? [])];
+                          costs[ci] = { ...costs[ci], tier: e.target.value };
+                          setTrait({ costs });
+                        }}
+                        placeholder={t('st_tier')}
+                        className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                      />
+                      <input
+                        type="number"
+                        value={c.cost}
+                        onChange={(e) => {
+                          const costs = [...(tr.costs ?? [])];
+                          costs[ci] = { ...costs[ci], cost: Number(e.target.value) };
+                          setTrait({ costs });
+                        }}
+                        placeholder={t('st_cost')}
+                        className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                      />
+                      <button
+                        aria-label={t('st_delete')}
+                        onClick={() => setTrait({ costs: (tr.costs ?? []).filter((_, j) => j !== ci) })}
+                        className="text-danger hover:text-danger/80"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => setTrait({ costs: [...(tr.costs ?? []), { tier: '', cost: 0 }] })}
+                    className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+                  >
+                    <Plus size={12} /> {t('st_add_tier')}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] uppercase text-text-secondary mb-1">{t('st_requires')}</label>
+                    <input
+                      value={(tr.requires ?? []).join(', ')}
+                      onChange={(e) => setTrait({ requires: listOf(e.target.value) })}
+                      className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase text-text-secondary mb-1">{t('st_excludes')}</label>
+                    <input
+                      value={(tr.excludes ?? []).join(', ')}
+                      onChange={(e) => setTrait({ excludes: listOf(e.target.value) })}
+                      className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-1 text-[10px] uppercase text-text-secondary">{t('st_effects')}</p>
+                  {(tr.effects ?? []).map((ef, ei) => (
+                    <div key={ei} className="mb-1 flex items-center gap-2">
+                      <input
+                        value={ef.target}
+                        onChange={(e) => {
+                          const effects = [...(tr.effects ?? [])];
+                          effects[ei] = { ...effects[ei], target: e.target.value };
+                          setTrait({ effects });
+                        }}
+                        placeholder={t('st_effect_target')}
+                        className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                      />
+                      <input
+                        type="number"
+                        value={ef.value}
+                        onChange={(e) => {
+                          const effects = [...(tr.effects ?? [])];
+                          effects[ei] = { ...effects[ei], op: 'add', value: Number(e.target.value) };
+                          setTrait({ effects });
+                        }}
+                        placeholder={t('st_effect_value')}
+                        className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                      />
+                      <button
+                        aria-label={t('st_delete')}
+                        onClick={() => setTrait({ effects: (tr.effects ?? []).filter((_, j) => j !== ei) })}
+                        className="text-danger hover:text-danger/80"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() =>
+                      setTrait({ effects: [...(tr.effects ?? []), { target: 'derived:', op: 'add', value: 0 }] })
+                    }
+                    className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+                  >
+                    <Plus size={12} /> {t('st_add_effect')}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          {(data.traits ?? []).length === 0 && (
+            <p className="text-xs text-text-secondary">{t('st_none')}</p>
+          )}
+          <button
+            onClick={() =>
+              update('traits', [...(data.traits ?? []), { name: '', kind: 'advantage', costs: [], requires: [], excludes: [], effects: [] }])
+            }
+            className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+          >
+            <Plus size={14} /> {t('st_add_trait')}
+          </button>
+        </div>
+      )}
+
+      {step === 12 && (
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s5_title')}</h3>
 
