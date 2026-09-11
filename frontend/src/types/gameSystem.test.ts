@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { defaultWizardData, toRulesJson, fromRulesJson } from './gameSystem';
+import { defaultWizardData, toRulesJson, fromRulesJson, attrPointCost, calcBudget } from './gameSystem';
 
 describe('gameSystem roundtrip', () => {
   it('toRulesJson/fromRulesJson preserves all ability fields', () => {
@@ -79,8 +79,7 @@ describe('gameSystem roundtrip', () => {
     expect(restored!.conditionals[0].operator).toBe('gt');
   });
 
-  it('roundtrip preserves P28 blocks', () => {
-    const data = defaultWizardData();
+  it('roundtrip preserves P28 blocks', () => {    const data = defaultWizardData();
     data.creationBudget = { ap: 1100, maxAttrTotal: 100, fatePoints: 3 };
     data.attributeCosts = { default: [{ upTo: 14, cost: 15 }] };
     data.packages = [{ name: 'Elf', kind: 'species', cost: 18 }];
@@ -102,5 +101,53 @@ describe('gameSystem roundtrip', () => {
     expect(restored!.derivedValues).toEqual([
       { name: 'sk', input: 'mut+klugheit', table: [{ min: 24, max: 26, value: 4 }], requiresTrait: 'Zauberer' },
     ]);
+  });
+});
+
+describe('budget (P28-T02)', () => {
+  const DSA = [
+    { upTo: 14, cost: 15 },
+    { upTo: 15, cost: 30 },
+    { upTo: 16, cost: 45 },
+  ];
+
+  it('attrPointCost follows tier curve', () => {
+    expect(attrPointCost(8, 14, DSA)).toBe(90); // 6 x 15
+    expect(attrPointCost(14, 15, DSA)).toBe(30);
+    expect(attrPointCost(10, 10, DSA)).toBe(0);
+    expect(attrPointCost(14, 8, DSA)).toBe(0); // lowering costs nothing
+    expect(attrPointCost(8, 10, [])).toBe(0); // no tiers = free
+  });
+
+  it('calcBudget totals spend and flags overrun', () => {
+    const data = defaultWizardData();
+    data.creationBudget = { ap: 100, maxAttrTotal: 100 };
+    data.attributes = [
+      { name: 'a', type: 'INT', min: 1, max: 20, default: 14, costs: DSA },
+      { name: 'b', type: 'INT', min: 1, max: 20, default: 8, costs: DSA },
+    ];
+    // ohne attrBase: ab min => a: 1->14, b: 1->8
+    const res = calcBudget(data);
+    expect(res.spend).toBeGreaterThan(0);
+    expect(res.over).toBe(res.spend > 100);
+    expect(res.perAttr.a).toBe(attrPointCost(1, 14, DSA));
+  });
+
+  it('calcBudget counts from attrBase when set (DSA: 8 gratis)', () => {
+    const data = defaultWizardData();
+    data.creationBudget = { ap: 1100, attrBase: 8, maxAttrTotal: 100 };
+    data.attributes = [
+      { name: 'a', type: 'INT', min: 1, max: 20, default: 14, costs: DSA },
+    ];
+    const res = calcBudget(data);
+    expect(res.perAttr.a).toBe(90); // 6 x 15
+    expect(res.spend).toBe(90);
+    expect(res.over).toBe(false);
+  });
+
+  it('calcBudget without budget returns nullish spend-only', () => {
+    const data = defaultWizardData();
+    const res = calcBudget(data);
+    expect(res.over).toBe(false);
   });
 });

@@ -8,6 +8,7 @@ import {
   defaultWizardData,
   testExpression,
   toRulesJson,
+  calcBudget,
   type AttributeDef,
   type ConditionalDef,
   type WizardData,
@@ -15,13 +16,19 @@ import {
 
 export type { WizardData };
 
-const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_dv', 'step_label_3', 'step_label_5a', 'step_label_6', 'step_label_7', 'step_label_8', 'step_label_4', 'step_label_5'];
+const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_dv', 'step_label_3', 'step_label_5a', 'step_label_6', 'step_label_7', 'step_label_8', 'step_label_4', 'step_label_budget', 'step_label_5'];
 
 const DICE_PRESETS = [
   { v: '1d2', l: '1d2' }, { v: '1d3', l: '1d3' }, { v: '1d4', l: '1d4' }, { v: '1d6', l: '1d6' },
   { v: '1d8', l: '1d8' }, { v: '1d10', l: '1d10' }, { v: '1d12', l: '1d12' }, { v: '1d20', l: '1d20' },
   { v: '1d100', l: '1d100' }, { v: '2d6', l: '2d6' }, { v: '3d6', l: '3d6' }, { v: '4dF', l: '4dF' },
 ];
+
+// Budget-Felder (P28-T02) mit Labels aus sb_<key>.
+const BUDGET_FIELDS = [
+  'ap', 'attrBase', 'maxAttrTotal', 'maxAttrValue', 'maxSkillValue',
+  'maxCombatValue', 'maxSpells', 'maxAdvantageAp', 'apCarryoverMax', 'fatePoints',
+] as const;
 
 const INITIAL: WizardData = defaultWizardData();
 
@@ -52,6 +59,10 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
 
   const handleSave = async () => {
     if (!data.name.trim()) return;
+    if (calcBudget(data).over) {
+      toast.error(t('sb_save_blocked'));
+      return;
+    }
     setSaving(true);
     try {
       if (systemId) {
@@ -1309,7 +1320,88 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         </div>
       )}
 
+      {/* Step 10: Budget & Limits (P28-T02) */}
       {step === 10 && (
+        <div className="space-y-4">
+          <h3 className="font-heading text-text-primary">{t('sb_title')}</h3>
+          <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('sb_hint') }} />
+
+          <BudgetBar data={data} />
+
+          <div className="grid grid-cols-2 gap-3">
+            {BUDGET_FIELDS.map((key) => (
+              <div key={key}>
+                <label className="block text-xs text-text-secondary mb-1">{t(`sb_${key}`)}</label>
+                <input
+                  type="number"
+                  value={data.creationBudget?.[key] ?? ''}
+                  placeholder="—"
+                  onChange={(e) => {
+                    const v = e.target.value === '' ? undefined : Number(e.target.value);
+                    const budget = { ...(data.creationBudget ?? { ap: 0 }), [key]: v };
+                    update('creationBudget', budget);
+                  }}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1.5 text-xs text-text-primary outline-none focus:border-accent"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Globale Standard-Kostenkurve */}
+          <div>
+            <p className="text-xs font-medium text-text-secondary mb-2">{t('sb_curve')}</p>
+            {(data.attributeCosts?.default ?? []).map((tier, i) => (
+              <div key={i} className="mb-1 flex items-center gap-2">
+                <span className="w-10 text-[10px] uppercase text-text-secondary">{t('sb_upTo')}</span>
+                <input
+                  type="number"
+                  value={tier.upTo}
+                  onChange={(e) => {
+                    const tiers = [...(data.attributeCosts?.default ?? [])];
+                    tiers[i] = { ...tiers[i], upTo: Number(e.target.value) };
+                    update('attributeCosts', { default: tiers });
+                  }}
+                  className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                />
+                <input
+                  type="number"
+                  value={tier.cost}
+                  onChange={(e) => {
+                    const tiers = [...(data.attributeCosts?.default ?? [])];
+                    tiers[i] = { ...tiers[i], cost: Number(e.target.value) };
+                    update('attributeCosts', { default: tiers });
+                  }}
+                  className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                />
+                <span className="text-[10px] text-text-secondary">{t('sb_cost')}</span>
+                <button
+                  aria-label={t('sb_delete')}
+                  onClick={() =>
+                    update('attributeCosts', {
+                      default: (data.attributeCosts?.default ?? []).filter((_, j) => j !== i),
+                    })
+                  }
+                  className="text-danger hover:text-danger/80"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+            <button
+              onClick={() =>
+                update('attributeCosts', {
+                  default: [...(data.attributeCosts?.default ?? []), { upTo: 14, cost: 15 }],
+                })
+              }
+              className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+            >
+              <Plus size={14} /> {t('sb_add_tier')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 11 && (
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s5_title')}</h3>
 
@@ -1569,6 +1661,30 @@ function CombatExpressionRow({
           <Dice size={14} />
         </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+/** Verbraucht/verfügbar-Anzeige (P28-T02) — eine Quelle: calcBudget(). */
+function BudgetBar({ data }: { data: WizardData }) {
+  const { t } = useTranslation('systemWizard');
+  const { spend, ap, over } = calcBudget(data);
+  if (ap == null) return null;
+  const pct = ap > 0 ? Math.min(100, Math.round((spend / ap) * 100)) : 100;
+  return (
+    <div className="rounded bg-bg-primary/50 p-3">
+      <div className="mb-1 flex items-center justify-between text-xs">
+        <span className="text-text-secondary">{t('sb_budget_line')}</span>
+        <span className={over ? 'text-danger font-medium' : 'text-text-primary'}>
+          {spend} / {ap} AP{over ? ` — ${t('sb_over')}` : ''}
+        </span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-bg-elevated">
+        <div
+          className={`h-full rounded-full transition-all ${over ? 'bg-danger' : 'bg-accent'}`}
+          style={{ width: `${pct}%` }}
+        />
       </div>
     </div>
   );

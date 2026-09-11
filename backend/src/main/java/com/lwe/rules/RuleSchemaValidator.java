@@ -29,8 +29,21 @@ public class RuleSchemaValidator {
             "progressionType":  { "type": "string" },
             "features":         { "type": "object" },
             "modifierFormula":  { "type": "string" },
-            "creationBudget":   { "type": "object" },
-            "attributeCosts":   { "type": "object" },
+            "creationBudget":   { "type": "object", "properties": {
+              "ap":               { "type": "integer", "minimum": 0 },
+              "apCarryoverMax":   { "type": "integer", "minimum": 0 },
+              "fatePoints":       { "type": "integer", "minimum": 0 },
+              "attrBase":         { "type": "integer" },
+              "maxAttrTotal":     { "type": "integer", "minimum": 0 },
+              "maxAttrValue":     { "type": "integer", "minimum": 0 },
+              "maxSkillValue":    { "type": "integer", "minimum": 0 },
+              "maxCombatValue":   { "type": "integer", "minimum": 0 },
+              "maxSpells":        { "type": "integer", "minimum": 0 },
+              "maxAdvantageAp":   { "type": "integer", "minimum": 0 }
+            } },
+            "attributeCosts":   { "type": "object", "properties": {
+              "default": { "type": "array", "items": { "$ref": "#/$defs/costTier" } }
+            } },
             "packages":         { "type": "array", "items": { "type": "object" } },
             "traits":           { "type": "array", "items": { "type": "object" } },
             "advancement":      { "type": "object" },
@@ -67,7 +80,8 @@ public class RuleSchemaValidator {
                 "type":    { "enum": ["INT", "FLOAT", "STRING", "BOOL"] },
                 "min":     { "type": "number" },
                 "max":     { "type": "number" },
-                "default": { }
+                "default": { },
+                "costs":   { "type": "array", "items": { "$ref": "#/$defs/costTier" } }
               }
             },
             "skill": {
@@ -118,6 +132,14 @@ public class RuleSchemaValidator {
               "properties": {
                 "standard": { "type": "integer", "default": 2 },
                 "max":      { "type": "integer", "default": 4 }
+              }
+            },
+            "costTier": {
+              "type": "object",
+              "required": ["upTo", "cost"],
+              "properties": {
+                "upTo": { "type": "integer" },
+                "cost": { "type": "integer", "minimum": 0 }
               }
             },
             "diceExpression": {

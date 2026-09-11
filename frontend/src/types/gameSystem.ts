@@ -110,6 +110,9 @@ export interface CreationBudget {
   ap: number;
   apCarryoverMax?: number;
   fatePoints?: number;
+  // Ab diesem Attributwert kosten Punkte (DSA: 8, d. h. 8 ist gratis).
+  // Fehlt er, zählt ab Attribut-min.
+  attrBase?: number;
   maxAttrTotal?: number;
   maxAttrValue?: number;
   maxSkillValue?: number;
@@ -241,6 +244,53 @@ export function testExpression(expression: string): string {
   return expression
     .replace(/\bmod\b/g, '0')
     .replace(/([+-])\s*[A-Za-z_][A-Za-z0-9_]*/g, (_m, sign: string) => `${sign}0`);
+}
+
+/**
+ * Kosten für Attribut-Steigerung von `from` (exklusiv) bis `to` (inklusiv)
+ * entlang der Staffel. Leer/fehlend = gratis, Senken = gratis, über letzte
+ * Stufe hinaus = letzte Stufe. Reine Funktion für UI + Tests.
+ */
+export function attrPointCost(from: number, to: number, tiers: AttributeCostTier[]): number {
+  if (!tiers.length || to <= from) return 0;
+  const sorted = [...tiers].sort((a, b) => a.upTo - b.upTo);
+  let total = 0;
+  for (let v = from + 1; v <= to; v++) {
+    total += (sorted.find((t) => v <= t.upTo) ?? sorted[sorted.length - 1]).cost;
+  }
+  return total;
+}
+
+export interface BudgetResult {
+  spend: number;
+  attrTotal: number;
+  ap: number | null;
+  over: boolean;
+  perAttr: Record<string, number>;
+}
+
+/** Summiert Attribut-Ausgaben (ab attrBase bzw. min) und prüft Budget/Caps. */
+export function calcBudget(data: WizardData): BudgetResult {
+  const perAttr: Record<string, number> = {};
+  let spend = 0;
+  let attrTotal = 0;
+  for (const a of data.attributes) {
+    const from = data.creationBudget?.attrBase ?? a.min;
+    const tiers = a.costs ?? data.attributeCosts?.default ?? [];
+    const c = attrPointCost(from, a.default, tiers);
+    perAttr[a.name] = c;
+    spend += c;
+    attrTotal += a.default;
+  }
+  const ap = data.creationBudget?.ap ?? null;
+  const maxTotal = data.creationBudget?.maxAttrTotal;
+  return {
+    spend,
+    attrTotal,
+    ap,
+    over: (ap != null && spend > ap) || (maxTotal != null && attrTotal > maxTotal),
+    perAttr,
+  };
 }
 
 /** WizardData → rulesJson (Backend-Wire-Format). */

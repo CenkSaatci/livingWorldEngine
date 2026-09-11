@@ -10,7 +10,27 @@
   "step_label_8": "Bedingungen",
   "step_label_4": "Würfel",
   "step_label_5": "Übersicht",
-
+  "step_label_budget": "Budget",
+  "sb_title": "Budget & Grenzen",
+  "sb_hint": "AP-Topf und Caps für die Heldenerschaffung. Gezählt wird ab <b>attrBase</b> (oder Attribut-min).",
+  "sb_ap": "AP-Topf",
+  "sb_attrBase": "Gratis-Basiswert",
+  "sb_maxAttrTotal": "Max Attributssumme",
+  "sb_maxAttrValue": "Max Attributswert",
+  "sb_maxSkillValue": "Max Fertigkeitswert",
+  "sb_maxCombatValue": "Max Kampfwert",
+  "sb_maxSpells": "Max Zauber",
+  "sb_maxAdvantageAp": "Max Vorteils-AP",
+  "sb_apCarryoverMax": "Max AP-Übertrag",
+  "sb_fatePoints": "Schicksalspunkte",
+  "sb_curve": "Standard-Kostenkurve (bis Wert → AP pro Punkt)",
+  "sb_upTo": "bis",
+  "sb_cost": "AP",
+  "sb_add_tier": "Stufe hinzu",
+  "sb_spent": "verbraucht",
+  "sb_over": "über Budget",
+  "sb_save_blocked": "Über Budget — Kosten senken vor dem Speichern",
+  "sb_budget_line": "Budget",
   "s0_title": "System-Charakter",
   "s0_progression_type": "Aufstiegs-Typ",
   "s0_level": "Level (D&D)",
@@ -22,13 +42,11 @@
   "s0_rangedCombat": "Fernkampf",
   "s0_criticalHits": "Kritische Treffer",
   "s0_armorPenalty": "Rüstungs-Erschwernis",
-
   "s1_title": "Basic Information",
   "s1_name": "System-Name *",
   "s1_version": "Version",
   "s1_description": "Beschreibung",
   "s1_unnamed": "Unbenannt",
-
   "s2_title": "Attribute",
   "s2_hint": "Definiere die Kerneigenschaften deines Systems (z.B. <em>Stärke</em>, <em>Geschicklichkeit</em>). Attributnamen werden <strong>klein</strong> geschrieben (z.B. <code>staerke</code>) und später in Würfelausdrücken wie <code>1d20+staerke</code> verwendet.",
   "s2_name_placeholder": "Name",
@@ -45,7 +63,6 @@
   "s2_header_default": "Start",
   "s2_header_actions": "",
   "s2_add": "Attribut hinzufügen",
-
   "sdv_title": "Abgeleitete Werte",
   "sdv_hint": "Definiere Werte, die sich aus Attributen berechnen (z.B. <em>Trefferpunkte = 10 + Stärke × 2</em>). Diese Formeln werden später automatisch ausgewertet.",
   "sdv_name_placeholder": "Name (z.B. hp)",
@@ -57,7 +74,6 @@
   "sdv_add": "Wert hinzufügen",
   "sdv_header_name": "Name",
   "sdv_header_formula": "Formel",
-
   "s5a_title": "Fähigkeiten",
   "s5a_hint": "Definiere aktive (einsetzbare) und passive (permanente) Fähigkeiten. Aktive haben Kosten und einen Würfelausdruck, passive einen festen Bonus.",
   "s5a_active": "Aktiv",
@@ -78,7 +94,6 @@
   "s5a_header_cost": "Kosten",
   "s5a_header_dice": "Würfel",
   "s5a_header_effect": "Effekt / Bonus",
-
   "s6_title": "Aufstieg",
   "s6_hint": "Lege fest, wie Charaktere aufsteigen. Die Ansicht passt sich an deine Auswahl unter System-Charakter an.",
   "s6_level_title": "Stufen-Tabelle",
@@ -100,7 +115,6 @@
   "s6_imp_header_comparison": "Vgl",
   "s6_imp_header_target": "Ziel",
   "s6_imp_add": "Eintrag hinzufügen",
-
   "s7_title": "Specials",
   "s7_magic_title": "Magie",
   "s7_magic_hint": "Definiere die Grundlagen deines Magiesystems.",
@@ -116,7 +130,6 @@
   "s7_schools_placeholder": "z.B. Feuer, Eis, Illusion",
   "s7_power_points_placeholder": "z.B. 3+willenskraft",
   "s7_disciplines_placeholder": "z.B. Telepathie, Telekinese",
-
   "s8_title": "Bedingungen",
   "s8_hint": "Definiere konditionale Boni, die automatisch angewendet werden. Z.B. <em>wenn Stärke > 15, +2 auf Schaden</em> oder <em>jeder Punkt Intuition über 8 gibt +1 auf Initiative</em>.",
   "s8_header_name": "Name",
@@ -135,7 +148,6 @@
   "s8_attr_placeholder": "Attribut",
   "s8_bonus_placeholder": "z.B. +2",
   "s8_target_placeholder": "z.B. schaden",
-
   "s3_title": "Fertigkeiten",
   "s3_hint": "Fertigkeiten (Skills) werden an Attribute gekoppelt. Wähle <strong>ein oder mehrere</strong> Attribute pro Fertigkeit aus — die Reihenfolge bestimmt die Gewichtung. Mit <em>+ Attribut</em> fügst du weitere hinzu.",
   "s3_placeholder": "Fertigkeit",
@@ -143,7 +155,6 @@
   "s3_bonus": "Bonus",
   "s3_add_skill": "Fertigkeit hinzufügen",
   "s3_add_attr": "+ Attribut",
-
   "s4_title": "Würfelmechanik",
   "s4_probe_hint": "<strong>Probe (Probe Expression):</strong> Der Würfelausdruck für Fertigkeitsproben, z.B. <code>1d20+mod</code> (1W20 + Modifikator), <code>2d6+mod</code> (2W6), <code>4dF</code> (Fudge-Würfel). <code>mod</code> wird später durch den Fertigkeitswert des Charakters ersetzt. Statt <code>mod</code> kann auch ein Attributsname stehen wie <code>1d20+staerke</code>.",
   "s4_probe_label": "Probe Expression",
@@ -181,7 +192,6 @@
   "s4_rest_full_heal": "Vollständige Heilung",
   "s4_rest_recover_all": "Alle Ressourcen",
   "s4_level_features_placeholder": "z.B. Feat, ASI",
-
   "s5_title": "Übersicht & Speichern",
   "s5_system": "System",
   "s5_dice": "Würfel",
@@ -191,15 +201,14 @@
   "s5_no_skills": "Keine Fertigkeiten definiert",
   "s5_progression": "Aufstieg",
   "s5_show_json": "Rules JSON anzeigen",
-
   "nav_cancel": "Abbrechen",
   "nav_back": "Zurück",
   "nav_next": "Weiter",
   "nav_save": "System Speichern",
   "nav_saving": "Erstelle…",
-
   "msg_created": "System erstellt",
   "msg_updated": "System aktualisiert",
   "msg_create_failed": "Fehler beim Erstellen",
-  "msg_update_failed": "Fehler beim Aktualisieren"
+  "msg_update_failed": "Fehler beim Aktualisieren",
+  "sb_delete": "Löschen"
 }

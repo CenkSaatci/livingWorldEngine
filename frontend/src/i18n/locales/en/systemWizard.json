@@ -10,7 +10,27 @@
   "step_label_8": "Conditions",
   "step_label_4": "Dice",
   "step_label_5": "Review",
-
+  "step_label_budget": "Budget",
+  "sb_title": "Budget & Limits",
+  "sb_hint": "AP pool and caps for hero creation. Costs are counted from <b>attrBase</b> (or attribute min).",
+  "sb_ap": "AP pool",
+  "sb_attrBase": "Free base value",
+  "sb_maxAttrTotal": "Max attribute total",
+  "sb_maxAttrValue": "Max attribute value",
+  "sb_maxSkillValue": "Max skill value",
+  "sb_maxCombatValue": "Max combat value",
+  "sb_maxSpells": "Max spells",
+  "sb_maxAdvantageAp": "Max advantage AP",
+  "sb_apCarryoverMax": "Max AP carryover",
+  "sb_fatePoints": "Fate points",
+  "sb_curve": "Default cost curve (up to value → AP per point)",
+  "sb_upTo": "up to",
+  "sb_cost": "AP",
+  "sb_add_tier": "Add tier",
+  "sb_spent": "spent",
+  "sb_over": "over budget",
+  "sb_save_blocked": "Over budget — reduce costs before saving",
+  "sb_budget_line": "Budget",
   "s0_title": "System Character",
   "s0_progression_type": "Progression Type",
   "s0_level": "Level (D&D)",
@@ -22,13 +42,11 @@
   "s0_rangedCombat": "Ranged Combat",
   "s0_criticalHits": "Critical Hits",
   "s0_armorPenalty": "Armor Penalty",
-
   "s1_title": "Basic Information",
   "s1_name": "System Name *",
   "s1_version": "Version",
   "s1_description": "Description",
   "s1_unnamed": "Unnamed",
-
   "s2_title": "Attributes",
   "s2_hint": "Define the core attributes of your system (e.g. <em>Strength</em>, <em>Dexterity</em>). Attribute names are written in <strong>lowercase</strong> (e.g. <code>strength</code>) and used in dice expressions like <code>1d20+strength</code>.",
   "s2_name_placeholder": "Name",
@@ -45,7 +63,6 @@
   "s2_header_default": "Start",
   "s2_header_actions": "",
   "s2_add": "Add Attribute",
-
   "sdv_title": "Derived Values",
   "sdv_hint": "Define values calculated from attributes (e.g. <em>Hit Points = 10 + Strength × 2</em>). These formulas will be evaluated automatically.",
   "sdv_name_placeholder": "Name (e.g. hp)",
@@ -57,7 +74,6 @@
   "sdv_add": "Add Value",
   "sdv_header_name": "Name",
   "sdv_header_formula": "Formula",
-
   "s5a_title": "Abilities",
   "s5a_hint": "Define active (usable) and passive (permanent) abilities. Active abilities have costs and a dice expression, passive ones give a fixed bonus.",
   "s5a_active": "Active",
@@ -78,7 +94,6 @@
   "s5a_header_cost": "Cost",
   "s5a_header_dice": "Dice",
   "s5a_header_effect": "Effect / Bonus",
-
   "s6_title": "Progression",
   "s6_hint": "Define how characters advance. The view adapts to your System Character selection.",
   "s6_level_title": "Level Table",
@@ -100,7 +115,6 @@
   "s6_imp_header_comparison": "Cmp",
   "s6_imp_header_target": "Target",
   "s6_imp_add": "Add Entry",
-
   "s7_title": "Specials",
   "s7_magic_title": "Magic",
   "s7_magic_hint": "Define the basics of your magic system.",
@@ -116,7 +130,6 @@
   "s7_schools_placeholder": "e.g. Fire, Ice, Illusion",
   "s7_power_points_placeholder": "e.g. 3+willpower",
   "s7_disciplines_placeholder": "e.g. Telepathy, Telekinesis",
-
   "s8_title": "Conditions",
   "s8_hint": "Define conditional bonuses applied automatically. E.g. <em>if Strength > 15, +2 to damage</em> or <em>each point of Intuition above 8 gives +1 to Initiative</em>.",
   "s8_header_name": "Name",
@@ -135,7 +148,6 @@
   "s8_attr_placeholder": "Attribute",
   "s8_bonus_placeholder": "e.g. +2",
   "s8_target_placeholder": "e.g. damage",
-
   "s3_title": "Skills",
   "s3_hint": "Skills are linked to attributes. Select <strong>one or more</strong> attributes per skill — the order determines weighting. Use <em>+ Attribute</em> to add more.",
   "s3_placeholder": "Skill",
@@ -143,7 +155,6 @@
   "s3_bonus": "Bonus",
   "s3_add_skill": "Add Skill",
   "s3_add_attr": "+ Attribute",
-
   "s4_title": "Dice Mechanics",
   "s4_probe_hint": "<strong>Probe (Probe Expression):</strong> The dice expression for skill checks, e.g. <code>1d20+mod</code>, <code>2d6+mod</code>, <code>4dF</code> (Fudge dice). <code>mod</code> is replaced by the character's skill value. Instead of <code>mod</code> you can use an attribute name like <code>1d20+strength</code>.",
   "s4_probe_label": "Probe Expression",
@@ -181,7 +192,6 @@
   "s4_rest_full_heal": "Full Heal",
   "s4_rest_recover_all": "Recover All",
   "s4_level_features_placeholder": "e.g. Feat, ASI",
-
   "s5_title": "Review & Save",
   "s5_system": "System",
   "s5_dice": "Dice",
@@ -191,15 +201,14 @@
   "s5_no_skills": "No skills defined",
   "s5_progression": "Progression",
   "s5_show_json": "Show Rules JSON",
-
   "nav_cancel": "Cancel",
   "nav_back": "Back",
   "nav_next": "Next",
   "nav_save": "Save System",
   "nav_saving": "Creating…",
-
   "msg_created": "System created",
   "msg_updated": "System updated",
   "msg_create_failed": "Failed to create",
-  "msg_update_failed": "Failed to update"
+  "msg_update_failed": "Failed to update",
+  "sb_delete": "Delete"
 }

@@ -156,8 +156,7 @@ class RuleSchemaValidatorTest {
     }
 
     @Test
-    void shouldAcceptP28BlocksAgainstDefaultSchema() {
-        // P28-T01: neue Top-Level-Blöcke als permissive Container.
+    void shouldAcceptP28BlocksAgainstDefaultSchema() {        // P28-T01: neue Top-Level-Blöcke als permissive Container.
         var json = """
             {"version":1,
              "attributes":[{"name":"staerke","type":"INT","min":1,"max":20,"default":10}],
@@ -172,6 +171,28 @@ class RuleSchemaValidatorTest {
             """;
         var errors = validator.validate(json, RuleSchemaValidator.DEFAULT_SCHEMA);
         assertThat(errors).as("P28 blocks should validate against DEFAULT_SCHEMA").isEmpty();
+    }
+
+    @Test
+    void shouldRejectInvalidBudgetShapes() {
+        // P28-T02: Budgets/Kosten mit falschen Typen sind Formfehler, kein "passt schon".
+        var badAp = """
+            {"version":1,
+             "attributes":[{"name":"staerke","type":"INT","default":10}],
+             "dice_mechanics":{"probe":"1d20"},
+             "creationBudget":{"ap":"viel"}}
+            """;
+        assertThat(validator.validate(badAp, RuleSchemaValidator.DEFAULT_SCHEMA))
+            .as("ap as string should fail").isNotEmpty();
+
+        var badCost = """
+            {"version":1,
+             "attributes":[{"name":"staerke","type":"INT","default":10}],
+             "dice_mechanics":{"probe":"1d20"},
+             "attributeCosts":{"default":[{"upTo":14,"cost":-5}]}}
+            """;
+        assertThat(validator.validate(badCost, RuleSchemaValidator.DEFAULT_SCHEMA))
+            .as("negative cost should fail").isNotEmpty();
     }
 
     private String loadFixture(String name) throws IOException {
