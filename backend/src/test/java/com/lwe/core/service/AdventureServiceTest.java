@@ -46,7 +46,7 @@ class AdventureServiceTest {
 
     @Test
     void shouldCreateAdventure() {
-        var world = new com.lwe.core.domain.World("W", userId, null, "{}");
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
         setId(world, worldId);
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(adventureRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -60,7 +60,7 @@ class AdventureServiceTest {
         var entityId = UUID.randomUUID();
         var advNode = new AdventureNode(adventure.getId(), "Start", false);
         setId(advNode, startNodeId);
-        var world = new com.lwe.core.domain.World("W", userId, null, "{}");
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
         setId(world, worldId);
 
         when(adventureRepo.findById(adventure.getId())).thenReturn(Optional.of(adventure));
@@ -85,7 +85,7 @@ class AdventureServiceTest {
         setId(choice, UUID.randomUUID());
         var progress = new AdventureProgress(adventure.getId(), entityId, startNodeId);
         setId(progress, UUID.randomUUID());
-        var world = new com.lwe.core.domain.World("W", userId, null, "{}");
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
         setId(world, worldId);
 
         when(adventureRepo.findById(adventure.getId())).thenReturn(Optional.of(adventure));

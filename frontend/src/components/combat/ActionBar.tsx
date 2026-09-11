@@ -50,7 +50,9 @@ export function ActionBar({ worldId }: Props) {
           const combat = rules.dice_mechanics?.combat;
           if (combat?.action_types) setActionTypes(combat.action_types);
           if (combat?.actions_per_turn) setActionsPerTurn(combat.actions_per_turn);
-        } catch {}
+        } catch { /* Ungültiges rulesJson → Standard-Action-Typen bleiben. */ }
+        // Best-effort Config-Ladung — Defaults aus useState gelten weiter.
+        // Best-effort Config-Ladung — Defaults aus useState gelten weiter.
       }).catch(() => {});
     };
     const campaign = useCampaignStore.getState().campaigns.find(
@@ -60,9 +62,10 @@ export function ActionBar({ worldId }: Props) {
       loadActions(campaign.gameSystemId);
       return;
     }
-    apiClient.get(`/worlds/${worldId}`).then((wr) => {
-      loadActions(wr.data.gameSystemId);
-    }).catch(() => {});
+    // Kein Welt-Fallback mehr (P25-T06): Welten tragen kein System;
+    // ohne Kampagne gibt es keine Action-Typen.
+    setActionTypes([]);
+    setActionsPerTurn({});
   }, [worldId, activeCampaignId]);
 
   // Reset used actions on turn change
@@ -151,7 +154,7 @@ export function ActionBar({ worldId }: Props) {
             onClick={() => handleAction('ability', a.abilityId)}
             disabled={!targetEntityId}
             className="flex items-center gap-1 rounded bg-warning/20 px-3 py-1.5 text-xs text-warning hover:bg-warning/30 disabled:opacity-40"
-            title={`AP: ${a.apCost}`}
+            title={t('combat.apCost', { cost: a.apCost })}
           >
             <Zap size={14} /> {a.abilityName}
           </button>

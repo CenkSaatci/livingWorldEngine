@@ -32,7 +32,7 @@ class EventArchiveJobTest {
     @Test
     void archiveOldEvents_shouldArchivePerWorld() {
         var worldId = UUID.randomUUID();
-        var world = new World("Test", UUID.randomUUID(), null, "{}");
+        var world = new World("Test", UUID.randomUUID(), "{}");
         setId(world, worldId);
         when(worldRepo.findByActiveTrue()).thenReturn(List.of(world));
         when(entityManager.createNativeQuery(anyString()))

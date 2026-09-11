@@ -11,7 +11,7 @@ import type { WorldSummary } from '../store/worldStore';
 interface WorldDetail extends WorldSummary {
   ownerId: string;
   settingsJson: string;
-  gameSystemId: string | null;
+  gameSystemId?: string | null;
 }
 
 interface Member {

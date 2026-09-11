@@ -33,7 +33,7 @@ public class WorldController {
     @PostMapping
     public ResponseEntity<WorldInfoResponse> create(@Valid @RequestBody CreateRequest req,
                                                      @AuthenticationPrincipal User user) {
-        var world = worldService.create(req.name(), user.getId(), req.gameSystemId(), req.settingsJson(), user);
+        var world = worldService.create(req.name(), user.getId(), req.settingsJson(), user);
         return ResponseEntity.status(HttpStatus.CREATED).body(WorldInfoResponse.from(world));
     }
 
@@ -63,7 +63,7 @@ public class WorldController {
     public ResponseEntity<WorldInfoResponse> update(@PathVariable UUID id, @Valid @RequestBody UpdateRequest req,
                                                      @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(WorldInfoResponse.from(
-            worldService.update(id, user.getId(), req.name(), req.settingsJson(), req.gameSystemId())));
+            worldService.update(id, user.getId(), req.name(), req.settingsJson())));
     }
 
     @DeleteMapping("/{id}")
@@ -101,7 +101,11 @@ public class WorldController {
         return ResponseEntity.noContent().build();
     }
 
-    public record CreateRequest(@NotBlank String name, UUID gameSystemId, String settingsJson) {}
-    public record UpdateRequest(String name, String settingsJson, UUID gameSystemId) {}
+    // Entfernte Felder (z.B. gameSystemId, P25-T06) werden ignoriert statt
+    // 500 zu werfen — alte Clients bleiben kompatibel.
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+    public record CreateRequest(@NotBlank String name, String settingsJson) {}
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+    public record UpdateRequest(String name, String settingsJson) {}
     public record MemberRequest(@NotNull UUID userId, @NotBlank String role) {}
 }

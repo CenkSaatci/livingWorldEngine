@@ -49,11 +49,8 @@ class ProbeServiceTest {
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
         lenient().when(conditionEvaluator.evaluate(any(), any())).thenReturn(java.util.List.of());
         lenient().when(modifierService.calculateModifiers(any(), any())).thenReturn(Map.of("staerke", 0.0));
-        lenient().when(rulesLoader.loadRules(any(World.class))).thenAnswer(inv -> {
-            var world = inv.getArgument(0, World.class);
-            if (world == null || world.getGameSystemId() == null) return Map.of();
-            return objectMapper.readValue(D20_RULES, Map.class);
-        });
+        lenient().when(rulesLoader.loadRules(any(World.class))).thenAnswer(inv ->
+            objectMapper.readValue(D20_RULES, Map.class));
     }
 
     private GameEntity entityWithAttrs(String attrs) {
@@ -70,7 +67,7 @@ class ProbeServiceTest {
         var entity = entityWithAttrs("{\"staerke\":10}");
         entity.setSkillsJson("{\"Athletik\":5}");
 
-        var world = new World("W", userId, gsId, "{}");
+        var world = new World("W", userId, "{}");
         try { var f = World.class.getDeclaredField("id"); f.setAccessible(true); f.set(world, worldId); }
         catch (Exception ex) { throw new RuntimeException(ex); }
         var gs = new GameSystem("D20", 1, D20_RULES, "{}");
@@ -93,7 +90,7 @@ class ProbeServiceTest {
     void shouldFallbackToGlobalBonusWhenNoPerCharacterSkill() {
         var entity = entityWithAttrs("{\"staerke\":10}");
 
-        var world = new World("W", userId, gsId, "{}");
+        var world = new World("W", userId, "{}");
         try { var f = World.class.getDeclaredField("id"); f.setAccessible(true); f.set(world, worldId); }
         catch (Exception ex) { throw new RuntimeException(ex); }
         var gs = new GameSystem("D20", 1, D20_RULES, "{}");
@@ -117,7 +114,7 @@ class ProbeServiceTest {
         var entity = entityWithAttrs("{\"staerke\":10}");
         entity.setSkillsJson(null);
 
-        var world = new World("W", userId, gsId, "{}");
+        var world = new World("W", userId, "{}");
         try { var f = World.class.getDeclaredField("id"); f.setAccessible(true); f.set(world, worldId); }
         catch (Exception ex) { throw new RuntimeException(ex); }
         var gs = new GameSystem("D20", 1, D20_RULES, "{}");

@@ -39,7 +39,7 @@ class GameSessionServiceTest {
     void startSessionShouldCreateSession() throws Exception {
         var worldId = UUID.randomUUID();
         var userId = UUID.randomUUID();
-        var world = new World("test", userId, null, "{}");
+        var world = new World("test", userId, "{}");
 
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(sessionRepo.save(any())).thenAnswer(inv -> {
@@ -62,7 +62,7 @@ class GameSessionServiceTest {
         var worldId = UUID.randomUUID();
         var campaignId = UUID.randomUUID();
         var userId = UUID.randomUUID();
-        var world = new World("test", UUID.randomUUID(), null, "{}");
+        var world = new World("test", UUID.randomUUID(), "{}");
 
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(campaignMemberService.isDm(campaignId, userId)).thenReturn(true);
@@ -85,7 +85,7 @@ class GameSessionServiceTest {
         var worldId = UUID.randomUUID();
         var campaignId = UUID.randomUUID();
         var userId = UUID.randomUUID();
-        var world = new World("test", UUID.randomUUID(), null, "{}");
+        var world = new World("test", UUID.randomUUID(), "{}");
 
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(campaignMemberService.isDm(campaignId, userId)).thenReturn(false);
@@ -109,7 +109,7 @@ class GameSessionServiceTest {
         var worldId = UUID.randomUUID();
         var userId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
-        var world = new World("test", userId, null, "{}");
+        var world = new World("test", userId, "{}");
         var session = new GameSession(worldId, null);
         var idField = GameSession.class.getDeclaredField("id");
         idField.setAccessible(true);
@@ -129,7 +129,7 @@ class GameSessionServiceTest {
     void listSessionsShouldReturnActiveSessions() {
         var worldId = UUID.randomUUID();
         var userId = UUID.randomUUID();
-        var world = new World("test", userId, null, "{}");
+        var world = new World("test", userId, "{}");
         var sessions = List.of(new GameSession(worldId, null), new GameSession(worldId, null));
 
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));

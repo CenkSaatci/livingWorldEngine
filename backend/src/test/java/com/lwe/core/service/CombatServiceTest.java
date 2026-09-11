@@ -56,7 +56,7 @@ class CombatServiceTest {
         defender.setAttributesJson("{\"geschicklichkeit\":8,\"staerke\":12}");
         setId(defender, defenderId);
 
-        var world = new com.lwe.core.domain.World("W", userId, null, "{}");
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
         setId(world, worldId);
 
         when(entityRepo.findAllById(any())).thenReturn(List.of(attacker, defender));
@@ -91,7 +91,7 @@ class CombatServiceTest {
         defender.setAttributesJson("{\"geschicklichkeit\":8,\"staerke\":12}");
         setId(defender, defenderId);
 
-        var world = new com.lwe.core.domain.World("W", userId, null, "{}");
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
         setId(world, worldId);
 
         when(entityRepo.findAllById(any())).thenReturn(List.of(attacker, defender));
@@ -123,7 +123,7 @@ class CombatServiceTest {
         defender.setAttributesJson("{\"geschicklichkeit\":8,\"staerke\":12}");
         setId(defender, defenderId);
 
-        var world = new com.lwe.core.domain.World("W", UUID.randomUUID(), null, "{}");
+        var world = new com.lwe.core.domain.World("W", UUID.randomUUID(), "{}");
         setId(world, worldId);
 
         when(entityRepo.findAllById(any())).thenReturn(List.of(attacker, defender));
@@ -154,7 +154,7 @@ class CombatServiceTest {
         var defender = new GameEntity(worldId, "NPC", "Ork");
         setId(defender, defenderId);
 
-        var world = new com.lwe.core.domain.World("W", UUID.randomUUID(), null, "{}");
+        var world = new com.lwe.core.domain.World("W", UUID.randomUUID(), "{}");
         setId(world, worldId);
 
         when(entityRepo.findAllById(any())).thenReturn(List.of(attacker, defender));
@@ -180,7 +180,7 @@ class CombatServiceTest {
         defender.setAttributesJson("{\"staerke\":12,\"position_json\":\"{\\\"x\\\":5,\\\"y\\\":5}\"}");
         setId(defender, defenderId);
 
-        var world = new com.lwe.core.domain.World("W", userId, null, "{}");
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
         setId(world, worldId);
 
         session.setCurrentTurnEntityId(attackerId);

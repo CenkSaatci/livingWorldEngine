@@ -39,7 +39,7 @@ class WorldInviteServiceTest {
 
     @Test
     void shouldCreateInvite() {
-        var world = new World("Test", userId, null, "{}");
+        var world = new World("Test", userId, "{}");
         setId(world, worldId);
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(inviteRepo.save(any())).thenAnswer(inv -> {
@@ -58,7 +58,7 @@ class WorldInviteServiceTest {
 
     @Test
     void shouldRejectCreateByNonOwner() {
-        var world = new World("Test", UUID.randomUUID(), null, "{}");
+        var world = new World("Test", UUID.randomUUID(), "{}");
         setId(world, worldId);
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
 

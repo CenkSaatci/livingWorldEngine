@@ -15,7 +15,6 @@ public class WorldService {
 
     private final WorldRepository worldRepo;
     private final WorldMemberRepository memberRepo;
-    private final GameSystemRepository gameSystemRepo;
     private final QuotaService quotaService;
     private final RegionRepository regionRepo;
     private final LocationRepository locationRepo;
@@ -26,7 +25,7 @@ public class WorldService {
     private final RegionWeatherRepository regionWeatherRepo;
 
     public WorldService(WorldRepository worldRepo, WorldMemberRepository memberRepo,
-                        GameSystemRepository gameSystemRepo, QuotaService quotaService,
+                        QuotaService quotaService,
                         RegionRepository regionRepo, LocationRepository locationRepo,
                         GameEntityRepository entityRepo, FactionRepository factionRepo,
                         FactionRelationRepository factionRelationRepo,
@@ -34,7 +33,6 @@ public class WorldService {
                         RegionWeatherRepository regionWeatherRepo) {
         this.worldRepo = worldRepo;
         this.memberRepo = memberRepo;
-        this.gameSystemRepo = gameSystemRepo;
         this.quotaService = quotaService;
         this.regionRepo = regionRepo;
         this.locationRepo = locationRepo;
@@ -46,15 +44,9 @@ public class WorldService {
     }
 
     @Transactional
-    public World create(String name, UUID ownerId, UUID gameSystemId, String settingsJson, User user) {
+    public World create(String name, UUID ownerId, String settingsJson, User user) {
         quotaService.checkCanCreateWorld(ownerId, user);
-        if (gameSystemId != null) {
-            gameSystemRepo.findById(gameSystemId)
-                .filter(GameSystem::isActive)
-                .orElseThrow(() -> new WorldException("WORLD_GAME_SYSTEM_INACTIVE",
-                    "Game system not found or inactive"));
-        }
-        var world = new World(name, ownerId, gameSystemId, settingsJson);
+        var world = new World(name, ownerId, settingsJson);
         return worldRepo.save(world);
     }
 
@@ -101,20 +93,13 @@ public class WorldService {
     }
 
     @Transactional
-    public World update(UUID worldId, UUID userId, String name, String settingsJson, UUID gameSystemId) {
+    public World update(UUID worldId, UUID userId, String name, String settingsJson) {
         var world = getById(worldId, userId);
         if (!world.getOwnerId().equals(userId)) {
             throw new WorldException("WORLD_OWNER_REQUIRED", "Only the owner may update this world");
         }
         if (name != null) world.setName(name);
         if (settingsJson != null) world.setSettingsJson(settingsJson);
-        if (gameSystemId != null) {
-            gameSystemRepo.findById(gameSystemId)
-                .filter(GameSystem::isActive)
-                .orElseThrow(() -> new WorldException("WORLD_GAME_SYSTEM_INACTIVE",
-                    "Game system not found or inactive"));
-            world.setGameSystemId(gameSystemId);
-        }
         return worldRepo.save(world);
     }
 
@@ -124,7 +109,7 @@ public class WorldService {
         quotaService.checkCanCreateWorld(userId, user);
 
         var clone = new World(original.getName() + " (Copy)", userId,
-            original.getGameSystemId(), original.getSettingsJson());
+            original.getSettingsJson());
         clone.setCurrentGameTime(original.getCurrentGameTime());
         clone = worldRepo.save(clone);
 

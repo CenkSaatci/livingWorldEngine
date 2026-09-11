@@ -38,7 +38,7 @@ class WorldMapServiceTest {
     void shouldGetOrCreateExistingMap() {
         var map = new WorldMap(worldId);
         map.setName("existing");
-        var world = new World("Test", userId, null, "{}");
+        var world = new World("Test", userId, "{}");
         setId(world, worldId);
 
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
@@ -51,7 +51,7 @@ class WorldMapServiceTest {
 
     @Test
     void shouldCreateMapIfNotExists() {
-        var world = new World("Test", userId, null, "{}");
+        var world = new World("Test", userId, "{}");
         setId(world, worldId);
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(mapRepo.findByWorldId(worldId)).thenReturn(Optional.empty());
@@ -65,7 +65,7 @@ class WorldMapServiceTest {
     @Test
     void shouldUpdateMap() {
         var map = new WorldMap(worldId);
-        var world = new World("Test", userId, null, "{}");
+        var world = new World("Test", userId, "{}");
         setId(world, worldId);
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(mapRepo.findByWorldId(worldId)).thenReturn(Optional.of(map));
@@ -79,7 +79,7 @@ class WorldMapServiceTest {
 
     @Test
     void shouldRejectAccessToNonOwner() {
-        var world = new World("Test", UUID.randomUUID(), null, "{}");
+        var world = new World("Test", UUID.randomUUID(), "{}");
         setId(world, worldId);
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
 

@@ -36,8 +36,7 @@ class WorldTimeServiceTest {
 
     @Test
     void tickAllWorldsShouldAdvanceAutomaticWorlds() {
-        var world = new World("test", UUID.randomUUID(), null,
-            "{\"time\":{\"mode\":\"automatic\",\"tick_interval_real_seconds\":1,\"tick_advance_game_minutes\":60,\"paused\":false}}");
+        var world = new World("test", UUID.randomUUID(), "{\"time\":{\"mode\":\"automatic\",\"tick_interval_real_seconds\":1,\"tick_advance_game_minutes\":60,\"paused\":false}}");
         world.setActive(true);
         world.setCurrentGameTime(Instant.now().minus(Duration.ofHours(2)));
         world.setLastTickAt(Instant.now().minusSeconds(10));
@@ -53,8 +52,7 @@ class WorldTimeServiceTest {
 
     @Test
     void tickAllWorldsShouldSkipManualWorlds() {
-        var world = new World("test", UUID.randomUUID(), null,
-            "{\"time\":{\"mode\":\"manual\",\"tick_interval_real_seconds\":1,\"tick_advance_game_minutes\":60,\"paused\":false}}");
+        var world = new World("test", UUID.randomUUID(), "{\"time\":{\"mode\":\"manual\",\"tick_interval_real_seconds\":1,\"tick_advance_game_minutes\":60,\"paused\":false}}");
         world.setActive(true);
 
         when(worldRepo.findByActiveTrue()).thenReturn(List.of(world));
@@ -66,8 +64,7 @@ class WorldTimeServiceTest {
 
     @Test
     void dayPhaseShouldReturnCorrectPhase() {
-        var world = new World("test", UUID.randomUUID(), null,
-            "{\"time\":{\"mode\":\"automatic\",\"tick_interval_real_seconds\":60,\"tick_advance_game_minutes\":60,\"paused\":false,\"day_starts_at_hour\":6}}");
+        var world = new World("test", UUID.randomUUID(), "{\"time\":{\"mode\":\"automatic\",\"tick_interval_real_seconds\":60,\"tick_advance_game_minutes\":60,\"paused\":false,\"day_starts_at_hour\":6}}");
 
         world.setCurrentGameTime(atHour(6));
         assertThat(service.dayPhase(world)).isEqualTo(WorldTimeService.DayPhase.DAY);
@@ -84,7 +81,7 @@ class WorldTimeServiceTest {
 
     @Test
     void advanceTimeShouldAdvanceGameTime() {
-        var world = new World("test", UUID.randomUUID(), null, "{}");
+        var world = new World("test", UUID.randomUUID(), "{}");
         var start = Instant.now();
         world.setCurrentGameTime(start);
 
@@ -98,7 +95,7 @@ class WorldTimeServiceTest {
 
     @Test
     void setTimeShouldSetToTargetTime() {
-        var world = new World("test", UUID.randomUUID(), null, "{}");
+        var world = new World("test", UUID.randomUUID(), "{}");
         world.setCurrentGameTime(Instant.now());
         var target = Instant.now().plus(Duration.ofDays(1));
 

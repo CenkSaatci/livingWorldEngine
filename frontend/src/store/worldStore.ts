@@ -6,7 +6,9 @@ const WORLD_ID_KEY = 'lwe:currentWorldId';
 export interface WorldSummary {
   id: string;
   name: string;
-  gameSystemId: string | null;
+  // Seit P25-T06 liefert das Backend kein gameSystemId mehr (Welten sind
+  // systemunabhängig); optional für Abwärtskompatibilität.
+  gameSystemId?: string | null;
   currentGameTime: string | null;
   createdAt: string;
 }

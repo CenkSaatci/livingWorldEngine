@@ -43,8 +43,7 @@ class RuleEngineFlowTest {
             "$2a$10$dummyhash", "USER", "de"));
         var schema = "{\"type\":\"object\",\"properties\":{}}";
         var gs = gameSystemRepo.save(new GameSystem("FlowD20_" + tag, 1, D20_RULES, schema));
-        var world = worldRepo.save(new World("FlowWorld_" + tag, user.getId(), gs.getId(),
-            "{\"ai_mode\":\"suggest\"}"));
+        var world = worldRepo.save(new World("FlowWorld_" + tag, user.getId(), "{\"ai_mode\":\"suggest\"}"));
         var entity = entityRepo.save(new GameEntity(world.getId(), "PC", "FlowHero_" + tag));
         entity.setAttributesJson("{\"staerke\":16,\"geschicklichkeit\":14}");
         entity = entityRepo.save(entity);

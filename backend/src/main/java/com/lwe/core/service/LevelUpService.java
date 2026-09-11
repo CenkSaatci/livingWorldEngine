@@ -17,20 +17,14 @@ import java.util.UUID;
 public class LevelUpService {
 
     private final GameEntityRepository entityRepo;
-    private final GameSystemRepository gameSystemRepo;
-    private final WorldRepository worldRepo;
     private final RulesLoader rulesLoader;
     private final ObjectMapper mapper;
 
     public LevelUpService(GameEntityRepository entityRepo,
-                          GameSystemRepository gameSystemRepo,
-                          WorldRepository worldRepo,
                           RulesLoader rulesLoader,
                           ObjectMapper mapper) {
         this.mapper = mapper;
         this.entityRepo = entityRepo;
-        this.gameSystemRepo = gameSystemRepo;
-        this.worldRepo = worldRepo;
         this.rulesLoader = rulesLoader;
     }
 
@@ -45,6 +39,12 @@ public class LevelUpService {
             .orElseThrow(() -> new LevelException("ENTITY_NOT_FOUND", "Entity not found"));
         var gameSystem = resolveGameSystem(entity.getWorldId(), campaignId);
 
+        if (gameSystem == null) {
+            // Kein System (keine Kampagne) → keine Progression, nur XP gutschreiben.
+            entity.setExperiencePoints(entity.getExperiencePoints() + amount);
+            entityRepo.save(entity);
+            return;
+        }
         int oldLevel = getLevel(entity, gameSystem);
         entity.setExperiencePoints(entity.getExperiencePoints() + amount);
         int newLevel = getLevel(entity, gameSystem);
@@ -58,6 +58,7 @@ public class LevelUpService {
     }
 
     public int getLevel(GameEntity entity, GameSystem gameSystem) {
+        if (gameSystem == null) return 1; // kein System → keine Progression
         var progression = parseProgression(gameSystem.getRulesJson());
         if (progression.levels == null || progression.levels.isEmpty()) return 1;
 
@@ -128,9 +129,8 @@ public class LevelUpService {
     private GameSystem resolveGameSystem(UUID worldId, UUID campaignId) {
         var viaCampaign = rulesLoader.loadSystemByCampaign(campaignId);
         if (viaCampaign != null) return viaCampaign;
-        var world = worldRepo.findById(worldId).orElse(null);
-        if (world == null || world.getGameSystemId() == null) return null;
-        return gameSystemRepo.findById(world.getGameSystemId()).orElse(null);
+        // Kein Welt-Fallback mehr (P25-T06): ohne Kampagne gibt es kein System.
+        return null;
     }
 
     private ProgressionConfig parseProgression(String rulesJson) {

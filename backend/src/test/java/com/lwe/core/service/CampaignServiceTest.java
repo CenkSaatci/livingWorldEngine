@@ -47,7 +47,7 @@ class CampaignServiceTest {
 
     @Test
     void shouldCreateCampaign() {
-        var world = new World("Aventurien", userId, null, "{}");
+        var world = new World("Aventurien", userId, "{}");
         var system = new GameSystem("DSA", 1, "{}", "{}");
         setId(world, worldId);
         setId(system, gameSystemId);
@@ -78,7 +78,7 @@ class CampaignServiceTest {
 
     @Test
     void shouldRejectUnknownSystem() {
-        var world = new World("Aventurien", userId, null, "{}");
+        var world = new World("Aventurien", userId, "{}");
         setId(world, worldId);
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(systemRepo.findById(gameSystemId)).thenReturn(Optional.empty());
@@ -90,7 +90,7 @@ class CampaignServiceTest {
 
     @Test
     void shouldRejectAccessDenied() {
-        var world = new World("Aventurien", UUID.randomUUID(), null, "{}");
+        var world = new World("Aventurien", UUID.randomUUID(), "{}");
         setId(world, worldId);
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         doThrow(new WorldAccessException("WORLD_ACCESS_DENIED", "Access denied"))
@@ -151,7 +151,7 @@ class CampaignServiceTest {
 
     @Test
     void listAccessibleOnlyReturnsCampaignsFromOwnedOrMemberWorlds() {
-        var ownedWorld = new World("Mine", userId, null, "{}");
+        var ownedWorld = new World("Mine", userId, "{}");
         setId(ownedWorld, worldId);
         var campaign = new Campaign(worldId, gameSystemId, "Runde 1");
         when(worldRepo.findByOwnerIdAndActiveTrue(userId)).thenReturn(List.of(ownedWorld));

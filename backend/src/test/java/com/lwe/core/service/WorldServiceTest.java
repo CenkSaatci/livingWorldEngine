@@ -3,7 +3,6 @@ package com.lwe.core.service;
 import com.lwe.core.domain.User;
 import com.lwe.core.domain.World;
 import com.lwe.core.domain.WorldMember;
-import com.lwe.core.repository.GameSystemRepository;
 import com.lwe.core.repository.WorldMemberRepository;
 import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.repository.RegionRepository;
@@ -33,7 +32,6 @@ class WorldServiceTest {
 
     @Mock private WorldRepository worldRepo;
     @Mock private WorldMemberRepository memberRepo;
-    @Mock private GameSystemRepository gameSystemRepo;
     @Mock private QuotaService quotaService;
     @Mock private RegionRepository regionRepo;
     @Mock private LocationRepository locationRepo;
@@ -46,11 +44,10 @@ class WorldServiceTest {
     private WorldService worldService;
     private final UUID ownerId = UUID.randomUUID();
     private final UUID memberId = UUID.randomUUID();
-    private final UUID gameSystemId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        worldService = new WorldService(worldRepo, memberRepo, gameSystemRepo, quotaService,
+        worldService = new WorldService(worldRepo, memberRepo, quotaService,
             regionRepo, locationRepo, entityRepo, factionRepo, factionRelationRepo,
             worldMapRepo, regionWeatherRepo);
     }
@@ -59,15 +56,13 @@ class WorldServiceTest {
     void shouldCreateWorld() {
         var user = new User("test@test.com", "test", "hash", "USER", "de");
         doNothing().when(quotaService).checkCanCreateWorld(ownerId, user);
-        when(gameSystemRepo.findById(gameSystemId)).thenReturn(Optional.of(
-            new com.lwe.core.domain.GameSystem("D20", 1, "{}", "{}")));
         when(worldRepo.save(any())).thenAnswer(inv -> {
             var w = inv.<World>getArgument(0);
             setId(w, UUID.randomUUID());
             return w;
         });
 
-        var result = worldService.create("Schattental", ownerId, gameSystemId, "{}", user);
+        var result = worldService.create("Schattental", ownerId, "{}", user);
 
         assertThat(result.getName()).isEqualTo("Schattental");
         assertThat(result.getOwnerId()).isEqualTo(ownerId);
@@ -197,7 +192,7 @@ class WorldServiceTest {
     // -- helpers --
 
     private World worldWithId(String name, UUID owner) {
-        var w = new World(name, owner, null, "{}");
+        var w = new World(name, owner, "{}");
         setId(w, UUID.randomUUID());
         return w;
     }

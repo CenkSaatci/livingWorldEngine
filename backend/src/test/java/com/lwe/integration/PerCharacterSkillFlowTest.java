@@ -6,6 +6,7 @@ import com.lwe.core.domain.User;
 import com.lwe.core.domain.World;
 import com.lwe.core.repository.*;
 import com.lwe.core.service.CharacterSheetService;
+import com.lwe.core.service.CampaignService;
 import com.lwe.core.service.ProbeService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,7 @@ class PerCharacterSkillFlowTest {
     @Autowired private WorldRepository worldRepo;
     @Autowired private GameEntityRepository entityRepo;
     @Autowired private ProbeService probeService;
+    @Autowired private CampaignService campaignService;
     @Autowired private CharacterSheetService sheetService;
 
     private static final String GENERIC_RULES = """
@@ -48,13 +50,14 @@ class PerCharacterSkillFlowTest {
             "$2a$10$dummyhash", "USER", "de"));
         var schema = "{\"type\":\"object\",\"properties\":{}}";
         var gs = gameSystemRepo.save(new GameSystem("PCTest_" + tag, 1, GENERIC_RULES, schema));
-        var world = worldRepo.save(new World("PCWorld_" + tag, user.getId(), gs.getId(), "{}"));
+        var world = worldRepo.save(new World("PCWorld_" + tag, user.getId(), "{}"));
+        var campaign = campaignService.create(world.getId(), gs.getId(), "Camp_" + tag, user.getId());
         var entity = entityRepo.save(new GameEntity(world.getId(), "PC", "PCHero_" + tag));
         entity.setAttributesJson("{\"staerke\":10}");
         entity.setSkillsJson("{\"Athletik\":5}");
         entity = entityRepo.save(entity);
 
-        var result = probeService.executeProbe(entity.getId(), user.getId(), "Athletik", 15, false);
+        var result = probeService.executeProbe(entity.getId(), user.getId(), "Athletik", 15, false, campaign.getId());
 
         // Per-Character Bonus = 5, kein modifierFormula → attrMod = 0
         // total = die(1-20) + 5, range 6-25
@@ -70,12 +73,13 @@ class PerCharacterSkillFlowTest {
             "$2a$10$dummyhash", "USER", "de"));
         var schema = "{\"type\":\"object\",\"properties\":{}}";
         var gs = gameSystemRepo.save(new GameSystem("FbTest_" + tag, 1, GENERIC_RULES, schema));
-        var world = worldRepo.save(new World("FbWorld_" + tag, user.getId(), gs.getId(), "{}"));
+        var world = worldRepo.save(new World("FbWorld_" + tag, user.getId(), "{}"));
+        var campaign = campaignService.create(world.getId(), gs.getId(), "Camp_" + tag, user.getId());
         var entity = entityRepo.save(new GameEntity(world.getId(), "PC", "FbHero_" + tag));
         entity.setAttributesJson("{\"staerke\":10}");
         entity = entityRepo.save(entity);
 
-        var result = probeService.executeProbe(entity.getId(), user.getId(), "Athletik", 15, false);
+        var result = probeService.executeProbe(entity.getId(), user.getId(), "Athletik", 15, false, campaign.getId());
 
         // Kein per-Character → globaler Bonus 0, attrMod = 0
         // total = die(1-20), range 1-20
@@ -90,13 +94,14 @@ class PerCharacterSkillFlowTest {
             "$2a$10$dummyhash", "USER", "de"));
         var schema = "{\"type\":\"object\",\"properties\":{}}";
         var gs = gameSystemRepo.save(new GameSystem("ShTest_" + tag, 1, GENERIC_RULES, schema));
-        var world = worldRepo.save(new World("ShWorld_" + tag, user.getId(), gs.getId(), "{}"));
+        var world = worldRepo.save(new World("ShWorld_" + tag, user.getId(), "{}"));
+        var campaign = campaignService.create(world.getId(), gs.getId(), "Camp_" + tag, user.getId());
         var entity = entityRepo.save(new GameEntity(world.getId(), "PC", "ShHero_" + tag));
         entity.setAttributesJson("{\"staerke\":10}");
         entity.setSkillsJson("{\"Athletik\":7}");
         entity = entityRepo.save(entity);
 
-        var sheet = sheetService.getSheet(entity.getId(), user.getId());
+        var sheet = sheetService.getSheet(entity.getId(), user.getId(), campaign.getId());
 
         var athletik = sheet.skills().stream()
             .filter(s -> s.name().equals("Athletik")).findFirst().orElseThrow();
@@ -112,12 +117,13 @@ class PerCharacterSkillFlowTest {
             "$2a$10$dummyhash", "USER", "de"));
         var schema = "{\"type\":\"object\",\"properties\":{}}";
         var gs = gameSystemRepo.save(new GameSystem("SfTest_" + tag, 1, GENERIC_RULES, schema));
-        var world = worldRepo.save(new World("SfWorld_" + tag, user.getId(), gs.getId(), "{}"));
+        var world = worldRepo.save(new World("SfWorld_" + tag, user.getId(), "{}"));
+        var campaign = campaignService.create(world.getId(), gs.getId(), "Camp_" + tag, user.getId());
         var entity = entityRepo.save(new GameEntity(world.getId(), "PC", "SfHero_" + tag));
         entity.setAttributesJson("{\"staerke\":10}");
         entity = entityRepo.save(entity);
 
-        var sheet = sheetService.getSheet(entity.getId(), user.getId());
+        var sheet = sheetService.getSheet(entity.getId(), user.getId(), campaign.getId());
 
         var athletik = sheet.skills().stream()
             .filter(s -> s.name().equals("Athletik")).findFirst().orElseThrow();

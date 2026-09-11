@@ -40,7 +40,7 @@ class RollServiceTest {
         entity.setAttributesJson("{\"staerke\":16}");
         setId(entity, entityId);
 
-        var world = new com.lwe.core.domain.World("W", userId, null, "{}");
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
         setId(world, worldId);
 
         when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
@@ -71,7 +71,7 @@ class RollServiceTest {
         var entityId = UUID.randomUUID();
         var entity = new GameEntity(worldId, "PC", "H");
         setId(entity, entityId);
-        var world = new com.lwe.core.domain.World("W", UUID.randomUUID(), null, "{}");
+        var world = new com.lwe.core.domain.World("W", UUID.randomUUID(), "{}");
         setId(world, worldId);
 
         when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));

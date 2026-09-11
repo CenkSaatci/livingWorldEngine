@@ -37,7 +37,7 @@ class NpcIntentServiceTest {
     @Test
     void shouldApproveAndExecuteWhenAutonom() {
         when(validator.validate(any())).thenReturn(new IntentValidator.ValidationResult(true, null));
-        var world = new World("W", UUID.randomUUID(), null, "{\"ai_mode\":\"autonom\"}");
+        var world = new World("W", UUID.randomUUID(), "{\"ai_mode\":\"autonom\"}");
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(repo.save(any())).thenAnswer(inv -> {
             var intent = inv.<NpcIntent>getArgument(0);
@@ -57,7 +57,7 @@ class NpcIntentServiceTest {
     @Test
     void shouldSetPendingWhenSuggest() {
         when(validator.validate(any())).thenReturn(new IntentValidator.ValidationResult(true, null));
-        var world = new World("W", UUID.randomUUID(), null, "{\"ai_mode\":\"suggest\"}");
+        var world = new World("W", UUID.randomUUID(), "{\"ai_mode\":\"suggest\"}");
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(repo.save(any())).thenAnswer(inv -> {
             var intent = inv.<NpcIntent>getArgument(0);
@@ -75,7 +75,7 @@ class NpcIntentServiceTest {
     @Test
     void shouldRejectWhenAiModeOff() {
         when(validator.validate(any())).thenReturn(new IntentValidator.ValidationResult(true, null));
-        var world = new World("W", UUID.randomUUID(), null, "{\"ai_mode\":\"off\"}");
+        var world = new World("W", UUID.randomUUID(), "{\"ai_mode\":\"off\"}");
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(repo.save(any())).thenAnswer(inv -> {
             var intent = inv.<NpcIntent>getArgument(0);

@@ -3,10 +3,7 @@ package com.lwe.core.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.GameSystem;
-import com.lwe.core.domain.World;
 import com.lwe.core.repository.GameEntityRepository;
-import com.lwe.core.repository.GameSystemRepository;
-import com.lwe.core.repository.WorldRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,34 +21,43 @@ import static org.mockito.Mockito.*;
 class LevelUpServiceTest {
 
     @Mock private GameEntityRepository entityRepo;
-    @Mock private GameSystemRepository gameSystemRepo;
-    @Mock private WorldRepository worldRepo;
     @Mock private RulesLoader rulesLoader;
 
     private LevelUpService service;
-    private final UUID worldId = UUID.randomUUID();
-    private final UUID gameSystemId = UUID.randomUUID();
     private GameSystem gs;
 
     @BeforeEach
     void setUp() {
-        service = new LevelUpService(entityRepo, gameSystemRepo, worldRepo, rulesLoader, new ObjectMapper());
+        service = new LevelUpService(entityRepo, rulesLoader, new ObjectMapper());
         gs = new GameSystem("D20", 1, LEVELS_JSON, "{}");
-        setId(gs, gameSystemId);
+        setId(gs, UUID.randomUUID());
     }
 
     @Test
     void shouldAddXpAndLevelUp() {
         var entity = entityWithXp(0);
+        var campaignId = UUID.randomUUID();
         when(entityRepo.findById(entity.getId())).thenReturn(Optional.of(entity));
-        when(worldRepo.findById(worldId)).thenReturn(Optional.of(worldWithSystem()));
-        when(gameSystemRepo.findById(gameSystemId)).thenReturn(Optional.of(gs));
+        when(rulesLoader.loadSystemByCampaign(campaignId)).thenReturn(gs);
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.addXp(entity.getId(), 250, campaignId);
+
+        assertThat(entity.getExperiencePoints()).isEqualTo(250);
+        assertThat(entity.getUnspentAttributePoints()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldCreditXpWithoutSystem() {
+        var entity = entityWithXp(0);
+        when(entityRepo.findById(entity.getId())).thenReturn(Optional.of(entity));
+        when(rulesLoader.loadSystemByCampaign(null)).thenReturn(null);
         when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.addXp(entity.getId(), 250);
 
         assertThat(entity.getExperiencePoints()).isEqualTo(250);
-        assertThat(entity.getUnspentAttributePoints()).isEqualTo(3);
+        assertThat(entity.getUnspentAttributePoints()).isEqualTo(0);
     }
 
     @Test
@@ -89,14 +95,8 @@ class LevelUpServiceTest {
         assertThat(entity.getAttributesJson()).contains("\"staerke\":12");
     }
 
-    private World worldWithSystem() {
-        var w = new World("Test", UUID.randomUUID(), gameSystemId, "{}");
-        setId(w, worldId);
-        return w;
-    }
-
     private GameEntity entityWithXp(int xp) {
-        var e = new GameEntity(worldId, "PC", "Aragorn");
+        var e = new GameEntity(UUID.randomUUID(), "PC", "Aragorn");
         setId(e, UUID.randomUUID());
         e.setExperiencePoints(xp);
         return e;

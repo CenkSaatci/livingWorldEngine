@@ -2104,7 +2104,12 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD, Security
 
 ### P25-T06: `worlds.game_system_id` entfernen
-- **Status:** 📋 (vormals P24-T04; UI blendet die Auswahl bereits aus (P26-T02 ✅), aber Spalte `game_system_id` + API-Parameter existieren noch — Migration + `World.java`-Bereinigung ausstehend)
+- **Status:** ✅ (2026-09-11 umgesetzt: V097 droppt die Spalte; `World`-Feld/Getter/Setter/Ctor-Param,
+  `WorldService.create/update`-Parameter, Controller-Records und `WorldInfoResponse`-Feld entfernt;
+  `RulesLoader.loadSystem(World)` → null, `LevelUpService` nur noch Kampagnen-Kontext;
+  ActionBar ohne Welt-Fallback; Frontend-Typen optional; alte `gameSystemId`-Clients werden
+  per `@JsonIgnoreProperties` toleriert. Tests: Migration-Test + `WorldCreateWithoutSystemIT`,
+  PerCharacter/LevelUp auf Kampagnen umgestellt, Suite grün.)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:**
   - Migration V093: Spalte `game_system_id` aus `worlds` entfernen
@@ -2137,7 +2142,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD, i18n
 
 ### P26-T03: Combat/Session/ActionBar auf Kampagnen-Kontext
-- **Status:** 🔜 (Teilumsetzung Stand 2026-09-06: SessionManager/StartCombatModal/useSheet/ProbeRoller/SkillList senden campaignId; ActionBar lädt action_types aus Kampagnen-Kontext; Combat-Start + Session-Start mit campaignId per UI E2E-verifiziert; Badge in GameView; Rest: `worlds.game_system_id` entfernen → P25-T06)
+- **Status:** ✅ (Stand 2026-09-11: SessionManager/StartCombatModal/useSheet/ProbeRoller/SkillList senden campaignId; ActionBar lädt action_types AUSSCHLIESSLICH aus Kampagnen-Kontext (Welt-Fallback entfernt); Combat-Start + Session-Start mit campaignId per UI E2E-verifiziert; Badge in GameView.)
 - **Aufwand:** 1,0 Tage
 - **Beschreibung:**
   - Combat starten aus Kampagne (campaignId statt world→System)

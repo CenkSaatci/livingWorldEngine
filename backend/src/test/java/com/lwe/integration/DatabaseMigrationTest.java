@@ -107,4 +107,33 @@ class DatabaseMigrationTest {
                 .isTrue();
         }
     }
+
+    @Test
+    void worldsTableHasNoGameSystemIdColumn() throws SQLException {
+        try (var conn = dataSource.getConnection()) {
+            var rs = conn.getMetaData()
+                .getColumns(null, "public", "worlds", "game_system_id");
+            assertThat(rs.next())
+                .as("V097 sollte game_system_id-Spalte aus worlds entfernen (P25-T06)")
+                .isFalse();
+        }
+    }
+
+    @Test
+    void appliedMigrationsFormIncreasingSequence() throws SQLException {
+        // V007-V009 existieren nie als Dateien — Lücken sind ok, solange Flyway
+        // strikt aufsteigend applied (kein out-of-order, keine fehlgeschlagenen).
+        try (var conn = dataSource.getConnection();
+             var st = conn.createStatement();
+             var rs = st.executeQuery(
+                 "SELECT version, success FROM flyway_schema_history WHERE success = true ORDER BY installed_rank")) {
+            var versions = new java.util.ArrayList<String>();
+            while (rs.next()) {
+                assertThat(rs.getBoolean("success")).isTrue();
+                versions.add(rs.getString("version"));
+            }
+            assertThat(versions).isNotEmpty();
+            assertThat(versions).isSorted();
+        }
+    }
 }

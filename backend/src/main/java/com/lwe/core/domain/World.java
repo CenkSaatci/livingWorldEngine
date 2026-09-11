@@ -21,9 +21,6 @@ public class World {
     @Column(name = "owner_id", nullable = false)
     private UUID ownerId;
 
-    @Column(name = "game_system_id")
-    private UUID gameSystemId;
-
     @JsonProperty("settings_json")
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "settings_json", nullable = false)
@@ -46,10 +43,9 @@ public class World {
 
     protected World() {}
 
-    public World(String name, UUID ownerId, UUID gameSystemId, String settingsJson) {
+    public World(String name, UUID ownerId, String settingsJson) {
         this.name = name;
         this.ownerId = ownerId;
-        this.gameSystemId = gameSystemId;
         this.settingsJson = settingsJson != null ? settingsJson : "{}";
     }
 
@@ -58,8 +54,6 @@ public class World {
     public UUID getId() { return id; }
     public String getName() { return name; }
     public UUID getOwnerId() { return ownerId; }
-    public UUID getGameSystemId() { return gameSystemId; }
-    public void setGameSystemId(UUID v) { this.gameSystemId = v; }
     public String getSettingsJson() { return settingsJson; }
     public Instant getCurrentGameTime() { return currentGameTime; }
     public void setCurrentGameTime(Instant v) { this.currentGameTime = v; }

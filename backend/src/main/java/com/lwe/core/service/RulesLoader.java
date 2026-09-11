@@ -67,10 +67,9 @@ public class RulesLoader {
         return loadRules(worldId);
     }
 
-    /** Liefert das GameSystem einer Welt oder null, wenn keins gesetzt/auffindbar ist. */
+    /** Welten tragen seit P25-T06 kein System mehr — immer null (Kontext: Kampagne). */
     public GameSystem loadSystem(World world) {
-        if (world == null || world.getGameSystemId() == null) return null;
-        return systemRepo.findById(world.getGameSystemId()).orElse(null);
+        return null;
     }
 
     /** Liefert das GameSystem zur worldId oder null. */
