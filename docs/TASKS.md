@@ -5,7 +5,7 @@
 ## Aktueller Projektstand (2026-09-11)
 
 - **P28 Engine-Bausteine** ✅ (T01–T06) · **P29 Spielgefühl + Pakete** ✅ (T01–T06) · **P23 Schadenstypen** ✅ (T01–T04, T05 optional) · **P30 Charakter-Wizard** ✅ (T01–T04) · **P31 E2E-Ausbau** ✅ (T01–T03)
-- **Tests:** Backend 414 (`mvn -B test`) · Frontend 169 (`npx vitest run`) · E2E 11 (`npm run test:e2e`) · ai-bot 50 · `tsc`/Build grün
+- **Tests:** Backend 416 (`mvn -B test`) · Frontend 169 (`npx vitest run`) · E2E 11 (`npm run test:e2e`) · ai-bot 50 · `tsc`/Build grün
 - **Audits:** P28, P23/P29, P30 und ein finales Gesamt-Audit — alle HIGH/MEDIUM-Findings gefixt, Rest bewusst zurückgestellt (siehe Notizen unten)
 - **P27-Status:** T01 ✅ Teilstand (Shares/Welt-PUBLIC offen) · T02 ✅ · T03 ✅ Teilstand (Quest/Adventure-Fork offen) · T04 🔄 Teilstand (Bot-Runtime-Polling) · T05 ✅ · T06 🔄 Teilstand (Bulk/WS/E2E)
 - **Offen (bewusst):** P14-Rest (Editor-E2E) · P34-Security-Tickets (unten) · E2E-Backlog T32-T03 · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
@@ -2530,7 +2530,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Abhängigkeit:** — · **Qualitäts-Check:** Review
 
 ### T33-11: Abschluss — Gesamt-Audit mit allen Suiten
-- **Status:** ✅ (Final-Audit NO-GO-Befunde gefixt: **F1 CRITICAL** Write-Guards fuer Entity/Region/Location/Quest auf PUBLIC-Welten + Regression-IT `PublicWorldWriteAccessIT`; **F2 HIGH** Adventure-Node-Zugehoerigkeit in addChoice/forceNode/injectChoice; **F3** Pessimistic-Lock fuer Intent-Status; **P1–P3** Adventure-Reads/Events/Social-Endpunkte mit Access-Check; **P4** Quest-Typ-Validierung (400); Map-Read fuer PUBLIC; Doku/API/ERROR-CODES synchron. Offene Alt-Tickets s. P34-Sektion)
+- **Status:** ✅ (Final-Audit NO-GO-Befunde gefixt (inkl. Re-Audit N1–N3): **advance**-Guard, Social-Writes via `requireWriteAccess`, Entity-Events mit Welt-Access (BOT/ADMIN-Ausnahme), Adventure-Statuscodes 404/422; **F1 CRITICAL** Write-Guards fuer Entity/Region/Location/Quest auf PUBLIC-Welten + Regression-IT `PublicWorldWriteAccessIT`; **F2 HIGH** Adventure-Node-Zugehoerigkeit in addChoice/forceNode/injectChoice; **F3** Pessimistic-Lock fuer Intent-Status; **P1–P3** Adventure-Reads/Events/Social-Endpunkte mit Access-Check; **P4** Quest-Typ-Validierung (400); Map-Read fuer PUBLIC; Doku/API/ERROR-CODES synchron. Offene Alt-Tickets s. P34-Sektion)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:** Read-only Audit über Phase-33-Diff; alle Suiten (Backend/Frontend/E2E/ai-bot) + Build; Findings fixen; TESTING/TASKS/API/ERROR-CODES final angleichen.
 - **Akzeptanz:** Audit ohne offene HIGH/MEDIUM; alles gepusht

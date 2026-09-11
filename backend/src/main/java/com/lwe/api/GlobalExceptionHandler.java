@@ -191,6 +191,12 @@ public class GlobalExceptionHandler {
                 default -> HttpStatus.BAD_REQUEST;
             };
             case WeatherService.WeatherException e -> HttpStatus.NOT_FOUND;
+            case AdventureService.AdventureException e -> switch (e.getErrorCode()) {
+                case "ADVENTURE_NOT_FOUND", "ADVENTURE_NODE_NOT_FOUND",
+                     "ADVENTURE_PROGRESS_NOT_FOUND", "ADVENTURE_CHOICE_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                case "NODE_NOT_IN_ADVENTURE" -> HttpStatus.UNPROCESSABLE_ENTITY;
+                default -> HttpStatus.BAD_REQUEST;
+            };
             case QuestService.QuestException e -> switch (e.getErrorCode()) {
                 case "QUEST_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 case "QUEST_TYPE_INVALID" -> HttpStatus.BAD_REQUEST;

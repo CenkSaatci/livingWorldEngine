@@ -39,7 +39,7 @@ public class EntitySocialController {
     public ResponseEntity<MemoryIdResponse> addMemory(@PathVariable UUID entityId,
                                                        @Valid @RequestBody MemoryRequest req,
                                                        @AuthenticationPrincipal User user) {
-        entityService.getById(entityId, user.getId()); // P3-Audit
+        entityService.requireWriteAccess(entityId, user.getId()); // N2-Audit
         var mem = memoryService.addMemory(entityId, req.subjectId(), req.memoryType(),
             req.sentiment(), req.summary(), req.sourceEventId());
         return ResponseEntity.ok(new MemoryIdResponse(mem.getId()));
@@ -56,7 +56,7 @@ public class EntitySocialController {
     public ResponseEntity<MemoryIdResponse> setRelationship(@PathVariable UUID entityId,
                                                              @Valid @RequestBody RelationRequest req,
                                                              @AuthenticationPrincipal User user) {
-        entityService.getById(entityId, user.getId()); // P3-Audit
+        entityService.requireWriteAccess(entityId, user.getId()); // N2-Audit
         var rel = relationshipService.setRelationship(entityId, req.otherId(), req.relationship());
         return ResponseEntity.ok(new MemoryIdResponse(rel.getId()));
     }

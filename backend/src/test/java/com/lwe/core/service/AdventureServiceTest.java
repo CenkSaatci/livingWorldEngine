@@ -72,6 +72,17 @@ class AdventureServiceTest {
     }
 
     @Test
+    void advanceRequiresWorldAccess() {
+        doThrow(new com.lwe.core.util.WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireAccess(worldId, userId);
+        when(adventureRepo.findById(adventure.getId())).thenReturn(java.util.Optional.of(adventure));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.advance(
+                adventure.getId(), UUID.randomUUID(), UUID.randomUUID(), userId))
+            .isInstanceOf(com.lwe.core.util.WorldAccess.WorldAccessException.class);
+    }
+
+    @Test
     void injectChoiceRejectsNodeFromOtherAdventure() {
         var otherNode = new AdventureNode(UUID.randomUUID(), "Fremd", false);
         setId(otherNode, UUID.randomUUID());

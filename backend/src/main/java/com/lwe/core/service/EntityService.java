@@ -307,6 +307,12 @@ public class EntityService {
         entityRepo.save(entity);
     }
 
+    /** N2-Audit: Schreibzugriff auf eine Entity (Read-Guard + Write-Guard). */
+    public void requireWriteAccess(UUID entityId, UUID userId) {
+        var entity = getById(entityId, userId);
+        requireWorldAccess(entity.getWorldId(), userId);
+    }
+
     private void requireWorldAccess(UUID worldId, UUID userId) {
         worldAccess.requireAccess(worldId, userId);
     }

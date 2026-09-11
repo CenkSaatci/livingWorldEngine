@@ -18,7 +18,28 @@ import static org.mockito.Mockito.*;
 class EntityEventServiceTest {
 
     private final EntityEventRepository repo = mock();
-    private final EntityEventService service = new EntityEventService(repo);
+    private final com.lwe.core.repository.GameEntityRepository entityRepo = mock();
+    private final com.lwe.core.repository.RegionRepository regionRepo = mock();
+    private final com.lwe.core.repository.LocationRepository locationRepo = mock();
+    private final com.lwe.core.repository.QuestRepository questRepo = mock();
+    private final EntityEventService service = new EntityEventService(
+        repo, entityRepo, regionRepo, locationRepo, questRepo);
+
+    @Test
+    void resolveWorldIdHandlesEntityAndLocation() {
+        var worldId = UUID.randomUUID();
+        var entityId = UUID.randomUUID();
+        var entity = new com.lwe.core.domain.GameEntity(worldId, "NPC", "Wirt");
+        var region = new com.lwe.core.domain.Region(worldId, "Nord");
+        var location = new com.lwe.core.domain.Location(region.getId(), "Dorf", "Start");
+        when(entityRepo.findById(entityId)).thenReturn(java.util.Optional.of(entity));
+        when(locationRepo.findById(entityId)).thenReturn(java.util.Optional.of(location));
+        when(regionRepo.findById(region.getId())).thenReturn(java.util.Optional.of(region));
+
+        assertThat(service.resolveWorldId("NPC", entityId)).contains(worldId);
+        assertThat(service.resolveWorldId("location", entityId)).contains(worldId);
+        assertThat(service.resolveWorldId("unknown", entityId)).isEmpty();
+    }
 
     @Test
     void shouldPublishEvent() {

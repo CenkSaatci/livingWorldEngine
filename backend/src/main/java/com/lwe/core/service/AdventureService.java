@@ -145,6 +145,7 @@ public class AdventureService {
 
     @Transactional
     public AdvanceResult advance(UUID adventureId, UUID entityId, UUID choiceId, UUID userId) {
+        verifyAdventureAccess(adventureId, userId); // N1-Audit
         var progress = progressRepo.findByAdventureIdAndEntityId(adventureId, entityId)
             .orElseThrow(() -> new AdventureException("ADVENTURE_PROGRESS_NOT_FOUND",
                 "Character has not started this adventure"));

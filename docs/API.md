@@ -605,12 +605,12 @@ Listet pendente Intents für DM-Review.
 ### `POST /api/v1/npc-intents/{id}/approve` (DM, nur wenn `world.settings.ai_mode=suggest`)
 Führt Intent aus.
 
-**Fehlercodes:** `INTENT_ALREADY_PROCESSED`, `INTENT_APPROVAL_REQUIRED`
+**Fehlercodes:** `INTENT_NOT_PENDING`, `INTENT_APPROVAL_REQUIRED`
 
 ### `POST /api/v1/npc-intents/{id}/reject` (DM)
 **Request:** `{ "reason": "Passt nicht zur Storyline" }`
 
-**Fehlercodes:** `INTENT_ALREADY_PROCESSED`
+**Fehlercodes:** `INTENT_NOT_PENDING`
 
 ---
 

@@ -2,6 +2,10 @@ package com.lwe.core.service;
 
 import com.lwe.core.domain.EntityEvent;
 import com.lwe.core.repository.EntityEventRepository;
+import com.lwe.core.repository.GameEntityRepository;
+import com.lwe.core.repository.LocationRepository;
+import com.lwe.core.repository.QuestRepository;
+import com.lwe.core.repository.RegionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,9 +25,36 @@ import java.util.UUID;
 public class EntityEventService {
 
     private final EntityEventRepository repo;
+    private final GameEntityRepository entityRepo;
+    private final RegionRepository regionRepo;
+    private final LocationRepository locationRepo;
+    private final QuestRepository questRepo;
 
-    public EntityEventService(EntityEventRepository repo) {
+    public EntityEventService(EntityEventRepository repo, GameEntityRepository entityRepo,
+                              RegionRepository regionRepo, LocationRepository locationRepo,
+                              QuestRepository questRepo) {
         this.repo = repo;
+        this.entityRepo = entityRepo;
+        this.regionRepo = regionRepo;
+        this.locationRepo = locationRepo;
+        this.questRepo = questRepo;
+    }
+
+    /** N3-Audit: Welt zur Entity-Referenz aufloesen (fuer Access-Checks). */
+    public java.util.Optional<UUID> resolveWorldId(String entityType, UUID entityId) {
+        if (entityType == null || entityId == null) return java.util.Optional.empty();
+        return switch (entityType.toLowerCase()) {
+            case "pc", "npc", "entity", "faction" -> entityRepo.findById(entityId)
+                .map(com.lwe.core.domain.GameEntity::getWorldId);
+            case "region" -> regionRepo.findById(entityId)
+                .map(com.lwe.core.domain.Region::getWorldId);
+            case "location" -> locationRepo.findById(entityId)
+                .flatMap(l -> regionRepo.findById(l.getRegionId()))
+                .map(com.lwe.core.domain.Region::getWorldId);
+            case "quest" -> questRepo.findById(entityId)
+                .map(com.lwe.core.domain.Quest::getWorldId);
+            default -> java.util.Optional.empty();
+        };
     }
 
     @Transactional

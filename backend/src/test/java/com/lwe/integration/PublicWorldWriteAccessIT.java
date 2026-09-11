@@ -93,6 +93,9 @@ class PublicWorldWriteAccessIT {
         assertThatThrownBy(() -> questService.updateStatus(quest.getId(), stranger.getId(), "done"))
             .isInstanceOf(WorldAccess.WorldAccessException.class);
 
+        assertThatThrownBy(() -> entityService.requireWriteAccess(entity.getId(), stranger.getId()))
+            .isInstanceOf(WorldAccess.WorldAccessException.class);
+
         // Owner darf schreiben
         assertThatCode(() -> entityService.updateAttributes(
                 entity.getId(), owner.getId(), Map.of("staerke", 15)))

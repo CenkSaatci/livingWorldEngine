@@ -185,7 +185,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `ADVENTURE_ALREADY_COMPLETED` | 422 | Abenteuer bereits abgeschlossen |
 | `ADVENTURE_NODE_TERMINAL` | 422 | Node hat keine Choices mehr (`is_end`) |
 | `NODE_NOT_FOUND` | 400 | Adventure-Node existiert nicht |
-| `NODE_NOT_IN_ADVENTURE` | 400 | Node gehört nicht zu diesem Abenteuer |
+| `NODE_NOT_IN_ADVENTURE` | 422 | Node gehört nicht zu diesem Abenteuer |
 
 ### 3.10 NPC Intents (`INTENT_*`)
 
@@ -194,7 +194,6 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `INTENT_NOT_FOUND` | 404 | Intent existiert nicht |
 | `NPC_NOT_FOUND` | 404 | NPC existiert nicht |
 | `INTENT_WORLD_MISMATCH` | 422 | NPC/Kampagne gehören nicht zur angegebenen Welt |
-| `NODE_NOT_IN_ADVENTURE` | 422 | Node gehört nicht zum angegebenen Adventure |
 | `QUEST_TYPE_INVALID` | 400 | Quest-Typ nicht kill/fetch/escort/deliver/explore/talk |
 | `CAMPAIGN_NOT_FOUND` | 404 | Kampagne existiert nicht |
 
