@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { SkipForward, LogOut, Shield, Zap } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useCombatStore } from '../../store/combatStore';
-import { useCampaignStore } from '../../store/campaignStore';
+import { useCampaignStore, useActiveCampaign } from '../../store/campaignStore';
 import { useToast } from '../../hooks/useToast';
 import { playCombatHit } from '../../utils/sound';
 
@@ -36,6 +36,10 @@ export function ActionBar({ worldId }: Props) {
   const [usedActions, setUsedActions] = useState<Record<string, number>>({});
   const toast = useToast();
   const activeCampaignId = useCampaignStore((s) => s.activeCampaignId);
+  // GameView-Badge-Pattern: gecachte activeCampaign zuerst (Deep-Link/Reload),
+  // campaigns[]-Liste ist dann ggf. noch leer.
+  const activeCampaign = useActiveCampaign();
+  const activeGameSystemId = activeCampaign?.gameSystemId;
 
   const currentActor = participants.find((p) => p.entityId === session?.currentTurnEntityId);
 
@@ -58,15 +62,38 @@ export function ActionBar({ worldId }: Props) {
     const campaign = useCampaignStore.getState().campaigns.find(
       (c) => c.id === activeCampaignId,
     );
+    // 1) Gecachte aktive Kampagne zuerst (Deep-Link/Refresh: CampaignDetail
+    //    cacht die Summary, campaigns[] ist nie geladen).
+    if (activeGameSystemId) {
+      loadActions(activeGameSystemId);
+      return;
+    }
     if (campaign?.gameSystemId) {
       loadActions(campaign.gameSystemId);
       return;
+    }
+    // 2) ID bekannt, aber weder Cache noch Liste haben sie → genau einmal
+    //    GET /campaigns/{id} und cachen, dann Action-Typen laden.
+    if (activeCampaignId) {
+      let cancelled = false;
+      apiClient.get(`/campaigns/${activeCampaignId}`).then((res) => {
+        if (cancelled) return;
+        const c = res.data;
+        if (c?.id) useCampaignStore.getState().setActiveCampaign(c.id, c);
+        if (c?.gameSystemId) loadActions(c.gameSystemId);
+      }).catch(() => {
+        if (!cancelled) {
+          setActionTypes([]);
+          setActionsPerTurn({});
+        }
+      });
+      return () => { cancelled = true; };
     }
     // Kein Welt-Fallback mehr (P25-T06): Welten tragen kein System;
     // ohne Kampagne gibt es keine Action-Typen.
     setActionTypes([]);
     setActionsPerTurn({});
-  }, [worldId, activeCampaignId]);
+  }, [worldId, activeCampaignId, activeGameSystemId]);
 
   // Reset used actions on turn change
   useEffect(() => {

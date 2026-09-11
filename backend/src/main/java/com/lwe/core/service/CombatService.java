@@ -130,7 +130,7 @@ public class CombatService {
         if ("MOVE".equals(actionType)) {
             deductAp(actor);
             sendCombatMessage(session.getWorldId(), "🚶 " + entityName(actorId) + " bewegt sich");
-            eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED, actorId, null, Map.of(
+            eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED, actorId, null, Map.of(
                 "actionType", "MOVE", "damage", 0));
             return new CombatActionResult("MOVE", 0, actor.getApCurrent(), true, null);
         }
@@ -138,14 +138,14 @@ public class CombatService {
         if ("DEFEND".equals(actionType)) {
             deductAp(actor);
             sendCombatMessage(session.getWorldId(), "🛡️ " + entityName(actorId) + " verteidigt sich");
-            eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED, actorId, null, Map.of(
+            eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED, actorId, null, Map.of(
                 "actionType", "DEFEND", "damage", 0));
             return new CombatActionResult("DEFEND", 0, actor.getApCurrent(), true, null);
         }
 
         checkRange(actionType, targetId, actorId);
 
-        var damage = rollDamage(userId, session.getWorldId(), actorId, actionType);
+        var damage = rollDamage(userId, session.getWorldId(), actorId, actionType, session.getCampaignId());
         deductAp(actor);
 
         // Death check
@@ -156,14 +156,14 @@ public class CombatService {
 
             if (target.getHpCurrent() <= 0) {
                 sendCombatMessage(session.getWorldId(), "💀 " + entityName(targetId) + " wurde besiegt!");
-                eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED,
+                eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED,
                     target.getEntityId(), null, Map.of("actionType", "DEFEATED"));
             }
         }
 
         sendCombatMessage(session.getWorldId(), "⚔️ " + entityName(actorId) + " greift "
             + (targetId != null ? entityName(targetId) : "unbekannt") + " an: " + damage + " Schaden");
-        eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
+        eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
             "actionType", actionType, "damage", damage));
         return new CombatActionResult(actionType, damage, actor.getApCurrent(), true, null);
     }
@@ -203,7 +203,7 @@ public class CombatService {
                 target.setHpCurrent(Math.max(0, target.getHpCurrent() - damage));
                 participantRepo.save(target);
                 if (target.getHpCurrent() <= 0) {
-                    eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED,
+                    eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED,
                         target.getEntityId(), null, Map.of("actionType", "DEFEATED"));
                 }
             }
@@ -219,7 +219,7 @@ public class CombatService {
         actor.setApCurrent(Math.max(0, actor.getApCurrent() - ability.getApCost()));
         participantRepo.save(actor);
 
-        eventService.publish(session.getWorldId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
+        eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
             "actionType", "ABILITY_" + ability.getName(), "damage", damage));
         return new CombatActionResult("ABILITY_" + ability.getName(), damage,
             actor.getApCurrent(), true, null);
@@ -263,7 +263,8 @@ public class CombatService {
     }
 
     private void checkRange(String actionType, UUID targetId, UUID actorId) {
-        if (!"ATTACK".equals(actionType) || targetId == null) return;
+        if (targetId == null) return;
+        if (!"ATTACK".equals(actionType) && !"ACTION".equals(actionType)) return;
         var attacker = entityRepo.findById(actorId)
             .orElseThrow(() -> new CombatException("ENTITY_NOT_FOUND", "Actor not found"));
         var defender = entityRepo.findById(targetId)
@@ -276,15 +277,34 @@ public class CombatService {
             throw new CombatException("COMBAT_RANGE_INVALID", "Target out of range (" + range + " tiles)");
     }
 
-    private int rollDamage(UUID userId, UUID worldId, UUID actorId, String actionType) {
-        if (!"ATTACK".equals(actionType)) return 0;
+    private int rollDamage(UUID userId, UUID worldId, UUID actorId, String actionType, UUID campaignId) {
         var entity = entityRepo.findById(actorId)
             .orElseThrow(() -> new CombatException("ENTITY_NOT_FOUND", "Actor not found"));
         var world = worldRepo.findById(worldId)
             .orElseThrow(() -> new CombatException("WORLD_NOT_FOUND", "World not found"));
-        var damageAttr = resolveDamageAttr(entity, world, null);
-        var rollResult = rollService.executeRoll(userId, worldId, actorId, damageAttr, 0, 0);
+        if (!isDamagingAction(world, campaignId, actionType)) return 0;
+        var damageAttr = resolveDamageAttr(entity, world, campaignId);
+        var rollResult = rollService.executeRoll(userId, worldId, actorId, damageAttr, 0, 0, campaignId);
         return rollResult != null ? rollResult.total() : 0;
+    }
+
+    private boolean isDamagingAction(World world, UUID campaignId, String actionType) {
+        var gs = rulesLoader.loadSystemByCampaign(campaignId);
+        if (gs == null) gs = rulesLoader.loadSystem(world);
+        if (gs != null) {
+            try {
+                var tree = objectMapper.readTree(gs.getRulesJson());
+                var types = tree.path("dice_mechanics").path("combat").path("action_types");
+                if (types.isArray() && !types.isEmpty()) {
+                    for (var t : types) {
+                        // Wizard schreibt Typen klein ("action"), UI sendet groß ("ACTION").
+                        if (actionType.equalsIgnoreCase(t.asText())) return true;
+                    }
+                    return false;
+                }
+            } catch (Exception ignored) {}
+        }
+        return "ATTACK".equals(actionType) || "ACTION".equals(actionType);
     }
 
     private void deductAp(CombatParticipant actor) {
@@ -318,7 +338,7 @@ public class CombatService {
 
         session = sessionRepo.save(session);
 
-        eventService.publish(session.getWorldId(), TURN_CHANGED, null, null, Map.of(
+        eventService.publish(session.getWorldId(), session.getCampaignId(), TURN_CHANGED, null, null, Map.of(
             "sessionId", sessionId,
             "currentTurn", session.getCurrentTurnEntityId(),
             "round", session.getRound()
@@ -335,7 +355,16 @@ public class CombatService {
         session.setEndedAt(java.time.Instant.now());
         session = sessionRepo.save(session);
 
-        eventService.publish(session.getWorldId(), COMBAT_ENDED, null, null,
+        // BUG-8: Kampf-HP/AP auf die Entities zurückschreiben
+        for (var p : participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId)) {
+            entityRepo.findById(p.getEntityId()).ifPresent(e -> {
+                e.setHpCurrent(Math.max(0, Math.min(p.getHpCurrent(), e.getHpMax())));
+                e.setApCurrent(Math.max(0, Math.min(p.getApCurrent(), e.getApMax())));
+                entityRepo.save(e);
+            });
+        }
+
+        eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ENDED, null, null,
             Map.of("sessionId", sessionId));
         return session;
     }

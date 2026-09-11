@@ -1561,12 +1561,14 @@ function CombatExpressionRow({
           className="w-28 rounded border border-bg-elevated bg-bg-primary px-2 py-2 text-sm font-mono text-text-primary outline-none focus:border-accent"
           placeholder={t('s4_probe_placeholder')}
         />
+        {diceOptions.length > 0 && (
         <button
           onClick={() => onRoll(value)}
           className="rounded bg-bg-elevated px-3 py-2 text-xs text-text-secondary hover:text-accent"
         >
           <Dice size={14} />
         </button>
+        )}
       </div>
     </div>
   );

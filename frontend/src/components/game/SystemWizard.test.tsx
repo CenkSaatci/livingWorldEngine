@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { SystemWizard, type WizardData } from './SystemWizard';
+import { testExpression } from '../../types/gameSystem';
 
 vi.mock('../../api/client', () => ({
   apiClient: { post: vi.fn().mockResolvedValue({ data: { id: 'gs1' } }), patch: vi.fn() },
@@ -57,5 +58,22 @@ describe('SystemWizard', () => {
     expect(() => render(<SystemWizard onSaved={() => {}} onClose={() => {}} initialData={baseData({
       abilities: [{ name: 'Feat', type: 'passive', costType: '', cost: 0, diceExpression: '', effect: '', bonus: '+2', tags: ['defensive'], category: 'advantage' }],
     })} />)).not.toThrow();
+  });
+});
+
+describe('testExpression', () => {
+  it('replaces mod placeholder with 0', () => {
+    expect(testExpression('1d20+mod')).toBe('1d20+0');
+  });
+
+  it('neutralizes attribute suffixes for /rolls/free (numeric-only backend)', () => {
+    expect(testExpression('1d20+geschick')).toBe('1d20+0');
+    expect(testExpression('1d8+staerke')).toBe('1d8+0');
+  });
+
+  it('leaves plain dice and numeric modifiers untouched', () => {
+    expect(testExpression('3d20')).toBe('3d20');
+    expect(testExpression('1d100')).toBe('1d100');
+    expect(testExpression('2d6+3')).toBe('2d6+3');
   });
 });

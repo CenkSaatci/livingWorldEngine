@@ -29,8 +29,13 @@ public class RestService {
 
     @Transactional
     public void shortRest(UUID entityId, UUID userId) {
+        shortRest(entityId, userId, null);
+    }
+
+    @Transactional
+    public void shortRest(UUID entityId, UUID userId, UUID campaignId) {
         var entity = findEntity(entityId, userId);
-        var config = parseRestConfig(entity.getWorldId(), "short_rest");
+        var config = parseRestConfig(campaignId, entity.getWorldId(), "short_rest");
         if (config == null) return;
         applyHpRecovery(entity, config.hp);
         applyApRecovery(entity, config.ap);
@@ -39,8 +44,13 @@ public class RestService {
 
     @Transactional
     public void longRest(UUID entityId, UUID userId) {
+        longRest(entityId, userId, null);
+    }
+
+    @Transactional
+    public void longRest(UUID entityId, UUID userId, UUID campaignId) {
         var entity = findEntity(entityId, userId);
-        var config = parseRestConfig(entity.getWorldId(), "long_rest");
+        var config = parseRestConfig(campaignId, entity.getWorldId(), "long_rest");
         if (config == null) return;
         applyHpRecovery(entity, config.hp);
         applyApRecovery(entity, config.ap);
@@ -93,8 +103,9 @@ public class RestService {
         }
     }
 
-    private RestConfig parseRestConfig(UUID worldId, String restType) {
-        var gs = rulesLoader.loadSystem(worldId);
+    private RestConfig parseRestConfig(UUID campaignId, UUID worldId, String restType) {
+        var gs = rulesLoader.loadSystemByCampaign(campaignId);
+        if (gs == null) gs = rulesLoader.loadSystem(worldId);
         if (gs == null) return null;
         try {
             var tree = mapper.readTree(gs.getRulesJson());

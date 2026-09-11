@@ -208,6 +208,131 @@ class CombatServiceTest {
         verify(participantRepo, atLeast(1)).save(any());
     }
 
+    @Test
+    void actionTypeActionDealsDamage() {
+        var campaignId = UUID.randomUUID();
+        var session = new CombatSession(worldId, campaignId);
+        setId(session, UUID.randomUUID());
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+
+        var attacker = new GameEntity(worldId, "PC", "Aragorn");
+        attacker.setAttributesJson("{\"staerke\":16}");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        defender.setAttributesJson("{\"staerke\":12}");
+        setId(defender, defenderId);
+
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        session.setCurrentTurnEntityId(attackerId);
+
+        when(sessionRepo.findById(session.getId())).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+
+        var participant = new CombatParticipant(session.getId(), attackerId, 15, 2, "A");
+        var defenderParticipant = new CombatParticipant(session.getId(), defenderId, 10, 2, "A");
+        defenderParticipant.setHpCurrent(10);
+        defenderParticipant.setHpMax(10);
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
+            .thenReturn(new java.util.ArrayList<>(List.of(participant, defenderParticipant)));
+        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt(), any()))
+            .thenReturn(new RollService.RollResult("attack", "1d8+3", new int[]{5}, 8, 0, true, null));
+        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt()))
+            .thenReturn(new RollService.RollResult("attack", "1d8+3", new int[]{5}, 8, 0, true, null));
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        var result = combatService.executeAction(userId, session.getId(), attackerId, "ACTION", defenderId, null);
+
+        assertThat(result.totalDamage()).isGreaterThan(0);
+        assertThat(defenderParticipant.getHpCurrent()).isLessThan(10);
+    }
+
+    @Test
+    void actionTypeMatchingIsCaseInsensitive() {
+        // Wizard-Systeme speichern action_types kleingeschrieben (["action"]),
+        // die UI sendet "ACTION" — das muss als schädigend gelten (TDD BUG-3).
+        var campaignId = UUID.randomUUID();
+        var session = new CombatSession(worldId, campaignId);
+        setId(session, UUID.randomUUID());
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+
+        var attacker = new GameEntity(worldId, "PC", "Aragorn");
+        attacker.setAttributesJson("{\"staerke\":16}");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        defender.setAttributesJson("{\"staerke\":12}");
+        setId(defender, defenderId);
+
+        var gs = new GameSystem("Lower", 1,
+            "{\"dice_mechanics\":{\"combat\":{\"action_types\":[\"action\"],\"damage\":\"1d6\"}}}", "{}");
+        when(rulesLoader.loadSystemByCampaign(campaignId)).thenReturn(gs);
+
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        session.setCurrentTurnEntityId(attackerId);
+
+        when(sessionRepo.findById(session.getId())).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+
+        var participant = new CombatParticipant(session.getId(), attackerId, 15, 2, "A");
+        var defenderParticipant = new CombatParticipant(session.getId(), defenderId, 10, 2, "A");
+        defenderParticipant.setHpCurrent(10);
+        defenderParticipant.setHpMax(10);
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
+            .thenReturn(new java.util.ArrayList<>(List.of(participant, defenderParticipant)));
+        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt(), any()))
+            .thenReturn(new RollService.RollResult("attack", "1d6", new int[]{4}, 4, 0, true, null));
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        var result = combatService.executeAction(userId, session.getId(), attackerId, "ACTION", defenderId, null);
+
+        assertThat(result.totalDamage()).isGreaterThan(0);
+        assertThat(defenderParticipant.getHpCurrent()).isLessThan(10);
+    }
+
+    @Test
+    void endCombatWritesParticipantHpBackToEntities() {
+        var session = new CombatSession(worldId, null);
+        setId(session, UUID.randomUUID());
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+
+        var attacker = new GameEntity(worldId, "PC", "Aragorn");
+        attacker.setHpCurrent(10); attacker.setHpMax(10);
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        defender.setHpCurrent(10); defender.setHpMax(10);
+        setId(defender, defenderId);
+
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        when(sessionRepo.findById(session.getId())).thenReturn(Optional.of(session));
+        when(sessionRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        var damaged = new CombatParticipant(session.getId(), defenderId, 10, 2, "A");
+        damaged.setHpCurrent(3);
+        var healthy = new CombatParticipant(session.getId(), attackerId, 15, 2, "A");
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
+            .thenReturn(List.of(healthy, damaged));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        combatService.endCombat(userId, session.getId());
+
+        assertThat(defender.getHpCurrent()).isEqualTo(3);
+        verify(entityRepo, atLeast(1)).save(any());
+    }
+
     private void setId(Object obj, UUID id) {
         try { var f = obj.getClass().getDeclaredField("id"); f.setAccessible(true); f.set(obj, id); }
         catch (Exception e) { throw new RuntimeException(e); }

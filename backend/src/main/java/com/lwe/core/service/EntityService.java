@@ -38,10 +38,10 @@ public class EntityService {
         requireWorldAccess(worldId, userId);
 
         var entity = new GameEntity(worldId, entityType, name);
-        if (attributesJson != null) entity.setAttributesJson(attributesJson);
-        if (inventoryJson != null) entity.setInventoryJson(inventoryJson);
-        if (positionJson != null) entity.setPositionJson(positionJson);
-        if (metadataJson != null) entity.setMetadataJson(metadataJson);
+        if (nonBlank(attributesJson)) entity.setAttributesJson(attributesJson);
+        if (nonBlank(inventoryJson)) entity.setInventoryJson(inventoryJson);
+        if (nonBlank(positionJson)) entity.setPositionJson(positionJson);
+        if (nonBlank(metadataJson)) entity.setMetadataJson(metadataJson);
         if (factionId != null) entity.setFactionId(factionId);
         if (backstory != null) entity.setBackstory(backstory);
         if (age != null) entity.setAge(age);
@@ -73,10 +73,10 @@ public class EntityService {
                               String socialStanding, UUID factionId) {
         var entity = getById(entityId, userId);
         if (name != null) entity.setName(name);
-        if (attributesJson != null) entity.setAttributesJson(attributesJson);
-        if (inventoryJson != null) entity.setInventoryJson(inventoryJson);
-        if (positionJson != null) entity.setPositionJson(positionJson);
-        if (metadataJson != null) entity.setMetadataJson(metadataJson);
+        if (nonBlank(attributesJson)) entity.setAttributesJson(attributesJson);
+        if (nonBlank(inventoryJson)) entity.setInventoryJson(inventoryJson);
+        if (nonBlank(positionJson)) entity.setPositionJson(positionJson);
+        if (nonBlank(metadataJson)) entity.setMetadataJson(metadataJson);
         if (backstory != null) entity.setBackstory(backstory);
         if (age != null) entity.setAge(age);
         if (experienceLevel != null) entity.setExperienceLevel(experienceLevel);
@@ -146,6 +146,10 @@ public class EntityService {
 
     private void requireWorldAccess(UUID worldId, UUID userId) {
         worldAccess.requireAccess(worldId, userId);
+    }
+
+    private static boolean nonBlank(String v) {
+        return v != null && !v.isBlank();
     }
 
     public static class EntityException extends RuntimeException {

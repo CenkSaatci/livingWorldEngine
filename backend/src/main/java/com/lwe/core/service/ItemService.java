@@ -1,7 +1,10 @@
 package com.lwe.core.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.lwe.core.domain.GameItem;
 import com.lwe.core.domain.GameSystem;
+import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.repository.GameItemRepository;
 import com.lwe.core.repository.GameSystemRepository;
 import org.springframework.stereotype.Service;
@@ -19,10 +22,15 @@ public class ItemService {
 
     private final GameItemRepository itemRepo;
     private final GameSystemRepository systemRepo;
+    private final GameEntityRepository entityRepo;
+    private final ObjectMapper objectMapper;
 
-    public ItemService(GameItemRepository itemRepo, GameSystemRepository systemRepo) {
+    public ItemService(GameItemRepository itemRepo, GameSystemRepository systemRepo,
+                       GameEntityRepository entityRepo, ObjectMapper objectMapper) {
         this.itemRepo = itemRepo;
         this.systemRepo = systemRepo;
+        this.entityRepo = entityRepo;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -62,6 +70,23 @@ public class ItemService {
     @Transactional
     public void delete(UUID id) {
         var item = getById(id);
+        // BUG-9: equipped item löschen würde Inventare brick-en
+        // (GET → 404 INVENTORY_ITEM_NOT_FOUND). Erst überall ent-equippen/entfernen.
+        for (var entity : entityRepo.findAll()) {
+            var inv = entity.getInventoryJson();
+            if (inv == null || inv.isBlank()) continue;
+            try {
+                var arr = (ArrayNode) objectMapper.readTree(inv);
+                var before = arr.size();
+                for (int i = arr.size() - 1; i >= 0; i--) {
+                    if (id.toString().equals(arr.get(i).path("itemId").asText(null))) arr.remove(i);
+                }
+                if (arr.size() != before) {
+                    entity.setInventoryJson(objectMapper.writeValueAsString(arr));
+                    entityRepo.save(entity);
+                }
+            } catch (Exception ignored) {}
+        }
         itemRepo.delete(item);
     }
 

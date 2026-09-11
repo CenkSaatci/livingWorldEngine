@@ -171,9 +171,14 @@ export function defaultWizardData(): WizardData {
  * Ersetzt den `mod`-Platzhalter (steht für den jeweils relevanten Modifikator)
  * durch 0, damit Test-Würfe als reine Syntax-/Würfelprobe funktionieren.
  * Echte Proben laufen immer über /rolls bzw. /rolls/probe mit Modifikator.
+ * Kampf-Expressionen (Initiative/Damage) referenzieren Attributnamen
+ * (z.B. `1d20+geschick`), die /rolls/free (nur NdM±Zahl) ablehnen würde —
+ * daher werden auch `±attribut`-Suffixe zu `+0` neutralisiert.
  */
 export function testExpression(expression: string): string {
-  return expression.replace(/\bmod\b/g, '0');
+  return expression
+    .replace(/\bmod\b/g, '0')
+    .replace(/([+-])\s*[A-Za-z_][A-Za-z0-9_]*/g, (_m, sign: string) => `${sign}0`);
 }
 
 /** WizardData → rulesJson (Backend-Wire-Format). */

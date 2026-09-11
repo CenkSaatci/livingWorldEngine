@@ -40,7 +40,7 @@ public class GameSessionService {
         }
         var session = new GameSession(worldId, campaignId);
         session = sessionRepo.save(session);
-        eventService.publish(worldId, SESSION_STARTED, null, null, Map.of(
+        eventService.publish(worldId, campaignId, SESSION_STARTED, null, null, Map.of(
             "sessionId", session.getId(),
             "campaignId", campaignId != null ? campaignId.toString() : "",
             "dm", userId.toString()
@@ -61,7 +61,7 @@ public class GameSessionService {
         session.setStatus("ENDED");
         session.setEndedAt(Instant.now());
         session = sessionRepo.save(session);
-        eventService.publish(session.getWorldId(), SESSION_ENDED, null, null, Map.of(
+        eventService.publish(session.getWorldId(), session.getCampaignId(), SESSION_ENDED, null, null, Map.of(
             "sessionId", session.getId()
         ));
         return session;

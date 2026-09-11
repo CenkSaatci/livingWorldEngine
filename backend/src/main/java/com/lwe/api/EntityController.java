@@ -106,15 +106,17 @@ public class EntityController {
 
     @PostMapping("/{entityId}/rest/short")
     public ResponseEntity<ApiResponse> shortRest(@PathVariable UUID entityId,
+                                                  @RequestParam(required = false) UUID campaignId,
                                                   @AuthenticationPrincipal User user) {
-        restService.shortRest(entityId, user.getId());
+        restService.shortRest(entityId, user.getId(), campaignId);
         return ResponseEntity.ok(new ApiResponse("Short rest completed"));
     }
 
     @PostMapping("/{entityId}/rest/long")
     public ResponseEntity<ApiResponse> longRest(@PathVariable UUID entityId,
+                                                 @RequestParam(required = false) UUID campaignId,
                                                  @AuthenticationPrincipal User user) {
-        restService.longRest(entityId, user.getId());
+        restService.longRest(entityId, user.getId(), campaignId);
         return ResponseEntity.ok(new ApiResponse("Long rest completed"));
     }
 

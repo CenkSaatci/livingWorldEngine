@@ -53,8 +53,19 @@ class EntityServiceTest {
     }
 
     @Test
-    void shouldThrowOnMissingEntity() {
-        when(entityRepo.findById(any())).thenReturn(java.util.Optional.empty());
+    void blankPositionJsonIsStoredAsNull() {
+        doNothing().when(worldAccess).requireAccess(worldId, userId);
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = service.create(worldId, userId, "NPC", "Goblin",
+            "{\"staerke\":10}", "", "", null, null,
+            null, null, null, null);
+
+        assertThat(result.getPositionJson()).isNull();
+    }
+
+    @Test
+    void shouldThrowOnMissingEntity() {        when(entityRepo.findById(any())).thenReturn(java.util.Optional.empty());
 
         assertThatThrownBy(() -> service.getById(UUID.randomUUID(), userId))
             .isInstanceOf(EntityService.EntityException.class)

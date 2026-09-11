@@ -17,11 +17,12 @@
     { "name": "konstitution", "type": "INT", "min": 3, "max": 20, "default": 10 },
     { "name": "intelligenz", "type": "INT", "min": 3, "max": 20, "default": 10 },
     { "name": "weisheit", "type": "INT", "min": 3, "max": 20, "default": 10 },
-    { "name": "charisma", "type": "INT", "min": 3, "max": 20, "default": 10 }
+    { "name": "charisma", "type": "INT", "min": 3, "max": 20, "default": 10 },
+    { "name": "armor_class", "type": "INT", "min": 0, "max": 30, "default": 10 }
   ],
   "derived_values": [
     { "name": "hp", "formula": "10+konstitution" },
-    { "name": "ac", "formula": "10+floor((geschick-10)/2)" }
+    { "name": "ac", "formula": "floor((geschick-10)/2)+armor_class" }
   ],
   "skills": [
     { "name": "Athletik", "attributes": ["staerke"], "bonus": 0 },

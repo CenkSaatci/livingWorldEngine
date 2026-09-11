@@ -54,6 +54,22 @@ class RestServiceTest {
     }
 
     @Test
+    void shortRestUsesCampaignRulesFirst() {
+        var campaignId = UUID.randomUUID();
+        var entity = entityWithHp(10, 50, 0, 2);
+        var gs = new GameSystem("D20", 1,
+            "{\"version\":1,\"attributes\":[]," + NEW_REST_CONFIG + "}", "{}");
+        setId(gs, gameSystemId);
+        when(rulesLoader.loadSystemByCampaign(campaignId)).thenReturn(gs);
+        when(entityRepo.findById(entity.getId())).thenReturn(Optional.of(entity));
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.shortRest(entity.getId(), userId, campaignId);
+
+        assertThat(entity.getHpCurrent()).isEqualTo(35); // 10 + 50% of 50 = 35
+    }
+
+    @Test
     void shortRestHealsPercentageHp() {
         var entity = entityWithHp(10, 50, 0, 2);
         stubSystem(NEW_REST_CONFIG);

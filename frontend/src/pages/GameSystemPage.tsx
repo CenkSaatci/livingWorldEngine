@@ -45,6 +45,7 @@ const TEMPLATES: Record<string, string> = {
         { name: 'intelligenz', type: 'INT', min: 1, max: 20, default: 10 },
         { name: 'weisheit', type: 'INT', min: 1, max: 20, default: 10 },
         { name: 'charisma', type: 'INT', min: 1, max: 20, default: 10 },
+        { name: 'armor_class', type: 'INT', min: 0, max: 30, default: 10 },
       ],
       skills: [
         { name: 'athletik', attribute: 'staerke' },
@@ -54,7 +55,7 @@ const TEMPLATES: Record<string, string> = {
       ],
       derived_values: [
         { name: 'hp', formula: '10+konstitution' },
-        { name: 'ac', formula: '10+floor((geschicklichkeit-10)/2)' },
+        { name: 'ac', formula: 'floor((geschicklichkeit-10)/2)+armor_class' },
       ],
       progression: {
         levels: [

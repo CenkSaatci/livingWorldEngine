@@ -1,7 +1,10 @@
 package com.lwe.core.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.GameItem;
 import com.lwe.core.domain.GameSystem;
+import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.repository.GameItemRepository;
 import com.lwe.core.repository.GameSystemRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +27,7 @@ class ItemServiceTest {
 
     @Mock private GameItemRepository itemRepo;
     @Mock private GameSystemRepository systemRepo;
+    @Mock private GameEntityRepository entityRepo;
 
     private ItemService service;
     private final UUID gameSystemId = UUID.randomUUID();
@@ -31,7 +35,7 @@ class ItemServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ItemService(itemRepo, systemRepo);
+        service = new ItemService(itemRepo, systemRepo, entityRepo, new ObjectMapper());
     }
 
     private void stubSystemExists() {
@@ -110,6 +114,30 @@ class ItemServiceTest {
 
         service.delete(item.getId());
 
+        verify(itemRepo).delete(item);
+    }
+
+    @Test
+    void deleteRemovesItemFromAllInventories() throws Exception {
+        var itemId = UUID.randomUUID();
+        var item = new GameItem(gameSystemId, "Kurzschwert", "WEAPON", BigDecimal.ONE, 10);
+        setId(item, itemId);
+        when(itemRepo.findById(itemId)).thenReturn(Optional.of(item));
+
+        var worldId = UUID.randomUUID();
+        var entity = new GameEntity(worldId, "PC", "Aragorn");
+        setId(entity, UUID.randomUUID());
+        var mapper = new ObjectMapper();
+        entity.setInventoryJson(mapper.writeValueAsString(java.util.List.of(
+            java.util.Map.of("itemId", itemId.toString(), "quantity", 1, "equipped", true, "slot", "hand"))));
+        when(entityRepo.findAll()).thenReturn(java.util.List.of(entity));
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.delete(itemId);
+
+        var inv = mapper.readTree(entity.getInventoryJson());
+        assertThat(inv.size()).isEqualTo(0);
+        verify(entityRepo).save(entity);
         verify(itemRepo).delete(item);
     }
 
