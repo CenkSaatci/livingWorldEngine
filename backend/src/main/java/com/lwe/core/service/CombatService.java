@@ -160,7 +160,7 @@ public class CombatService {
         checkRange(actionType, targetId, actorId);
 
         var damage = rollDamage(userId, session.getWorldId(), actorId, actionType, session.getCampaignId());
-        var damageType = resolveWeaponDamageType(itemId);
+        var damageType = resolveWeaponDamageType(actorId, itemId);
         damage = applyDamageModifiers(damage, targetId, damageType);
         deductAp(actor);
 
@@ -214,10 +214,10 @@ public class CombatService {
 
         // Apply damage to target
         if (damage > 0 && targetId != null) {
-            damage = applyDamageModifiers(damage, targetId, effects.damageType());
             var target = participants.stream()
                 .filter(p -> p.getEntityId().equals(targetId)).findFirst().orElse(null);
             if (target != null) {
+                damage = applyDamageModifiers(damage, targetId, effects.damageType());
                 target.setHpCurrent(Math.max(0, target.getHpCurrent() - damage));
                 participantRepo.save(target);
                 if (target.getHpCurrent() <= 0) {
@@ -258,9 +258,11 @@ public class CombatService {
         }
     }
 
-    /** Waffen-Schadensart aus Item-Metadata (P23-T02). */
-    private String resolveWeaponDamageType(UUID itemId) {
+    /** Waffen-Schadensart aus Item-Metadata (P23-T02); nur Items im Inventar des Actors. */
+    private String resolveWeaponDamageType(UUID actorId, UUID itemId) {
         if (itemId == null) return null;
+        var actor = entityRepo.findById(actorId).orElse(null);
+        if (actor == null || !inventoryContains(actor, itemId)) return null;
         return itemRepo.findById(itemId)
             .map(i -> {
                 if (i.getMetadataJson() == null || i.getMetadataJson().isBlank()) return null;
@@ -276,6 +278,19 @@ public class CombatService {
 
     /** Ruestung (flat) + Resistenz/Vulnerabilitaet auf den Schaden (P23-T04/P29-T04).
      *  Reihenfolge: Ruestung abziehen, dann Typ-Multiplikator; resist+vulnerable heben sich auf. */
+    private boolean inventoryContains(com.lwe.core.domain.GameEntity entity, UUID itemId) {
+        var inv = entity.getInventoryJson();
+        if (inv == null || inv.isBlank()) return false;
+        try {
+            var arr = objectMapper.readTree(inv);
+            if (!arr.isArray()) return false;
+            for (var n : arr) {
+                if (itemId.toString().equals(n.path("itemId").asText(null))) return true;
+            }
+        } catch (Exception ignored) {}
+        return false;
+    }
+
     private int applyDamageModifiers(int damage, UUID targetEntityId, String damageType) {
         if (damage <= 0 || targetEntityId == null) return damage;
         var target = entityRepo.findById(targetEntityId).orElse(null);
@@ -294,8 +309,9 @@ public class CombatService {
         }
         int result = Math.max(0, damage - Math.max(0, armor));
         if (damageType != null) {
-            boolean resistant = resistances.contains(damageType);
-            boolean vulnerable = vulnerabilities.contains(damageType);
+            var wanted = damageType.trim();
+            boolean resistant = resistances.stream().anyMatch(r -> r != null && r.trim().equalsIgnoreCase(wanted));
+            boolean vulnerable = vulnerabilities.stream().anyMatch(v -> v != null && v.trim().equalsIgnoreCase(wanted));
             if (vulnerable && !resistant) result *= 2;
             else if (resistant && !vulnerable) result /= 2;
         }

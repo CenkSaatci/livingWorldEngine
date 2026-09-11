@@ -25,7 +25,7 @@
 | `attributeCosts` | object | Attribut-Kostenkurven (P28) |
 | `traits` | array | Vor-/Nachteile-Katalog (P28) |
 | `advancement` | object | Steigerungs-Matrix + Max-Regel (P28) |
-| `packages` | array | Reserviert (P29: Spezies/Kultur/Profession) |
+| `packages` | array | Pakete (P29): `name`, `kind` (species/culture/profession), `cost`, `attributeMods[]` (fest oder Choice `["MU","KK"]`/`"*"`), `autoTraits[]`, `baseValues[]` (schema-only), `recommended[]`, `restricted[]` |
 | `conditions` | array | Zustands-Katalog (P29): `name`, optional `rounds`, `effects[]` (`target`/`op`/`value`) |
 | `dice_mechanics.combat.maneuvers` | array | Kampfmanöver (P29): `name`, `apCost` (≥1), optional `attackMalus`¹, `effects[]` |
 
@@ -117,6 +117,9 @@ Neue optionale Properties können jederzeit ergänzt werden. Aktuell nutzbar:
 - `conditions` — Zustands-Katalog: Effekte (`probe`/`damage`) wirken summiert; Katalog-`rounds` gilt, wenn beim Anwenden keine Runden mitgegeben werden; Tick beim Zugbeginn
 - `dice_mechanics.combat.maneuvers` — AP-Kosten + Schadens-Effekte; ActionBar zeigt Katalog-Buttons
   - ¹ `attackMalus` wird als Feld akzeptiert/dokumentiert, aber noch nicht angewandt — es gibt (noch) kein Attack-Roll-Modell im Kampf (P29-T03-Teilstand, siehe TASKS.md)
+- `abilities[].damageType` — Sheet-Anzeige (P23-T01); Kampf nutzt `effects_json.damageType` der Entity-Fähigkeit
+- `items.metadata_json.damage_type` — Waffenschaden (ActionBar sendet ausgerüstete Waffe mit)
+- `entities.metadata_json` — `damage_armor` (flache Reduktion), `damage_resistances`/`damage_vulnerabilities` (Listen, halbiert/verdoppelt, Case-insensitiv)
 - `conditionals` — Bedingte Boni/Mali (via `ConditionEvaluator`)
 - `derived_values` — Abgeleitete Werte; drei Formen: `formula`, `input`+`table` (Lookup, Lücken/Überlappungen = Fehler), `requiresTrait` (Eintrag fehlt ohne Trait)
 - `abilities` — Charakter-Fähigkeiten für den Kampf

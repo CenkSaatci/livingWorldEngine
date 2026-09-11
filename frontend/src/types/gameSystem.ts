@@ -152,8 +152,13 @@ export function findPackage(defs: PkgDef[], name: string): PkgDef | undefined {
   return defs.find((d) => d.name === name);
 }
 
+/** Choice nur, wenn kein festes attr gesetzt ist (Schema erlaubt sonst beides). */
+export function isChoiceMod(m: PackageAttributeMod): boolean {
+  return m.choice !== undefined && !m.attr;
+}
+
 export function packageChoiceCount(def: PkgDef): number {
-  return (def.attributeMods ?? []).filter((m) => m.choice !== undefined).length;
+  return (def.attributeMods ?? []).filter(isChoiceMod).length;
 }
 
 /** Attribut-Mods aller gewählten Pakete (Fest + aufgelöste Choices), summiert. */
@@ -164,8 +169,7 @@ export function resolvePackageMods(defs: PkgDef[], selections: PackageSelection[
     if (!def) continue;
     let choiceIdx = 0;
     for (const mod of def.attributeMods ?? []) {
-      const target = mod.attr
-        ?? (mod.choice !== undefined ? sel.choices?.[choiceIdx++] : undefined);
+      const target = isChoiceMod(mod) ? sel.choices?.[choiceIdx++] : mod.attr;
       if (!target) continue;
       out.set(target, (out.get(target) ?? 0) + mod.value);
     }
@@ -200,13 +204,22 @@ export function packageSelectionIssues(data: WizardData, selections: PackageSele
       if (seenKinds.has(def.kind)) issues.push(`duplicate_kind:${def.kind}`);
       seenKinds.add(def.kind);
     }
-    const choiceMods = (def.attributeMods ?? []).filter((m) => m.choice !== undefined);
+    const choiceMods = (def.attributeMods ?? []).filter(isChoiceMod);
     if ((sel.choices?.length ?? 0) !== choiceMods.length) {
       issues.push(`choice_count:${def.name}`);
     } else {
       choiceMods.forEach((m, i) => {
         const chosen = sel.choices![i];
-        const allowed = m.choice === '*' ? knownAttrs : (m.choice ?? []);
+        if (m.choice === '*') {
+          // Ohne Attribute ist die Stern-Auswahl noch nicht pruefbar (Gate erzwingt Attribute).
+          if (knownAttrs.length > 0 && !knownAttrs.includes(chosen)) {
+            issues.push(`choice_invalid:${def.name}:${chosen}`);
+          }
+          return;
+        }
+        const allowed: string[] = Array.isArray(m.choice)
+          ? m.choice
+          : typeof m.choice === 'string' ? [m.choice] : [];
         if (!allowed.includes(chosen)) issues.push(`choice_invalid:${def.name}:${chosen}`);
       });
     }
@@ -486,9 +499,21 @@ export function skillAdvanceCost(
  */
 export function wizardIssues(data: WizardData): string[] {
   if (data.attributes.length === 0) return ['v_need_attributes'];
-  if (data.attributes.some((a) => !a.name.trim())) return ['v_empty_attribute_name'];
-  if ((data.traits ?? []).some((tr) => !tr.name.trim())) return ['v_empty_trait_name'];
-  return [];
+  const issues: string[] = [];
+  if (data.attributes.some((a) => !a.name.trim())) issues.push('v_empty_attribute_name');
+  if ((data.traits ?? []).some((tr) => !tr.name.trim())) issues.push('v_empty_trait_name');
+  (data.packages ?? []).forEach((p, i) => {
+    if (!p.name.trim()) issues.push(`v_pkg_name:${i}`);
+    if (p.cost !== undefined && !Number.isInteger(p.cost)) issues.push(`v_pkg_cost:${i}`);
+    (p.attributeMods ?? []).forEach((m) => {
+      if (!m.attr && m.choice === undefined) issues.push(`v_pkg_mod:${i}`);
+      if (m.choice !== undefined && m.choice !== '*'
+        && (!Array.isArray(m.choice) || m.choice.length === 0)) {
+        issues.push(`v_pkg_mod:${i}`);
+      }
+    });
+  });
+  return issues;
 }
 
 /** WizardData → rulesJson (Backend-Wire-Format). */
@@ -598,7 +623,20 @@ export function fromRulesJson(json: string): WizardData | null {
       // P28-Blöcke: fehlen → undefined (alte JSONs bleiben unverändert lesbar).
       creationBudget: parsed.creationBudget as CreationBudget | undefined,
       attributeCosts: parsed.attributeCosts as { default: AttributeCostTier[] } | undefined,
-      packages: parsed.packages as PkgDef[] | undefined,
+      packages: Array.isArray(parsed.packages)
+        ? (parsed.packages as Record<string, unknown>[]).map((pk) => {
+            const out = { ...(pk as unknown as PkgDef) };
+            if (Array.isArray(pk.attributeMods)) {
+              out.attributeMods = (pk.attributeMods as Record<string, unknown>[]).map((m) => ({
+                ...(m as unknown as PackageAttributeMod),
+                choice: m.choice === undefined
+                  ? undefined
+                  : (m.choice === '*' || Array.isArray(m.choice) ? m.choice : [m.choice]) as PackageAttributeMod['choice'],
+              }));
+            }
+            return out;
+          })
+        : undefined,
       traits: parsed.traits as TraitDef[] | undefined,
       advancement: parsed.advancement as AdvancementDef | undefined,
       attributes: attrs,

@@ -1826,7 +1826,7 @@ Probendefinitionen (Talente, Fähigkeiten, Proben, Attacken) beziehen sich immer
 Schadensarten (`damage_type`) gehören nicht auf Systemebene, sondern zu Items, Waffen und Fähigkeiten. Diese Phase definiert das Zusammenspiel.
 
 ### P23-T01: `damageType` auf `rulesJson.abilities[]`
-- **Status:** ✅ (Schema + SheetResponse.AbilityInfo.damageType; `CharacterSheetServiceTest`/`RuleSchemaValidatorTest`)
+- **Status:** ✅ (Schema + SheetResponse.AbilityInfo.damageType; `CharacterSheetServiceTest`/`RuleSchemaValidatorTest`) — Hinweis: Sheet-Anzeige; Kampf-Schadensart von Entity-Fähigkeiten kommt aus `effects_json.damageType` (kein Slash-Fallback)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:** Jede Ability erhält ein optionales `damageType`-Feld:
   - `rulesJson.abilities[].damageType`: `"slashing" | "piercing" | "bludgeoning" | "fire" | ...`
@@ -1839,7 +1839,7 @@ Schadensarten (`damage_type`) gehören nicht auf Systemebene, sondern zu Items, 
 - **Qualitäts-Check:** Schema-Tests, Unit-Tests
 
 ### P23-T02: `damage_type` auf Items
-- **Status:** ✅ (`items.metadata_json.damage_type` → `InventoryEntry.damageType`; CombatService nutzt Waffen-Typ via `itemId`; Badge in `ItemCard`)
+- **Status:** ✅ (`items.metadata_json.damage_type` → `InventoryEntry.damageType`; ActionBar sendet die ausgerüstete Waffe als `itemId`; CombatService nutzt den Typ nur für Items im Inventar des Actors (Case-insensitiv); Badge in `ItemCard`)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:** Items erhalten ein `damage_type`-Feld in ihrer JSONB-Metadaten:
   - `items.metadata_json.damage_type` für Waffen-Items
@@ -1879,6 +1879,8 @@ Schadensarten (`damage_type`) gehören nicht auf Systemebene, sondern zu Items, 
 
 ### P23-T05: Skill-Kategorien (optional)
 - **Status:** ⏭️ zurückgestellt (optional, keine Gameplay-Auswirkung; nicht blockierend für P29 — aufnehmen, wenn Sheet-Gruppierung gewünscht)
+
+> **Bewusst zurückgestellt (P23/P29-Audit):** `baseValues` in Paketen ist schema-only (Anwendung erst mit Charakter-Erstellung); `attackMalus` wirkt erst mit Attack-Roll-Modell; Fate-Reroll ist client-vertrauensbasiert; Spieler-Rollensicht auf Zustände; Aktions-Sperren bei Zuständen.
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:** Skills erhalten optionales `category`-Feld:
   - `rulesJson.skills[].category`: `"strength" | "dexterity" | "knowledge" | "social" | "combat" | ...`

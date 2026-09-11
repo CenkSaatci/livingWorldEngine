@@ -34,6 +34,7 @@ export function ActionBar({ worldId }: Props) {
   const [actionTypes, setActionTypes] = useState<string[]>(['action']);
   const [actionsPerTurn, setActionsPerTurn] = useState<Record<string, number>>({ action: 1 });
   const [maneuvers, setManeuvers] = useState<{ name: string; apCost?: number }[]>([]);
+  const [weaponItemId, setWeaponItemId] = useState<string | null>(null);
   const [usedActions, setUsedActions] = useState<Record<string, number>>({});
   const toast = useToast();
   const activeCampaignId = useCampaignStore((s) => s.activeCampaignId);
@@ -112,6 +113,21 @@ export function ActionBar({ worldId }: Props) {
     return () => { c = true; };
   }, [currentActor?.entityId]);
 
+  // Equipped weapon (P23-T02): liefert die Schadensart der Waffe mit
+  useEffect(() => {
+    if (!currentActor?.entityId) { setWeaponItemId(null); return; }
+    let c = false;
+    apiClient.get(`/entities/${currentActor.entityId}/inventory`)
+      .then((r) => {
+        if (c) return;
+        const items = (r.data as { items?: { itemId: string; equipped: boolean; slot?: string | null; type?: string }[] }).items ?? [];
+        const weapon = items.find((it) => it.equipped && (it.slot === 'weapon' || it.type === 'WEAPON'));
+        setWeaponItemId(weapon?.itemId ?? null);
+      })
+      .catch(() => setWeaponItemId(null));
+    return () => { c = true; };
+  }, [currentActor?.entityId]);
+
   if (!session || session.status !== 'ACTIVE') return null;
 
   const aliveTargets = participants.filter(
@@ -125,7 +141,7 @@ export function ActionBar({ worldId }: Props) {
         : `/combat/${session.id}/action`;
       const body: Record<string, unknown> = abilityId
         ? { actorId: currentActor?.entityId, abilityId, targetId: targetEntityId }
-        : { actorId: currentActor?.entityId, actionType: type.toUpperCase(), targetId: targetEntityId };
+        : { actorId: currentActor?.entityId, actionType: type.toUpperCase(), targetId: targetEntityId, itemId: weaponItemId ?? undefined };
 
       const res = await apiClient.post(url, body);
       // POST returns full session state → AP-Werte sind bereits korrekt

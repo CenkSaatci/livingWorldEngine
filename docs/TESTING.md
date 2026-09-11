@@ -704,10 +704,10 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 
 ## 15. P28/P29 Wizard-Engine Checkpoints
 
-> Stand P29-T06. Backend-Tests: `mvn -B test` (356); Frontend: `npx vitest run` (155); E2E-Automation folgt im Playwright-Paket (nach P29).
+> Stand P29-T06 + Audit-Fixes. Backend-Tests: `mvn -B test` (360); Frontend: `npx vitest run` (158); E2E-Automation folgt im Playwright-Paket (nach P29).
 
 ### 15.1 Autorierung (SystemWizard)
-- [ ] P28: Budget/Kostenkurven/Traits/Steigerungs-Matrix/Tabellen-Derived/Pakete setzen → Save gated bei Fehlern (Übersicht zeigt Prüfbericht)
+- [ ] P28: Budget/Kostenkurven/Traits/Steigerungs-Matrix/Tabellen-Derived/Pakete setzen → Save gated bei Fehlern (Paket-Name/Kosten/Mods + Traits + Attribute)
 - [ ] P29-Pakete: Elf anlegen (18 AP, Mods `mut+1`, `gewandtheit+1`, Choice `klugheit/intuition −1`, Auto-Trait Nachtsicht, restricted Zwerg)
 - [ ] Vorschau: Elf + Waldelf + Jäger wählen → Kosten 118 AP, Mods + Auto-Traits korrekt, Wahl-Gruppen auflösbar
 - [ ] Warnungen erscheinen: Elf ohne Waldelf → „recommended"; Zwerg + Elf → „restricted" (rot)
@@ -722,7 +722,7 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 - [ ] Schicksalspunkt ausgeben → Re-Roll; bei 0 → 422 und Toast
 - [ ] Manöver „Wuchtschlag" → ActionBar-Button, AP-Kosten 2, Schaden +4 (Log mit `(bludgeoning)`)
 - [ ] System ohne Manöver → ActionBar unverändert
-- [ ] Waffe mit `damage_type: fire` vs. Feuer-resistent (Metadaten) → halber Schaden; Verwundbar → doppelt; `damage_armor: 3` → −3 vor Resistenz
+- [ ] Waffe (ausgerüstet, `damage_type: fire`) vs. Feuer-resistent (Metadaten) → halber Schaden; Verwundbar → doppelt; `damage_armor: 3` → −3 vor Resistenz
 
 ### 15.4 Regression
 - [ ] Alte Systeme (D20Lite/TwoDicePool/Fudge/dnd5e/coc7e) laden/bauen unverändert

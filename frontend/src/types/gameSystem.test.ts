@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import dsa5json from '../../../docs/examples/dsa5.json';
-import { defaultWizardData, toRulesJson, fromRulesJson, attrPointCost, calcBudget, traitCost, danglingTraitRefs, traitSelectionErrors, advanceCost, skillAdvanceCost, wizardIssues, resolvePackageMods, packageCost, packageAutoTraits, packageSelectionIssues, packageSelectionWarnings, type PackageSelection } from './gameSystem';
+import { defaultWizardData, toRulesJson, fromRulesJson, attrPointCost, calcBudget, traitCost, danglingTraitRefs, traitSelectionErrors, advanceCost, skillAdvanceCost, wizardIssues, resolvePackageMods, packageCost, packageAutoTraits, packageSelectionIssues, packageSelectionWarnings, packageChoiceCount, type PackageSelection } from './gameSystem';
 
 describe('gameSystem roundtrip', () => {
   it('toRulesJson/fromRulesJson preserves all ability fields', () => {
@@ -270,6 +270,33 @@ describe('packages (P29-T05)', () => {
     expect(mods.has('KO')).toBe(false);
     expect(packageCost(data.packages!, sel)).toBe(18);
     expect(packageAutoTraits(data.packages!, sel)).toEqual(['Nachtsicht']);
+  });
+
+  it('normalizes string choices and treats attr+choice as fixed (Audit)', () => {
+    const data = withPackages();
+    const restored = fromRulesJson(JSON.stringify({
+      ...JSON.parse(toRulesJson(data)),
+      packages: [{ name: 'P', kind: 'species', cost: 0, attributeMods: [{ choice: 'MU', value: 1 }] }],
+    }))!;
+    expect(restored.packages![0].attributeMods![0].choice).toEqual(['MU']);
+    expect(packageChoiceCount(restored.packages![0])).toBe(1);
+    expect(packageSelectionIssues(restored, [{ name: 'P', choices: ['M'] }]))
+      .toContain('choice_invalid:P:M');
+
+    const both = defaultWizardData();
+    both.attributes = [{ name: 'MU', type: 'INT', min: 1, max: 20, default: 10 }];
+    both.packages = [{ name: 'Q', kind: 'species', attributeMods: [{ attr: 'MU', choice: ['KK'], value: 1 }] }];
+    expect(packageChoiceCount(both.packages[0])).toBe(0);
+    expect(resolvePackageMods(both.packages!, [{ name: 'Q', choices: ['KK'] }]).get('MU')).toBe(1);
+  });
+
+  it('wizardIssues gates empty package names and bad costs (Audit)', () => {
+    const data = withPackages();
+    data.packages!.push({ name: '  ', kind: 'species', cost: 0 });
+    data.packages!.push({ name: 'Halb', kind: 'species', cost: 1.5 });
+    const issues = wizardIssues(data);
+    expect(issues.some((i) => i.startsWith('v_pkg_name:'))).toBe(true);
+    expect(issues.some((i) => i.startsWith('v_pkg_cost:'))).toBe(true);
   });
 
   it('roundtrips packages through toRulesJson/fromRulesJson', () => {

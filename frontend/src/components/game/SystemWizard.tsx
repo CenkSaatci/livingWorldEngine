@@ -1855,7 +1855,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 <div>
                   <p className="mb-1 text-[10px] uppercase text-text-secondary">{t('spk_mods')}</p>
                   {(pkg.attributeMods ?? []).map((mod, mi) => {
-                    const isChoice = mod.choice !== undefined;
+                    const isChoice = mod.choice !== undefined && !mod.attr;
                     return (
                       <div key={mi} className="mb-1 flex items-center gap-2">
                         <select
@@ -1874,7 +1874,8 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                         </select>
                         <input
                           value={isChoice
-                            ? (mod.choice === '*' ? '*' : (mod.choice ?? []).join(','))
+                            ? (mod.choice === '*' ? '*'
+                              : (Array.isArray(mod.choice) ? mod.choice.join(',') : String(mod.choice ?? '')))
                             : (mod.attr ?? '')}
                           onChange={(e) => {
                             const raw = e.target.value;
@@ -1970,7 +1971,9 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
               {pkgPreview.map((sel) => {
                 const def = findPackage(data.packages ?? [], sel.name);
                 if (!def) return null;
-                const choiceMods = (def.attributeMods ?? []).filter((m) => m.choice !== undefined);
+                const choiceMods = (def.attributeMods ?? []).filter(
+                  (m) => m.choice !== undefined && !m.attr,
+                );
                 if (choiceMods.length === 0) return null;
                 return (
                   <div key={sel.name} className="flex flex-wrap items-center gap-2 text-xs">

@@ -62,6 +62,37 @@ describe('ActionBar', () => {
     expect(container.textContent).toBe('');
   });
 
+  it('sends the equipped weapon itemId with actions (P23-T02)', async () => {
+    combatState.session = { id: 's1', status: 'ACTIVE', currentTurnEntityId: 'e1' };
+    combatState.participants = [
+      { entityId: 'e1', entityName: 'Aragorn', apCurrent: 2, apMax: 2 },
+      { entityId: 'e2', entityName: 'Ork', apCurrent: 2, apMax: 2 },
+    ];
+    combatState.targetEntityId = 'e2';
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url === '/game-systems/gs1') return Promise.resolve({ data: { rulesJson: '{}' } });
+      if (url.endsWith('/abilities')) return Promise.resolve({ data: [] });
+      if (url.endsWith('/inventory')) {
+        return Promise.resolve({
+          data: { items: [{ itemId: 'w1', equipped: true, slot: 'weapon', type: 'WEAPON' }] },
+        });
+      }
+      return Promise.resolve({ data: {} });
+    });
+
+    render(<ActionBar worldId="w1" />);
+
+    const btn = await screen.findByText('action');
+    fireEvent.click(btn);
+
+    await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/combat/s1/action', {
+      actorId: 'e1',
+      actionType: 'ACTION',
+      targetId: 'e2',
+      itemId: 'w1',
+    }));
+  });
+
   it('shows configured maneuvers and posts the clicked one', async () => {
     combatState.session = { id: 's1', status: 'ACTIVE', currentTurnEntityId: 'e1' };
     combatState.participants = [

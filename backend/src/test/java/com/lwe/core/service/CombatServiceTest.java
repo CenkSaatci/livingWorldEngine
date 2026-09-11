@@ -439,6 +439,7 @@ class CombatServiceTest {
         setId(world, worldId);
         session.setCurrentTurnEntityId(attackerId);
 
+        attacker.setInventoryJson("[{\"itemId\":\"" + itemId + "\",\"quantity\":1,\"equipped\":true}]");
         var weapon = mock(GameItem.class);
         when(weapon.getMetadataJson()).thenReturn("{\"damage_type\":\"fire\"}");
 
