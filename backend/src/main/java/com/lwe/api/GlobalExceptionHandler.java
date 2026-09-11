@@ -56,6 +56,14 @@ public class GlobalExceptionHandler {
             .body(ApiError.of("INVALID_INPUT", "Malformed query parameter: " + ex.getName()));
     }
 
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<ApiError> handleStatus(
+            org.springframework.web.server.ResponseStatusException ex) {
+        return ResponseEntity.status(ex.getStatusCode())
+            .body(ApiError.of(ex.getStatusCode() == HttpStatus.FORBIDDEN ? "FORBIDDEN" : "REQUEST_FAILED",
+                ex.getReason()));
+    }
+
     @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ApiError> handleMethodNotSupported(
             org.springframework.web.HttpRequestMethodNotSupportedException ex) {

@@ -5,7 +5,7 @@
 ## Aktueller Projektstand (2026-09-11)
 
 - **P28 Engine-Bausteine** ✅ (T01–T06) · **P29 Spielgefühl + Pakete** ✅ (T01–T06) · **P23 Schadenstypen** ✅ (T01–T04, T05 optional) · **P30 Charakter-Wizard** ✅ (T01–T04) · **P31 E2E-Ausbau** ✅ (T01–T03)
-- **Tests:** Backend 406 (`mvn -B test`) · Frontend 169 (`npx vitest run`) · E2E 9 (`npm run test:e2e`) · ai-bot 46 · `tsc`/Build grün
+- **Tests:** Backend 407 (`mvn -B test`) · Frontend 169 (`npx vitest run`) · E2E 9 (`npm run test:e2e`) · ai-bot 50 · `tsc`/Build grün
 - **Audits:** P28, P23/P29, P30 und ein finales Gesamt-Audit — alle HIGH/MEDIUM-Findings gefixt, Rest bewusst zurückgestellt (siehe Notizen unten)
 - **P27-Status:** T01 ✅ Teilstand (Shares/Welt-PUBLIC offen) · T02 ✅ · T03 ✅ Teilstand (Quest/Adventure-Fork offen) · T04 🔄 Teilstand (Bot-Runtime-Polling) · T05 ✅ · T06 🔄 Teilstand (Bulk/WS/E2E)
 - **Offen (bewusst):** P14-T02–T04 · P22 Konzept · F8 erledigt (V098) · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
@@ -2495,7 +2495,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Abhängigkeit:** T33-02-Muster (Read-Policy) · **Qualitäts-Check:** TDD
 
 ### T33-06: Bot-Runtime pro Kampagne (T04-Rest)
-- **Status:** 📋
+- **Status:** ✅ (Interner `GET /api/v1/bot/worlds` (Rolle BOT/ADMIN): Welten+Kampagnen+`botMode`; Poller nutzt ihn mit `/worlds`-Fallback, überspringt `off`-Kampagnen, sendet `campaign_id` aus den Events mit; Tests: BotContextService + respx/pytest (ai-bot 50))
 - **Aufwand:** 1 Tag
 - **Beschreibung:** Interner Endpoint `GET /api/v1/bot/worlds` (nur Rolle BOT, Service-Token): Welten + Kampagnen + `bot.mode` + NPCs (statt `listOwned`); `ai-bot`-Poller: pro Kampagne iterieren, `off` überspringen, `campaignId` beim Intent mitsenden; respx-Tests + Compose-Doku.
 - **Akzeptanz:** Bot verarbeitet nur erlaubte Welten/Kampagnen, `off` pausiert; pytest grün; Intents tragen `campaignId`

@@ -148,6 +148,9 @@ Listet alle aktiven Regelwerke.
 ]
 ```
 
+### `GET /api/v1/bot/worlds` (nur Rolle BOT/ADMIN, T33-06)
+Liefert `[{worldId, name, worldAiMode, campaigns:[{id,name,botMode}]}]` für das Bot-Polling.
+
 ### Shares (`/api/v1/game-systems/{id}/shares`, nur Owner/Admin, T33-05)
 `GET` listet `{userId, email, username, createdAt}`; `POST { "user": "email-oder-username" }`; `DELETE /{userId}`.
 **Fehlercodes:** `GAME_SYSTEM_SHARE_EXISTS` (409), `GAME_SYSTEM_SHARE_NOT_FOUND`/`USER_NOT_FOUND` (404), `GAME_SYSTEM_SHARE_SELF`/`GAME_SYSTEM_PUBLIC_NO_SHARE_NEEDED` (422)

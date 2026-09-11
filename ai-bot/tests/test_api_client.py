@@ -166,6 +166,20 @@ async def test_get_memories_error(client: BackendClient) -> None:
 
 
 @respx.mock
+async def test_get_bot_worlds_ok(client: BackendClient) -> None:
+    respx.get(f"{BASE}/bot/worlds").mock(return_value=httpx.Response(
+        200, json=[{"worldId": "w1", "campaigns": [{"id": "c1", "botMode": "off"}]}]))
+    result = await client.get_bot_worlds()
+    assert result[0]["campaigns"][0]["botMode"] == "off"
+
+
+@respx.mock
+async def test_get_bot_worlds_error_returns_empty(client: BackendClient) -> None:
+    respx.get(f"{BASE}/bot/worlds").mock(return_value=httpx.Response(403))
+    assert await client.get_bot_worlds() == []
+
+
+@respx.mock
 async def test_submit_intent_ok(client: BackendClient) -> None:
     route = respx.post(f"{BASE}/npc-intents").mock(
         return_value=httpx.Response(201, json={"id": "int1"})

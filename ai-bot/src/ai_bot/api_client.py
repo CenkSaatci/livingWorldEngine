@@ -20,6 +20,20 @@ class BackendClient:
         if settings.service_token:
             self.headers["Authorization"] = f"Bearer {settings.service_token}"
 
+    async def get_bot_worlds(self) -> list[dict]:
+        """T33-06: Welten + Kampagnen + Modi vom internen Bot-Endpoint."""
+        async with httpx.AsyncClient() as client:
+            try:
+                resp = await client.get(
+                    f"{self.base}/bot/worlds",
+                    headers=self.headers,
+                    timeout=10,
+                )
+                return resp.json() if resp.status_code == 200 else []
+            except Exception as e:  # inkl. Test-Router/Restfehler → Welten-Fallback
+                logger.warning("Failed to call %s: %s", f"{self.base}/bot/worlds", e)
+                return []
+
     async def get_active_worlds(self) -> list[dict]:
         """Liefert alle aktiven Welten (zur Polling-Planung)."""
         async with httpx.AsyncClient() as client:

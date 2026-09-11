@@ -28,6 +28,36 @@ def poller(monkeypatch: pytest.MonkeyPatch) -> EventPoller:
 
 
 @respx.mock
+async def test_tick_skips_campaigns_with_bot_mode_off(poller: EventPoller) -> None:
+    respx.get(f"{BASE}/bot/worlds").mock(return_value=httpx.Response(200, json=[
+        {"worldId": "w1", "worldAiMode": "suggest",
+         "campaigns": [{"id": "c1", "botMode": "off"}]},
+    ]))
+    events_route = respx.get(f"{BASE}/worlds/w1/events?since=0&limit=50").mock(
+        return_value=httpx.Response(200, json=[])
+    )
+
+    await poller.tick()
+
+    assert events_route.call_count == 0  # Kampagne off → Welt uebersprungen
+
+
+@respx.mock
+async def test_tick_polls_world_with_allowed_campaign(poller: EventPoller) -> None:
+    respx.get(f"{BASE}/bot/worlds").mock(return_value=httpx.Response(200, json=[
+        {"worldId": "w1", "worldAiMode": "suggest",
+         "campaigns": [{"id": "c1", "botMode": "suggest"}]},
+    ]))
+    events_route = respx.get(f"{BASE}/worlds/w1/events?since=0&limit=50").mock(
+        return_value=httpx.Response(200, json=[])
+    )
+
+    await poller.tick()
+
+    assert events_route.call_count == 1
+
+
+@respx.mock
 async def test_tick_no_worlds(poller: EventPoller) -> None:
     respx.get(f"{BASE}/worlds").mock(
         return_value=httpx.Response(200, json=[])

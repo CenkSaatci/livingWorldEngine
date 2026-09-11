@@ -81,6 +81,7 @@ class EventPoller:
         )
         self.last_ids: dict[str, int] = self.state.load() if self.state else {}
         self.consecutive_failures = 0
+        self._current_campaign_id: str | None = None
 
     async def run(self) -> None:
         logger.info("Poller started (interval=%sms, llm=%s)",
@@ -102,10 +103,22 @@ class EventPoller:
         rückt nur bei Erfolg vor, der Fehlschlag wird nächsten Tick erneut
         geholt (at-least-once; Backend dedup via event_hash).
         """
-        worlds = await self.api.get_active_worlds()
+        worlds = await self.api.get_bot_worlds()
+        if not worlds:
+            # Fallback (aeltere Backends): bisheriger Welten-Endpoint
+            worlds = [{"worldId": w.get("id"), "campaigns": []}
+                      for w in await self.api.get_active_worlds()]
         for world in worlds:
-            world_id = world.get("id", "")
+            world_id = world.get("worldId") or world.get("id", "")
             if not world_id:
+                continue
+            campaigns = world.get("campaigns") or []
+            allowed_campaigns = {
+                c.get("id") for c in campaigns if c.get("botMode") != "off"
+            }
+            world_mode = world.get("worldAiMode")
+            world_allowed = (not campaigns and world_mode != "off") or bool(allowed_campaigns)
+            if not world_allowed:
                 continue
             try:
                 since = self.last_ids.get(world_id, 0)
@@ -114,6 +127,10 @@ class EventPoller:
                 logger.exception("Skipping world %s after fetch error", world_id)
                 continue
             for event in events:
+                event_campaign = event.get("campaign_id") or event.get("campaignId")
+                self._current_campaign_id = event_campaign
+                if campaigns and event_campaign and event_campaign not in allowed_campaigns:
+                    continue  # Kampagne ist auf "off"
                 try:
                     await self.handle_event(world_id, event)
                     # Auch die target-Entity als Reaktionsauslöser behandeln
@@ -293,6 +310,7 @@ class EventPoller:
             intent_type=intent_type,
             params=params,
             reasoning=proposal.get("reasoning", ""),
+            campaign_id=self._current_campaign_id,
         )
 
         # Gossip: Wenn NPC starke Erinnerungen hat, mit ~20% Wahrscheinlichkeit teilen
@@ -357,6 +375,7 @@ class EventPoller:
             intent_type="SPEAK",
             params={},
             reasoning=f"Ich habe gehört, dass {subject_id[:8]} mich {action} hat: {summary}",
+            campaign_id=self._current_campaign_id,
         )
 
 
