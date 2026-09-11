@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { setTokens, clearTokens, getAccessToken } from '../api/client';
 import i18n from '../i18n';
+import { useWorldStore } from './worldStore';
+import { useCampaignStore } from './campaignStore';
+import { useSessionStore } from './sessionStore';
+import { useCombatStore } from './combatStore';
 
 export interface AuthUser {
   id: string;
@@ -69,8 +73,20 @@ export const useAuthStore = create<AuthState>((set) => ({
     clearTokens();
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('lwe:user');
+      localStorage.removeItem('lwe:currentWorldId');
+      localStorage.removeItem('lwe:combatId');
     }
     set({ user: null, isAuthenticated: false });
+    useWorldStore.setState({
+      currentWorld: null,
+      worlds: [],
+      worldEvents: [],
+      currentEntityId: null,
+      tokens: [],
+    });
+    useCampaignStore.setState({ campaigns: [], activeCampaignId: null, activeCampaign: null, loading: false });
+    useSessionStore.setState({ sessions: [], activeSession: null });
+    useCombatStore.setState({ session: null, participants: [], targetEntityId: null });
   },
 
   restoreSession: () => {

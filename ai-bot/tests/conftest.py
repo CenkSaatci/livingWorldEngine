@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from src.ai_bot.api_client import BackendClient
-from src.ai_bot.llm_client import create_llm_client, LLMClient, OllamaClient, VLLMClient
+from ai_bot.api_client import BackendClient
+from ai_bot.llm_client import create_llm_client, LLMClient, OllamaClient, VLLMClient
 
 
 @pytest.fixture

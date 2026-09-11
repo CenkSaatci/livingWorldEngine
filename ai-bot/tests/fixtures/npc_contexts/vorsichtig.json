@@ -1,0 +1,88 @@
+{
+  "npc": {
+    "id": "npc-vorsichtig-005",
+    "name": "Hedwig",
+    "entity_type": "npc",
+    "metadata_json": {
+      "personality": "vorsichtig",
+      "knowledge": [
+        "Alte Sagen"
+      ],
+      "goals": [
+        "Frieden bewahren"
+      ]
+    },
+    "backstory": "Weise Hüterin des Sees."
+  },
+  "trigger": {
+    "id": 99,
+    "event_type": "MOVE",
+    "source_entity_id": "npc-vorsichtig-005",
+    "target_entity_id": "npc-other-006",
+    "payload": {}
+  },
+  "nearby": [
+    {
+      "id": "npc-other-006",
+      "name": "Otto",
+      "entity_type": "npc",
+      "faction_id": "faction-lake-003"
+    },
+    {
+      "id": "npc-other-007",
+      "name": "Pia",
+      "entity_type": "npc"
+    }
+  ],
+  "location": {
+    "id": "loc-lake-002",
+    "name": "Der See"
+  },
+  "region": {
+    "id": "region-lake-001",
+    "name": "Seeland"
+  },
+  "npc_events": [
+    {
+      "event_type": "SPEAK",
+      "title": "Hedwig erzählt eine Sage"
+    }
+  ],
+  "location_events": [],
+  "region_events": [],
+  "weather": null,
+  "npc_faction": {
+    "id": "faction-lake-003",
+    "name": "Seefreunde",
+    "color": "blau"
+  },
+  "npc_faction_relations": [
+    {
+      "faction_a_id": "faction-lake-003",
+      "faction_b_id": "faction-hills-004",
+      "relation_status": "ALLIANCE"
+    },
+    {
+      "faction_a_id": "faction-hills-004",
+      "faction_b_id": "faction-lake-003",
+      "relation_status": "UNFRIENDLY"
+    }
+  ],
+  "memories": [
+    {
+      "memory_type": "helped",
+      "subject_id": "npc-other-006",
+      "summary": "Hat mir geholfen",
+      "sentiment": 2
+    },
+    {
+      "memory_type": "gossip",
+      "subject_id": "npc-other-007",
+      "summary": "Hat schlecht über mich geredet",
+      "sentiment": -1
+    }
+  ],
+  "age": 61,
+  "experience_level": 3,
+  "social_standing": "geachtet"
+}

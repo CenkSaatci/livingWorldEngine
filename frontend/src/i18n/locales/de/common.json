@@ -26,7 +26,10 @@
   },
   "status": {
     "loading": "Wird geladen…",
-    "offline": "Verbindung getrennt"
+    "offline": "Verbindung getrennt",
+    "toggleFog": "Nebel des Krieges umschalten",
+    "pauseResume": "Zeit pausieren oder fortsetzen",
+    "advanceTime": "Zeit vorspulen"
   },
   "gameView": {
     "title": "Game View",
@@ -78,7 +81,8 @@
     "round": "Runde",
     "noParticipants": "Keine Teilnehmer",
     "ap": "AP",
-    "used": " (verbraucht)"
+    "used": " (verbraucht)",
+    "remaining": "{{remaining}}/{{total}} verbleibend"
   },
   "entityTimeline": {
     "today": "heute",
@@ -107,7 +111,10 @@
     "knowledge": "Wissen (Tags)",
     "goals": "Ziele",
     "backstory": "Hintergrund",
-    "backstory_placeholder": "z.B. Verlor Eltern bei Goblin-Überfall…"
+    "backstory_placeholder": "z.B. Verlor Eltern bei Goblin-Überfall…",
+    "personality_placeholder": "z.B. arrogant, neugierig, ängstlich…",
+    "knowledge_placeholder": "z.B. Goblins, Handel, Geschichte…",
+    "goals_placeholder": "z.B. überleben, reich werden…"
   },
   "faction": {
     "create": "Fraktion erstellen",
@@ -216,7 +223,8 @@
     "delete": "Kampagne löschen",
     "deleted": "Kampagne gelöscht",
     "deleteFailed": "Kampagne konnte nicht gelöscht werden",
-    "state": "Spielzustand"
+    "state": "Spielzustand",
+    "loadFailed": "Kampagne konnte nicht geladen werden"
   },
   "settings": {
     "title": "Einstellungen",
@@ -243,5 +251,9 @@
     "passwordTooShort": "Passwort zu kurz",
     "fillBothFields": "Fülle beide Felder aus",
     "failedChangePassword": "Passwort konnte nicht geändert werden"
+  },
+  "region": {
+    "collapse": "Region einklappen",
+    "expand": "Region ausklappen"
   }
 }

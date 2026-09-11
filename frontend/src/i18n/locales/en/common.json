@@ -26,7 +26,10 @@
   },
   "status": {
     "loading": "Loading…",
-    "offline": "Connection lost"
+    "offline": "Connection lost",
+    "toggleFog": "Toggle fog of war",
+    "pauseResume": "Pause or resume time",
+    "advanceTime": "Advance time"
   },
   "gameView": {
     "title": "Game View",
@@ -78,7 +81,8 @@
     "round": "Round",
     "noParticipants": "No participants",
     "ap": "AP",
-    "used": " (used)"
+    "used": " (used)",
+    "remaining": "{{remaining}}/{{total}} remaining"
   },
   "entityTimeline": {
     "today": "today",
@@ -107,7 +111,10 @@
     "knowledge": "Knowledge (tags)",
     "goals": "Goals",
     "backstory": "Backstory",
-    "backstory_placeholder": "e.g. orphaned by goblin raid…"
+    "backstory_placeholder": "e.g. orphaned by goblin raid…",
+    "personality_placeholder": "e.g. arrogant, curious, fearful…",
+    "knowledge_placeholder": "e.g. goblins, trade, history…",
+    "goals_placeholder": "e.g. survive, get rich…"
   },
   "faction": {
     "create": "Create Faction",
@@ -216,7 +223,8 @@
     "delete": "Delete campaign",
     "deleted": "Campaign deleted",
     "deleteFailed": "Could not delete campaign",
-    "state": "Campaign state"
+    "state": "Campaign state",
+    "loadFailed": "Could not load campaign"
   },
   "settings": {
     "title": "Settings",
@@ -243,5 +251,9 @@
     "passwordTooShort": "Password too short",
     "fillBothFields": "Fill both fields",
     "failedChangePassword": "Failed to change password"
+  },
+  "region": {
+    "collapse": "Collapse region",
+    "expand": "Expand region"
   }
 }

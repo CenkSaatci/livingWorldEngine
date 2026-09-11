@@ -111,6 +111,11 @@
   "s7_psionics_hint": "Define the basics of your psionics system.",
   "s7_power_points": "Power point formula (e.g. 3+willpower)",
   "s7_disciplines": "Disciplines",
+  "s7_mana_placeholder": "e.g. 5+intelligence",
+  "s7_spell_slots_placeholder": "e.g. 3/2/1",
+  "s7_schools_placeholder": "e.g. Fire, Ice, Illusion",
+  "s7_power_points_placeholder": "e.g. 3+willpower",
+  "s7_disciplines_placeholder": "e.g. Telepathy, Telekinesis",
 
   "s8_title": "Conditions",
   "s8_hint": "Define conditional bonuses applied automatically. E.g. <em>if Strength > 15, +2 to damage</em> or <em>each point of Intuition above 8 gives +1 to Initiative</em>.",
@@ -175,6 +180,7 @@
   "s4_rest_recover": "Recover Resources",
   "s4_rest_full_heal": "Full Heal",
   "s4_rest_recover_all": "Recover All",
+  "s4_level_features_placeholder": "e.g. Feat, ASI",
 
   "s5_title": "Review & Save",
   "s5_system": "System",
@@ -183,6 +189,7 @@
   "s5_skills": "Skills ({{count}})",
   "s5_no_attributes": "No attributes defined",
   "s5_no_skills": "No skills defined",
+  "s5_progression": "Progression",
   "s5_show_json": "Show Rules JSON",
 
   "nav_cancel": "Cancel",

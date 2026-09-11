@@ -6,16 +6,20 @@ import com.lwe.api.dto.WorldMemberResponse;
 import com.lwe.core.domain.User;
 import com.lwe.core.service.WorldService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
 
+@Validated
 @RestController
 @RequestMapping("/api/v1/worlds")
 public class WorldController {
@@ -41,8 +45,8 @@ public class WorldController {
 
     @GetMapping("/accessible")
     public ResponseEntity<PaginatedWorldResponse> listAccessible(@AuthenticationPrincipal User user,
-                                                                   @RequestParam(defaultValue = "0") int page,
-                                                                   @RequestParam(defaultValue = "20") int size) {
+                                                                   @RequestParam(defaultValue = "0") @Min(0) int page,
+                                                                   @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
         var result = worldService.listAccessible(user.getId(), page, size);
         return ResponseEntity.ok(new PaginatedWorldResponse(
             result.items().stream().map(WorldInfoResponse::from).toList(),

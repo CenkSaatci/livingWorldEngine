@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Briefcase, Heart, HeartOff, Swords, Handshake, Minus } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { useApiGet } from '../hooks/useApiGet';
@@ -57,10 +58,12 @@ const RELATION_ICONS: Record<string, JSX.Element> = {
 };
 
 export default function NpcViewPage() {
+  const { t } = useTranslation('common');
   const { id, npcId } = useParams<{ id: string; npcId: string }>();
   const navigate = useNavigate();
   const worldId = id ?? '';
   const toast = useToast();
+  const toastError = toast.error;
   const user = useAuthStore((s) => s.user);
   const isDm = user?.role === 'ADMIN';
 
@@ -100,21 +103,22 @@ export default function NpcViewPage() {
       apiClient
         .get(`/adventures/by-giver/${npc.id}`)
         .then((r) => setNpcAdventures(r.data as any))
-        .catch(() => {});
+        .catch(() => toastError('Failed to load adventures'));
     }
-  }, [npc]);
+  }, [npc, toastError]);
 
   useEffect(() => {
     if (!worldId || !editing) return;
     apiClient
       .get(`/worlds/${worldId}/factions`)
       .then((r) => setFactions(r.data))
-      .catch(() => {});
+      .catch(() => toastError('Failed to load factions'));
     apiClient
       .get(`/worlds/${worldId}/regions`)
       .then(async (regRes) => {
         const regs = regRes.data as { id: string; name: string }[];
         const allLocs: LocationSummary[] = [];
+        let locationsFailed = false;
         for (const r of regs) {
           try {
             const locRes = await apiClient.get(`/regions/${r.id}/locations`);
@@ -124,13 +128,14 @@ export default function NpcViewPage() {
             }));
             allLocs.push(...locs);
           } catch {
-            /* */
+            locationsFailed = true;
           }
         }
+        if (locationsFailed) toastError('Failed to load some locations');
         setFactionLocations(allLocs);
       })
-      .catch(() => {});
-  }, [worldId, editing]);
+      .catch(() => toastError('Failed to load regions'));
+  }, [worldId, editing, toastError]);
 
   if (loading || !npc) return <LoadingSpinner size="lg" text="Loading NPC…" />;
 
@@ -506,7 +511,7 @@ export default function NpcViewPage() {
                 <input
                   value={editPersonality}
                   onChange={(e) => setEditPersonality(e.target.value)}
-                  placeholder="arrogant, curious, fearful…"
+                  placeholder={t('entity.personality_placeholder')}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
                 />
               </div>
@@ -517,7 +522,7 @@ export default function NpcViewPage() {
                 <input
                   value={editKnowledge}
                   onChange={(e) => setEditKnowledge(e.target.value)}
-                  placeholder="goblins, trade, history…"
+                  placeholder={t('entity.knowledge_placeholder')}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
                 />
               </div>
@@ -528,7 +533,7 @@ export default function NpcViewPage() {
                 <input
                   value={editGoals}
                   onChange={(e) => setEditGoals(e.target.value)}
-                  placeholder="survive, get rich…"
+                  placeholder={t('entity.goals_placeholder')}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
                 />
               </div>

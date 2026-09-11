@@ -1,0 +1,87 @@
+{
+  "npc": {
+    "id": "npc-aggro-001",
+    "name": "Ragnar",
+    "entity_type": "npc",
+    "metadata_json": {
+      "personality": "aggressiv",
+      "knowledge": [
+        "Waldpfade",
+        "Feindliches Territorium"
+      ],
+      "goals": [
+        "Territorium verteidigen",
+        "Rivalen vertreiben"
+      ],
+      "language": "de"
+    },
+    "backstory": "Ehemaliger Söldner, jetzt Wächter des Nordwaldes."
+  },
+  "trigger": {
+    "id": 42,
+    "event_type": "ATTACK",
+    "source_entity_id": "npc-aggro-001",
+    "target_entity_id": "npc-other-002",
+    "payload": {
+      "damage": 12,
+      "weapon": "Axt"
+    }
+  },
+  "nearby": [
+    {
+      "id": "npc-other-002",
+      "name": "Brunhild",
+      "entity_type": "npc",
+      "faction_id": "faction-wolves-001"
+    }
+  ],
+  "location": {
+    "id": "loc-northwood-01",
+    "name": "Nordwald"
+  },
+  "region": {
+    "id": "region-north-001",
+    "name": "Norden"
+  },
+  "npc_events": [
+    {
+      "event_type": "MOVE",
+      "title": "Ragnar patrouilliert"
+    },
+    {
+      "event_type": "SPEAK",
+      "title": "Ragnar warnt Eindringlinge"
+    }
+  ],
+  "location_events": [],
+  "region_events": [],
+  "weather": {
+    "weather_type": "Regen",
+    "temperature": 8,
+    "wind": 3,
+    "description": "Nieselregen"
+  },
+  "npc_faction": {
+    "id": "faction-wolves-001",
+    "name": "Die Wölfe",
+    "color": "grau"
+  },
+  "npc_faction_relations": [
+    {
+      "faction_a_id": "faction-wolves-001",
+      "faction_b_id": "faction-bears-002",
+      "relation_status": "WAR"
+    }
+  ],
+  "memories": [
+    {
+      "memory_type": "combat",
+      "subject_id": "npc-other-002",
+      "summary": "Hat mich angegriffen",
+      "sentiment": -4
+    }
+  ],
+  "age": 34,
+  "experience_level": 7,
+  "social_standing": "gefürchtet"
+}

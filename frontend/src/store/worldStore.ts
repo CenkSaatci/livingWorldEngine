@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { apiClient } from '../api/client';
+
+const WORLD_ID_KEY = 'lwe:currentWorldId';
 
 export interface WorldSummary {
   id: string;
@@ -38,6 +41,7 @@ interface WorldState {
   setCurrentEntityId: (id: string | null) => void;
   updateTokenPosition: (entityId: string, x: number, y: number) => void;
   setTokens: (tokens: MapToken[]) => void;
+  rehydrateCurrentWorld: () => Promise<void>;
 }
 
 export const useWorldStore = create<WorldState>((set) => ({
@@ -47,8 +51,13 @@ export const useWorldStore = create<WorldState>((set) => ({
   currentEntityId: null,
   tokens: [],
 
-  setCurrentWorld: (world) =>
-    set({ currentWorld: world, worldEvents: [], currentEntityId: null, tokens: [] }),
+  setCurrentWorld: (world) => {
+    if (typeof localStorage !== 'undefined') {
+      if (world) localStorage.setItem(WORLD_ID_KEY, world.id);
+      else localStorage.removeItem(WORLD_ID_KEY);
+    }
+    set({ currentWorld: world, worldEvents: [], currentEntityId: null, tokens: [] });
+  },
 
   setWorlds: (worlds) => set({ worlds }),
 
@@ -67,4 +76,15 @@ export const useWorldStore = create<WorldState>((set) => ({
     })),
 
   setTokens: (tokens) => set({ tokens }),
+
+  rehydrateCurrentWorld: async () => {
+    const id = typeof localStorage !== 'undefined' ? localStorage.getItem(WORLD_ID_KEY) : null;
+    if (!id) return;
+    try {
+      const res = await apiClient.get<WorldSummary>(`/worlds/${id}`);
+      set({ currentWorld: res.data, worldEvents: [], currentEntityId: null, tokens: [] });
+    } catch {
+      /* best effort */
+    }
+  },
 }));

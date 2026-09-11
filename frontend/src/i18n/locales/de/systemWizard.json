@@ -111,6 +111,11 @@
   "s7_psionics_hint": "Definiere die Grundlagen deines Psionik-Systems.",
   "s7_power_points": "Psipunkte-Formel (z.B. 3+willenskraft)",
   "s7_disciplines": "Disziplinen",
+  "s7_mana_placeholder": "z.B. 5+intelligenz",
+  "s7_spell_slots_placeholder": "z.B. 3/2/1",
+  "s7_schools_placeholder": "z.B. Feuer, Eis, Illusion",
+  "s7_power_points_placeholder": "z.B. 3+willenskraft",
+  "s7_disciplines_placeholder": "z.B. Telepathie, Telekinese",
 
   "s8_title": "Bedingungen",
   "s8_hint": "Definiere konditionale Boni, die automatisch angewendet werden. Z.B. <em>wenn Stärke > 15, +2 auf Schaden</em> oder <em>jeder Punkt Intuition über 8 gibt +1 auf Initiative</em>.",
@@ -175,6 +180,7 @@
   "s4_rest_recover": "Ressourcen wiederherstellen",
   "s4_rest_full_heal": "Vollständige Heilung",
   "s4_rest_recover_all": "Alle Ressourcen",
+  "s4_level_features_placeholder": "z.B. Feat, ASI",
 
   "s5_title": "Übersicht & Speichern",
   "s5_system": "System",

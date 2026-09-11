@@ -4,7 +4,7 @@ import httpx
 import pytest
 import respx
 
-from src.ai_bot.poller import EventPoller
+from ai_bot.poller import EventPoller
 
 BASE = "http://test-backend/api/v1"
 
@@ -14,7 +14,7 @@ def poller(monkeypatch: pytest.MonkeyPatch) -> EventPoller:
     monkeypatch.setenv("AI_BOT_BACKEND_URL", BASE)
     monkeypatch.setenv("AI_BOT_OLLAMA_URL", "http://test-ollama:11434")
     monkeypatch.setenv("AI_BOT_LLM_TYPE", "ollama")
-    from src.ai_bot.config import settings
+    from ai_bot.config import settings
     settings.backend_url = BASE
     settings.ollama_url = "http://test-ollama:11434"
     settings.llm_type = "ollama"

@@ -71,14 +71,14 @@ export function DmQueuePanel({ worldId }: Props) {
                 <button
                   onClick={() => handleAction(intent.id, 'approve')}
                   className="rounded bg-success/20 p-1 text-success hover:bg-success/30"
-                  title="Approve"
+                  title={t('queue.approve')}
                 >
                   <Check size={14} />
                 </button>
                 <button
                   onClick={() => handleAction(intent.id, 'reject')}
                   className="rounded bg-danger/20 p-1 text-danger hover:bg-danger/30"
-                  title="Reject"
+                  title={t('queue.reject')}
                 >
                   <X size={14} />
                 </button>

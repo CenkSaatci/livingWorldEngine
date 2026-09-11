@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { apiClient } from '../api/client';
+import { useToastStore } from './toastStore';
 
 export interface CampaignSummary {
   id: string;
@@ -38,7 +39,7 @@ export const useCampaignStore = create<CampaignState>((set) => ({
       const res = await apiClient.get<CampaignSummary[]>('/campaigns');
       set({ campaigns: res.data });
     } catch {
-      /* ignore */
+      useToastStore.getState().addToast('Failed to load campaigns', 'error');
     } finally {
       set({ loading: false });
     }
@@ -52,6 +53,7 @@ export const useCampaignStore = create<CampaignState>((set) => ({
         name,
       });
       set((state) => ({ campaigns: [res.data, ...state.campaigns] }));
+      useCampaignStore.getState().setActiveCampaign(res.data.id, res.data);
       return res.data;
     } catch {
       return null;

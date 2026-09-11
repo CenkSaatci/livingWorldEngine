@@ -86,6 +86,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `WORLD_MEMBER_ALREADY` | 409 | User ist bereits Mitglied |
 | `WORLD_MEMBER_LIMIT` | 422 | Mitglieder-Limit erreicht (Phase 5 Konfigurierbar) |
 | `WORLD_GAME_SYSTEM_INACTIVE` | 422 | Referenziertes Regelwerk ist deaktiviert |
+| `MAP_NOT_FOUND` | 404 | Karte zu dieser Welt nicht vorhanden |
 
 ### 3.4 Entities (`ENTITY_*`)
 
@@ -106,6 +107,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `GAME_SYSTEM_ATTRIBUTE_REF_INVALID` | 400 | Skill/Dice-Expression referenziert unbekanntes Attribut |
 | `GAME_SYSTEM_EXPRESSION_INVALID` | 400 | Dice-Expression syntaktisch falsch (z. B. `1d20+@foo`) |
 | `GAME_SYSTEM_VERSION_CONFLICT` | 409 | Versionsnummer kollidiert mit bestehendem Regelwerk |
+| `FORMULA_EXPRESSION_INVALID` | 400 | Formel-Ausdruck syntaktisch falsch oder unbekannte Variable (`FormulaEvaluator`) |
 
 ### 3.6 Inventar (`INVENTORY_*`)
 
@@ -126,6 +128,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `ROLL_ATTRIBUTE_NOT_FOUND` | 422 | Referenziertes Attribut existiert am Charakter nicht |
 | `ROLL_ENTITY_NOT_CHARACTER` | 422 | Entity ist keine Probe-fähige Figur (z. B. Fraktion) |
 | `ROLL_TARGET_REQUIRED` | 400 | Probe benötigt ein Target-Wert, aber keins übergeben |
+| `INVALID_INPUT` | 400 | Ungültiges Argument/Parameter (z. B. nicht parsebare Dice-Expression, malformed UUID) |
 
 ### 3.8 Combat (`COMBAT_*`)
 

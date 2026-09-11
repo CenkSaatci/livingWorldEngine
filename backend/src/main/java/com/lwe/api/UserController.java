@@ -13,6 +13,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,6 +34,7 @@ public class UserController {
     private final UserRepository userRepo;
     private final PasswordResetTokenRepository tokenRepo;
     private final PasswordEncoder passwordEncoder;
+    private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
     public UserController(AuthService authService, UserRepository userRepo,
                           PasswordResetTokenRepository tokenRepo, PasswordEncoder passwordEncoder) {
@@ -90,8 +93,9 @@ public class UserController {
     }
 
     @PostMapping("/service-login")
-    public ResponseEntity<?> serviceLogin(@RequestBody ServiceLoginRequest req) {
-        var result = authService.serviceLogin(req.serviceUser(), req.servicePassword());
+    public ResponseEntity<?> serviceLogin(@RequestBody ServiceLoginRequest req,
+                                          HttpServletRequest httpReq) {
+        var result = authService.serviceLogin(req.serviceUser(), req.servicePassword(), httpReq.getRemoteAddr());
         return ResponseEntity.ok(result);
     }
 
@@ -109,7 +113,9 @@ public class UserController {
             var expiresAt = Instant.now().plus(Duration.ofHours(1));
             tokenRepo.deleteByUserId(user.getId());
             tokenRepo.save(new PasswordResetToken(user.getId(), token, expiresAt));
-            return ResponseEntity.ok(new MessageWithTokenResponse(msg, token));
+            // Token NICHT in der Response zurückgeben (Account-Enumeration via Mail möglich);
+            // Dev-Ausgabe nur ins Server-Log, Versand erfolgt out-of-band (Mail).
+            log.info("Password reset token generated for userId={}: {}", user.getId(), token);
         }
         return ResponseEntity.ok(new ApiResponse(msg));
     }

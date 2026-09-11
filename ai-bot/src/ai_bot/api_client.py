@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 
 import httpx
-from src.ai_bot.config import settings
+from ai_bot.config import settings
 
 logger = logging.getLogger("api_client")
 
@@ -189,7 +189,11 @@ class BackendClient:
                     headers=self.headers,
                     timeout=10,
                 )
-                return resp.json() if resp.status_code == 201 else None
+                if resp.status_code == 201:
+                    return resp.json()
+                logger.warning("submit_intent failed: status=%s body=%.500s",
+                               resp.status_code, resp.text)
+                return None
             except httpx.HTTPError as e:
                 logger.warning("Failed to call %s: %s", f"{self.base}/npc-intents", e)
                 return None

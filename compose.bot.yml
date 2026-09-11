@@ -16,14 +16,14 @@ services:
       - gdx-spark
     environment:
       # Verbindung zum LWE-Server (deine Cloud-Instanz)
-      - LWE_API_URL=https://dein-server.com/api/v1
-      - LWE_API_KEY=${LWE_API_KEY:?Set LWE_API_KEY}
+      - AI_BOT_BACKEND_URL=https://dein-server.com/api/v1
+      - AI_BOT_SERVICE_TOKEN=${AI_BOT_SERVICE_TOKEN:?Set AI_BOT_SERVICE_TOKEN}
       # Lokaler vLLM/GDX Spark
       - AI_BOT_LLM_TYPE=vllm
       - AI_BOT_LLM_URL=http://gdx-spark:8000
       - AI_BOT_LLM_MODEL=${AI_BOT_LLM_MODEL:-gemma-2b}
       # Poll-Intervall
-      - AI_BOT_POLL_INTERVAL_S=5
+      - AI_BOT_POLL_INTERVAL_MS=5000
     networks:
       - lwe-bot-net
 

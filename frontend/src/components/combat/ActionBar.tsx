@@ -136,7 +136,7 @@ export function ActionBar({ worldId }: Props) {
               className={`flex items-center gap-1 rounded px-3 py-1.5 text-xs
                 ${type === 'action' ? 'bg-accent text-white hover:bg-accent/80' : 'bg-bg-elevated text-text-secondary hover:text-text-primary'}
                 disabled:opacity-40`}
-              title={`${remaining}/${actionsPerTurn[type] ?? 1} verbleibend`}
+              title={t('combat.remaining', { remaining, total: actionsPerTurn[type] ?? 1 })}
             >
               {ACTION_ICONS[type] ?? <Zap size={14} />}
               {t(`combat.action_${type}`, { defaultValue: type })}

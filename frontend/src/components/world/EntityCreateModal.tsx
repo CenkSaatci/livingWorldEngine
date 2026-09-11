@@ -252,7 +252,7 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
               value={personality}
               onChange={(e) => setPersonality(e.target.value)}
               className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-              placeholder="arrogant, curious, fearful…"
+              placeholder={t('entity.personality_placeholder')}
             />
           </div>
 
@@ -266,7 +266,7 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
                 value={knowledge}
                 onChange={(e) => setKnowledge(e.target.value)}
                 className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                placeholder="goblins, trade, history…"
+                placeholder={t('entity.knowledge_placeholder')}
               />
             </div>
             <div>
@@ -275,7 +275,7 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
                 value={goals}
                 onChange={(e) => setGoals(e.target.value)}
                 className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                placeholder="survive, get rich…"
+                placeholder={t('entity.goals_placeholder')}
               />
             </div>
           </div>

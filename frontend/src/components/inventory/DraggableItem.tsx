@@ -1,6 +1,7 @@
 import { useDraggable } from '@dnd-kit/core';
 import { GripVertical } from 'lucide-react';
 import { type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   id: string;
@@ -17,6 +18,7 @@ interface Props {
  * verschachtelte interaktive Elemente).
  */
 export function DraggableItem({ id, children }: Props) {
+  const { t } = useTranslation('character');
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
 
   const style = transform
@@ -33,8 +35,8 @@ export function DraggableItem({ id, children }: Props) {
         {...listeners}
         {...attributes}
         className="cursor-grab touch-none text-text-secondary hover:text-accent active:cursor-grabbing"
-        aria-label="Drag item"
-        title="Ziehen zum Ausrüsten"
+        aria-label={t('sheet.dragToEquip')}
+        title={t('sheet.dragToEquip')}
       >
         <GripVertical size={14} />
       </span>

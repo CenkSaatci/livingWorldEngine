@@ -35,26 +35,33 @@ Der AI-Bot ist ein **separater Prozess**, der:
 
 ## 2. Bot-Service-Aufbau
 
-### 2.1 Ordnerstruktur
+### 2.1 Ordnerstruktur (Ist-Stand)
 ```
 ai-bot/
-├── pyproject.toml         # uv + pytest, ruff
-├── Containerfile          # OCI-Build (von Podman gelesen; "Dockerfile" als Alias ebenfalls möglich)
+├── pyproject.toml         # pytest, ruff; Deps: fastapi, uvicorn, httpx, pydantic(-settings), jinja2
+├── Containerfile          # OCI-Build (python:3.12.9-slim, non-root, Port 8001)
 ├── src/ai_bot/
-│   ├── main.py            # FastAPI app + lifespan (start poller)
-│   ├── config.py           # Pydantic-Settings (env based)
-│   ├── poller.py           # Event-Polling Loop
-│   ├── context_loader.py   # NPC-Kontext aufbauen
-│   ├── llm_client.py       # Ollama/OpenAI Client
-│   ├── models.py           # Pydantic-Modelle
-│   ├── api_client.py       # HTTP-Client für Backend
+│   ├── main.py            # FastAPI app + lifespan (start/cancel poller task)
+│   ├── config.py          # Pydantic-Settings (env prefix AI_BOT_*)
+│   ├── poller.py          # Event-Polling-Loop + NPC-Kontext + Prompt-Rendering (ContextLoader inlined)
+│   ├── state.py           # last_ids-Persistenz (stdlib sqlite3, AI-AGENT.md §3.3)
+│   ├── llm_client.py      # Ollama/VLLM-Client + MockLLMClient (DI via Konstruktor)
+│   ├── api_client.py      # HTTP-Client für Backend
 │   └── prompts/
-│       ├── __init__.py
-│       ├── aggressiv.j2    # Jinja2 Templates
+│       ├── aggressiv.j2   # Jinja2 Templates (neutral, vorsichtig)
 │       ├── neutral.j2
 │       └── vorsichtig.j2
 └── tests/
+    ├── test_poller.py / test_state.py / test_prompts.py / …
+    ├── fixtures/npc_contexts/*.json   # Golden-Test-Kontexte
+    └── prompts/expected/*.txt         # Golden-Files (gerenderte Prompts)
 ```
+
+> Hinweis: `context_loader.py`, `models.py` und `prompts/__init__.py` aus dem
+> ursprünglichen Entwurf sind **in `poller.py` inlined** (ein Modul, ein Loop).
+> Die in §4.3 gezeigte `ContextLoader`-Klasse ist konzeptionell —
+> `EventPoller.handle_npc_event()` übernimmt diese Rolle (auch: Memories,
+> Gossip und Target-Event-Reaktionen, siehe §3.4).
 
 ### 2.2 Lifespan
 ```python
@@ -66,17 +73,21 @@ async def lifespan(app: FastAPI):
     task.cancel()
 ```
 
-### 2.3 Konfiguration (`config.py`)
+### 2.3 Konfiguration (`config.py` — env-Präfix `AI_BOT_`)
 ```python
 class Settings(BaseSettings):
-    backend_url: str = "http://localhost:8080/api"
+    backend_url: str = "http://localhost:8080/api/v1"
     service_token: str | None = None
+    llm_type: Literal["ollama", "vllm", "openai"] = "ollama"
+    llm_url: str = "http://localhost:11434"      # vLLM/OpenAI-kompatibel
+    llm_model: str = "Qwen/Qwen2.5-7B-Instruct"
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = "llama3"
+    mode: Literal["autonom", "suggest", "off"] = "autonom"
     poll_interval_ms: int = 2000
     context_max_tokens: int = 4096
     llm_timeout_s: int = 30
-    worlds_filter: list[str] = []        # Leere Liste → alle Welten mit `ai_mode != "off"`
+    state_path: str | None = None                # SQLite-Pfad für last_ids (None = in-memory)
 ```
 
 ---
@@ -108,10 +119,24 @@ class EventPoller:
 
 Phase 5 kann auf Webhooks umgestellt werden (`/api/bot/events/subscribe`), falls Performance-KPIs exigieren.
 
-### 3.3 Idempotenz
-- Backend speichert `event_hash` dedupliziert
-- Bot speichert `last_event_id` persistiert (sqlite oder in DB)
-- Bot ist crash-safe — replay von events verhindert Because validated_by_event_hash in npc_intents UNIQUE
+### 3.3 Idempotenz / At-least-once
+- Backend speichert `event_hash` dedupliziert (`UNIQUE` auf `npc_intents`)
+- Bot persistiert `last_ids` pro Welt in SQLite (`state.py`, Pfad via `AI_BOT_STATE_PATH`);
+  Load beim Start, Save nach jedem Tick. Ohne `state_path` gilt in-memory.
+- **Semantik: at-least-once.** `last_ids` rücken nur nach erfolgreicher
+  Event-Verarbeitung vor; Fehler → Event bleibt liegen (Welt wird übersprungen,
+  Batch stoppt an der Fehlerstelle, Retry beim nächsten Tick). Doppelte Intents
+  durch Replays werden über den `event_hash`-Unique-Index des Backends dedupliziert.
+- Bot ist crash-safe — replay von events verhindert via `validated_by_event_hash` in `npc_intents UNIQUE`
+
+### 3.4 Memory, Gossip & Target-Events (im Poller implementiert)
+- `_derive_memory()`: leitet aus jedem Event eine Erinnerung ab (combat/disrespect/helped/gossip)
+  und speichert sie via `POST /entities/{id}/memories`
+- `_spread_gossip()`: NPC mit starker Erinnerung (|sentiment| ≥ 2) teilt mit ~20 %
+  Wahrscheinlichkeit per SPEAK-Intent
+- `handle_target_event()`: auch die `target_entity_id` eines Events wird als
+  NPC-Kontext verarbeitet (Reaktion des Ziels); Fraktionsmitglieder reagieren
+  über nachfolgende Poll-Zyklen
 
 ---
 
@@ -136,7 +161,10 @@ Phase 5 kann auf Webhooks umgestellt werden (`/api/bot/events/subscribe`), falls
 - Reserve: ~500 Token für Systemprompt
 - → 4k-Context-Modelle reichen aus (Llama 3 8B Instruct)
 
-### 4.3 Kontext-Loader (Python)
+### 4.3 Kontext-Loader
+> Die im Entwurf separate `ContextLoader`-Klasse ist in `poller.py` inlined:
+> `EventPoller.handle_npc_event()` baut den Kontext (NPC, nearby, location/region,
+> Events, Wetter, Fraktion, Memories) und rendert das Template. Konzeptionell:
 ```python
 class ContextLoader:
     async def build(self, npc_id: UUID, trigger_event: WorldEvent) -> NPCContext:

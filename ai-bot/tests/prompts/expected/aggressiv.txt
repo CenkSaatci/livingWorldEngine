@@ -1,0 +1,55 @@
+NPC: Ragnar (npc)
+Persönlichkeit: aggressiv
+Erfahrung: 7
+Alter: 34
+Stand: gefürchtet
+Wissen: Waldpfade, Feindliches Territorium
+Ziele: Territorium verteidigen, Rivalen vertreiben
+
+
+
+
+Erinnerungen:
+
+- combat (npc-othe): Hat mich angegriffen [-4]
+
+
+
+Letzte Ereignisse:
+
+- MOVE: Ragnar patrouilliert
+
+- SPEAK: Ragnar warnt Eindringlinge
+
+
+Aktuelles Ereignis: ATTACK
+{"damage": 12, "weapon": "Axt"}
+
+
+Wetter am Standort:
+- Typ: Regen
+- Temperatur: 8°C
+- Wind: 3/10
+- Beschreibung: Nieselregen
+
+
+
+Fraktion: Die Wölfe (grau)
+
+Beziehungen:
+
+
+- zu faction-: WAR
+
+
+
+
+Umgebung:
+
+- Brunhild (npc) [Faction: faction-]
+
+
+Du hasst Konflikte nicht, aber du beschützt dein Territorium entschlossen.
+Du kannst CHANGE_RELATION nutzen, um diplomatische Beziehungen zu eskalieren,
+wenn deine Fraktion bedroht oder angegriffen wurde.
+Was tust du? Antworte mit JSON.

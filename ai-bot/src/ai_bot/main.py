@@ -6,11 +6,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from src.ai_bot.config import settings
-from src.ai_bot.poller import EventPoller
+from ai_bot.config import settings
+from ai_bot.poller import EventPoller
 
 logging.basicConfig(
     level=logging.INFO,
@@ -18,16 +19,28 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ai_bot")
 
-app = FastAPI(title="LWE AI Bot", version="0.1.0")
 poller = EventPoller()
+_poller_task: asyncio.Task[None] | None = None
 
 
-@app.on_event("startup")
-async def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _poller_task
     logger.info("Starting AI Bot (mode=%s, llm=%s, model=%s)",
                  settings.mode, settings.llm_type,
                  settings.ollama_model if settings.llm_type == "ollama" else settings.llm_model)
-    asyncio.create_task(poller.run())
+    _poller_task = asyncio.create_task(poller.run())
+    yield
+    if _poller_task is not None:
+        _poller_task.cancel()
+        try:
+            await _poller_task
+        except asyncio.CancelledError:
+            pass
+        _poller_task = None
+
+
+app = FastAPI(title="LWE AI Bot", version="0.1.0", lifespan=lifespan)
 
 
 @app.get("/health")

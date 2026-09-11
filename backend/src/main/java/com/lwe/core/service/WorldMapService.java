@@ -3,6 +3,7 @@ package com.lwe.core.service;
 import com.lwe.core.domain.WorldMap;
 import com.lwe.core.repository.WorldMapRepository;
 import com.lwe.core.repository.WorldRepository;
+import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,15 +39,16 @@ public class WorldMapService {
 
     public WorldMap getById(UUID mapId, UUID userId) {
         var map = mapRepo.findById(mapId)
-            .orElseThrow(() -> new RuntimeException("MAP_NOT_FOUND"));
+            .orElseThrow(() -> new WorldAccess.WorldAccessException("MAP_NOT_FOUND", "Map not found"));
         requireOwner(map.getWorldId(), userId);
         return map;
     }
 
     private void requireOwner(UUID worldId, UUID userId) {
-        worldRepo.findById(worldId).ifPresent(w -> {
-            if (!w.getOwnerId().equals(userId))
-                throw new RuntimeException("WORLD_ACCESS_DENIED");
-        });
+        var world = worldRepo.findById(worldId)
+            .orElseThrow(() -> new WorldAccess.WorldAccessException("WORLD_NOT_FOUND", "World not found"));
+        if (!world.getOwnerId().equals(userId)) {
+            throw new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "Access denied");
+        }
     }
 }

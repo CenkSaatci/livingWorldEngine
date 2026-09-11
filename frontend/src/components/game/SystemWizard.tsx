@@ -669,7 +669,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                       update('progression', { ...data.progression, levels: a });
                     }}
                     className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                    placeholder="z.B. Feat, ASI"
+                    placeholder={t('s4_level_features_placeholder')}
                   />
                   <button
                     onClick={() =>
@@ -869,7 +869,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   value={data.magic.manaFormula}
                   onChange={(e) => update('magic', { ...data.magic, manaFormula: e.target.value })}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm font-mono text-text-primary outline-none focus:border-accent"
-                  placeholder="z.B. 5+intelligenz"
+                  placeholder={t('s7_mana_placeholder')}
                 />
               </div>
               <div>
@@ -878,7 +878,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   value={data.magic.spellSlots}
                   onChange={(e) => update('magic', { ...data.magic, spellSlots: e.target.value })}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                  placeholder="z.B. 3/2/1"
+                  placeholder={t('s7_spell_slots_placeholder')}
                 />
               </div>
               <div>
@@ -887,7 +887,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   value={data.magic.schools}
                   onChange={(e) => update('magic', { ...data.magic, schools: e.target.value })}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                  placeholder="z.B. Feuer, Eis, Illusion"
+                  placeholder={t('s7_schools_placeholder')}
                 />
               </div>
             </div>
@@ -903,7 +903,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   value={data.psionics.powerPoints}
                   onChange={(e) => update('psionics', { ...data.psionics, powerPoints: e.target.value })}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm font-mono text-text-primary outline-none focus:border-accent"
-                  placeholder="z.B. 3+willenskraft"
+                  placeholder={t('s7_power_points_placeholder')}
                 />
               </div>
               <div>
@@ -912,7 +912,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   value={data.psionics.disciplines}
                   onChange={(e) => update('psionics', { ...data.psionics, disciplines: e.target.value })}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                  placeholder="z.B. Telepathie, Telekinese"
+                  placeholder={t('s7_disciplines_placeholder')}
                 />
               </div>
             </div>

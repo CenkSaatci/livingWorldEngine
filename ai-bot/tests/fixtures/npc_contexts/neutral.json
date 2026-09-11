@@ -1,0 +1,41 @@
+{
+  "npc": {
+    "id": "npc-neutral-003",
+    "name": "Tilda",
+    "entity_type": "npc",
+    "metadata_json": {
+      "personality": "neutral",
+      "knowledge": [
+        "Kräuter"
+      ],
+      "goals": [
+        "Handel treiben"
+      ]
+    }
+  },
+  "trigger": {
+    "id": 7,
+    "event_type": "SPEAK",
+    "source_entity_id": "npc-neutral-003",
+    "target_entity_id": "npc-other-004",
+    "payload": {
+      "message": "Hallo"
+    }
+  },
+  "nearby": [
+    {
+      "id": "npc-other-004",
+      "name": "Karla",
+      "entity_type": "npc"
+    }
+  ],
+  "location": null,
+  "region": null,
+  "npc_events": [],
+  "location_events": [],
+  "region_events": [],
+  "weather": null,
+  "npc_faction": null,
+  "npc_faction_relations": [],
+  "memories": []
+}

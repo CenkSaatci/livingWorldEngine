@@ -107,7 +107,7 @@ export function StatusBar() {
           <button
             onClick={() => useFogStore.getState().toggle()}
             className="rounded p-0.5 text-text-secondary hover:text-accent hover:bg-bg-elevated"
-            aria-label="Toggle fog of war"
+            aria-label={t('status.toggleFog')}
           >
             <Eye size={12} />
           </button>
@@ -115,7 +115,7 @@ export function StatusBar() {
           <button
             onClick={handlePauseResume}
             className="rounded p-0.5 text-text-secondary hover:text-accent hover:bg-bg-elevated"
-            aria-label="Pause or resume time"
+            aria-label={t('status.pauseResume')}
           >
             <Play size={12} />
           </button>
@@ -124,7 +124,7 @@ export function StatusBar() {
             <button
               onClick={() => setShowAdvance(!showAdvance)}
               className="rounded p-0.5 text-text-secondary hover:text-accent hover:bg-bg-elevated"
-              aria-label="Advance time"
+              aria-label={t('status.advanceTime')}
             >
               <SkipForward size={12} />
             </button>

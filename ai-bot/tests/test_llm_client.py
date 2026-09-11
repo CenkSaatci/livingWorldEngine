@@ -4,7 +4,7 @@ import httpx
 import pytest
 import respx
 
-from src.ai_bot.llm_client import OllamaClient, VLLMClient
+from ai_bot.llm_client import MockLLMClient, OllamaClient, VLLMClient, create_llm_client
 
 OLLAMA_URL = "http://test-ollama:11434/api/generate"
 VLLM_URL = "http://test-vllm:8000/v1/chat/completions"
@@ -13,7 +13,7 @@ VLLM_URL = "http://test-vllm:8000/v1/chat/completions"
 @pytest.fixture
 def ollama(monkeypatch: pytest.MonkeyPatch) -> OllamaClient:
     monkeypatch.setenv("AI_BOT_OLLAMA_URL", "http://test-ollama:11434")
-    from src.ai_bot.config import settings
+    from ai_bot.config import settings
     settings.ollama_url = "http://test-ollama:11434"
     return OllamaClient()
 
@@ -21,7 +21,7 @@ def ollama(monkeypatch: pytest.MonkeyPatch) -> OllamaClient:
 @pytest.fixture
 def vllm(monkeypatch: pytest.MonkeyPatch) -> VLLMClient:
     monkeypatch.setenv("AI_BOT_LLM_URL", "http://test-vllm:8000")
-    from src.ai_bot.config import settings
+    from ai_bot.config import settings
     settings.llm_url = "http://test-vllm:8000"
     return VLLMClient()
 

@@ -15,6 +15,7 @@ export const BACKEND_ORIGIN = API_BASE_URL;
  */
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 15000,
 });
 
 // Lade Tokens aus localStorage (Seite-Reload)
@@ -58,13 +59,18 @@ apiClient.interceptors.request.use((config) => {
 
 // --- Response-Interceptor: 401 → Refresh → Retry ---
 let refreshPromise: Promise<boolean> | null = null;
+let refreshSeq = 0;
 
 async function doRefresh(): Promise<boolean> {
   if (!inMemoryRefreshToken) return false;
   try {
-    const res = await axios.post(REFRESH_URL, {
-      refreshToken: inMemoryRefreshToken,
-    });
+    const res = await axios.post(
+      REFRESH_URL,
+      {
+        refreshToken: inMemoryRefreshToken,
+      },
+      { timeout: 15000 },
+    );
     const { accessToken, refreshToken } = res.data;
     setTokens(accessToken, refreshToken);
     return true;
@@ -83,11 +89,21 @@ apiClient.interceptors.response.use(
     }
     original._retry = true;
 
-    // Dedupliziere parallele Refreshes
+    // Dedupliziere parallele Refreshes (single-flight per Generation:
+    // nur die Generation, die den Refresh gestartet hat, darf das
+    // geteilte Promise zurücksetzen — kein finally-null-Race).
     if (!refreshPromise) {
-      refreshPromise = doRefresh().finally(() => {
-        refreshPromise = null;
-      });
+      const gen = ++refreshSeq;
+      const current = doRefresh();
+      refreshPromise = current;
+      current.then(
+        () => {
+          if (gen === refreshSeq) refreshPromise = null;
+        },
+        () => {
+          if (gen === refreshSeq) refreshPromise = null;
+        },
+      );
     }
 
     const ok = await refreshPromise;

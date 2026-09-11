@@ -3,6 +3,7 @@ import { Stomp, type CompatClient, type StompSubscription } from '@stomp/stompjs
 import { useAuthStore } from '../store/authStore';
 import { useWorldStore, type WorldEvent } from '../store/worldStore';
 import { useCombatStore } from '../store/combatStore';
+import { useToastStore } from '../store/toastStore';
 import { getAccessToken, apiClient } from '../api/client';
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8080/ws';
@@ -34,13 +35,17 @@ export function useWorldSocket(worldId: string | undefined) {
   const retryRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  // Snapshot als Effect-Dep (Reconnect bei Tokenwechsel, z.B. Re-Login).
+  const tokenSnapshot = isAuthenticated ? getAccessToken() : null;
   const addEvent = useWorldStore((s) => s.addEvent);
   const updateTokenPos = useWorldStore((s) => s.updateTokenPosition);
 
   useEffect(() => {
     if (!worldId || !isAuthenticated) return;
-    const token = getAccessToken();
-    if (!token) return;
+    // Snapshot als Effect-Dep (Reconnect bei Tokenwechsel, z.B. Re-Login);
+    // beforeConnect liest den Token trotzdem frisch (scheduled Reconnects!).
+    const tokenSnapshot = getAccessToken();
+    if (!tokenSnapshot) return;
     retryRef.current = 0;
 
     const scheduleReconnect = () => {
@@ -56,7 +61,7 @@ export function useWorldSocket(worldId: string | undefined) {
 
       client.configure({
         beforeConnect: () => {
-          client.connectHeaders = { Authorization: `Bearer ${token}` };
+          client.connectHeaders = { Authorization: `Bearer ${getAccessToken() ?? ''}` };
         },
         onConnect: () => {
           retryRef.current = 0;
@@ -84,7 +89,12 @@ export function useWorldSocket(worldId: string | undefined) {
                   .then((r) => {
                     combatStore.setSession(r.data.session, r.data.participants);
                   })
-                  .catch(() => {});
+                  .catch(() => {
+                    useToastStore
+                      .getState()
+                      .addToast('Failed to load combat session', 'error');
+                    combatStore.clearCombat();
+                  });
               }
 
               if (event.event_type === 'COMBAT_ACTION_EXECUTED') {
@@ -95,7 +105,11 @@ export function useWorldSocket(worldId: string | undefined) {
                     .then((r) => {
                       combatStore.setSession(r.data.session, r.data.participants);
                     })
-                    .catch(() => {});
+                    .catch(() => {
+                      useToastStore
+                        .getState()
+                        .addToast('Failed to refresh combat session', 'error');
+                    });
                 }
               }
 
@@ -127,5 +141,5 @@ export function useWorldSocket(worldId: string | undefined) {
         globalClient = null;
       }
     };
-  }, [worldId, isAuthenticated, addEvent, updateTokenPos]);
+  }, [worldId, isAuthenticated, tokenSnapshot, addEvent, updateTokenPos]);
 }

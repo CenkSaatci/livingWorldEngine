@@ -9,11 +9,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
 
+@Validated
 @RestController
 @RequestMapping("/api/v1/entity-events")
 public class EntityEventController {
@@ -34,7 +36,7 @@ public class EntityEventController {
     @GetMapping
     public ResponseEntity<List<EntityEventResponse>> list(@RequestParam String entityType,
                                                           @RequestParam UUID entityId,
-                                                          @RequestParam(defaultValue = "10") @Max(50) int limit) {
+                                                          @RequestParam(defaultValue = "10") @Min(1) @Max(50) int limit) {
         var events = service.getEvents(entityType, entityId, limit)
             .stream().map(EntityEventResponse::from).toList();
         return ResponseEntity.ok(events);

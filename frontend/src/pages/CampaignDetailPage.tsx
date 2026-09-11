@@ -89,9 +89,9 @@ export default function CampaignDetailPage() {
         setWorld(w?.data ?? null);
         setSystem(s?.data ?? null);
       })
-      .catch(() => {})
+      .catch(() => addToast(t('campaign.loadFailed'), 'error'))
       .finally(() => setLoading(false));
-  }, [campaignId, setActiveCampaign]);
+  }, [campaignId, setActiveCampaign, addToast, t]);
 
   const handleSearch = (value: string) => {
     setSearch(value);

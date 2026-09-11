@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { apiClient } from '../api/client';
+import { useWorldStore } from './worldStore';
 
 export interface GameSession {
   id: string;
@@ -17,9 +19,10 @@ interface SessionState {
   addSession: (session: GameSession) => void;
   endSession: (sessionId: string) => void;
   clearSessions: () => void;
+  rehydrateSessions: () => Promise<void>;
 }
 
-export const useSessionStore = create<SessionState>((set) => ({
+export const useSessionStore = create<SessionState>((set, get) => ({
   sessions: [],
   activeSession: null,
 
@@ -39,4 +42,15 @@ export const useSessionStore = create<SessionState>((set) => ({
     })),
 
   clearSessions: () => set({ sessions: [], activeSession: null }),
+
+  rehydrateSessions: async () => {
+    const worldId = useWorldStore.getState().currentWorld?.id;
+    if (!worldId) return;
+    try {
+      const res = await apiClient.get<GameSession[]>(`/worlds/${worldId}/sessions`);
+      get().setSessions(res.data);
+    } catch {
+      /* best effort */
+    }
+  },
 }));

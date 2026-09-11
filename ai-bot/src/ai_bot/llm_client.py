@@ -9,7 +9,7 @@ import json
 from abc import ABC, abstractmethod
 
 import httpx
-from src.ai_bot.config import settings
+from ai_bot.config import settings
 
 
 class LLMClient(ABC):
@@ -64,7 +64,31 @@ class VLLMClient(LLMClient):
             return json.loads(content)
 
 
-def create_llm_client() -> LLMClient:
-    if settings.llm_type == "vllm":
+class MockLLMClient(LLMClient):
+    """Test-Double (TESTING.md §4.1): liefert Canned-Responses, kein Netzwerk.
+
+    Usage: MockLLMClient({"action": "IDLE", "reasoning": "test"})
+    oder MockLLMClient([resp1, resp2]) für sequenzielle Antworten.
+    """
+
+    def __init__(self, responses: dict | list[dict] | None = None) -> None:
+        if responses is None:
+            responses = {"action": "IDLE", "reasoning": "mock"}
+        self._queue: list[dict] = list(responses) if isinstance(responses, list) else [responses]
+
+    async def generate(self, system_prompt: str, user_prompt: str) -> dict:
+        if len(self._queue) > 1:
+            return self._queue.pop(0)
+        return self._queue[0]
+
+
+FakeLLMClient = MockLLMClient
+
+
+def create_llm_client(llm_type: str | None = None) -> LLMClient:
+    t = (llm_type or settings.llm_type).lower()
+    if t in ("vllm", "openai"):
         return VLLMClient()
-    return OllamaClient()
+    if t == "ollama":
+        return OllamaClient()
+    raise ValueError(f"Unknown LLM type: {t!r} (expected 'ollama', 'vllm' or 'openai')")

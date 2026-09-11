@@ -4,7 +4,7 @@ import httpx
 import pytest
 import respx
 
-from src.ai_bot.api_client import BackendClient
+from ai_bot.api_client import BackendClient
 
 BASE = "http://test-backend/api/v1"
 TOKEN = "test-token"
@@ -14,7 +14,7 @@ TOKEN = "test-token"
 def client(monkeypatch: pytest.MonkeyPatch) -> BackendClient:
     monkeypatch.setenv("AI_BOT_BACKEND_URL", BASE)
     monkeypatch.setenv("AI_BOT_SERVICE_TOKEN", TOKEN)
-    from src.ai_bot.config import settings
+    from ai_bot.config import settings
     _old = settings.backend_url, settings.service_token
     settings.backend_url = BASE
     settings.service_token = TOKEN

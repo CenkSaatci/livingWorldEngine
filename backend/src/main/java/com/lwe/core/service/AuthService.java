@@ -114,15 +114,29 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResult serviceLogin(String serviceUser, String servicePassword) {
-        // Spezifischer Service-Account für den AI-Bot
+    public AuthResult serviceLogin(String serviceUser, String servicePassword, String ip) {
+        // Wie login() gegen Brute-Force geschützt; Service-Tokens nur für BOT-Rolle.
+        if (rateLimiter.isBlocked(ip)) {
+            throw new AuthException("AUTH_RATE_LIMITED", "Too many login attempts");
+        }
+
         var user = userRepo.findByUsername(serviceUser)
-            .orElseThrow(() -> new AuthException("AUTH_INVALID_CREDENTIALS", "Invalid service credentials"));
+            .orElseThrow(() -> {
+                rateLimiter.recordFailure(ip);
+                return new AuthException("AUTH_INVALID_CREDENTIALS", "Invalid service credentials");
+            });
 
         if (!passwordEncoder.matches(servicePassword, user.getPasswordHash())) {
+            rateLimiter.recordFailure(ip);
             throw new AuthException("AUTH_INVALID_CREDENTIALS", "Invalid service credentials");
         }
 
+        if (!"BOT".equals(user.getRole())) {
+            rateLimiter.recordFailure(ip);
+            throw new AuthException("AUTH_ROLE_INSUFFICIENT", "Service login requires BOT role");
+        }
+
+        rateLimiter.reset(ip);
         return createAuthResult(user);
     }
 

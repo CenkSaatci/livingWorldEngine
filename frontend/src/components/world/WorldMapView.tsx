@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { apiClient, BACKEND_ORIGIN } from '../../api/client';
 import { useApiGet } from '../../hooks/useApiGet';
+import { useToast } from '../../hooks/useToast';
 
 interface Region {
   id: string;
@@ -119,6 +120,7 @@ export function WorldMapView({
 
   const { data: regions } = useApiGet<Region[]>(`/worlds/${worldId}/regions`, [worldId]);
   const mapLayerRef = useRef<HTMLDivElement>(null);
+  const toastError = useToast().error;
 
   useEffect(() => {
     const el = mapLayerRef.current;
@@ -161,7 +163,9 @@ export function WorldMapView({
         if (mapRes.data?.imageUrl) {
           setMapUrl(BACKEND_ORIGIN + mapRes.data.imageUrl);
         }
-      } catch {}
+      } catch {
+        toastError('Failed to load map');
+      }
     };
     load();
 
@@ -199,7 +203,7 @@ export function WorldMapView({
     });
 
     return () => { cancelled = true; };
-  }, [worldId, regions]);
+  }, [worldId, regions, toastError]);
 
   const dominantWeather = Object.values(weather)[0]?.weatherType;
 

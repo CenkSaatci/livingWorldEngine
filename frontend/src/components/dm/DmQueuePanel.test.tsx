@@ -61,7 +61,7 @@ describe('DmQueuePanel', () => {
       expect(screen.getByText('ATTACK_PLAYER')).toBeTruthy();
     });
 
-    const approveButtons = screen.getAllByTitle('Approve');
+    const approveButtons = screen.getAllByTitle('queue.approve');
     await userEvent.click(approveButtons[0]);
 
     expect(apiClient.post).toHaveBeenCalledWith('/npc-intents/i1/approve');
@@ -76,7 +76,7 @@ describe('DmQueuePanel', () => {
       expect(screen.getByText('ATTACK_PLAYER')).toBeTruthy();
     });
 
-    const rejectButtons = screen.getAllByTitle('Reject');
+    const rejectButtons = screen.getAllByTitle('queue.reject');
     await userEvent.click(rejectButtons[0]);
 
     expect(apiClient.post).toHaveBeenCalledWith('/npc-intents/i1/reject');

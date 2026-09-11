@@ -20,6 +20,7 @@ import { apiClient } from '../../api/client';
 import { useToast } from '../../hooks/useToast';
 import { useApiGet } from '../../hooks/useApiGet';
 import { useLazyApiGet } from '../../hooks/useLazyApiGet';
+import { useTranslation } from 'react-i18next';
 
 interface Region {
   id: string;
@@ -87,6 +88,7 @@ interface Props {
 }
 
 export function RegionTree({ worldId, onSelectRegion, onSelectLocation }: Props) {
+  const { t } = useTranslation('common');
   const toast = useToast();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [locations, setLocations] = useState<Record<string, Location[]>>({});
@@ -137,7 +139,7 @@ export function RegionTree({ worldId, onSelectRegion, onSelectLocation }: Props)
             <button
               onClick={() => toggleRegion(r.id)}
               className="rounded p-1 text-text-secondary hover:text-accent hover:bg-bg-elevated/50"
-              aria-label={expanded[r.id] ? 'Collapse region' : 'Expand region'}
+              aria-label={expanded[r.id] ? t('region.collapse') : t('region.expand')}
             >
               {expanded[r.id] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>

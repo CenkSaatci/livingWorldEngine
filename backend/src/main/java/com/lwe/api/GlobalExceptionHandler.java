@@ -4,6 +4,7 @@ import com.lwe.api.dto.ApiError;
 import com.lwe.core.service.*;
 import com.lwe.core.util.WorldAccess;
 import com.lwe.rules.RuleSchemaValidator;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -19,6 +20,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex) {
         var details = ex.getBindingResult().getFieldErrors().stream()
             .map(fe -> Map.of("field", fe.getField(), "issue", fe.getDefaultMessage()))
+            .toList();
+        return ResponseEntity.badRequest().body(ApiError.validationFailed(details));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiError> handleConstraintViolation(ConstraintViolationException ex) {
+        var details = ex.getConstraintViolations().stream()
+            .map(v -> Map.of("field", v.getPropertyPath().toString(), "issue", v.getMessage()))
             .toList();
         return ResponseEntity.badRequest().body(ApiError.validationFailed(details));
     }
@@ -81,6 +90,9 @@ public class GlobalExceptionHandler {
             case WorldService.WorldException e -> e.getErrorCode();
             case WorldInviteService.InviteException e -> e.getErrorCode();
             case WorldAccess.WorldAccessException e -> e.getErrorCode();
+            case LevelUpService.LevelException e -> e.getErrorCode();
+            case FormulaEvaluator.EvaluationException e -> "FORMULA_EXPRESSION_INVALID";
+            case IllegalArgumentException e -> "INVALID_INPUT";
             case null -> null;
             default -> null;
         };
@@ -138,8 +150,15 @@ public class GlobalExceptionHandler {
             };
             case WorldAccess.WorldAccessException e -> switch (e.getErrorCode()) {
                 case "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
+                case "WORLD_NOT_FOUND", "MAP_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 default -> HttpStatus.BAD_REQUEST;
             };
+            case LevelUpService.LevelException e -> switch (e.getErrorCode()) {
+                case "ENTITY_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                default -> HttpStatus.BAD_REQUEST;
+            };
+            case FormulaEvaluator.EvaluationException e -> HttpStatus.BAD_REQUEST;
+            case IllegalArgumentException e -> HttpStatus.BAD_REQUEST;
             case CampaignService.CampaignException e -> switch (e.getErrorCode()) {
                 case "CAMPAIGN_NOT_FOUND", "WORLD_NOT_FOUND", "GAME_SYSTEM_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 case "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;

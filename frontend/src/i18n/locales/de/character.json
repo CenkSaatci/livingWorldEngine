@@ -30,7 +30,8 @@
     "rollFailed": "Wurf fehlgeschlagen",
     "abilityFailed": "Fähigkeit fehlgeschlagen",
     "xpSaveFailed": "Fehler beim Speichern der XP",
-    "overrideSaveFailed": "Fehler beim Speichern des Overrides"
+    "overrideSaveFailed": "Fehler beim Speichern des Overrides",
+    "dragToEquip": "Ziehen zum Ausrüsten"
   },
   "attribute": {
     "modifier": "Modifikator"

@@ -4,6 +4,7 @@ import com.lwe.core.domain.World;
 import com.lwe.core.domain.WorldMap;
 import com.lwe.core.repository.WorldMapRepository;
 import com.lwe.core.repository.WorldRepository;
+import com.lwe.core.util.WorldAccess;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,7 +84,26 @@ class WorldMapServiceTest {
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
 
         assertThatThrownBy(() -> service.getOrCreate(worldId, userId))
-            .isInstanceOf(RuntimeException.class);
+            .isInstanceOf(WorldAccess.WorldAccessException.class)
+            .hasMessageContaining("Access denied");
+    }
+
+    @Test
+    void shouldRejectUnknownWorld() {
+        when(worldRepo.findById(worldId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getOrCreate(worldId, userId))
+            .isInstanceOf(WorldAccess.WorldAccessException.class)
+            .hasMessageContaining("World not found");
+    }
+
+    @Test
+    void shouldRejectUnknownMap() {
+        when(mapRepo.findById(worldId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getById(worldId, userId))
+            .isInstanceOf(WorldAccess.WorldAccessException.class)
+            .hasMessageContaining("Map not found");
     }
 
     private void setId(Object obj, UUID id) {

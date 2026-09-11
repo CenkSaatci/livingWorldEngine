@@ -15,7 +15,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -25,6 +28,16 @@ public class FileUploadController {
     private final WorldRepository worldRepo;
     private final WorldAccess worldAccess;
     private final Path uploadDir;
+
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of(".png", ".jpg", ".jpeg", ".webp");
+    private static final Pattern SERVE_FILENAME = Pattern.compile("^map\\.(png|jpg|jpeg|webp)$");
+    private static final Map<String, MediaType> MEDIA_TYPES = Map.of(
+        ".png", MediaType.IMAGE_PNG,
+        ".jpg", MediaType.IMAGE_JPEG,
+        ".jpeg", MediaType.IMAGE_JPEG,
+        ".webp", MediaType.valueOf("image/webp")
+    );
+    private static final long MAX_BYTES = 10 * 1024 * 1024;
 
     public FileUploadController(WorldMapRepository worldMapRepo,
                                 WorldRepository worldRepo,
@@ -45,15 +58,29 @@ public class FileUploadController {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body(new ErrorResponse("File is empty"));
         }
+        if (file.getSize() > MAX_BYTES) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("File too large (max 10MB)"));
+        }
 
         try {
-            var ext = extractExtension(file.getOriginalFilename());
+            var ext = extractExtension(file.getOriginalFilename()).toLowerCase(java.util.Locale.ROOT);
+            if (!ALLOWED_EXTENSIONS.contains(ext)) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("Only PNG, JPG or WEBP images allowed"));
+            }
+            var contentType = file.getContentType();
+            if (contentType == null || !contentType.toLowerCase(java.util.Locale.ROOT).startsWith("image/")) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("Only image uploads allowed"));
+            }
+            var bytes = file.getBytes();
+            if (!hasImageMagicBytes(bytes, ext)) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("File content is not a valid image"));
+            }
             var targetDir = uploadDir.resolve(worldId.toString());
             Files.createDirectories(targetDir);
 
             var filename = "map" + ext;
             var targetPath = targetDir.resolve(filename);
-            Files.write(targetPath, file.getBytes());
+            Files.write(targetPath, bytes);
 
             var map = worldMapRepo.findByWorldId(worldId)
                 .orElseGet(() -> {
@@ -78,20 +105,49 @@ public class FileUploadController {
         return idx >= 0 ? filename.substring(idx) : ".png";
     }
 
+    /** Prüft Magic Bytes statt nur Endung/Content-Type (Polyglot-/Rename-Angriffe). */
+    private boolean hasImageMagicBytes(byte[] bytes, String ext) {
+        if (bytes == null || bytes.length < 4) return false;
+        return switch (ext) {
+            case ".png" -> bytes.length >= 8
+                && (bytes[0] & 0xFF) == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47
+                && bytes[4] == 0x0D && bytes[5] == 0x0A && bytes[6] == 0x1A && bytes[7] == 0x0A;
+            case ".jpg", ".jpeg" -> (bytes[0] & 0xFF) == 0xFF && (bytes[1] & 0xFF) == 0xD8
+                && (bytes[2] & 0xFF) == 0xFF;
+            case ".webp" -> bytes.length >= 12
+                && bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46
+                && bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50;
+            default -> false;
+        };
+    }
+
     @GetMapping("/uploads/{worldId}/{filename}")
     public ResponseEntity<?> serveFile(@PathVariable UUID worldId,
-                                       @PathVariable String filename) {
+                                       @PathVariable String filename,
+                                       @AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(401).body(new ErrorResponse("Authentication required"));
+        }
+        if (!SERVE_FILENAME.matcher(filename).matches()) {
+            return ResponseEntity.notFound().build();
+        }
         try {
-            var path = uploadDir.resolve(worldId.toString()).resolve(filename);
-            if (!Files.exists(path)) {
+            worldAccess.requireAccess(worldId, user.getId());
+            var base = uploadDir.resolve(worldId.toString()).normalize();
+            var path = base.resolve(filename).normalize();
+            // Path-Traversal: aufgelöster Pfad muss unterhalb von uploadDir/worldId bleiben.
+            if (!path.startsWith(base)) {
+                return ResponseEntity.notFound().build();
+            }
+            if (!Files.isRegularFile(path)) {
                 return ResponseEntity.notFound().build();
             }
             var bytes = Files.readAllBytes(path);
-            var mediaType = filename.endsWith(".png") ? org.springframework.http.MediaType.IMAGE_PNG
-                : filename.endsWith(".jpg") || filename.endsWith(".jpeg")
-                    ? org.springframework.http.MediaType.IMAGE_JPEG
-                    : org.springframework.http.MediaType.IMAGE_PNG;
-            return ResponseEntity.ok().contentType(mediaType).body(bytes);
+            var ext = filename.substring(filename.lastIndexOf('.')).toLowerCase(java.util.Locale.ROOT);
+            return ResponseEntity.ok().contentType(MEDIA_TYPES.get(ext)).body(bytes);
+        } catch (com.lwe.core.util.WorldAccess.WorldAccessException e) {
+            if ("WORLD_NOT_FOUND".equals(e.getErrorCode())) return ResponseEntity.notFound().build();
+            return ResponseEntity.status(403).body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }

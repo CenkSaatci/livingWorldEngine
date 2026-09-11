@@ -2,6 +2,9 @@ import { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { useSettingsStore } from './store/settingsStore';
+import { useWorldStore } from './store/worldStore';
+import { useSessionStore } from './store/sessionStore';
+import { useCombatStore } from './store/combatStore';
 import { AppRoutes } from './router';
 import { ToastContainer } from './components/ui/Toast';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
@@ -12,7 +15,13 @@ export default function App() {
   const restoreSession = useAuthStore((s) => s.restoreSession);
   const theme = useSettingsStore((s) => s.theme);
 
-  useEffect(() => { restoreSession(); }, [restoreSession]);
+  useEffect(() => {
+    if (restoreSession()) {
+      useWorldStore.getState().rehydrateCurrentWorld();
+      useSessionStore.getState().rehydrateSessions();
+      useCombatStore.getState().rehydrateCombat();
+    }
+  }, [restoreSession]);
 
   useEffect(() => {
     const html = document.documentElement;

@@ -40,7 +40,8 @@ class FileUploadControllerTest {
         when(worldMapRepo.findByWorldId(worldId)).thenReturn(Optional.of(map));
         when(worldMapRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        var file = new MockMultipartFile("file", "map.png", MediaType.IMAGE_PNG_VALUE, "fake-image-data".getBytes());
+        byte[] pngBytes = new byte[] {(byte) 0x89, 'P', 'N', 'G', (byte) 0x0D, (byte) 0x0A, (byte) 0x1A, (byte) 0x0A, 0, 0, 0, 0};
+        var file = new MockMultipartFile("file", "map.png", MediaType.IMAGE_PNG_VALUE, pngBytes);
         var response = controller.uploadMap(worldId, file, user);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);

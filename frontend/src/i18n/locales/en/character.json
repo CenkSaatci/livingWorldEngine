@@ -30,7 +30,8 @@
     "rollFailed": "Roll failed",
     "abilityFailed": "Ability failed",
     "xpSaveFailed": "Failed to save XP",
-    "overrideSaveFailed": "Failed to save override"
+    "overrideSaveFailed": "Failed to save override",
+    "dragToEquip": "Drag to equip"
   },
   "attribute": {
     "modifier": "Modifier"

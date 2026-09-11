@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
-from src.ai_bot.main import app
+from ai_bot.main import app
 
 client = TestClient(app)
 

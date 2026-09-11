@@ -64,10 +64,17 @@
 
 ### `POST /api/v1/auth/service-login`
 Bot-Service-Login. Siehe Sektion 15 und [`ADR/005`](ADR/005-ki-validation-layer.md).
+Nur Accounts mit Role `BOT` erhalten ein Token (sonst `AUTH_ROLE_INSUFFICIENT`); wie `/login` rate-limited (5/min pro IP).
 
 **Request:** `{ "service_user": "lwe-bot", "service_password": "****" }`
 **Response 200:** wie `/api/v1/auth/login`, aber Token hat Role `BOT`
-**Fehlercodes:** `AUTH_SERVICE_TOKEN_INVALID`
+**Fehlercodes:** `AUTH_SERVICE_TOKEN_INVALID`, `AUTH_ROLE_INSUFFICIENT`, `AUTH_RATE_LIMITED`
+
+### `POST /api/v1/auth/forgot-password`
+Fordert ein Passwort-Reset an.
+
+**Request:** `{ "email": "user@example.com" }`
+**Response 200:** `{ "message": "..." }` — **das Reset-Token wird NIE in der Response zurückgegeben** (Anti-Enumeration; Token geht out-of-band, z. B. per Mail, oder steht nur im Server-Log).
 
 ---
 
@@ -599,12 +606,11 @@ Gibt neue Events seit `eventId` zurück. Wird vom Bot gepollt.
       "eventType": "FIRE_CREATED",
       "campaignId": "uuid",
       "sourceEntityId": "uuid",
-      "target_entity_id": null,
-      "payload_json": { "position": { "x": 15, "y": 22 }, "intensity": 1 },
-      "created_at": "2025-..."
+      "targetEntityId": null,
+      "payload": { "position": { "x": 15, "y": 22 }, "intensity": 1 },
+      "createdAt": "2025-..."
     }
-  ],
-  "last_event_id": 123456
+  ]
 }
 ```
 
@@ -612,14 +618,15 @@ Gibt neue Events seit `eventId` zurück. Wird vom Bot gepollt.
 
 ---
 
-## 14. Admin (`/api/v1/admin/*` — Phase 5, Rolle `ADMIN`)
+## 14. Admin (`/api/v1/admin/*` — Rolle `ADMIN`)
 
 - `GET /api/v1/admin/users` — User-Übersicht
 - `GET /api/v1/admin/users/{id}` — User-Detail
-- `PATCH /api/v1/admin/users/{id}` — Sperren/Rollen ändern (**Fehlercodes:** `ADMIN_TARGET_SELF`, `ADMIN_DEMOTE_LAST`)
-- `GET /api/v1/admin/worlds/stats` — Heatmap der Welten je Activity
-- `GET /api/v1/admin/bots/status` — Bot-Status pro Welt
-- `POST /api/v1/admin/bots/{worldId}/restart` (**Fehlercodes:** `ADMIN_BOT_NOT_FOUND`)
+- `GET /api/v1/admin/users/{id}/plan` — Plan-Info des Users
+- `PUT /api/v1/admin/users/{id}/role` — Rolle setzen (`USER` | `ADMIN` | `BOT`)
+- `PUT /api/v1/admin/users/{id}/plan` — Plan zuweisen
+- `GET /api/v1/admin/stats` — `{ "total_worlds": n, "active_worlds": n }`
+- `POST /api/v1/admin/events/archive` — Event-Archivierung anstoßen
 
 ---
 
@@ -634,21 +641,14 @@ Gibt neue Events seit `eventId` zurück. Wird vom Bot gepollt.
 
 | Channel | Richtung | Payload | Zweck |
 |---|---|---|---|
-| `/app/v1/rolls/{worldId}` | Client → Server | `RollRequest` | Online Würfelwurf (gleichwertig zu `POST /api/v1/rolls`) |
-| `/app/v1/chat/{worldId}` | Client → Server | `{ message: "..." }` | Chat-Nachricht |
-| `/app/v1/token/move/{mapId}` | Client → Server | `{ token_id, x, y }` | Token-Bewegung |
-| `/app/v1/fog/update/{mapId}` | DM → Server | `{ polygon: [...] }` | Fog of War-Anpassung |
+| `/app/chat/{worldId}` | Client → Server | `{ message: "..." }` | Chat-Nachricht |
+| `/app/token/move/{worldId}` | Client → Server | `{ entityId, x, y }` | Token-Bewegung (auth: JWT-User muss Zugriff auf die Welt haben; sonst STOMP-ERROR-Frame) |
 
 ### Server → Client Topics (`/topic/...`)
 
 | Topic | Empfänger | Payload |
 |---|---|---|
-| `/topic/world/{worldId}` | Alle in Welt | `WorldEvent` (Proben, Aktion, NPC-Intent-Ausführung) |
-| `/topic/combat/{sessionId}` | Alle in Kampf | `CombatUpdate` (aktueller Turn, Teilnehmer) |
-| `/topic/chat/{worldId}` | Alle in Welt | `ChatMessage` |
-| `/topic/map/{mapId}` | Alle auf Karte | `TokenMove` / `FogUpdate` |
-| `/topic/dm/intents/{worldId}` | Nur DM | `NpcIntent` (pending) |
-| `/topic/world/{worldId}/time` | Alle in Welt | `TimeUpdate` (`TIME_ADVANCED`, `TIME_PAUSED`, `TIME_RESUMED`, `TIME_MODE_CHANGED`) |
+| `/topic/world/{worldId}` | Alle in Welt | `WorldEvent` (Proben, Aktion, NPC-Intent-Ausführung), `ChatMessage`, `TokenMove` |
 
 ### Beispiel-STOMP-Frame (Subscription)
 ```
