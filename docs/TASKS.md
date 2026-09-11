@@ -2269,7 +2269,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
   - **Cap-Prüfung:** `maxAttrValue` & Co. werden validiert (Shape), aber (noch) nicht im Wizard erzwungen
 
 ### P28-T03: Traits-Katalog (Vor-/Nachteile)
-- **Status:** 📋
+- **Status:** ✅ (2026-09-11: Schema streng (kind/effects/costs), Sheet wendet gewählte Traits aus `metadataJson.traits` an (Attribut-/Derived-Effekte, Tier-Suffix wird ignoriert), Wizard-Step „Merkmale" mit Katalog-Editor + Dangling-Warnung; committed `e544bd5`)
 - **Aufwand:** 1,5 Tage
 - **Beschreibung:**
   - `traits[]`: Name, Art (Vorteil/Nachteil), Kosten fest oder gestaffelt (Stufen wie I–III), Prerequisites (Traits/Spezies/Kultur), Exklusionen („nicht: X"), Effekt-Hooks (Basiswert-Boni, Freischaltungen)
@@ -2279,7 +2279,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD
 
 ### P28-T04: Steigerung (Spalten, Matrix, Aktivierung)
-- **Status:** 📋
+- **Status:** ✅ (2026-09-11: Schema streng, Max-Regel 422 `SKILL_MAX_EXCEEDED` bei PATCH skills mit `campaignId`, Sheet liefert `advanceCost` (Aktivierung/Matrix), Wizard-Spalte+Matrix-Editor; committed `3bd305a`)
 - **Aufwand:** 1,5 Tage
 - **Beschreibung:**
   - Kosten-Spalte pro Skill (A/B/C/D-Äquivalent), Aktivierungskosten (Zauber/Liturgien vs. auto-aktive Talente), globale Kostenmatrix pro Stufe
@@ -2287,9 +2287,15 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
   - Sheet zeigt Steigerungskosten-Vorschau pro Skill
 - **Akzeptanzkriterien:** Stufenweises Steigern mit korrekten Kosten; Aktivierung neuer Skills kostet; Max-Verletzung 422; Tests grün
 - **Qualitäts-Check:** TDD
+- **Bemerkungen (2026-09-11) — vertagte Teile:**
+  - **Globale `activationCosts`-Map gestrichen:** Skills haben keinen Typ (spell/liturgy/…) — stattdessen `activationCost` pro Skill; Map wäre toter Config gewesen
+  - **Max-Regel gilt für den gespeicherten Override-Wert**, nicht die Sheet-Gesamtanzeige inkl. Attributs-Modifikator (Heldenbau präzisiert)
+  - **Attribute aus `rules`-Defaults** fließen nicht in die Max-Regel ein, wenn die Entity keine Attribute gespeichert hat (Audit-Befund)
+  - Legacy-Feld `attribute` (Singular) wird von der Max-Regel nicht gelesen (Schema erlaubt es)
+  - Steigerungs-Vorschau im Sheet nur als Badge; keine AP-Ledger-Deduktion (Heldenbau)
 
 ### P28-T05: Derived deluxe (Tabellen + Bedingungen)
-- **Status:** 📋
+- **Status:** ✅ (2026-09-11: `input`+`table`-Lookup mit Fehlergrund, `requiresTrait` lässt Eintrag weg, `DerivedValueInfo.error` mit Grund statt „(Fehler)"-Suffix, Wizard Tabellen-Modus + Merkmal-Select, Sheet zeigt Fehler mit Tooltip; committed `a282476`)
 - **Aufwand:** 1 Tag
 - **Beschreibung:**
   - `derived_values`-Einträge mit Tabellen-Lookup (Wertebereich → Ergebnis, z. B. SK/ZK-Summe) und `requiresTrait` (nur mit Vorteil/X vorhanden)
@@ -2298,6 +2304,12 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
   - Wizard-Editor für Tabellen + Vorschau mit Beispiel-Attributen
 - **Akzeptanzkriterien:** SK-Tabellen-Äquivalent rechnet korrekt; AsP-Äquivalent ohne Trait → als fehlend markiert (statt „(Fehler)"-Überraschung nur mit Erklärung); Tests grün
 - **Qualitäts-Check:** TDD
+- **Bemerkungen (2026-09-11) — vertagte Teile:**
+  - **Keine FormulaEvaluator-Syntaxerweiterung nötig** — Tabellen/Bedingungen sind neue Semantik (input + table), kein neuer Parser
+  - **Wizard-Vorschau mit Beispiel-Attributen gestrichen** (bräuchte JS-Zwillings-Evaluator); Tabellen-Editor zeigt Zeilen, Backend rechnet
+  - **Tabellen-Überlappung = First-Match** (Plan wollte Fehler; Lücke bleibt Fehler) — siehe Audit P28
+  - **Spezies-Basis als Variable** hängt an P29-Paketen (noch nicht vorhanden)
+  - Override + Trait-Effekt auf denselben Derived-Wert addieren sich (gewollt, additiv)
 
 ### P28-T06: Abnahme Engine-Bausteine
 - **Status:** 📋
