@@ -704,7 +704,7 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 
 ## 15. P28/P29 Wizard-Engine Checkpoints
 
-> Stand P29-T06 + Audit-Fixes + Playwright-Suite. Backend-Tests: `mvn -B test` (360); Frontend: `npx vitest run` (158); E2E: `cd frontend && npm run test:e2e` (Playwright, 3 Tests — Login-Setup, Wizard-Pakete inkl. Live-Vorschau + Save, Dashboard-Smoke). Voraussetzung: pm2 `lwe-frontend`/`lwe-backend` laufen, `npx playwright install chromium` einmalig; Zugang via `E2E_EMAIL`/`E2E_PASSWORD` (Default devbe).
+> Stand P31 + Audits. Backend-Tests: `mvn -B test` (360); Frontend: `npx vitest run` (168); E2E: `cd frontend && npm run test:e2e` (Playwright, 7 Tests — Login-Setup, Wizard-Pakete, Charakter-Wizard, Sheet-DSA, Kampf-Manöver, Save-Gate, Dashboard-Smoke). Voraussetzung: pm2 `lwe-frontend`/`lwe-backend` laufen, `npx playwright install chromium` einmalig; Zugang via `E2E_EMAIL`/`E2E_PASSWORD` (Default devbe).
 
 ### 15.1 Autorierung (SystemWizard)
 - [x] **Automatisiert (Playwright):** Paket-Step zeigt gespeicherte Pakete (Name/Kosten/Auto-Merkmale/Restriktionen), Live-Vorschau rechnet („Kosten: 18 AP · staerke +1 · Nachtsicht"), Save öffnet die Übersicht erfolgreich
@@ -730,6 +730,7 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 - [x] `docs/examples/dsa5.json` validiert gegen `DEFAULT_SCHEMA` + Sheet/Probe-Abnahme (Backend-Tests)
 
 ### 15.5 E2E-Backlog (Playwright)
-- [ ] Sheet-E2E (DSA-Referenz): Welt/Kampagne/Entity per API seeden → Sheet zeigt sk=7, asp nur mit Zauberer, Rüstung
-- [ ] Kampf-E2E: Session starten → Manöver-Button, AP-Gate, Zustands-Tick, Schadensarten-Log
-- [ ] Wizard-Save-Gate-E2E: neues System ohne Attribute → Speichern blockiert mit Prüfbericht
+- [x] Sheet-E2E (DSA-Referenz): sk=7, asp nur mit Zauberer, Rüstung (P31-T01)
+- [x] Kampf-E2E: Session im UI starten → Manöver + AP-Gate (P31-T02); offen: Zustands-Tick + Schadensarten-Log
+- [x] Wizard-Save-Gate-E2E: ohne Attribute blockiert mit Toast (P31-T03)
+- [ ] CombatPage-Rerender prüfen: Ziel-Buttons „not stable" in Playwright (force-Click als Workaround) — möglicher WS-Render-Loop

@@ -2423,17 +2423,17 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 ## Phase 31: E2E-Ausbau (TESTING §15.5)
 
 ### P31-T01: Sheet-E2E (DSA-Referenz)
-- **Status:** 📋
+- **Status:** ✅ (`sheet-dsa.spec.ts`: sk=7 im UI, asp nur mit Zauberer (19.5), Rüstung 3 aus `damage_armor`; ohne Trait/Rüstung kein Badge)
 - **Beschreibung:** Playwright: dsa5.json-System + Welt + Kampagne + Entity per API seeden → Charakter-Sheet im UI zeigt sk=7, asp nur mit Zauberer, Rüstung
 - **Qualitäts-Check:** E2E
 
 ### P31-T02: Kampf-E2E (Manöver/AP/Zustände/Schadensarten)
-- **Status:** 📋
+- **Status:** ✅ (`combat-maneuver.spec.ts`: Kampfstart im UI → Ziel wählen → Wuchtschlag (Kosten 2) → AP-Gate sperrt Button; Zustands-/Schadensarten-Log weiter manuell)
 - **Beschreibung:** Playwright: Kampf starten, Manöver-Button (AP-Gate), Zustands-Tick, Schadensarten-Log
 - **Qualitäts-Check:** E2E
 
 ### P31-T03: Save-Gate-E2E + finale Abnahme
-- **Status:** 📋
+- **Status:** ✅ (`wizard-save-gate.spec.ts`: ohne Attribute bleibt Modal offen + Toast „Mindestens ein Attribut anlegen…", kein System angelegt) — Gesamt-Audit folgt
 - **Beschreibung:** Playwright: neues System ohne Attribute → Speichern blockiert; Gesamt-Audit mit allen Suiten (Backend/Frontend/E2E)
 - **Qualitäts-Check:** E2E + Audit
 
