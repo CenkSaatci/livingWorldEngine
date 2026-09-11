@@ -704,9 +704,10 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 
 ## 15. P28/P29 Wizard-Engine Checkpoints
 
-> Stand P29-T06 + Audit-Fixes. Backend-Tests: `mvn -B test` (360); Frontend: `npx vitest run` (158); E2E-Automation folgt im Playwright-Paket (nach P29).
+> Stand P29-T06 + Audit-Fixes + Playwright-Suite. Backend-Tests: `mvn -B test` (360); Frontend: `npx vitest run` (158); E2E: `cd frontend && npm run test:e2e` (Playwright, 3 Tests — Login-Setup, Wizard-Pakete inkl. Live-Vorschau + Save, Dashboard-Smoke). Voraussetzung: pm2 `lwe-frontend`/`lwe-backend` laufen, `npx playwright install chromium` einmalig; Zugang via `E2E_EMAIL`/`E2E_PASSWORD` (Default devbe).
 
 ### 15.1 Autorierung (SystemWizard)
+- [x] **Automatisiert (Playwright):** Paket-Step zeigt gespeicherte Pakete (Name/Kosten/Auto-Merkmale/Restriktionen), Live-Vorschau rechnet („Kosten: 18 AP · staerke +1 · Nachtsicht"), Save öffnet die Übersicht erfolgreich
 - [ ] P28: Budget/Kostenkurven/Traits/Steigerungs-Matrix/Tabellen-Derived/Pakete setzen → Save gated bei Fehlern (Paket-Name/Kosten/Mods + Traits + Attribute)
 - [ ] P29-Pakete: Elf anlegen (18 AP, Mods `mut+1`, `gewandtheit+1`, Choice `klugheit/intuition −1`, Auto-Trait Nachtsicht, restricted Zwerg)
 - [ ] Vorschau: Elf + Waldelf + Jäger wählen → Kosten 118 AP, Mods + Auto-Traits korrekt, Wahl-Gruppen auflösbar
@@ -726,4 +727,9 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 
 ### 15.4 Regression
 - [ ] Alte Systeme (D20Lite/TwoDicePool/Fudge/dnd5e/coc7e) laden/bauen unverändert
-- [ ] `docs/examples/dsa5.json` validiert gegen `DEFAULT_SCHEMA` (Backend-Test)
+- [x] `docs/examples/dsa5.json` validiert gegen `DEFAULT_SCHEMA` + Sheet/Probe-Abnahme (Backend-Tests)
+
+### 15.5 E2E-Backlog (Playwright)
+- [ ] Sheet-E2E (DSA-Referenz): Welt/Kampagne/Entity per API seeden → Sheet zeigt sk=7, asp nur mit Zauberer, Rüstung
+- [ ] Kampf-E2E: Session starten → Manöver-Button, AP-Gate, Zustands-Tick, Schadensarten-Log
+- [ ] Wizard-Save-Gate-E2E: neues System ohne Attribute → Speichern blockiert mit Prüfbericht

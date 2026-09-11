@@ -32,5 +32,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    // Playwright-Specs laufen über `npm run test:e2e`, nicht über Vitest.
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
   },
 });

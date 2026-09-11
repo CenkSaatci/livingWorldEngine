@@ -78,3 +78,9 @@ out/
 compose.override.yml
 docker-compose.override.yml
 uploads/
+
+# Playwright E2E
+frontend/e2e/.auth/
+frontend/test-results/
+frontend/playwright-report/
+.playwright-cli/

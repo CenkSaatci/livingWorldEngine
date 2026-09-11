@@ -415,12 +415,14 @@ export default function GameSystemPage() {
                     </button>
                     <button
                       onClick={() => handleEdit(sys)}
+                      aria-label={`Edit ${sys.name}`}
                       className="text-text-secondary hover:text-accent"
                     >
                       <Pencil size={14} />
                     </button>
                     <button
                       onClick={() => setDeleting(sys.id)}
+                      aria-label={`Delete ${sys.name}`}
                       className="text-text-secondary hover:text-danger"
                     >
                       <Trash2 size={14} />
