@@ -37,4 +37,45 @@ class DerivedValueServiceTest {
         assertThat(result.getFirst().name()).contains("Kaputt");
         assertThat(result.getFirst().value()).isZero();
     }
+
+    @Test
+    void evaluatesTableLookup() {
+        // P28-T05: input-Ausdruck → Tabellen-Lookup (DSA: SK aus MU+KL+IN)
+        var table = List.of(
+            Map.<String, Object>of("min", 33, "max", 38, "value", 6),
+            Map.<String, Object>of("min", 39, "max", 44, "value", 7));
+        var defs = List.of(Map.<String, Object>of(
+            "name", "sk", "input", "mut+klugheit+intuition", "table", table));
+
+        var result = service.evaluate(defs, Map.of("mut", 14, "klugheit", 12, "intuition", 14));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().value()).isEqualTo(7.0);
+        assertThat(result.getFirst().error()).isNull();
+    }
+
+    @Test
+    void tableGapReportsErrorWithReason() {
+        var table = List.of(Map.<String, Object>of("min", 24, "max", 26, "value", 4));
+        var defs = List.of(Map.<String, Object>of(
+            "name", "sk", "input", "mut+klugheit+intuition", "table", table));
+
+        var result = service.evaluate(defs, Map.of("mut", 14, "klugheit", 14, "intuition", 14));
+
+        assertThat(result.getFirst().value()).isZero();
+        assertThat(result.getFirst().error()).contains("42"); // 42 liegt in keiner Zeile
+    }
+
+    @Test
+    void requiresTraitOmitsEntryWhenMissing() {
+        var defs = List.of(Map.<String, Object>of(
+            "name", "asp", "formula", "20+mut", "requiresTrait", "Zauberer"));
+
+        var without = service.evaluate(defs, Map.of("mut", 12), List.of());
+        assertThat(without).isEmpty();
+
+        var with = service.evaluate(defs, Map.of("mut", 12), List.of("Zauberer II"));
+        assertThat(with).hasSize(1);
+        assertThat(with.getFirst().value()).isEqualTo(32.0);
+    }
 }

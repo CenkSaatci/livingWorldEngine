@@ -323,40 +323,130 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
             <span className="w-4" />
           </div>
 
-          {data.derivedValues.map((dv, i) => (
-            <div key={i} className="flex items-center gap-2 rounded bg-bg-primary/50 p-2">
-              <input
-                value={dv.name}
-                onChange={(e) => {
-                  const a = [...data.derivedValues];
-                  a[i] = { ...a[i], name: e.target.value };
-                  update('derivedValues', a);
-                }}
-                className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                placeholder={t('sdv_name_placeholder')}
-              />
-              <div className="flex-[2]">
-                <label className="block text-[10px] text-text-secondary mb-1">{t('sdv_header_formula')}</label>
-                <FormulaBuilder
-                  value={dv.formula ?? ''}
-                  onChange={(v) => {
-                    const a = [...data.derivedValues];
-                    a[i] = { ...a[i], formula: v };
-                    update('derivedValues', a);
-                  }}
-                  attributes={data.attributes}
+          {data.derivedValues.map((dv, i) => {
+            const isTable = Array.isArray(dv.table);
+            const setDv = (next: Partial<(typeof data.derivedValues)[0]>) => {
+              const a = [...data.derivedValues];
+              a[i] = { ...a[i], ...next };
+              update('derivedValues', a);
+            };
+            return (
+            <div key={i} className="space-y-1 rounded bg-bg-primary/50 p-2">
+              <div className="flex items-center gap-2">
+                <input
+                  value={dv.name}
+                  onChange={(e) => setDv({ name: e.target.value })}
+                  className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  placeholder={t('sdv_name_placeholder')}
                 />
+                <select
+                  value={isTable ? 'table' : 'formula'}
+                  onChange={(e) => {
+                    if (e.target.value === 'table') {
+                      setDv({ table: [{ min: 0, max: 0, value: 0 }], input: dv.input ?? '', formula: undefined });
+                    } else {
+                      setDv({ table: undefined, formula: dv.formula ?? '' });
+                    }
+                  }}
+                  className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                >
+                  <option value="formula">{t('sv_mode_formula')}</option>
+                  <option value="table">{t('sv_mode_table')}</option>
+                </select>
+                <select
+                  value={dv.requiresTrait ?? ''}
+                  onChange={(e) => setDv({ requiresTrait: e.target.value || undefined })}
+                  className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  title={t('sv_requires_trait')}
+                >
+                  <option value="">{t('sv_none')}</option>
+                  {(data.traits ?? []).map((tr) => (
+                    <option key={tr.name} value={tr.name}>{tr.name}</option>
+                  ))}
+                </select>
+                <button
+                  aria-label={t('sb_delete')}
+                  onClick={() => update('derivedValues', data.derivedValues.filter((_, j) => j !== i))}
+                  className="text-danger hover:text-danger/80"
+                >
+                  <X size={14} />
+                </button>
               </div>
-              <button
-                onClick={() =>
-                  update('derivedValues', data.derivedValues.filter((_, j) => j !== i))
-                }
-                className="text-danger hover:text-danger/80"
-              >
-                <X size={14} />
-              </button>
+
+              {isTable ? (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase text-text-secondary">{t('sv_input')}</span>
+                    <input
+                      value={dv.input ?? ''}
+                      onChange={(e) => setDv({ input: e.target.value })}
+                      className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs font-mono text-text-primary outline-none focus:border-accent"
+                      placeholder="mut+klugheit+intuition"
+                    />
+                  </div>
+                  {(dv.table ?? []).map((row, ri) => (
+                    <div key={ri} className="flex items-center gap-2">
+                      <span className="text-[10px] uppercase text-text-secondary">{t('sv_min')}</span>
+                      <input
+                        type="number"
+                        value={row.min}
+                        onChange={(e) => {
+                          const table = [...(dv.table ?? [])];
+                          table[ri] = { ...table[ri], min: Number(e.target.value) };
+                          setDv({ table });
+                        }}
+                        className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                      />
+                      <span className="text-[10px] uppercase text-text-secondary">{t('sv_max')}</span>
+                      <input
+                        type="number"
+                        value={row.max}
+                        onChange={(e) => {
+                          const table = [...(dv.table ?? [])];
+                          table[ri] = { ...table[ri], max: Number(e.target.value) };
+                          setDv({ table });
+                        }}
+                        className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                      />
+                      <span className="text-[10px] uppercase text-text-secondary">{t('sv_value')}</span>
+                      <input
+                        type="number"
+                        value={row.value}
+                        onChange={(e) => {
+                          const table = [...(dv.table ?? [])];
+                          table[ri] = { ...table[ri], value: Number(e.target.value) };
+                          setDv({ table });
+                        }}
+                        className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                      />
+                      <button
+                        aria-label={t('sb_delete')}
+                        onClick={() => setDv({ table: (dv.table ?? []).filter((_, j) => j !== ri) })}
+                        className="text-danger hover:text-danger/80"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => setDv({ table: [...(dv.table ?? []), { min: 0, max: 0, value: 0 }] })}
+                    className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+                  >
+                    <Plus size={12} /> {t('sv_add_row')}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex-[2]">
+                  <FormulaBuilder
+                    value={dv.formula ?? ''}
+                    onChange={(v) => setDv({ formula: v })}
+                    attributes={data.attributes}
+                  />
+                </div>
+              )}
             </div>
-          ))}
+            );
+          })}
 
           <button
             onClick={() =>

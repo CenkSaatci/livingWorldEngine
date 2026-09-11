@@ -99,7 +99,7 @@ public class CharacterSheetService {
 
         // Derived Values
         var derivedRaw = (List<Map<String, Object>>) rules.getOrDefault("derived_values", List.of());
-        var derivedValues = derivedValueService.evaluate(derivedRaw, attributeValues);
+        var derivedValues = derivedValueService.evaluate(derivedRaw, attributeValues, selectedTraits(entity));
 
         // Formula Overrides aus metadata_json
         var overrides = parseOverrides(entity);
@@ -109,7 +109,7 @@ public class CharacterSheetService {
                     var overrideVal = overrides.get(dv.name());
                     if (overrideVal instanceof Number n) {
                         return new SheetResponse.DerivedValueInfo(
-                            dv.name(), dv.value() + n.doubleValue());
+                            dv.name(), dv.value() + n.doubleValue(), dv.error());
                     }
                     return dv;
                 })
@@ -243,7 +243,7 @@ public class CharacterSheetService {
         if (adds.isEmpty()) return values;
         return values.stream().map(dv -> {
             var add = adds.get(dv.name());
-            return add != null ? new SheetResponse.DerivedValueInfo(dv.name(), dv.value() + add) : dv;
+            return add != null ? new SheetResponse.DerivedValueInfo(dv.name(), dv.value() + add, dv.error()) : dv;
         }).collect(Collectors.toList());
     }
 

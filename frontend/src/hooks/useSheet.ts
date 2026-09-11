@@ -7,7 +7,7 @@ export interface SheetData {
   experiencePoints: number;
   level: number;
   attributes: { name: string; value: number; modifier: number; min: number; max: number }[];
-  derivedValues: { name: string; value: number }[];
+  derivedValues: { name: string; value: number; error?: string | null }[];
   skills: { name: string; total: number; perCharacterValue?: number | null; advanceCost?: number | null }[];
   conditionals: { name: string; active: boolean; description: string }[];
   abilities: { name: string; type: string; apCost: number; effect: string; diceExpression: string }[];

@@ -187,7 +187,10 @@ export function CharacterSheet({ entityId }: Props) {
                 {VALUE_ICONS[dv.name] ?? <Zap size={16} className="text-text-secondary" />}
                 <div>
                   <p className="text-[10px] text-text-secondary uppercase">{dv.name}</p>
-                  <p className="text-sm font-heading text-text-primary">{Math.round(dv.value * 10) / 10}</p>
+                  <p className={`text-sm font-heading ${dv.error ? 'text-danger' : 'text-text-primary'}`}
+                     title={dv.error ?? undefined}>
+                    {dv.error ? '—' : Math.round(dv.value * 10) / 10}
+                  </p>
                 </div>
               </div>
             ))}
