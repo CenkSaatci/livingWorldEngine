@@ -43,6 +43,8 @@ public class FormulaEvaluator {
     private double expr(Map<String, Integer> variables) {
         var result = term(variables);
         while (pos < input.length()) {
+            skipSpace();
+            if (pos >= input.length()) break;
             var c = input.charAt(pos);
             if (c == '+') { pos++; result += term(variables); }
             else if (c == '-') { pos++; result -= term(variables); }
@@ -54,6 +56,8 @@ public class FormulaEvaluator {
     private double term(Map<String, Integer> variables) {
         var result = factor(variables);
         while (pos < input.length()) {
+            skipSpace();
+            if (pos >= input.length()) break;
             var c = input.charAt(pos);
             if (c == '*') { pos++; result *= factor(variables); }
             else if (c == '/') {

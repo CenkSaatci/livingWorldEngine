@@ -10,6 +10,7 @@ import {
   toRulesJson,
   calcBudget,
   danglingTraitRefs,
+  wizardIssues,
   type AttributeDef,
   type ConditionalDef,
   type TraitDef,
@@ -61,6 +62,11 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
 
   const handleSave = async () => {
     if (!data.name.trim()) return;
+    const issues = wizardIssues(data);
+    if (issues.length > 0) {
+      toast.error(t(issues[0]));
+      return;
+    }
     if (calcBudget(data).over) {
       toast.error(t('sb_save_blocked'));
       return;
@@ -348,6 +354,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                       setDv({ table: undefined, formula: dv.formula ?? '' });
                     }
                   }}
+                  aria-label={t('sv_mode_formula')}
                   className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
                 >
                   <option value="formula">{t('sv_mode_formula')}</option>
@@ -356,6 +363,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 <select
                   value={dv.requiresTrait ?? ''}
                   onChange={(e) => setDv({ requiresTrait: e.target.value || undefined })}
+                  aria-label={t('sv_requires_trait')}
                   className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
                   title={t('sv_requires_trait')}
                 >
@@ -1805,7 +1813,9 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
             <div className="flex flex-wrap gap-1">
               {data.derivedValues.map((dv) => (
                 <span key={dv.name} className="rounded bg-bg-elevated px-2 py-0.5 text-xs text-text-primary">
-                  {dv.name} = {dv.formula}
+                  {Array.isArray(dv.table)
+                    ? `${dv.name} = ${t('sv_mode_table')}(${dv.input ?? '?'})`
+                    : `${dv.name} = ${dv.formula ?? ''}`}
                 </span>
               ))}
             </div>
@@ -1923,7 +1933,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
 
           <details className="group">
             <summary className="cursor-pointer text-xs text-text-secondary hover:text-text-primary">
-              Rules JSON anzeigen
+              {t('s5_show_json')}
             </summary>
             <pre className="mt-2 max-h-48 overflow-y-auto rounded border border-bg-elevated bg-bg-primary p-3 text-xs font-mono text-text-secondary">
               {buildRulesJson()}

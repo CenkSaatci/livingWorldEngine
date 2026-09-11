@@ -139,18 +139,36 @@ public class EntityService {
     @SuppressWarnings("unchecked")
     private void enforceSkillMax(GameEntity entity, Map<String, Integer> skills, UUID campaignId) {
         if (campaignId == null || skills.isEmpty()) return;
+        if (!rulesLoader.campaignBelongsToWorld(campaignId, entity.getWorldId())) {
+            throw new EntityException("WORLD_ACCESS_DENIED", "Campaign does not belong to world");
+        }
         var rules = rulesLoader.loadRules(campaignId, entity.getWorldId());
         var adv = rules.get("advancement");
         if (!(adv instanceof Map<?, ?> advMap)
             || !"highestAttributePlus2".equals(advMap.get("maxRule"))) return;
         var skillDefs = (List<Map<String, Object>>) rules.getOrDefault("skills", List.of());
         var attrs = parseAttrs(entity);
+        if (attrs.isEmpty()) {
+            // Audit P28: frischer Charakter — Defaults aus rulesJson zaehlen.
+            attrs = new java.util.HashMap<>();
+            if (rules.get("attributes") instanceof List<?> attrDefs) {
+                for (var def : attrDefs) {
+                    if (def instanceof Map<?, ?> m && m.get("name") instanceof String n) {
+                        var dv = m.get("default");
+                        attrs.put(n, dv instanceof Number num ? num.intValue() : 10);
+                    }
+                }
+            }
+        }
         for (var e : skills.entrySet()) {
             var def = skillDefs.stream()
                 .filter(d -> e.getKey().equals(d.get("name")))
                 .findFirst().orElse(null);
             if (def == null) continue;
-            var involved = (List<String>) def.getOrDefault("attributes", List.of());
+            // Legacy "attribute" (Singular) mitlesen (Audit P28).
+            List<String> involved = def.get("attributes") instanceof List<?> l
+                ? (List<String>) l
+                : (def.get("attribute") instanceof String a ? List.of(a) : List.of());
             var max = involved.stream()
                 .map(attrs::get).filter(java.util.Objects::nonNull)
                 .mapToInt(Integer::intValue).max().orElse(-1);

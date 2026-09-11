@@ -130,4 +130,19 @@ class FormulaEvaluatorTest {
     void onlyVariable() {
         assertEquals(14.0, eval("@{konstitution}", Map.of("konstitution", 14)));
     }
+
+    @Test
+    void spacesAroundOperators() {
+        // Audit P28: freie Eingabefelder laden zu "mut + klugheit" ein.
+        assertEquals(26.0, eval("mut + klugheit", Map.of("mut", 14, "klugheit", 12)));
+        assertEquals(7.0, eval("( mut + klugheit ) / 2", Map.of("mut", 6, "klugheit", 8)));
+        assertEquals(14.0, eval("mut*2 - 14", Map.of("mut", 14)));
+    }
+
+    @Test
+    void spacesInFunctionsAndArgs() {
+        assertEquals(6.0, eval("min( mut , klugheit )", Map.of("mut", 14, "klugheit", 6)));
+        assertEquals(14.0, eval("max( mut , klugheit )", Map.of("mut", 14, "klugheit", 6)));
+        assertEquals(3.0, eval("floor( mut / 4 )", Map.of("mut", 14)));
+    }
 }

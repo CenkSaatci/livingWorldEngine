@@ -91,7 +91,7 @@ class EntityServiceTest {
     @Test
     void skillAboveMaxIsRejected() {
         var entity = entityWithId("{\"staerke\":14}");
-        var campaignId = UUID.randomUUID();
+        var campaignId = campaignInWorld();
         when(entityRepo.findById(any())).thenReturn(Optional.of(entity));
         doNothing().when(worldAccess).requireAccess(any(), any());
         when(rulesLoader.loadRules(campaignId, worldId)).thenReturn(Map.of(
@@ -109,7 +109,7 @@ class EntityServiceTest {
     @Test
     void skillAtMaxIsAccepted() {
         var entity = entityWithId("{\"staerke\":14}");
-        var campaignId = UUID.randomUUID();
+        var campaignId = campaignInWorld();
         when(entityRepo.findById(any())).thenReturn(Optional.of(entity));
         doNothing().when(worldAccess).requireAccess(any(), any());
         when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -133,5 +133,66 @@ class EntityServiceTest {
 
         assertThat(result.getSkillsJson()).contains("\"Athletik\":20");
         verifyNoInteractions(rulesLoader);
+    }
+
+    private UUID campaignInWorld() {
+        var campaignId = UUID.randomUUID();
+        when(rulesLoader.campaignBelongsToWorld(campaignId, worldId)).thenReturn(true);
+        return campaignId;
+    }
+
+    @Test
+    void skillMaxUsesRulesDefaultsWhenEntityHasNoAttributes() {
+        // Audit P28: frischer Charakter (keine gespeicherten Attribute) darf die
+        // Max-Regel nicht umgehen — Defaults aus rulesJson zaehlen.
+        var entity = entityWithId(null);
+        var campaignId = campaignInWorld();
+        when(entityRepo.findById(any())).thenReturn(Optional.of(entity));
+        doNothing().when(worldAccess).requireAccess(any(), any());
+        when(rulesLoader.loadRules(campaignId, worldId)).thenReturn(Map.of(
+            "attributes", List.of(Map.of("name", "staerke", "default", 10)),
+            "skills", List.of(Map.of("name", "Athletik", "attributes", List.of("staerke"))),
+            "advancement", Map.of("maxRule", "highestAttributePlus2")));
+
+        // Default 10 → Max 12; 13 muss abgelehnt werden.
+        assertThatThrownBy(() -> service.updateSkills(entity.getId(), userId,
+            Map.of("Athletik", 13), campaignId))
+            .isInstanceOf(EntityService.EntityException.class)
+            .satisfies(e -> assertThat(((EntityService.EntityException) e).getErrorCode())
+                .isEqualTo("SKILL_MAX_EXCEEDED"));
+    }
+
+    @Test
+    void skillMaxReadsLegacySingularAttribute() {
+        // Audit P28: Seeds nutzen "attribute" (Singular) — darf die Regel nicht umgehen.
+        var entity = entityWithId("{\"staerke\":14}");
+        var campaignId = campaignInWorld();
+        when(entityRepo.findById(any())).thenReturn(Optional.of(entity));
+        doNothing().when(worldAccess).requireAccess(any(), any());
+        when(rulesLoader.loadRules(campaignId, worldId)).thenReturn(Map.of(
+            "skills", List.of(Map.of("name", "Athletik", "attribute", "staerke")),
+            "advancement", Map.of("maxRule", "highestAttributePlus2")));
+
+        assertThatThrownBy(() -> service.updateSkills(entity.getId(), userId,
+            Map.of("Athletik", 20), campaignId))
+            .isInstanceOf(EntityService.EntityException.class)
+            .satisfies(e -> assertThat(((EntityService.EntityException) e).getErrorCode())
+                .isEqualTo("SKILL_MAX_EXCEEDED"));
+    }
+
+    @Test
+    void foreignCampaignIdIsRejectedInsteadOfSilentlySkipping() {
+        // Audit P28: fremde campaignId deaktivierte den Cap still.
+        var entity = entityWithId("{\"staerke\":14}");
+        var campaignId = UUID.randomUUID();
+        when(entityRepo.findById(any())).thenReturn(Optional.of(entity));
+        doNothing().when(worldAccess).requireAccess(any(), any());
+        when(rulesLoader.campaignBelongsToWorld(campaignId, worldId)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.updateSkills(entity.getId(), userId,
+            Map.of("Athletik", 5), campaignId))
+            .isInstanceOf(EntityService.EntityException.class)
+            .satisfies(e -> assertThat(((EntityService.EntityException) e).getErrorCode())
+                .isEqualTo("WORLD_ACCESS_DENIED"));
     }
 }

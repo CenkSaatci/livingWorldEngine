@@ -78,4 +78,44 @@ class DerivedValueServiceTest {
         assertThat(with).hasSize(1);
         assertThat(with.getFirst().value()).isEqualTo(32.0);
     }
+
+    @Test
+    void overlappingTableRowsReportError() {
+        // Audit P28: Ueberlappung darf nicht still first-match sein.
+        var table = List.of(
+            Map.<String, Object>of("min", 24, "max", 32, "value", 4),
+            Map.<String, Object>of("min", 30, "max", 38, "value", 5));
+        var defs = List.of(Map.<String, Object>of(
+            "name", "sk", "input", "mut+klugheit", "table", table));
+
+        var result = service.evaluate(defs, Map.of("mut", 15, "klugheit", 15));
+
+        assertThat(result.getFirst().value()).isZero();
+        assertThat(result.getFirst().error()).containsIgnoringCase("overlap");
+    }
+
+    @Test
+    void nullFormulaDoesNotThrow() {
+        var def = new java.util.HashMap<String, Object>();
+        def.put("name", "x");
+        def.put("formula", null);
+
+        var result = service.evaluate(List.of(def), Map.of("mut", 5));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().value()).isZero();
+    }
+
+    @Test
+    void nullTableInputReportsError() {
+        var def = new java.util.HashMap<String, Object>();
+        def.put("name", "x");
+        def.put("input", null);
+        def.put("table", List.of(Map.<String, Object>of("min", 1, "max", 2, "value", 1)));
+
+        var result = service.evaluate(List.of(def), Map.of("mut", 5));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().error()).isNotNull();
+    }
 }

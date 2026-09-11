@@ -250,4 +250,25 @@ class CharacterSheetServiceTest {
         var sheet = service.getSheet(entityId, userId);
         assertThat(sheet.abilities()).isEmpty();
     }
+
+    @Test
+    void traitAttributeEffectIgnoresUnknownAttribute() {
+        // Audit P28: unbekanntes attribute:x darf kein Phantom-Attribut anlegen.
+        var entity = mockEntity("{\"staerke\":10}", null);
+        when(entity.getMetadataJson()).thenReturn("{\"traits\":[\"Geist\"]}");
+        mockWorld(systemId);
+        try {
+            stubRules("""
+                {
+                    "attributes": [{"name":"staerke","type":"INT","default":10}],
+                    "traits": [{"name":"Geist","kind":"advantage",
+                      "effects":[{"target":"attribute:mana","op":"add","value":5}]}],
+                    "dice_mechanics":{"probe":"1d20+mod"}
+                }
+                """);
+        } catch (Exception e) { throw new RuntimeException(e); }
+
+        var sheet = service.getSheet(entityId, userId);
+        assertThat(sheet.attributes()).extracting(a -> a.name()).containsExactly("staerke");
+    }
 }

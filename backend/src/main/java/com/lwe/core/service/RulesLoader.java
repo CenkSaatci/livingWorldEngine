@@ -44,6 +44,14 @@ public class RulesLoader {
         return systemRepo.findById(campaign.getGameSystemId()).orElse(null);
     }
 
+    /** true, wenn die Kampagne existiert und zur angegebenen Welt gehört (Audit P28). */
+    public boolean campaignBelongsToWorld(UUID campaignId, UUID worldId) {
+        if (campaignId == null || worldId == null) return false;
+        return campaignRepo.findById(campaignId)
+            .map(c -> worldId.equals(c.getWorldId()))
+            .orElse(false);
+    }
+
     /** Liefert die rulesJson einer Kampagne als Map oder leere Map. */
     public Map<String, Object> loadRulesByCampaign(UUID campaignId) {
         var system = loadSystemByCampaign(campaignId);

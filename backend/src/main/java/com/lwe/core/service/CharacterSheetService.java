@@ -217,8 +217,12 @@ public class CharacterSheetService {
             for (var e : effects) {
                 var target = (String) e.getOrDefault("target", "");
                 if (target.startsWith("attribute:") && "add".equals(e.get("op"))) {
-                    attrs.merge(target.substring("attribute:".length()),
-                        ((Number) e.getOrDefault("value", 0)).intValue(), Integer::sum);
+                    var name = target.substring("attribute:".length());
+                    // Audit P28: nur bekannte Attribute anreichern — sonst entstehen
+                    // Phantom-Attribute im Sheet.
+                    if (attrs.containsKey(name)) {
+                        attrs.merge(name, ((Number) e.getOrDefault("value", 0)).intValue(), Integer::sum);
+                    }
                 }
             }
         }

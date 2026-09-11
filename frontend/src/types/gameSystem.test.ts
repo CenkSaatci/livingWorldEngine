@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { defaultWizardData, toRulesJson, fromRulesJson, attrPointCost, calcBudget, traitCost, danglingTraitRefs, traitSelectionErrors, advanceCost, skillAdvanceCost } from './gameSystem';
+import { defaultWizardData, toRulesJson, fromRulesJson, attrPointCost, calcBudget, traitCost, danglingTraitRefs, traitSelectionErrors, advanceCost, skillAdvanceCost, wizardIssues } from './gameSystem';
 
 describe('gameSystem roundtrip', () => {
   it('toRulesJson/fromRulesJson preserves all ability fields', () => {
@@ -216,5 +216,22 @@ describe('advancement (P28-T04)', () => {
     expect(skillAdvanceCost(adv, talent, 12)).toBe(4); // next step 13 → B=4
     expect(skillAdvanceCost(adv, talent, 13)).toBeNull(); // beyond table
     expect(skillAdvanceCost(undefined, talent, 5)).toBeNull();
+  });
+});
+
+describe('wizard save gate (P28 audit)', () => {
+  it('wizardIssues finds blockers in order', () => {
+    const data = defaultWizardData();
+    expect(wizardIssues(data)).toEqual(['v_need_attributes']);
+
+    data.attributes = [{ name: '', type: 'INT', min: 1, max: 20, default: 10 }];
+    expect(wizardIssues(data)).toEqual(['v_empty_attribute_name']);
+
+    data.attributes[0].name = 'staerke';
+    data.traits = [{ name: '', kind: 'advantage' }];
+    expect(wizardIssues(data)).toEqual(['v_empty_trait_name']);
+
+    data.traits[0].name = 'Glück';
+    expect(wizardIssues(data)).toEqual([]);
   });
 });

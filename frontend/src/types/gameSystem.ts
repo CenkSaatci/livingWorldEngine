@@ -350,7 +350,6 @@ export function traitSelectionErrors(traits: TraitDef[], selected: string[]): Tr
 }
 
 // --- Advancement (P28-T04): Kosten der nächsten Steigerung ---
-
 /** Kosten, um `target` (Zielwert) in `column` zu erreichen. null = außerhalb der Matrix. */
 export function advanceCost(
   advancement: AdvancementDef | undefined,
@@ -372,6 +371,17 @@ export function skillAdvanceCost(
   if (skill.activationCost != null && fromValue <= 0) return skill.activationCost;
   if (!skill.costColumn) return null;
   return advanceCost(advancement, skill.costColumn, fromValue + 1);
+}
+
+/**
+ * Blocker für den Save-Gate (Audit P28): liefert i18n-Keys statt Text.
+ * Backend-Schema würde sonst mit generischem 400 antworten.
+ */
+export function wizardIssues(data: WizardData): string[] {
+  if (data.attributes.length === 0) return ['v_need_attributes'];
+  if (data.attributes.some((a) => !a.name.trim())) return ['v_empty_attribute_name'];
+  if ((data.traits ?? []).some((tr) => !tr.name.trim())) return ['v_empty_trait_name'];
+  return [];
 }
 
 /** WizardData → rulesJson (Backend-Wire-Format). */

@@ -53,11 +53,14 @@ public class DerivedValueService {
 
         try {
             if (dv.get("table") instanceof List<?> table) {
-                var input = (String) dv.getOrDefault("input", "0");
+                var input = dv.get("input") instanceof String s ? s : null;
+                if (input == null || input.isBlank()) {
+                    return new SheetResponse.DerivedValueInfo(name, 0, "Missing input expression");
+                }
                 var value = FormulaEvaluator.eval(input, attributeValues, allowed);
                 return lookup(name, value, (List<Map<String, Object>>) table);
             }
-            var formula = (String) dv.getOrDefault("formula", "0");
+            var formula = dv.get("formula") instanceof String s ? s : "0";
             var value = FormulaEvaluator.eval(formula, attributeValues, allowed);
             return new SheetResponse.DerivedValueInfo(name, value, null);
         } catch (FormulaEvaluator.EvaluationException e) {
@@ -67,16 +70,27 @@ public class DerivedValueService {
 
     private SheetResponse.DerivedValueInfo lookup(String name, double value,
                                                   List<Map<String, Object>> table) {
+        List<Map<String, Object>> matches = new java.util.ArrayList<>();
+        boolean invalidRange = false;
         for (var row : table) {
             var min = ((Number) row.getOrDefault("min", Double.NEGATIVE_INFINITY)).doubleValue();
             var max = ((Number) row.getOrDefault("max", Double.POSITIVE_INFINITY)).doubleValue();
-            if (value >= min && value <= max) {
-                var result = ((Number) row.getOrDefault("value", 0)).doubleValue();
-                return new SheetResponse.DerivedValueInfo(name, result, null);
-            }
+            if (min > max) invalidRange = true;
+            if (value >= min && value <= max) matches.add(row);
         }
-        return new SheetResponse.DerivedValueInfo(name, 0,
-            "No table row for value " + (long) value);
+        if (matches.size() > 1) {
+            return new SheetResponse.DerivedValueInfo(name, 0,
+                "Overlapping table rows for value " + (long) value);
+        }
+        if (matches.size() == 1) {
+            var result = ((Number) matches.get(0).getOrDefault("value", 0)).doubleValue();
+            return new SheetResponse.DerivedValueInfo(name, result, null);
+        }
+        // Audit P28: kaputte Zeilen (min > max) nicht als "Luecke" verkaufen.
+        var reason = invalidRange
+            ? "Invalid table row (min > max)"
+            : "No table row for value " + (long) value;
+        return new SheetResponse.DerivedValueInfo(name, 0, reason);
     }
 
     /** Tier-Suffixe werden ignoriert: "Zauberer II" erfüllt requiresTrait "Zauberer". */
