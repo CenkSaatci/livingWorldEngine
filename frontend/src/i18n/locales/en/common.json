@@ -240,7 +240,10 @@
     "makePlayer": "Make player",
     "memberRoleChanged": "Role changed",
     "memberRoleChangeFailed": "Could not change role",
-    "forkHint": "Creating a campaign forks your own copy of the world — changes do not affect the template."
+    "forkHint": "Creating a campaign forks your own copy of the world — changes do not affect the template.",
+    "systemUpdateAvailable": "System update available (v{{from}} → v{{to}})",
+    "pullSystem": "Update system",
+    "pullSystemFailed": "Could not update system"
   },
   "settings": {
     "title": "Settings",

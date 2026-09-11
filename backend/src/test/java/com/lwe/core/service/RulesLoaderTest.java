@@ -50,6 +50,22 @@ class RulesLoaderTest {
     }
 
     @Test
+    void pinnedSnapshotWinsOverLiveSystem() {
+        // P27-T05: Kampagne bleibt auf ihrer Version, auch wenn das System geaendert wurde.
+        var campaign = new Campaign(UUID.randomUUID(), gameSystemId, "Runde 1");
+        setId(campaign, campaignId);
+        campaign.setRulesJsonSnapshot("{\"marker\":\"alt\"}");
+        campaign.setGameSystemVersion(1);
+        var system = new GameSystem("DSA", 2, "{\"marker\":\"neu\"}", "{}");
+        setId(system, gameSystemId);
+        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+
+        var rules = loader.loadRulesByCampaign(campaignId);
+
+        assertThat(rules).containsEntry("marker", "alt");
+    }
+
+    @Test
     void loadRulesByCampaignReturnsEmptyForUnknownCampaign() {
         when(campaignRepo.findById(campaignId)).thenReturn(Optional.empty());
 

@@ -49,7 +49,7 @@ class CampaignServiceTest {
     @Test
     void shouldCreateCampaign() {
         var world = new World("Aventurien", userId, "{}");
-        var system = new GameSystem("DSA", 1, "{}", "{}");
+        var system = new GameSystem("DSA", 3, "{\"marker\":\"v3\"}", "{}");
         setId(world, worldId);
         setId(system, gameSystemId);
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
@@ -66,6 +66,8 @@ class CampaignServiceTest {
         var campaign = service.create(worldId, gameSystemId, "Runde 1", userId);
 
         assertThat(campaign.getName()).isEqualTo("Runde 1");
+        assertThat(campaign.getRulesJsonSnapshot()).isEqualTo("{\"marker\":\"v3\"}");
+        assertThat(campaign.getGameSystemVersion()).isEqualTo(3);
         assertThat(campaign.getWorldId()).isEqualTo(fork.getId());
         assertThat(campaign.isForkedWorld()).isTrue();
         assertThat(campaign.getGameSystemId()).isEqualTo(gameSystemId);
@@ -130,6 +132,25 @@ class CampaignServiceTest {
 
         assertThatThrownBy(() -> service.update(campaign.getId(), userId, null, null))
             .isInstanceOf(WorldAccessException.class);
+    }
+
+    @Test
+    void pullSystemUpdatesPin() {
+        var campaign = new Campaign(worldId, gameSystemId, "Runde 1");
+        setId(campaign, UUID.randomUUID());
+        campaign.setRulesJsonSnapshot("{\"marker\":\"alt\"}");
+        campaign.setGameSystemVersion(1);
+        var system = new GameSystem("DSA", 4, "{\"marker\":\"v4\"}", "{}");
+        setId(system, gameSystemId);
+        when(repo.findById(campaign.getId())).thenReturn(Optional.of(campaign));
+        when(memberService.isDm(campaign.getId(), userId)).thenReturn(true);
+        when(systemRepo.findById(gameSystemId)).thenReturn(Optional.of(system));
+        when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var updated = service.pullSystem(campaign.getId(), userId);
+
+        assertThat(updated.getGameSystemVersion()).isEqualTo(4);
+        assertThat(updated.getRulesJsonSnapshot()).isEqualTo("{\"marker\":\"v4\"}");
     }
 
     @Test

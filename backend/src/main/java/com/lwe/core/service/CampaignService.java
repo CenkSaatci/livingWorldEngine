@@ -50,7 +50,7 @@ public class CampaignService {
         worldRepo.findById(worldId)
             .orElseThrow(() -> new CampaignException("WORLD_NOT_FOUND", "World not found"));
         worldAccess.requireAccess(worldId, userId);
-        systemRepo.findById(gameSystemId)
+        var system = systemRepo.findById(gameSystemId)
             .filter(GameSystem::isActive)
             .orElseThrow(() -> new CampaignException("GAME_SYSTEM_NOT_FOUND", "Game system not found or inactive"));
         // F8/P27: fremde PRIVATE Systeme sind fuer Kampagnen nicht nutzbar.
@@ -59,6 +59,8 @@ public class CampaignService {
         var fork = worldService.cloneForCampaign(worldId, userId);
         var campaign = new Campaign(fork.getId(), gameSystemId, name);
         campaign.setForkedWorld(true);
+        campaign.setRulesJsonSnapshot(system.getRulesJson());
+        campaign.setGameSystemVersion(system.getVersion());
         campaign = repo.save(campaign);
         memberService.addCreatorAsDm(campaign, userId);
         return campaign;
@@ -108,6 +110,18 @@ public class CampaignService {
             });
         }
         repo.delete(campaign);
+    }
+
+    /** P27-T05: System-Nachziehen — laufende Kampagne auf die aktuelle System-Version heben. */
+    @Transactional
+    public Campaign pullSystem(UUID id, UUID userId) {
+        var campaign = getById(id, userId);
+        requireCampaignDmOrWorldOwner(campaign, userId);
+        var system = systemRepo.findById(campaign.getGameSystemId())
+            .orElseThrow(() -> new CampaignException("GAME_SYSTEM_NOT_FOUND", "Game system not found"));
+        campaign.setRulesJsonSnapshot(system.getRulesJson());
+        campaign.setGameSystemVersion(system.getVersion());
+        return repo.save(campaign);
     }
 
     /** Aenderungen nur DM der Kampagne oder Welt-Owner (Audit P27). */

@@ -240,7 +240,10 @@
     "makePlayer": "Zum Spieler",
     "memberRoleChanged": "Rolle geändert",
     "memberRoleChangeFailed": "Rolle konnte nicht geändert werden",
-    "forkHint": "Beim Erstellen wird eine eigene Kopie der Welt angelegt — Änderungen betreffen nicht die Vorlage."
+    "forkHint": "Beim Erstellen wird eine eigene Kopie der Welt angelegt — Änderungen betreffen nicht die Vorlage.",
+    "systemUpdateAvailable": "System-Update verfügbar (v{{from}} → v{{to}})",
+    "pullSystem": "System aktualisieren",
+    "pullSystemFailed": "System konnte nicht aktualisiert werden"
   },
   "settings": {
     "title": "Einstellungen",

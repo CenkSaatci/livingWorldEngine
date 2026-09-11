@@ -2197,7 +2197,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD
 
 ### P27-T05: System-Versionierung (Pin + Nachziehen)
-- **Status:** 📋
+- **Status:** ✅ (Option B/Snapshot: V100 `campaigns.rules_json_snapshot`+`game_system_version`; `RulesLoader` bevorzugt Pin; `POST /campaigns/{id}/pull-system` (DM) zieht nach; UI-Badge + Update-Button; Tests. Hinweis: Abilities/Items bleiben system-gebunden — Versionierung betrifft `rulesJson`)
 - **Aufwand:** 1 Tag
 - **Beschreibung:**
   - Kampagnen pinnen System-Version zum Erstellungszeitpunkt (stabile Regeln während der Kampagne)
@@ -2207,7 +2207,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD
 
 ### P27-T06: DM-Queue fertig + Abnahme
-- **Status:** 🔄 Teilstand: Approve/Reject + Polling; DM-Gate/Bulk/WS/E2E offen (Umsetzung in P27)
+- **Status:** 🔄 Teilstand: DM-Gate fuer List/Approve/Reject + 403-Hide im Panel erledigt; offen: Bulk/Filter, WS-Liveupdate statt 5s-Polling, E2E Bot→Queue→Entscheid)
 - **Aufwand:** 1 Tag
 - **Beschreibung:**
   - Aktionsliste: Bulk-Freigabe/Ablehnung, Filter (Typ/Status), WS-Live-Update statt 5s-Polling wo sinnvoll

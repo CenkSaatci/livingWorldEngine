@@ -78,6 +78,13 @@ public class CampaignController {
         return ResponseEntity.ok(members.stream().map(CampaignMemberResponse::from).toList());
     }
 
+    @PostMapping("/{id}/pull-system")
+    public ResponseEntity<CampaignResponse> pullSystem(@PathVariable UUID id,
+                                                        @AuthenticationPrincipal User user) {
+        var campaign = service.pullSystem(id, user.getId());
+        return ResponseEntity.ok(CampaignResponse.from(campaign));
+    }
+
     @PatchMapping("/{id}/members/{memberId}")
     public ResponseEntity<Void> updateMemberRole(@PathVariable UUID id,
                                                   @PathVariable UUID memberId,
@@ -116,13 +123,15 @@ public class CampaignController {
 
     public record CampaignResponse(
         UUID id, UUID worldId, UUID gameSystemId, String name,
-        String settingsJson, String stateJson, String createdAt, String updatedAt
+        String settingsJson, String stateJson, String createdAt, String updatedAt,
+        Integer gameSystemVersion
     ) {
         static CampaignResponse from(Campaign c) {
             return new CampaignResponse(
                 c.getId(), c.getWorldId(), c.getGameSystemId(), c.getName(),
                 c.getSettingsJson(), c.getStateJson(),
-                c.getCreatedAt().toString(), c.getUpdatedAt().toString());
+                c.getCreatedAt().toString(), c.getUpdatedAt().toString(),
+                c.getGameSystemVersion());
         }
     }
 }

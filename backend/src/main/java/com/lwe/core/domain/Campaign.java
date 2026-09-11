@@ -47,6 +47,13 @@ public class Campaign {
     @Column(name = "forked_world", nullable = false)
     private boolean forkedWorld = false;
 
+    /** Pin: rulesJson beim Erstellen/Nachziehen (P27-T05, Option B). */
+    @Column(name = "rules_json_snapshot")
+    private String rulesJsonSnapshot;
+
+    @Column(name = "game_system_version")
+    private Integer gameSystemVersion;
+
     public Campaign(UUID worldId, UUID gameSystemId, String name) {
         this.worldId = worldId;
         this.gameSystemId = gameSystemId;
@@ -69,4 +76,9 @@ public class Campaign {
 
     public boolean isForkedWorld() { return forkedWorld; }
     public void setForkedWorld(boolean v) { this.forkedWorld = v; }
+
+    public String getRulesJsonSnapshot() { return rulesJsonSnapshot; }
+    public void setRulesJsonSnapshot(String v) { this.rulesJsonSnapshot = v; }
+    public Integer getGameSystemVersion() { return gameSystemVersion; }
+    public void setGameSystemVersion(Integer v) { this.gameSystemVersion = v; }
 }

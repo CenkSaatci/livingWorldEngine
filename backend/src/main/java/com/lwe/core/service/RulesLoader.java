@@ -52,9 +52,21 @@ public class RulesLoader {
             .orElse(false);
     }
 
-    /** Liefert die rulesJson einer Kampagne als Map oder leere Map. */
+    /** Liefert die rulesJson einer Kampagne als Map oder leere Map.
+     *  P27-T05: gepinnter Snapshot hat Vorrang vor der lebenden System-Zeile. */
     public Map<String, Object> loadRulesByCampaign(UUID campaignId) {
-        var system = loadSystemByCampaign(campaignId);
+        if (campaignId == null) return Map.of();
+        var campaign = campaignRepo.findById(campaignId).orElse(null);
+        if (campaign == null) return Map.of();
+        var snapshot = campaign.getRulesJsonSnapshot();
+        if (snapshot != null && !snapshot.isBlank()) {
+            try {
+                return objectMapper.readValue(snapshot, RULES_MAP);
+            } catch (Exception e) {
+                return Map.of();
+            }
+        }
+        var system = systemRepo.findById(campaign.getGameSystemId()).orElse(null);
         if (system == null || system.getRulesJson() == null || system.getRulesJson().isBlank()) {
             return Map.of();
         }

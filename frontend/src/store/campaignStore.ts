@@ -6,6 +6,7 @@ export interface CampaignSummary {
   id: string;
   worldId: string;
   gameSystemId: string;
+  gameSystemVersion?: number | null;
   name: string;
   settingsJson: string;
   stateJson: string;

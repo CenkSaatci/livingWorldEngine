@@ -237,6 +237,9 @@ Body (optional): `name`, `stateJson`
 **Request:** `{ "userId": "uuid", "role": "PLAYER" }` (role: `PLAYER` | `DM`)
 **Fehlercodes:** `USER_NOT_FOUND`, `MEMBER_ALREADY`, `DM_REQUIRED`
 
+### `POST /api/v1/campaigns/{id}/pull-system` (auth, nur DM)
+Zieht die aktuelle System-Version nach (P27-T05, Snapshot-Pin). **Fehlercodes:** `DM_REQUIRED`, `GAME_SYSTEM_NOT_FOUND`
+
 ### `PATCH /api/v1/campaigns/{id}/members/{userId}` (auth, nur DM)
 **Request:** `{ "role": "DM" | "PLAYER" }` — Promote/Demote; letzter DM geschützt.
 **Fehlercodes:** `INVALID_ROLE` (400), `LAST_DM` (409), `DM_REQUIRED` (403)

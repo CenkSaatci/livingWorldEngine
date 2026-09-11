@@ -91,6 +91,16 @@ class DatabaseMigrationTest {
     }
 
     @Test
+    void campaignsTableHasSystemPinColumns() throws SQLException {
+        try (var conn = dataSource.getConnection()) {
+            var snapshot = conn.getMetaData().getColumns(null, "public", "campaigns", "rules_json_snapshot");
+            assertThat(snapshot.next()).as("V100: campaigns.rules_json_snapshot (P27-T05)").isTrue();
+            var version = conn.getMetaData().getColumns(null, "public", "campaigns", "game_system_version");
+            assertThat(version.next()).as("V100: campaigns.game_system_version").isTrue();
+        }
+    }
+
+    @Test
     void itemsTableHasGameSystemIdColumn() throws SQLException {
         try (var conn = dataSource.getConnection()) {
             var rs = conn.getMetaData()

@@ -13,6 +13,7 @@ interface CampaignDetail {
   id: string;
   worldId: string;
   gameSystemId: string;
+  gameSystemVersion?: number | null;
   name: string;
   settingsJson: string;
   stateJson: string;
@@ -76,6 +77,7 @@ export default function CampaignDetailPage() {
           id: cRes.data.id,
           worldId: cRes.data.worldId,
           gameSystemId: cRes.data.gameSystemId,
+          gameSystemVersion: cRes.data.gameSystemVersion ?? null,
           name: cRes.data.name,
           settingsJson: cRes.data.settingsJson,
           stateJson: cRes.data.stateJson,
@@ -157,6 +159,18 @@ export default function CampaignDetailPage() {
     }
   };
 
+  const handlePullSystem = async () => {
+    try {
+      const res = await apiClient.post(`/campaigns/${campaignId}/pull-system`);
+      useCampaignStore.getState().setActiveCampaign(res.data.id, {
+        ...res.data,
+        gameSystemVersion: res.data.gameSystemVersion ?? null,
+      });
+    } catch {
+      addToast(t('campaign.pullSystemFailed'), 'error');
+    }
+  };
+
   const handleEnterWorld = () => {
     if (!campaign) return;
     setActiveCampaign(campaign.id, {
@@ -219,6 +233,19 @@ export default function CampaignDetailPage() {
             <p className="mt-1 font-heading text-text-primary">
               {system ? `${system.name} v${system.version}` : '—'}
             </p>
+            {campaign?.gameSystemVersion != null && system && system.version > campaign.gameSystemVersion && (
+              <div className="mt-2 space-y-1">
+                <span className="rounded bg-warning/10 px-1.5 py-0.5 text-[10px] text-warning">
+                  {t('campaign.systemUpdateAvailable', { from: campaign.gameSystemVersion, to: system.version })}
+                </span>
+                <button
+                  onClick={handlePullSystem}
+                  className="block text-xs text-accent hover:text-accent/80"
+                >
+                  {t('campaign.pullSystem')}
+                </button>
+              </div>
+            )}
           </div>
           <div className="rounded-lg border border-bg-elevated bg-bg-surface p-4">
             <p className="text-xs text-text-secondary">{t('campaign.members')}</p>
