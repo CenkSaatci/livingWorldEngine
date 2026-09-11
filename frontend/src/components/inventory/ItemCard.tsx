@@ -8,6 +8,7 @@ export interface InventoryEntry {
   name: string;
   type: string;
   weight: number;
+  damageType?: string | null;
 }
 
 interface Props {
@@ -49,6 +50,11 @@ export function ItemCard({ entry, onEquip, onUnequip, children }: Props) {
             </span>
           )}
           <span className="ml-2 text-xs text-text-secondary">{entry.type}</span>
+          {entry.damageType && (
+            <span className="ml-2 rounded bg-accent/15 px-1.5 py-0.5 text-[10px] text-accent">
+              {entry.damageType}
+            </span>
+          )}
         </div>
 
         {entry.equipped && onUnequip ? (

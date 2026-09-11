@@ -8,13 +8,14 @@ export interface SheetData {
   level: number;
   fatePoints?: number;
   fateMax?: number;
+  damageArmor?: number;
   attributes: { name: string; value: number; modifier: number; min: number; max: number }[];
   derivedValues: { name: string; value: number; error?: string | null }[];
   skills: { name: string; total: number; perCharacterValue?: number | null; advanceCost?: number | null }[];
   conditionals: { name: string; active: boolean; description: string }[];
   activeConditions: { name: string; rounds?: number | null }[];
   conditionCatalog: string[];
-  abilities: { name: string; type: string; apCost: number; effect: string; diceExpression: string }[];
+  abilities: { name: string; type: string; apCost: number; effect: string; diceExpression: string; damageType?: string | null }[];
 }
 
 export function useSheet(entityId: string | undefined) {

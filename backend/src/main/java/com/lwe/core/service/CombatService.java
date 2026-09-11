@@ -31,6 +31,7 @@ public class CombatService {
     private final Map<DiceExpressionParser.DiceSystem, RuleEngine> engines;
     private final ObjectMapper objectMapper;
     private final ConditionService conditionService;
+    private final GameItemRepository itemRepo;
 
     public CombatService(CombatSessionRepository sessionRepo,
                          CombatParticipantRepository participantRepo,
@@ -46,9 +47,11 @@ public class CombatService {
                          ObjectMapper objectMapper,
                          RulesLoader rulesLoader,
                          CampaignMemberService campaignMemberService,
-                         ConditionService conditionService) {
+                         ConditionService conditionService,
+                         GameItemRepository itemRepo) {
         this.objectMapper = objectMapper;
         this.conditionService = conditionService;
+        this.itemRepo = itemRepo;
         this.sessionRepo = sessionRepo;
         this.participantRepo = participantRepo;
         this.entityRepo = entityRepo;
@@ -157,6 +160,8 @@ public class CombatService {
         checkRange(actionType, targetId, actorId);
 
         var damage = rollDamage(userId, session.getWorldId(), actorId, actionType, session.getCampaignId());
+        var damageType = resolveWeaponDamageType(itemId);
+        damage = applyDamageModifiers(damage, targetId, damageType);
         deductAp(actor);
 
         // Death check
@@ -173,7 +178,8 @@ public class CombatService {
         }
 
         sendCombatMessage(session.getWorldId(), "⚔️ " + entityName(actorId) + " greift "
-            + (targetId != null ? entityName(targetId) : "unbekannt") + " an: " + damage + " Schaden");
+            + (targetId != null ? entityName(targetId) : "unbekannt") + " an: " + damage
+            + " Schaden" + (damageType != null ? " (" + damageType + ")" : ""));
         eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
             "actionType", actionType, "damage", damage));
         return new CombatActionResult(actionType, damage, actor.getApCurrent(), true, null);
@@ -208,6 +214,7 @@ public class CombatService {
 
         // Apply damage to target
         if (damage > 0 && targetId != null) {
+            damage = applyDamageModifiers(damage, targetId, effects.damageType());
             var target = participants.stream()
                 .filter(p -> p.getEntityId().equals(targetId)).findFirst().orElse(null);
             if (target != null) {
@@ -236,18 +243,72 @@ public class CombatService {
             actor.getApCurrent(), true, null);
     }
 
-    private record Effects(String damageExpr, String healExpr) {}
+    private record Effects(String damageExpr, String healExpr, String damageType) {}
 
     private Effects parseEffectsJson(String effectsJson) {
-        if (effectsJson == null || effectsJson.isBlank()) return new Effects(null, null);
+        if (effectsJson == null || effectsJson.isBlank()) return new Effects(null, null, null);
         try {
             var tree = new ObjectMapper().readTree(effectsJson);
             return new Effects(
                 tree.path("damage").asText(null),
-                tree.path("heal").asText(null));
+                tree.path("heal").asText(null),
+                tree.path("damageType").asText(null));
         } catch (Exception e) {
-            return new Effects(null, null);
+            return new Effects(null, null, null);
         }
+    }
+
+    /** Waffen-Schadensart aus Item-Metadata (P23-T02). */
+    private String resolveWeaponDamageType(UUID itemId) {
+        if (itemId == null) return null;
+        return itemRepo.findById(itemId)
+            .map(i -> {
+                if (i.getMetadataJson() == null || i.getMetadataJson().isBlank()) return null;
+                try {
+                    var t = objectMapper.readTree(i.getMetadataJson()).path("damage_type");
+                    return t.isTextual() && !t.asText().isBlank() ? t.asText() : null;
+                } catch (Exception e) {
+                    return null;
+                }
+            })
+            .orElse(null);
+    }
+
+    /** Ruestung (flat) + Resistenz/Vulnerabilitaet auf den Schaden (P23-T04/P29-T04).
+     *  Reihenfolge: Ruestung abziehen, dann Typ-Multiplikator; resist+vulnerable heben sich auf. */
+    private int applyDamageModifiers(int damage, UUID targetEntityId, String damageType) {
+        if (damage <= 0 || targetEntityId == null) return damage;
+        var target = entityRepo.findById(targetEntityId).orElse(null);
+        if (target == null) return damage;
+        int armor = 0;
+        List<String> resistances = List.of();
+        List<String> vulnerabilities = List.of();
+        var meta = target.getMetadataJson();
+        if (meta != null && !meta.isBlank()) {
+            try {
+                var node = objectMapper.readTree(meta);
+                if (node.path("damage_armor").isNumber()) armor = node.path("damage_armor").asInt();
+                resistances = stringList(node.path("damage_resistances"));
+                vulnerabilities = stringList(node.path("damage_vulnerabilities"));
+            } catch (Exception ignored) {}
+        }
+        int result = Math.max(0, damage - Math.max(0, armor));
+        if (damageType != null) {
+            boolean resistant = resistances.contains(damageType);
+            boolean vulnerable = vulnerabilities.contains(damageType);
+            if (vulnerable && !resistant) result *= 2;
+            else if (resistant && !vulnerable) result /= 2;
+        }
+        return result;
+    }
+
+    private List<String> stringList(com.fasterxml.jackson.databind.JsonNode node) {
+        if (!node.isArray()) return List.of();
+        var out = new java.util.ArrayList<String>();
+        for (var n : node) {
+            if (n.isTextual()) out.add(n.asText());
+        }
+        return out;
     }
 
     private CombatSession validateSession(UUID sessionId, UUID userId, UUID actorId) {
@@ -358,6 +419,8 @@ public class CombatService {
             }
         }
         var damage = Math.max(0, base + bonus);
+        String maneuverType = def.get("damageType") instanceof String dt ? dt : null;
+        damage = applyDamageModifiers(damage, targetId, maneuverType);
         actor.setApCurrent(actor.getApCurrent() - apCost);
         participantRepo.save(actor);
 
@@ -372,7 +435,8 @@ public class CombatService {
         }
 
         sendCombatMessage(session.getWorldId(), "\u2694\ufe0f " + entityName(actorId) + " \u2013 "
-            + maneuverName + ": " + damage + " Schaden");
+            + maneuverName + ": " + damage + " Schaden"
+            + (maneuverType != null ? " (" + maneuverType + ")" : ""));
         eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED,
             actorId, targetId, Map.of("actionType", "MANEUVER", "maneuver", maneuverName, "damage", damage));
         return new CombatActionResult("MANEUVER:" + maneuverName, damage, actor.getApCurrent(), true, null);

@@ -252,5 +252,14 @@
   "msg_updated": "System aktualisiert",
   "msg_create_failed": "Fehler beim Erstellen",
   "msg_update_failed": "Fehler beim Aktualisieren",
-  "sb_delete": "Löschen"
+  "sb_delete": "Löschen",
+  "s5a_damage_type": "Schadensart",
+  "s5a_dmg_slashing": "Hieb",
+  "s5a_dmg_piercing": "Stich",
+  "s5a_dmg_bludgeoning": "Wucht",
+  "s5a_dmg_fire": "Feuer",
+  "s5a_dmg_cold": "Kälte",
+  "s5a_dmg_lightning": "Blitz",
+  "s5a_dmg_acid": "Säure",
+  "s5a_dmg_poison": "Gift"
 }

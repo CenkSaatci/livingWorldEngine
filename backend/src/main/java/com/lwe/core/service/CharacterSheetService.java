@@ -178,7 +178,7 @@ public class CharacterSheetService {
 
         return new SheetResponse(
             new SheetResponse.EntityInfo(entity.getId().toString(), entity.getName(), entity.getEntityType()),
-            entity.getExperiencePoints(), level, fateCurrent, fateMax,
+            entity.getExperiencePoints(), level, fateCurrent, fateMax, damageArmor(entity),
             attributes, derivedValues, skills, conditionals, abilities,
             activeConditions, conditionCatalog
         );
@@ -332,8 +332,20 @@ public class CharacterSheetService {
             var cost = ((Number) a.getOrDefault("cost", 0)).intValue();
             var effect = (String) a.getOrDefault("effect", "");
             var diceExpr = (String) a.getOrDefault("diceExpression", "");
-            return new SheetResponse.AbilityInfo(name, type, cost, effect, diceExpr);
+            var damageType = a.get("damageType") instanceof String dt ? dt : null;
+            return new SheetResponse.AbilityInfo(name, type, cost, effect, diceExpr, damageType);
         }).collect(Collectors.toList());
+    }
+
+    /** Ruestungswert aus Entity-Metadata (P29-T04). */
+    private int damageArmor(GameEntity entity) {
+        if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank()) return 0;
+        try {
+            var node = objectMapper.readTree(entity.getMetadataJson()).path("damage_armor");
+            return node.isNumber() ? node.asInt() : 0;
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     private Map<String, Integer> parsePerCharacterSkills(GameEntity entity) {

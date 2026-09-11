@@ -52,7 +52,13 @@ public class RuleSchemaValidator {
               "maxRule":   { "type": "string" }
             } },
             "derived_values":   { "type": "array", "items": { "type": "object" } },
-            "abilities":        { "type": "array", "items": { "type": "object" } },
+            "abilities":        { "type": "array", "items": {
+                "type": "object",
+                "properties": {
+                    "name":       { "type": "string" },
+                    "damageType": { "type": "string" }
+                }
+            } },
             "progression":      { "type": "object" },
             "magic":            { "type": "object" },
             "psionics":         { "type": "object" },
@@ -185,6 +191,7 @@ public class RuleSchemaValidator {
               "properties": {
                 "name":        { "type": "string", "minLength": 1 },
                 "attackMalus": { "type": "integer" },
+                "damageType":  { "type": "string" },
                 "apCost":      { "type": "integer", "minimum": 1 },
                 "effects":     { "type": "array", "items": { "$ref": "#/$defs/traitEffect" } }
               }

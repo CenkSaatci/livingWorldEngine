@@ -252,5 +252,14 @@
   "msg_updated": "System updated",
   "msg_create_failed": "Failed to create",
   "msg_update_failed": "Failed to update",
-  "sb_delete": "Delete"
+  "sb_delete": "Delete",
+  "s5a_damage_type": "Damage type",
+  "s5a_dmg_slashing": "Slashing",
+  "s5a_dmg_piercing": "Piercing",
+  "s5a_dmg_bludgeoning": "Bludgeoning",
+  "s5a_dmg_fire": "Fire",
+  "s5a_dmg_cold": "Cold",
+  "s5a_dmg_lightning": "Lightning",
+  "s5a_dmg_acid": "Acid",
+  "s5a_dmg_poison": "Poison"
 }

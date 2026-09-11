@@ -61,6 +61,20 @@ class InventoryServiceTest {
     }
 
     @Test
+    void shouldExposeWeaponDamageType() {
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(
+            entityWithInventory("[{\"itemId\":\"" + itemId + "\",\"quantity\":1,\"equipped\":false,\"slot\":null}]")));
+        var item = createItem("WEAPON", "{}");
+        item.setMetadataJson("{\"damage_type\":\"slashing\"}");
+        when(itemRepo.findById(itemId)).thenReturn(Optional.of(item));
+
+        var result = service.getInventory(entityId, userId);
+
+        assertThat(result.items()).hasSize(1);
+        assertThat(result.items().getFirst().damageType()).isEqualTo("slashing");
+    }
+
+    @Test
     void shouldAddItemToInventory() {
         when(entityRepo.findById(entityId)).thenReturn(Optional.of(entityWithInventory("[]")));
         when(itemRepo.findById(itemId)).thenReturn(Optional.of(createItem("WEAPON", "{}")));

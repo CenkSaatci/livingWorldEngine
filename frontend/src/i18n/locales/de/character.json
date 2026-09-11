@@ -40,7 +40,8 @@
     "conditionFailed": "Zustände konnten nicht geändert werden",
     "fate": "Schicksalspunkte",
     "spendFate": "Schicksalspunkt ausgeben und neu würfeln",
-    "spendFateFailed": "Schicksalspunkt konnte nicht ausgegeben werden"
+    "spendFateFailed": "Schicksalspunkt konnte nicht ausgegeben werden",
+    "armor": "Rüstung"
   },
   "attribute": {
     "modifier": "Modifikator"

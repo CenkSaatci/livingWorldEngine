@@ -47,7 +47,8 @@ public class InventoryService {
             }
             detailedItems.add(new InventoryEntry(
                 entry.itemId(), entry.quantity(), entry.equipped(), entry.slot(),
-                item.getName(), item.getType(), item.getWeight()
+                item.getName(), item.getType(), item.getWeight(),
+                damageTypeOf(item.getMetadataJson())
             ));
         }
 
@@ -188,6 +189,17 @@ public class InventoryService {
         return total;
     }
 
+    /** Waffen-Schadensart aus Item-Metadata (P23-T02). */
+    private String damageTypeOf(String metadataJson) {
+        if (metadataJson == null || metadataJson.isBlank()) return null;
+        try {
+            var node = objectMapper.readTree(metadataJson).path("damage_type");
+            return node.isTextual() && !node.asText().isBlank() ? node.asText() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private EffectSpec parseEffect(String metadataJson) {
         if (metadataJson == null || metadataJson.isBlank()) return null;
         try {
@@ -237,7 +249,7 @@ public class InventoryService {
             var item = itemRepo.findById(entry.itemId())
                 .orElseThrow(() -> new InventoryException("INVENTORY_ITEM_NOT_FOUND", "Item not found"));
             items.add(new InventoryEntry(entry.itemId(), entry.quantity(), entry.equipped(), entry.slot(),
-                item.getName(), item.getType(), item.getWeight()));
+                item.getName(), item.getType(), item.getWeight(), damageTypeOf(item.getMetadataJson())));
         }
         return new InventoryResult(items, bonuses);
     }
@@ -271,7 +283,7 @@ public class InventoryService {
     record RawEntry(UUID itemId, int quantity, boolean equipped, String slot) {}
 
     public record InventoryEntry(UUID itemId, int quantity, boolean equipped, String slot,
-                                 String name, String type, BigDecimal weight) {}
+                                 String name, String type, BigDecimal weight, String damageType) {}
 
     public record InventoryResult(List<InventoryEntry> items, Map<String, Integer> computedBonuses) {}
 

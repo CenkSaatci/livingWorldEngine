@@ -11,6 +11,7 @@ describe('gameSystem roundtrip', () => {
         costType: 'AP',
         cost: 2,
         diceExpression: '2d6+intelligenz',
+        damageType: 'fire',
         effect: 'Feuerschaden',
         bonus: '',
         tags: ['attack', 'magic'],
@@ -40,6 +41,7 @@ describe('gameSystem roundtrip', () => {
     expect(ability.category).toBe('ability');
     expect(ability.actionCost).toEqual({ type: 'action', amount: 1 });
     expect(ability.multiAttack).toBe(2);
+    expect(ability.damageType).toBe('fire');
 
     const passive = restored!.abilities[1];
     expect(passive.tags).toEqual(['ranged']);

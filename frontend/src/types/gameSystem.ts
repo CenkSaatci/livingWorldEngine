@@ -52,6 +52,7 @@ export interface AbilityDef {
   costType: 'AP' | 'MP' | '';
   cost: number;
   diceExpression: string;
+  damageType?: string;
   effect: string;
   bonus: string;
   tags?: string[];
@@ -552,6 +553,7 @@ export function fromRulesJson(json: string): WizardData | null {
           costType: (a.costType as 'AP' | 'MP' | '') ?? 'AP',
           cost: (a.cost as number) ?? 0,
           diceExpression: (a.diceExpression as string) ?? '',
+          damageType: a.damageType as string | undefined,
           effect: (a.effect as string) ?? '',
           bonus: (a.bonus as string) ?? '',
           tags: a.tags as string[] | undefined,

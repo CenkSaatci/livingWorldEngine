@@ -195,7 +195,7 @@ class CharacterSheetServiceTest {
             {
                 "attributes": [{"name":"staerke","type":"INT","min":3,"max":20,"default":10}],
                 "abilities": [
-                    {"name":"Angriff","type":"active","costType":"AP","cost":1,"diceExpression":"1d20+staerke","effect":"Nahkampf-Angriff","tags":["attack","melee"]},
+                    {"name":"Angriff","type":"active","costType":"AP","cost":1,"diceExpression":"1d20+staerke","effect":"Nahkampf-Angriff","damageType":"slashing","tags":["attack","melee"]},
                     {"name":"Parade","type":"active","costType":"AP","cost":0,"diceExpression":"1d20+mut","effect":"Reaktionsparade","tags":["defensive"]},
                     {"name":"Extra Attack","type":"passive","costType":"","cost":0,"diceExpression":"","effect":"","bonus":"multiAttack:2"}
                 ],
@@ -211,6 +211,8 @@ class CharacterSheetServiceTest {
         assertThat(active.get(0).name()).isEqualTo("Angriff");
         assertThat(active.get(0).apCost()).isEqualTo(1);
         assertThat(active.get(0).diceExpression()).isEqualTo("1d20+staerke");
+        assertThat(active.get(0).damageType()).isEqualTo("slashing");
+        assertThat(active.get(1).damageType()).isNull();
 
         var passive = sheet.abilities().stream().filter(a -> a.type().equals("passive")).toList();
         assertThat(passive).hasSize(1);

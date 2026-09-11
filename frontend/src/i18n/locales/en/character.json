@@ -40,7 +40,8 @@
     "conditionFailed": "Failed to update conditions",
     "fate": "Fate points",
     "spendFate": "Spend fate point and re-roll",
-    "spendFateFailed": "Could not spend fate point"
+    "spendFateFailed": "Could not spend fate point",
+    "armor": "Armor"
   },
   "attribute": {
     "modifier": "Modifier"

@@ -140,6 +140,33 @@ class RuleSchemaValidatorTest {
         assertThat(errors).as("Neue Combat-Felder sollten akzeptiert werden").isEmpty();
     }
 
+
+    @Test
+    void shouldAcceptDamageTypesOnAbilitiesAndManeuvers() throws IOException {
+        var ok = """
+            {
+              "version": 1,
+              "attributes": [{"name":"staerke","type":"INT","min":3,"max":20,"default":10}],
+              "dice_mechanics": {
+                "probe": "1d20+mod",
+                "combat": {
+                  "initiative": "1d20",
+                  "damage": "1d8",
+                  "maneuvers": [{"name":"Wuchtschlag","apCost":2,"damageType":"bludgeoning"}]
+                }
+              },
+              "abilities": [
+                {"name":"Angriff (Fernkampf)","type":"active","costType":"AP","cost":1,
+                 "damageType":"piercing"}
+              ]
+            }
+            """;
+        assertThat(validator.validate(ok, RuleSchemaValidator.DEFAULT_SCHEMA)).isEmpty();
+
+        var bad = ok.replace("\"piercing\"", "5");
+        assertThat(validator.validate(bad, RuleSchemaValidator.DEFAULT_SCHEMA)).isNotEmpty();
+    }
+
     @Test
     void shouldRejectInvalidTraitShapes() {
         // P28-T03: Traits sind jetzt streng typisiert.

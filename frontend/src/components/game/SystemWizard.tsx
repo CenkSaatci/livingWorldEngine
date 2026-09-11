@@ -763,6 +763,21 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                       ))}
                     </select>
                   )}
+                  <select
+                    value={ability.damageType ?? ''}
+                    onChange={(e) => {
+                      const a = [...data.abilities];
+                      a[i] = { ...a[i], damageType: e.target.value || undefined };
+                      update('abilities', a);
+                    }}
+                    title={t('s5a_damage_type')}
+                    className="w-24 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  >
+                    <option value="">-</option>
+                    {['slashing', 'piercing', 'bludgeoning', 'fire', 'cold', 'lightning', 'acid', 'poison'].map((dt) => (
+                      <option key={dt} value={dt}>{t(`s5a_dmg_${dt}`)}</option>
+                    ))}
+                  </select>
                   <input
                     value={ability.diceExpression}
                     onChange={(e) => {

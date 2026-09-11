@@ -1826,7 +1826,7 @@ Probendefinitionen (Talente, Fähigkeiten, Proben, Attacken) beziehen sich immer
 Schadensarten (`damage_type`) gehören nicht auf Systemebene, sondern zu Items, Waffen und Fähigkeiten. Diese Phase definiert das Zusammenspiel.
 
 ### P23-T01: `damageType` auf `rulesJson.abilities[]`
-- **Status:** 🔜
+- **Status:** ✅ (Schema + SheetResponse.AbilityInfo.damageType; `CharacterSheetServiceTest`/`RuleSchemaValidatorTest`)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:** Jede Ability erhält ein optionales `damageType`-Feld:
   - `rulesJson.abilities[].damageType`: `"slashing" | "piercing" | "bludgeoning" | "fire" | ...`
@@ -1839,7 +1839,7 @@ Schadensarten (`damage_type`) gehören nicht auf Systemebene, sondern zu Items, 
 - **Qualitäts-Check:** Schema-Tests, Unit-Tests
 
 ### P23-T02: `damage_type` auf Items
-- **Status:** 🔜
+- **Status:** ✅ (`items.metadata_json.damage_type` → `InventoryEntry.damageType`; CombatService nutzt Waffen-Typ via `itemId`; Badge in `ItemCard`)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:** Items erhalten ein `damage_type`-Feld in ihrer JSONB-Metadaten:
   - `items.metadata_json.damage_type` für Waffen-Items
@@ -1851,7 +1851,7 @@ Schadensarten (`damage_type`) gehören nicht auf Systemebene, sondern zu Items, 
 - **Qualitäts-Check:** TDD, Integrationstests
 
 ### P23-T03: SystemWizard — Abilities-Step um damageType erweitern
-- **Status:** 🔜
+- **Status:** ✅ (Select im Abilities-Step, Roundtrip-Test in `gameSystem.test.ts`, i18n DE/EN)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:** Im bestehenden Abilities-Step (5a) ein Dropdown für damageType hinzufügen:
   - Auswahl aus vordefinierter Liste
@@ -1864,7 +1864,7 @@ Schadensarten (`damage_type`) gehören nicht auf Systemebene, sondern zu Items, 
 - **Qualitäts-Check:** UI-Test, Export-Test
 
 ### P23-T04: Combat Damage-Type Auswertung (Resistenz/Vulnerabilität)
-- **Status:** 🔜
+- **Status:** ✅ (`metadata_json.damage_resistances`/`damage_vulnerabilities` in `applyDamageModifiers`; Ability-Typ aus `effects_json.damageType`; Manöver-`damageType`; Tests in `CombatServiceTest`)
 - **Aufwand:** 1,0 Tage
 - **Beschreibung:** `CombatService.executeAction()` und `useAbility()` berücksichtigen damageType:
   - `damage_types`-Liste auf der Welt/dem System als Referenz (nicht als Konfiguration)
@@ -1878,7 +1878,7 @@ Schadensarten (`damage_type`) gehören nicht auf Systemebene, sondern zu Items, 
 - **Qualitäts-Check:** TDD, Integrationstests
 
 ### P23-T05: Skill-Kategorien (optional)
-- **Status:** 🔜
+- **Status:** ⏭️ zurückgestellt (optional, keine Gameplay-Auswirkung; nicht blockierend für P29 — aufnehmen, wenn Sheet-Gruppierung gewünscht)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:** Skills erhalten optionales `category`-Feld:
   - `rulesJson.skills[].category`: `"strength" | "dexterity" | "knowledge" | "social" | "combat" | ...`
@@ -2354,7 +2354,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD, E2E (Playwright)
 
 ### P29-T04: Rüstung + Schadenstypen
-- **Status:** 📋
+- **Status:** ✅ (P23-T01–T04 als Basis; flache Rüstung `metadata_json.damage_armor` vor Resistenz/Vulnerabilität; Sheet zeigt Rüstung, Kampf-Log mit Schadensart; Zonen bewusst nicht (optional); voller Playwright-E2E im E2E-Paket nach P29)
 - **Aufwand:** 1 Tag
 - **Beschreibung:**
   - Rüstungswerte (Zonen optional), Schadenstypen, Resistenzen/Vulnerabilitäten in der Schadensberechnung

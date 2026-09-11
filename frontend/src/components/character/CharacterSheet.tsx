@@ -142,7 +142,14 @@ export function CharacterSheet({ entityId }: Props) {
       {/* Entity Info */}
       <div className="rounded-lg border border-bg-elevated bg-bg-surface p-3">
         <h2 className="font-heading text-lg text-text-primary">{data.entity.name}</h2>
-        <p className="text-xs text-text-secondary">{data.entity.entityType}</p>
+        <p className="flex items-center gap-2 text-xs text-text-secondary">
+          {data.entity.entityType}
+          {(data.damageArmor ?? 0) > 0 && (
+            <span className="flex items-center gap-1" title={t('sheet.armor')!}>
+              <Shield size={12} /> {data.damageArmor}
+            </span>
+          )}
+        </p>
       </div>
 
       {/* XP Bar */}

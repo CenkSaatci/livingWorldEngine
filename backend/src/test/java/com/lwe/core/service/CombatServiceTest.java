@@ -34,6 +34,7 @@ class CombatServiceTest {
     private final RulesLoader rulesLoader = mock();
     private final CampaignMemberService campaignMemberService = mock();
     private final ConditionService conditionService = mock();
+    private final com.lwe.core.repository.GameItemRepository itemRepo = mock();
 
     private CombatService combatService;
     private final UUID userId = UUID.randomUUID();
@@ -43,7 +44,7 @@ class CombatServiceTest {
     void setUp() {
         combatService = new CombatService(sessionRepo, participantRepo, entityRepo,
             worldRepo, gameSystemRepo, eventService, rollService, abilityRepo, messaging, worldAccess, List.of(new D20RuleEngine()),
-            new ObjectMapper(), rulesLoader, campaignMemberService, conditionService);
+            new ObjectMapper(), rulesLoader, campaignMemberService, conditionService, itemRepo);
     }
 
     @Test
@@ -420,6 +421,126 @@ class CombatServiceTest {
         assertThat(defenderParticipant.getHpCurrent()).isEqualTo(2);
     }
 
+
+    @Test
+    void weaponDamageTypeResistanceHalvesDamage() {
+        var session = new CombatSession(worldId, null);
+        setId(session, UUID.randomUUID());
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var itemId = UUID.randomUUID();
+
+        var attacker = new GameEntity(worldId, "PC", "Aragorn");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Feuerelementar");
+        defender.setMetadataJson("{\"damage_resistances\":[\"fire\"]}");
+        setId(defender, defenderId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+        session.setCurrentTurnEntityId(attackerId);
+
+        var weapon = mock(GameItem.class);
+        when(weapon.getMetadataJson()).thenReturn("{\"damage_type\":\"fire\"}");
+
+        when(sessionRepo.findById(session.getId())).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        when(itemRepo.findById(itemId)).thenReturn(Optional.of(weapon));
+        var participant = new CombatParticipant(session.getId(), attackerId, 15, 2, "A");
+        var defenderParticipant = new CombatParticipant(session.getId(), defenderId, 10, 2, "A");
+        defenderParticipant.setHpCurrent(10);
+        defenderParticipant.setHpMax(10);
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
+            .thenReturn(new java.util.ArrayList<>(List.of(participant, defenderParticipant)));
+        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt(), any()))
+            .thenReturn(new RollService.RollResult("attack", "1d8+3", new int[]{5}, 8, 0, true, null));
+        when(participantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        var result = combatService.executeAction(userId, session.getId(), attackerId, "ATTACK", defenderId, itemId);
+
+        assertThat(result.totalDamage()).isEqualTo(4); // 8 / 2
+        assertThat(defenderParticipant.getHpCurrent()).isEqualTo(6);
+    }
+
+    @Test
+    void abilityDamageTypeVulnerabilityDoublesDamage() {
+        var session = new CombatSession(worldId, null);
+        setId(session, UUID.randomUUID());
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var abilityId = UUID.randomUUID();
+
+        var attacker = new GameEntity(worldId, "PC", "Magier");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Eiselementar");
+        defender.setMetadataJson("{\"damage_vulnerabilities\":[\"cold\"]}");
+        setId(defender, defenderId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+        session.setCurrentTurnEntityId(attackerId);
+
+        var ability = new Ability(worldId, "Froststrahl", Ability.AbilityType.ACTIVE);
+        ability.setEffectsJson("{\"damage\":\"1d6\",\"damageType\":\"cold\"}");
+
+        when(sessionRepo.findById(session.getId())).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        when(abilityRepo.findById(abilityId)).thenReturn(Optional.of(ability));
+        var participant = new CombatParticipant(session.getId(), attackerId, 15, 2, "A");
+        var defenderParticipant = new CombatParticipant(session.getId(), defenderId, 10, 2, "A");
+        defenderParticipant.setHpCurrent(12);
+        defenderParticipant.setHpMax(12);
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
+            .thenReturn(new java.util.ArrayList<>(List.of(participant, defenderParticipant)));
+        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt()))
+            .thenReturn(new RollService.RollResult("dmg", "1d6", new int[]{5}, 5, 0, true, null));
+        when(participantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        combatService.useAbility(userId, session.getId(), attackerId, abilityId, defenderId);
+
+        assertThat(defenderParticipant.getHpCurrent()).isEqualTo(2); // 12 - 10
+    }
+
+    @Test
+    void armorReducesDamage() {
+        var session = new CombatSession(worldId, null);
+        setId(session, UUID.randomUUID());
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+
+        var attacker = new GameEntity(worldId, "PC", "Aragorn");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Gepanzerter");
+        defender.setMetadataJson("{\"damage_armor\":3}");
+        setId(defender, defenderId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+        session.setCurrentTurnEntityId(attackerId);
+
+        when(sessionRepo.findById(session.getId())).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        var participant = new CombatParticipant(session.getId(), attackerId, 15, 2, "A");
+        var defenderParticipant = new CombatParticipant(session.getId(), defenderId, 10, 2, "A");
+        defenderParticipant.setHpCurrent(10);
+        defenderParticipant.setHpMax(10);
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
+            .thenReturn(new java.util.ArrayList<>(List.of(participant, defenderParticipant)));
+        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt(), any()))
+            .thenReturn(new RollService.RollResult("attack", "1d8+3", new int[]{5}, 8, 0, true, null));
+        when(participantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        var result = combatService.executeAction(userId, session.getId(), attackerId, "ATTACK", defenderId, null);
+
+        assertThat(result.totalDamage()).isEqualTo(5); // 8 - 3 Ruestung
+        assertThat(defenderParticipant.getHpCurrent()).isEqualTo(5);
+    }
     @Test
     void executeManeuverRejectsInsufficientAp() {
         var session = new CombatSession(worldId, null);
