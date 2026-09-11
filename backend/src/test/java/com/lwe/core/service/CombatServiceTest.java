@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -371,5 +372,75 @@ class CombatServiceTest {
 
         verify(conditionService).tick(entityB);
         verify(entityRepo).save(entityB);
+    }
+
+    @Test
+    void executeManeuverAddsDamageAndCostsAp() {
+        var campaignId = UUID.randomUUID();
+        var session = new CombatSession(worldId, campaignId);
+        setId(session, UUID.randomUUID());
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+
+        var attacker = new GameEntity(worldId, "PC", "Aragorn");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        setId(defender, defenderId);
+
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+        session.setCurrentTurnEntityId(attackerId);
+
+        when(sessionRepo.findById(session.getId())).thenReturn(java.util.Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(java.util.Optional.of(world));
+        when(entityRepo.findById(attackerId)).thenReturn(java.util.Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(java.util.Optional.of(defender));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of(
+            "dice_mechanics", Map.of("combat", Map.of(
+                "maneuvers", java.util.List.of(Map.of(
+                    "name", "Wuchtschlag",
+                    "apCost", 2,
+                    "effects", java.util.List.of(Map.of("target", "damage", "op", "add", "value", 3))))))));
+
+        var participant = new CombatParticipant(session.getId(), attackerId, 15, 2, "A");
+        var defenderParticipant = new CombatParticipant(session.getId(), defenderId, 10, 2, "A");
+        defenderParticipant.setHpCurrent(10);
+        defenderParticipant.setHpMax(10);
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
+            .thenReturn(new java.util.ArrayList<>(java.util.List.of(participant, defenderParticipant)));
+        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt(), any()))
+            .thenReturn(new RollService.RollResult("dmg", "1d8", new int[]{5}, 5, 0, true, null));
+        when(participantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        var result = combatService.executeManeuver(userId, session.getId(), attackerId, defenderId, "Wuchtschlag");
+
+        assertThat(result.totalDamage()).isEqualTo(8); // 5 + 3
+        assertThat(result.apRemaining()).isZero();     // 2 AP - 2
+        assertThat(defenderParticipant.getHpCurrent()).isEqualTo(2);
+    }
+
+    @Test
+    void executeManeuverRejectsUnknownName() {
+        var session = new CombatSession(worldId, null);
+        setId(session, UUID.randomUUID());
+        var attackerId = UUID.randomUUID();
+        session.setCurrentTurnEntityId(attackerId);
+        var attacker = new GameEntity(worldId, "PC", "Aragorn");
+        setId(attacker, attackerId);
+
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+        when(sessionRepo.findById(session.getId())).thenReturn(java.util.Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(java.util.Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
+            .thenReturn(new java.util.ArrayList<>(java.util.List.of(
+                new CombatParticipant(session.getId(), attackerId, 15, 2, "A"))));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of());
+
+        assertThatThrownBy(() -> combatService.executeManeuver(userId, session.getId(), attackerId, null, "Nix"))
+            .isInstanceOf(CombatService.CombatException.class)
+            .satisfies(e -> assertThat(((CombatService.CombatException) e).getErrorCode())
+                .isEqualTo("COMBAT_MANEUVER_UNKNOWN"));
     }
 }

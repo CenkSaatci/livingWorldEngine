@@ -46,6 +46,17 @@ public class CombatController {
             CombatSessionResponse.from(session), participants));
     }
 
+    @PostMapping("/{sessionId}/maneuver")
+    public ResponseEntity<CombatSessionWithParticipants> maneuver(@PathVariable UUID sessionId,
+                                                                   @Valid @RequestBody ManeuverRequest req,
+                                                                   @AuthenticationPrincipal User user) {
+        combatService.executeManeuver(user.getId(), sessionId, req.actorId(), req.targetId(), req.maneuver());
+        var session = combatService.getSession(user.getId(), sessionId);
+        var participants = combatService.getParticipants(sessionId);
+        return ResponseEntity.ok(new CombatSessionWithParticipants(
+            CombatSessionResponse.from(session), participants));
+    }
+
     @PostMapping("/{sessionId}/next-turn")
     public ResponseEntity<CombatSessionResponse> nextTurn(@PathVariable UUID sessionId,
                                                            @AuthenticationPrincipal User user) {
@@ -93,6 +104,12 @@ public class CombatController {
         @NotBlank String actionType,
         UUID targetId,
         UUID itemId
+    ) {}
+
+    public record ManeuverRequest(
+        @NotNull UUID actorId,
+        UUID targetId,
+        @NotBlank String maneuver
     ) {}
 
     public record AbilityRequest(

@@ -114,6 +114,7 @@ public class RuleSchemaValidator {
                 "action_points":     { "$ref": "#/$defs/actionPoints" },
                 "action_types":      { "type": "array", "items": { "type": "string" } },
                 "actions_per_turn":  { "type": "object" },
+                "maneuvers":         { "type": "array", "items": { "$ref": "#/$defs/maneuver" } },
                 "critical_hit":      { "type": "object", "properties": {
                   "threshold": { "type": "integer", "minimum": 1, "maximum": 20 },
                   "multiplier": { "type": "integer", "minimum": 1 }
@@ -176,6 +177,16 @@ public class RuleSchemaValidator {
                 "target": { "type": "string" },
                 "op":     { "enum": ["add"] },
                 "value":  { "type": "number" }
+              }
+            },
+            "maneuver": {
+              "type": "object",
+              "required": ["name"],
+              "properties": {
+                "name":        { "type": "string", "minLength": 1 },
+                "attackMalus": { "type": "integer" },
+                "apCost":      { "type": "integer", "minimum": 0 },
+                "effects":     { "type": "array", "items": { "$ref": "#/$defs/traitEffect" } }
               }
             },
             "condition": {

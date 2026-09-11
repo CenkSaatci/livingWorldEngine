@@ -318,6 +318,67 @@ public class CombatService {
         participantRepo.save(actor);
     }
 
+    /** Kampfmanoever (P29-T03): Schadens-Effekte + AP-Kosten aus dem System.
+     *  attackMalus ist dokumentiert, aber noch nicht angewandt (kein Attack-Roll-Modell). */
+    @Transactional
+    public CombatActionResult executeManeuver(UUID userId, UUID sessionId, UUID actorId,
+                                              UUID targetId, String maneuverName) {
+        var session = validateSession(sessionId, userId, actorId);
+        var participants = participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId);
+        var actor = findActor(participants, actorId);
+        var world = worldRepo.findById(session.getWorldId())
+            .orElseThrow(() -> new CombatException("WORLD_NOT_FOUND", "World not found"));
+        var rules = rulesLoader.loadRules(session.getCampaignId(), session.getWorldId());
+        var def = findManeuver(rules, maneuverName)
+            .orElseThrow(() -> new CombatException("COMBAT_MANEUVER_UNKNOWN",
+                "Unknown maneuver: " + maneuverName));
+
+        requireAp(actor);
+        checkRange("ACTION", targetId, actorId);
+
+        var base = rollDamage(userId, session.getWorldId(), actorId, "ACTION", session.getCampaignId());
+        int bonus = 0;
+        if (def.get("effects") instanceof List<?> effects) {
+            for (var e : effects) {
+                if (e instanceof Map<?, ?> m && "damage".equals(m.get("target"))
+                    && "add".equals(m.get("op")) && m.get("value") instanceof Number n) {
+                    bonus += n.intValue();
+                }
+            }
+        }
+        var damage = Math.max(0, base + bonus);
+        int apCost = def.get("apCost") instanceof Number n ? Math.max(1, n.intValue()) : 1;
+        actor.setApCurrent(Math.max(0, actor.getApCurrent() - apCost));
+        participantRepo.save(actor);
+
+        if (targetId != null && damage > 0) {
+            var target = findActor(participants, targetId);
+            target.setHpCurrent(target.getHpCurrent() - damage);
+            participantRepo.save(target);
+            if (target.getHpCurrent() <= 0) {
+                eventService.publish(session.getWorldId(), session.getCampaignId(),
+                    COMBAT_ACTION_EXECUTED, target.getEntityId(), null, Map.of("actionType", "DEFEATED"));
+            }
+        }
+
+        sendCombatMessage(session.getWorldId(), "\u2694\ufe0f " + entityName(actorId) + " \u2013 "
+            + maneuverName + ": " + damage + " Schaden");
+        eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED,
+            actorId, targetId, Map.of("actionType", "MANEUVER", "maneuver", maneuverName, "damage", damage));
+        return new CombatActionResult("MANEUVER:" + maneuverName, damage, actor.getApCurrent(), true, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    private java.util.Optional<Map<String, Object>> findManeuver(Map<String, Object> rules, String name) {
+        if (!(rules.get("dice_mechanics") instanceof Map<?, ?> dm)) return java.util.Optional.empty();
+        if (!(dm.get("combat") instanceof Map<?, ?> combat)) return java.util.Optional.empty();
+        if (!(combat.get("maneuvers") instanceof List<?> list)) return java.util.Optional.empty();
+        return list.stream()
+            .filter(m -> m instanceof Map<?, ?> mm && name.equals(mm.get("name")))
+            .map(m -> (Map<String, Object>) m)
+            .findFirst();
+    }
+
     @Transactional
     public CombatSession nextTurn(UUID userId, UUID sessionId) {
         var session = sessionRepo.findById(sessionId)

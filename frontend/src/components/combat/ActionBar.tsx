@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SkipForward, LogOut, Shield, Zap } from 'lucide-react';
+import { SkipForward, LogOut, Shield, Swords, Zap } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useCombatStore } from '../../store/combatStore';
 import { useCampaignStore, useActiveCampaign } from '../../store/campaignStore';
@@ -33,6 +33,7 @@ export function ActionBar({ worldId }: Props) {
   const [abilities, setAbilities] = useState<AbilityEntry[]>([]);
   const [actionTypes, setActionTypes] = useState<string[]>(['action']);
   const [actionsPerTurn, setActionsPerTurn] = useState<Record<string, number>>({ action: 1 });
+  const [maneuvers, setManeuvers] = useState<{ name: string; apCost?: number }[]>([]);
   const [usedActions, setUsedActions] = useState<Record<string, number>>({});
   const toast = useToast();
   const activeCampaignId = useCampaignStore((s) => s.activeCampaignId);
@@ -54,6 +55,7 @@ export function ActionBar({ worldId }: Props) {
           const combat = rules.dice_mechanics?.combat;
           if (combat?.action_types) setActionTypes(combat.action_types);
           if (combat?.actions_per_turn) setActionsPerTurn(combat.actions_per_turn);
+          if (combat?.maneuvers) setManeuvers(combat.maneuvers);
         } catch { /* Ungültiges rulesJson → Standard-Action-Typen bleiben. */ }
         // Best-effort Config-Ladung — Defaults aus useState gelten weiter.
         // Best-effort Config-Ladung — Defaults aus useState gelten weiter.
@@ -133,6 +135,18 @@ export function ActionBar({ worldId }: Props) {
     } catch { toast.error('Action failed'); }
   };
 
+  const handleManeuver = async (maneuver: string) => {
+    try {
+      const res = await apiClient.post(`/combat/${session.id}/maneuver`, {
+        actorId: currentActor?.entityId,
+        targetId: targetEntityId,
+        maneuver,
+      });
+      useCombatStore.getState().setSession(res.data.session, res.data.participants);
+      playCombatHit();
+    } catch { toast.error(t('combat.maneuverFailed', { defaultValue: 'Maneuver failed' })); }
+  };
+
   const isAvailable = (type: string) => (usedActions[type] ?? 0) < (actionsPerTurn[type] ?? 1);
 
   return (
@@ -174,6 +188,18 @@ export function ActionBar({ worldId }: Props) {
             </button>
           );
         })}
+
+        {/* Maneuvers (P29-T03) */}
+        {maneuvers.map((m) => (
+          <button key={m.name}
+            onClick={() => handleManeuver(m.name)}
+            disabled={!currentActor || !targetEntityId}
+            className="flex items-center gap-1 rounded bg-warning/10 px-3 py-1.5 text-xs text-warning hover:bg-warning/25 disabled:opacity-40"
+            title={t('combat.apCost', { cost: m.apCost ?? 1 })}
+          >
+            <Swords size={14} /> {m.name}
+          </button>
+        ))}
 
         {/* Abilities */}
         {abilities.map((a) => (

@@ -2327,7 +2327,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 > R-Reihenfolge: Zustände → Schicksal → Manöver → Rüstung. Pakete (G4) hier, nicht in P28. DSA-Content als Abnahme. **Detail-Design: [`WIZARD-PLAN.md`](WIZARD-PLAN.md) §4.**
 
 ### P29-T01: Zustände/Status-Engine
-- **Status:** 📋
+- **Status:** ✅ (ConditionService: Katalog+Instanzen, Probe-/Schadens-Mod, Tick bei nextTurn; Sheet-Badges; `d490fce`)
 - **Aufwand:** 1,5 Tage
 - **Beschreibung:**
   - Generische Conditions mit mechanischen Effekten (Modifikatoren, Aktions-Sperren, Tick-Auflösung) — DSA-Zustände wie D&D-Conditions aus denselben Bausteinen
@@ -2336,7 +2336,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD
 
 ### P29-T02: Schicksalspunkte
-- **Status:** 📋
+- **Status:** ✅ (spendFatePoint + Re-Roll im ProbeRoller; `4a9df44`)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:**
   - Meta-Währung pro Charakter: Neu würfeln, +1 Bonus, Tod abwenden; Startwert + Refresh-Regel aus `creationBudget`
@@ -2345,7 +2345,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD
 
 ### P29-T03: Kampfmanöver-Framework
-- **Status:** 📋
+- **Status:** ✅ (`dice_mechanics.combat.maneuvers[]`: apCost+effects[dmg]; POST /combat/{id}/maneuver + ActionBar-Buttons; TDD Backend 347/Frontend 150; voller Playwright-E2E im E2E-Paket nach P29)
 - **Aufwand:** 1,5 Tage
 - **Beschreibung:**
   - Generisches Tausch-Prinzip: Angriffsmalus gegen Effekt (Schaden+, Spezial) — Wuchtschlag/Finte als Content, Framework als Engine
