@@ -32,7 +32,12 @@
     "xpSaveFailed": "Fehler beim Speichern der XP",
     "overrideSaveFailed": "Fehler beim Speichern des Overrides",
     "dragToEquip": "Ziehen zum Ausrüsten",
-    "advanceCost": "nächste: {{cost}} AP"
+    "advanceCost": "nächste: {{cost}} AP",
+    "conditions": "Zustände",
+    "addCondition": "Zustand hinzufügen",
+    "removeCondition": "Zustand entfernen",
+    "noConditions": "Keine Zustände",
+    "conditionFailed": "Zustände konnten nicht geändert werden"
   },
   "attribute": {
     "modifier": "Modifikator"

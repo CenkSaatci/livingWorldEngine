@@ -157,6 +157,14 @@ export function CharacterSheet({ entityId }: Props) {
         </div>
       </div>
 
+      {/* Conditions (P29-T01) */}
+      <ConditionsBar
+        entityId={entityId}
+        active={data.activeConditions ?? []}
+        catalog={data.conditionCatalog ?? []}
+        onChanged={refetch}
+      />
+
       {/* Attributes */}
       <div className="rounded-lg border border-bg-elevated bg-bg-surface p-3">
         <h3 className="mb-2 text-xs font-semibold text-text-secondary uppercase tracking-wider">
@@ -409,8 +417,82 @@ function AbilityRow({ ability, attributes }: {
   );
 }
 
-function FormulaOverrides({ entityId, onSaved }: { entityId: string; onSaved: () => void }) {
+
+function ConditionsBar({ entityId, active, catalog, onChanged }: {
+  entityId: string;
+  active: { name: string; rounds?: number | null }[];
+  catalog: string[];
+  onChanged: () => void;
+}) {
   const { t } = useTranslation('character');
+  const toast = useToast();
+  const [pick, setPick] = useState('');
+  const campaignId = useCampaignStore((s) => s.activeCampaignId);
+
+  const apply = async () => {
+    if (!pick) return;
+    try {
+      await apiClient.post(
+        `/entities/${entityId}/conditions${campaignId ? `?campaignId=${campaignId}` : ''}`,
+        { name: pick },
+      );
+      setPick('');
+      onChanged();
+    } catch {
+      toast.error(t('sheet.conditionFailed'));
+    }
+  };
+
+  const remove = async (name: string) => {
+    try {
+      await apiClient.delete(`/entities/${entityId}/conditions/${encodeURIComponent(name)}`);
+      onChanged();
+    } catch {
+      toast.error(t('sheet.conditionFailed'));
+    }
+  };
+
+  return (
+    <div className="rounded-lg border border-bg-elevated bg-bg-surface p-3">
+      <h3 className="mb-2 text-xs font-semibold text-text-secondary uppercase tracking-wider">
+        {t('sheet.conditions')}
+      </h3>
+      <div className="flex flex-wrap items-center gap-2">
+        {active.map((c) => (
+          <span key={c.name} className="flex items-center gap-1 rounded bg-danger/10 px-2 py-0.5 text-xs text-danger">
+            {c.name}{c.rounds != null ? ` (${c.rounds})` : ''}
+            <button onClick={() => remove(c.name)} aria-label={t('sheet.removeCondition')}
+              className="hover:text-danger/70">×</button>
+          </span>
+        ))}
+        {active.length === 0 && (
+          <span className="text-xs text-text-secondary">{t('sheet.noConditions')}</span>
+        )}
+        {catalog.length > 0 && (
+          <span className="ml-auto flex items-center gap-1">
+            <select
+              value={pick}
+              onChange={(e) => setPick(e.target.value)}
+              aria-label={t('sheet.addCondition')}
+              className="rounded border border-bg-elevated bg-bg-primary px-2 py-0.5 text-xs text-text-primary outline-none focus:border-accent"
+            >
+              <option value="">{t('sheet.addCondition')}</option>
+              {catalog.filter((n) => !active.some((a) => a.name === n)).map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+            <button onClick={apply} disabled={!pick}
+              className="rounded bg-accent/20 px-2 py-0.5 text-xs text-accent hover:bg-accent/40 disabled:opacity-40">
+              +
+            </button>
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FormulaOverrides({ entityId, onSaved }: { entityId: string; onSaved: () => void }) {  const { t } = useTranslation('character');
   const toast = useToast();
   const [editName, setEditName] = useState('');
   const [editValue, setEditValue] = useState('');

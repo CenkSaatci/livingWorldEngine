@@ -3,6 +3,7 @@ package com.lwe.core.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.GameEntity;
+import com.lwe.api.dto.SheetResponse;
 import com.lwe.core.domain.World;
 import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.repository.WorldRepository;
@@ -45,7 +46,8 @@ class CharacterSheetServiceTest {
         modifierService = new ModifierService();
         derivedValueService = new DerivedValueService();
         service = new CharacterSheetService(entityRepo, worldRepo, worldAccess,
-            modifierService, derivedValueService, levelUpService, rulesLoader, objectMapper);
+            modifierService, derivedValueService, levelUpService, rulesLoader, objectMapper,
+            new ConditionService(objectMapper));
         doNothing().when(worldAccess).requireAccess(any(), any());
         lenient().when(levelUpService.getLevel(any(), any())).thenReturn(1);
     }
@@ -308,5 +310,26 @@ class CharacterSheetServiceTest {
         var sheet = service.getSheet(entityId, userId);
 
         assertThat(sheet.derivedValues()).extracting(d -> d.name()).doesNotContain("asp");
+    }
+
+    @Test
+    void getSheet_includesActiveConditionsAndCatalog() throws Exception {
+        var entity = mockEntity("{\"staerke\":10}", null);
+        when(entity.getMetadataJson()).thenReturn("{\"conditions\":[{\"name\":\"Wunde\",\"rounds\":2}]}");
+        mockWorld(systemId);
+        stubRules("""
+            {
+                "attributes": [{"name":"staerke","type":"INT","default":10}],
+                "conditions": [{"name":"Wunde","effects":[{"target":"probe","op":"add","value":-4}]},
+                               {"name":"Betaeubt","effects":[]}],
+                "dice_mechanics":{"probe":"1d20+mod"}
+            }
+            """);
+
+        var sheet = service.getSheet(entityId, userId);
+
+        assertThat(sheet.activeConditions()).extracting(SheetResponse.ConditionInfo::name).containsExactly("Wunde");
+        assertThat(sheet.activeConditions().get(0).rounds()).isEqualTo(2);
+        assertThat(sheet.conditionCatalog()).containsExactly("Wunde", "Betaeubt");
     }
 }

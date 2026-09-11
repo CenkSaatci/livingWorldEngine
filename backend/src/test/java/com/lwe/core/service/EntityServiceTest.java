@@ -28,13 +28,15 @@ class EntityServiceTest {
     private WorldAccess worldAccess;
     @Mock
     private RulesLoader rulesLoader;
+    @Mock
+    private ConditionService conditionService;
     private EntityService service;
     private final UUID userId = UUID.randomUUID();
     private final UUID worldId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        service = new EntityService(entityRepo, worldAccess, new ObjectMapper(), rulesLoader);
+        service = new EntityService(entityRepo, worldAccess, new ObjectMapper(), rulesLoader, conditionService);
     }
 
     @Test
@@ -194,5 +196,47 @@ class EntityServiceTest {
             .isInstanceOf(EntityService.EntityException.class)
             .satisfies(e -> assertThat(((EntityService.EntityException) e).getErrorCode())
                 .isEqualTo("WORLD_ACCESS_DENIED"));
+    }
+
+    @Test
+    void addConditionValidatesCatalogAndPersists() {
+        var entity = entityWithId("{\"staerke\":10}");
+        var campaignId = campaignInWorld();
+        when(entityRepo.findById(any())).thenReturn(Optional.of(entity));
+        doNothing().when(worldAccess).requireAccess(any(), any());
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(rulesLoader.loadRules(campaignId, worldId)).thenReturn(Map.of(
+            "conditions", List.of(Map.of("name", "Wunde"))));
+
+        service.addCondition(entity.getId(), userId, "Wunde", 2, campaignId);
+
+        verify(conditionService).add(eq(entity), any());
+    }
+
+    @Test
+    void addConditionRejectsUnknownName() {
+        var entity = entityWithId("{\"staerke\":10}");
+        var campaignId = campaignInWorld();
+        when(entityRepo.findById(any())).thenReturn(Optional.of(entity));
+        doNothing().when(worldAccess).requireAccess(any(), any());
+        when(rulesLoader.loadRules(campaignId, worldId)).thenReturn(Map.of(
+            "conditions", List.of(Map.of("name", "Wunde"))));
+
+        assertThatThrownBy(() -> service.addCondition(entity.getId(), userId, "Nix", null, campaignId))
+            .isInstanceOf(EntityService.EntityException.class)
+            .satisfies(e -> assertThat(((EntityService.EntityException) e).getErrorCode())
+                .isEqualTo("UNKNOWN_CONDITION"));
+    }
+
+    @Test
+    void removeConditionDelegates() {
+        var entity = entityWithId("{\"staerke\":10}");
+        when(entityRepo.findById(any())).thenReturn(Optional.of(entity));
+        doNothing().when(worldAccess).requireAccess(any(), any());
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.removeCondition(entity.getId(), userId, "Wunde");
+
+        verify(conditionService).remove(entity, "Wunde");
     }
 }

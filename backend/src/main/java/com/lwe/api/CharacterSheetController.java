@@ -69,6 +69,26 @@ public class CharacterSheetController {
         return ResponseEntity.ok(EntityResponse.from(entity));
     }
 
+    @PostMapping("/{entityId}/conditions")
+    public ResponseEntity<EntityResponse> addCondition(@PathVariable UUID entityId,
+                                                        @RequestBody Map<String, Object> body,
+                                                        @RequestParam(required = false) UUID campaignId,
+                                                        @AuthenticationPrincipal User user) {
+        var name = body.get("name") instanceof String s2 ? s2 : null;
+        if (name == null || name.isBlank()) return ResponseEntity.badRequest().build();
+        var rounds = body.get("rounds") instanceof Number n ? n.intValue() : null;
+        var entity = entityService.addCondition(entityId, user.getId(), name, rounds, campaignId);
+        return ResponseEntity.ok(EntityResponse.from(entity));
+    }
+
+    @DeleteMapping("/{entityId}/conditions/{name}")
+    public ResponseEntity<EntityResponse> removeCondition(@PathVariable UUID entityId,
+                                                           @PathVariable String name,
+                                                           @AuthenticationPrincipal User user) {
+        var entity = entityService.removeCondition(entityId, user.getId(), name);
+        return ResponseEntity.ok(EntityResponse.from(entity));
+    }
+
     @PatchMapping("/{entityId}/override")
     public ResponseEntity<EntityResponse> updateOverride(@PathVariable UUID entityId,
                                                           @RequestBody Map<String, Object> body,

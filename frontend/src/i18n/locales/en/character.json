@@ -32,7 +32,12 @@
     "xpSaveFailed": "Failed to save XP",
     "overrideSaveFailed": "Failed to save override",
     "dragToEquip": "Drag to equip",
-    "advanceCost": "next: {{cost}} AP"
+    "advanceCost": "next: {{cost}} AP",
+    "conditions": "Conditions",
+    "addCondition": "Add condition",
+    "removeCondition": "Remove condition",
+    "noConditions": "No conditions",
+    "conditionFailed": "Failed to update conditions"
   },
   "attribute": {
     "modifier": "Modifier"

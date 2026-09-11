@@ -30,6 +30,7 @@ public class CombatService {
     private final CampaignMemberService campaignMemberService;
     private final Map<DiceExpressionParser.DiceSystem, RuleEngine> engines;
     private final ObjectMapper objectMapper;
+    private final ConditionService conditionService;
 
     public CombatService(CombatSessionRepository sessionRepo,
                          CombatParticipantRepository participantRepo,
@@ -44,8 +45,10 @@ public class CombatService {
                          java.util.List<RuleEngine> engineList,
                          ObjectMapper objectMapper,
                          RulesLoader rulesLoader,
-                         CampaignMemberService campaignMemberService) {
+                         CampaignMemberService campaignMemberService,
+                         ConditionService conditionService) {
         this.objectMapper = objectMapper;
+        this.conditionService = conditionService;
         this.sessionRepo = sessionRepo;
         this.participantRepo = participantRepo;
         this.entityRepo = entityRepo;
@@ -285,7 +288,10 @@ public class CombatService {
         if (!isDamagingAction(world, campaignId, actionType)) return 0;
         var damageAttr = resolveDamageAttr(entity, world, campaignId);
         var rollResult = rollService.executeRoll(userId, worldId, actorId, damageAttr, 0, 0, campaignId);
-        return rollResult != null ? rollResult.total() : 0;
+        var base = rollResult != null ? rollResult.total() : 0;
+        // Aktive Zustaende (P29-T01): Schadens-Modifikator
+        var rules = rulesLoader.loadRules(campaignId, worldId);
+        return Math.max(0, base + conditionService.modifier(entity, rules, "damage"));
     }
 
     private boolean isDamagingAction(World world, UUID campaignId, String actionType) {
@@ -335,6 +341,14 @@ public class CombatService {
         var next = participants.get(nextIdx);
         next.setApCurrent(next.getApMax());
         participantRepo.save(next);
+
+        // Zustaende ticken (P29-T01): Runden zaehlen beim Zugbeginn des Actors
+        entityRepo.findById(next.getEntityId()).ifPresent(e -> {
+            if (conditionService.active(e).stream().anyMatch(c -> c.rounds() != null)) {
+                conditionService.tick(e);
+                entityRepo.save(e);
+            }
+        });
 
         session = sessionRepo.save(session);
 

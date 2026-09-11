@@ -32,6 +32,7 @@ class CombatServiceTest {
     private final WorldAccess worldAccess = mock();
     private final RulesLoader rulesLoader = mock();
     private final CampaignMemberService campaignMemberService = mock();
+    private final ConditionService conditionService = mock();
 
     private CombatService combatService;
     private final UUID userId = UUID.randomUUID();
@@ -41,7 +42,7 @@ class CombatServiceTest {
     void setUp() {
         combatService = new CombatService(sessionRepo, participantRepo, entityRepo,
             worldRepo, gameSystemRepo, eventService, rollService, abilityRepo, messaging, worldAccess, List.of(new D20RuleEngine()),
-            new ObjectMapper(), rulesLoader, campaignMemberService);
+            new ObjectMapper(), rulesLoader, campaignMemberService, conditionService);
     }
 
     @Test
@@ -336,5 +337,39 @@ class CombatServiceTest {
     private void setId(Object obj, UUID id) {
         try { var f = obj.getClass().getDeclaredField("id"); f.setAccessible(true); f.set(obj, id); }
         catch (Exception e) { throw new RuntimeException(e); }
+    }
+
+    @Test
+    void nextTurnTicksConditionsOfNextActor() {
+        var session = new CombatSession(worldId, null);
+        setId(session, UUID.randomUUID());
+        var a = UUID.randomUUID();
+        var b = UUID.randomUUID();
+        session.setCurrentTurnEntityId(a);
+
+        var pa = new CombatParticipant(session.getId(), a, 20, 2, "A");
+        var pb = new CombatParticipant(session.getId(), b, 10, 2, "A");
+
+        var entityB = new GameEntity(worldId, "PC", "B");
+        setId(entityB, b);
+        entityB.setMetadataJson("{\"conditions\":[{\"name\":\"Wunde\",\"rounds\":2}]}");
+
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        when(sessionRepo.findById(session.getId())).thenReturn(java.util.Optional.of(session));
+        when(sessionRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(worldRepo.findById(worldId)).thenReturn(java.util.Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
+            .thenReturn(new java.util.ArrayList<>(java.util.List.of(pa, pb)));
+        when(entityRepo.findById(b)).thenReturn(java.util.Optional.of(entityB));
+        when(conditionService.active(entityB))
+            .thenReturn(java.util.List.of(new ConditionService.ConditionInstance("Wunde", 2)));
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        combatService.nextTurn(userId, session.getId());
+
+        verify(conditionService).tick(entityB);
+        verify(entityRepo).save(entityB);
     }
 }

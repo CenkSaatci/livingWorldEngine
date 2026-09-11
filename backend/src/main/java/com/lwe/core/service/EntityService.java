@@ -21,14 +21,17 @@ public class EntityService {
     private final WorldAccess worldAccess;
     private final ObjectMapper objectMapper;
     private final RulesLoader rulesLoader;
+    private final ConditionService conditionService;
     private static final TypeReference<Map<String, Integer>> ATTR_MAP = new TypeReference<>() {};
 
     public EntityService(GameEntityRepository entityRepo, WorldAccess worldAccess,
-                        ObjectMapper objectMapper, RulesLoader rulesLoader) {
+                        ObjectMapper objectMapper, RulesLoader rulesLoader,
+                        ConditionService conditionService) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldAccess = worldAccess;
         this.rulesLoader = rulesLoader;
+        this.conditionService = conditionService;
     }
 
     @Transactional
@@ -187,6 +190,32 @@ public class EntityService {
         } catch (Exception e) {
             return Map.of();
         }
+    }
+
+    /** Zustand anwenden (P29-T01); Katalog prueft/freigibt die Namen. */
+    @Transactional
+    public GameEntity addCondition(UUID entityId, UUID userId, String name, Integer rounds, UUID campaignId) {
+        var entity = getById(entityId, userId);
+        if (campaignId != null) {
+            if (!rulesLoader.campaignBelongsToWorld(campaignId, entity.getWorldId())) {
+                throw new EntityException("WORLD_ACCESS_DENIED", "Campaign does not belong to world");
+            }
+            var rules = rulesLoader.loadRules(campaignId, entity.getWorldId());
+            if (rules.get("conditions") instanceof List<?> catalog && !catalog.isEmpty()) {
+                boolean known = catalog.stream().anyMatch(c ->
+                    c instanceof Map<?, ?> m && name.equals(m.get("name")));
+                if (!known) throw new EntityException("UNKNOWN_CONDITION", "Unknown condition: " + name);
+            }
+        }
+        conditionService.add(entity, new ConditionService.ConditionInstance(name, rounds));
+        return entityRepo.save(entity);
+    }
+
+    @Transactional
+    public GameEntity removeCondition(UUID entityId, UUID userId, String name) {
+        var entity = getById(entityId, userId);
+        conditionService.remove(entity, name);
+        return entityRepo.save(entity);
     }
 
     @Transactional

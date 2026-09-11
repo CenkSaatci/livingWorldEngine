@@ -27,6 +27,7 @@ class ProbeServiceTest {
     private final ModifierService modifierService = mock();
     private final RulesLoader rulesLoader = mock();
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ConditionService conditionService = new ConditionService(objectMapper);
 
     private ProbeService service;
 
@@ -45,7 +46,7 @@ class ProbeServiceTest {
     @BeforeEach
     void setUp() {
         service = new ProbeService(entityRepo, worldRepo, worldAccess,
-            conditionEvaluator, modifierService, rulesLoader, objectMapper);
+            conditionEvaluator, modifierService, rulesLoader, objectMapper, conditionService);
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
         lenient().when(conditionEvaluator.evaluate(any(), any())).thenReturn(java.util.List.of());
         lenient().when(modifierService.calculateModifiers(any(), any())).thenReturn(Map.of("staerke", 0.0));
@@ -128,5 +129,28 @@ class ProbeServiceTest {
 
         assertThat(result.modifier()).isEqualTo(0);
         assertThat(result.total()).isBetween(1, 20);
+    }
+
+    @Test
+    void conditionMalusAppliesToProbe() {
+        var entity = entityWithAttrs("{\"staerke\":10}");
+        entity.setMetadataJson("{\"conditions\":[{\"name\":\"Wunde\",\"rounds\":2}]}");
+        var world = new World("W", userId, "{}");
+        try { var f = World.class.getDeclaredField("id"); f.setAccessible(true); f.set(world, worldId); }
+        catch (Exception ex) { throw new RuntimeException(ex); }
+        when(entityRepo.findById(entityId)).thenReturn(java.util.Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(java.util.Optional.of(world));
+        when(rulesLoader.loadRules(any(), any())).thenAnswer(inv -> objectMapper.readValue("""
+            {"version":1,"probeType":"d20_target","modifierFormula":"floor((attr-10)/2)",
+             "attributes":[{"name":"staerke","type":"INT","default":10}],
+             "skills":[{"name":"Athletik","attributes":["staerke"],"bonus":0}],
+             "conditions":[{"name":"Wunde","effects":[{"target":"probe","op":"add","value":-4}]}],
+             "dice_mechanics":{"probe":"1d20+mod"}}
+            """, Map.class));
+
+        var result = service.executeProbe(entityId, userId, "Athletik", 15, false);
+
+        // attrMod 0 + bonus 0 + Zustands-Malus -4
+        assertThat(result.modifier()).isEqualTo(-4);
     }
 }

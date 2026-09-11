@@ -209,6 +209,24 @@ class RuleSchemaValidatorTest {
         assertThat(errors).as("P28-Referenz muss gegen DEFAULT_SCHEMA validieren").isEmpty();
     }
 
+
+    @Test
+    void shouldRejectInvalidConditionRounds() {
+        var bad = """
+            {"version":1,"attributes":[{"name":"x","type":"INT","default":1}],
+             "dice_mechanics":{"probe":"1d20"},
+             "conditions":[{"name":"Wunde","rounds":0}]}
+            """;
+        assertThat(validator.validate(bad, RuleSchemaValidator.DEFAULT_SCHEMA))
+            .as("rounds must be >= 1").isNotEmpty();
+
+        var ok = """
+            {"version":1,"attributes":[{"name":"x","type":"INT","default":1}],
+             "dice_mechanics":{"probe":"1d20"},
+             "conditions":[{"name":"Wunde","effects":[{"target":"probe","op":"add","value":-4}]}]}
+            """;
+        assertThat(validator.validate(ok, RuleSchemaValidator.DEFAULT_SCHEMA)).isEmpty();
+    }
     @Test
     void shouldThrowOnInvalidInput() {
         assertThatThrownBy(() -> validator.validateOrThrow("not json", schemaJson))

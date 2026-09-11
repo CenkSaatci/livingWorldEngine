@@ -57,6 +57,7 @@ public class RuleSchemaValidator {
             "magic":            { "type": "object" },
             "psionics":         { "type": "object" },
             "conditionals":     { "type": "array", "items": { "type": "object" } },
+            "conditions":       { "type": "array", "items": { "$ref": "#/$defs/condition" } },
             "attributes": {
               "type": "array",
               "minItems": 1,
@@ -175,6 +176,15 @@ public class RuleSchemaValidator {
                 "target": { "type": "string" },
                 "op":     { "enum": ["add"] },
                 "value":  { "type": "number" }
+              }
+            },
+            "condition": {
+              "type": "object",
+              "required": ["name"],
+              "properties": {
+                "name":    { "type": "string", "minLength": 1 },
+                "rounds":  { "type": "integer", "minimum": 1 },
+                "effects": { "type": "array", "items": { "$ref": "#/$defs/traitEffect" } }
               }
             },
             "advancementRow": {

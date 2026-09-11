@@ -33,11 +33,13 @@ public class ProbeService {
     private final ModifierService modifierService;
     private final RulesLoader rulesLoader;
     private final ObjectMapper objectMapper;
+    private final ConditionService conditionService;
 
     public ProbeService(GameEntityRepository entityRepo, WorldRepository worldRepo,
                         WorldAccess worldAccess,
                         ConditionEvaluator conditionEvaluator, ModifierService modifierService,
-                        RulesLoader rulesLoader, ObjectMapper objectMapper) {
+                        RulesLoader rulesLoader, ObjectMapper objectMapper,
+                        ConditionService conditionService) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldRepo = worldRepo;
@@ -45,6 +47,7 @@ public class ProbeService {
         this.conditionEvaluator = conditionEvaluator;
         this.modifierService = modifierService;
         this.rulesLoader = rulesLoader;
+        this.conditionService = conditionService;
     }
 
     public ProbeResponse executeProbe(UUID entityId, UUID userId, String skillName,
@@ -89,6 +92,9 @@ public class ProbeService {
             skillBonus = perCharSkills.get(skillName);
         }
 
+        // Aktive Zustaende (P29-T01): Probe-Malus
+        var conditionMalus = conditionService.modifier(entity, rules, "probe");
+
         var rng = ThreadLocalRandom.current();
         List<ProbeResponse.ConditionalResult> activeConditionals;
         int total;
@@ -103,7 +109,7 @@ public class ProbeService {
                 dice = new int[]{die};
                 total = die;
                 modifierTotal = 0;
-                success = die <= (skillBonus + skillAttrs.stream()
+                success = die <= (skillBonus + conditionMalus + skillAttrs.stream()
                     .mapToInt(a -> (int) Math.round(modifiers.getOrDefault(a, 0.0))).sum());
                 break;
             }
@@ -122,7 +128,7 @@ public class ProbeService {
                 dice = rolls;
                 total = Arrays.stream(rolls).sum();
                 modifierTotal = -fails;
-                success = fails <= skillBonus;
+                success = fails <= (skillBonus + conditionMalus);
                 break;
             }
             default: { // d20_target
@@ -132,7 +138,7 @@ public class ProbeService {
                 dice = advantage ? new int[]{die1, die2} : new int[]{die};
                 var attrMod = skillAttrs.stream()
                     .mapToDouble(a -> modifiers.getOrDefault(a, 0.0)).sum();
-                modifierTotal = (int) Math.round(attrMod) + skillBonus;
+                modifierTotal = (int) Math.round(attrMod) + skillBonus + conditionMalus;
                 total = die + modifierTotal;
                 success = total >= target;
                 break;

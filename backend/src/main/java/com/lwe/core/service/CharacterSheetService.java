@@ -28,6 +28,7 @@ public class CharacterSheetService {
     private final LevelUpService levelUpService;
     private final RulesLoader rulesLoader;
     private final ObjectMapper objectMapper;
+    private final ConditionService conditionService;
 
     private static final TypeReference<Map<String, Integer>> ATTR_MAP_TYPE = new TypeReference<>() {};
     private static final TypeReference<List<Map<String, Object>>> LIST_MAP_TYPE = new TypeReference<>() {};
@@ -39,7 +40,8 @@ public class CharacterSheetService {
                                   DerivedValueService derivedValueService,
                                   LevelUpService levelUpService,
                                   RulesLoader rulesLoader,
-                                  ObjectMapper objectMapper) {
+                                  ObjectMapper objectMapper,
+                                  ConditionService conditionService) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldRepo = worldRepo;
@@ -48,6 +50,7 @@ public class CharacterSheetService {
         this.derivedValueService = derivedValueService;
         this.levelUpService = levelUpService;
         this.rulesLoader = rulesLoader;
+        this.conditionService = conditionService;
     }
 
     public SheetResponse getSheet(UUID entityId, UUID userId) {
@@ -154,9 +157,19 @@ public class CharacterSheetService {
             level = levelUpService.getLevel(entity, gs);
         }
 
+        var activeConditions = conditionService.active(entity).stream()
+            .map(c -> new SheetResponse.ConditionInfo(c.name(), c.rounds()))
+            .toList();
+        var conditionCatalog = ((List<Map<String, Object>>) rules.getOrDefault("conditions", List.of()))
+            .stream()
+            .map(c -> (String) c.getOrDefault("name", ""))
+            .filter(n -> !n.isBlank())
+            .toList();
+
         return new SheetResponse(
             new SheetResponse.EntityInfo(entity.getId().toString(), entity.getName(), entity.getEntityType()),
-            entity.getExperiencePoints(), level, attributes, derivedValues, skills, conditionals, abilities
+            entity.getExperiencePoints(), level, attributes, derivedValues, skills, conditionals, abilities,
+            activeConditions, conditionCatalog
         );
     }
 
