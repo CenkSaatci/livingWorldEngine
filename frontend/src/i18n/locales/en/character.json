@@ -45,5 +45,38 @@
   },
   "attribute": {
     "modifier": "Modifier"
+  },
+  "wizard": {
+    "title": "Create character",
+    "close": "Close",
+    "stepPackages": "Packages",
+    "stepAttributes": "Attributes",
+    "stepTraits": "Traits",
+    "stepSummary": "Summary",
+    "budget": "Budget",
+    "ap": "AP",
+    "species": "Species",
+    "culture": "Culture",
+    "profession": "Profession",
+    "choice": "Choice",
+    "noPackages": "No packages defined in this system.",
+    "cost": "Cost",
+    "tier": "Tier",
+    "noTraits": "No traits defined.",
+    "finalTraits": "Final traits",
+    "name": "Name",
+    "finalAttributes": "Final values",
+    "costs": "Costs",
+    "attrCost": "Attributes",
+    "traitCost": "Traits",
+    "packageCost": "Packages",
+    "total": "Total",
+    "issue": "Problem",
+    "warning": "Notice",
+    "cancel": "Cancel",
+    "back": "Back",
+    "next": "Next",
+    "save": "Save",
+    "saveFailed": "Could not save character"
   }
 }

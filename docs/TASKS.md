@@ -2401,13 +2401,13 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD (Vitest)
 
 ### P30-T02: Wizard-UI — Pakete + Attribute mit BudgetBar
-- **Status:** 📋
+- **Status:** ✅ (`CharacterWizard.tsx`: Steps Pakete/Attribute mit Live-Budget, Choice-Auswahl, Mod-Vorschau; Entry-Button in `EntityListPage` nur bei System mit `creationBudget`/`packages`; i18n DE/EN)
 - **Beschreibung:** `CharacterWizard`-Modal (Steps: Pakete → Attribute → Traits → Übersicht), Live-Vorschau, Warnen statt blockieren; Entry in `EntityListPage`, nur wenn aktive Kampagne ein System mit `creationBudget`/`packages` hat
 - **Akzeptanzkriterien:** Attribut-Stepper live gegen Budget; Paket-Mods sichtbar; i18n DE/EN
 - **Qualitäts-Check:** UI-Test (Vitest) + tsc
 
 ### P30-T03: Traits + Übersicht + Speichern
-- **Status:** 📋
+- **Status:** ✅ (Trait-Checkboxen mit Tiers + Auto-Trait-Chips, Übersicht mit Kosten/Issues/Warnungen, Save gated; Entity-Payload: Endwerte in `attributesJson`, `metadataJson.traits` + `package_selections` + `fate_points`; 2 Komponententests)
 - **Beschreibung:** Trait-Auswahl (Tiers, automatische aus Paketen), Übersicht mit Endwerten/Kosten/Issues; Save legt PC an (`attributesJson` = Endwerte, `metadataJson.traits` = End-Traits, `metadataJson.package_selections`)
 - **Akzeptanzkriterien:** Speichern erzeugt PC; Sheet zeigt Traits/Attribute; Tests grün
 - **Qualitäts-Check:** TDD

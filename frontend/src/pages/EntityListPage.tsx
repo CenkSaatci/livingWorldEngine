@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Search, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Search, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { useApiGet } from '../hooks/useApiGet';
 import { apiClient } from '../api/client';
 import { useToast } from '../hooks/useToast';
 import { EntityCreateModal } from '../components/world/EntityCreateModal';
+import { CharacterWizard } from '../components/character/CharacterWizard';
+import { useActiveCampaign } from '../store/campaignStore';
+import { fromRulesJson, type WizardData } from '../types/gameSystem';
 
 interface EntitySummary {
   id: string;
@@ -33,6 +36,10 @@ export default function EntityListPage() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'PC' | 'NPC'>('ALL');
   const [showCreate, setShowCreate] = useState(false);
+  const [charRules, setCharRules] = useState<WizardData | null>(null);
+  const [showWizard, setShowWizard] = useState(false);
+  const activeCampaign = useActiveCampaign();
+  const activeGameSystemId = activeCampaign?.gameSystemId;
 
   const filtered = (entities ?? []).filter((e) => {
     if (e.entityType === 'FACTION') return false;
@@ -40,6 +47,21 @@ export default function EntityListPage() {
     if (search && !e.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
+
+  // Charakter-Wizard anbieten, wenn das aktive System Erstellungsdaten hat (P30).
+  useEffect(() => {
+    if (!activeGameSystemId) { setCharRules(null); return; }
+    let cancelled = false;
+    apiClient.get(`/game-systems/${activeGameSystemId}`).then((res) => {
+      if (cancelled) return;
+      const parsed = fromRulesJson(res.data.rulesJson ?? '');
+      const usable = parsed && (
+        parsed.creationBudget != null || (parsed.packages?.length ?? 0) > 0
+      );
+      setCharRules(usable ? parsed : null);
+    }).catch(() => setCharRules(null));
+    return () => { cancelled = true; };
+  }, [activeGameSystemId]);
 
   const handleDelete = async (entityId: string, entityName: string) => {
     if (!confirm(`Delete "${entityName || entityId.slice(0, 12)}"?`)) return;
@@ -65,12 +87,22 @@ export default function EntityListPage() {
           </button>
           <h1 className="text-lg font-heading text-text-primary">{t('entityList.title')}</h1>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-1 rounded bg-accent px-3 py-1.5 text-sm text-white hover:bg-accent/80"
-        >
-          <Plus size={16} /> {t('entity.create')}
-        </button>
+        <div className="flex items-center gap-2">
+          {charRules && (
+            <button
+              onClick={() => setShowWizard(true)}
+              className="flex items-center gap-1 rounded border border-accent/50 px-3 py-1.5 text-sm text-accent hover:bg-accent/10"
+            >
+              <Sparkles size={16} /> {t('entity.createCharacter')}
+            </button>
+          )}
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1 rounded bg-accent px-3 py-1.5 text-sm text-white hover:bg-accent/80"
+          >
+            <Plus size={16} /> {t('entity.create')}
+          </button>
+        </div>
       </header>
 
       {/* Filters */}
@@ -168,6 +200,19 @@ export default function EntityListPage() {
           </table>
         )}
       </div>
+
+      {showWizard && charRules && (
+        <CharacterWizard
+          worldId={worldId}
+          rules={charRules}
+          onCreated={(id) => {
+            setShowWizard(false);
+            refetch();
+            navigate(`/characters/${id}`);
+          }}
+          onClose={() => setShowWizard(false)}
+        />
+      )}
 
       {showCreate && (
         <EntityCreateModal

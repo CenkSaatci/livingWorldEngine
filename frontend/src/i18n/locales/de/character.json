@@ -45,5 +45,38 @@
   },
   "attribute": {
     "modifier": "Modifikator"
+  },
+  "wizard": {
+    "title": "Charakter erstellen",
+    "close": "Schließen",
+    "stepPackages": "Pakete",
+    "stepAttributes": "Attribute",
+    "stepTraits": "Merkmale",
+    "stepSummary": "Übersicht",
+    "budget": "Budget",
+    "ap": "AP",
+    "species": "Spezies",
+    "culture": "Kultur",
+    "profession": "Profession",
+    "choice": "Auswahl",
+    "noPackages": "Keine Pakete im System definiert.",
+    "cost": "Kosten",
+    "tier": "Stufe",
+    "noTraits": "Keine Merkmale definiert.",
+    "finalTraits": "End-Merkmale",
+    "name": "Name",
+    "finalAttributes": "Endwerte",
+    "costs": "Kosten",
+    "attrCost": "Attribute",
+    "traitCost": "Merkmale",
+    "packageCost": "Pakete",
+    "total": "Gesamt",
+    "issue": "Problem",
+    "warning": "Hinweis",
+    "cancel": "Abbrechen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "save": "Speichern",
+    "saveFailed": "Charakter konnte nicht gespeichert werden"
   }
 }

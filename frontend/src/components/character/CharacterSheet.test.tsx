@@ -112,7 +112,7 @@ describe('CharacterSheet', () => {
     (useSheet as any).mockReturnValue({ data: mockSheet, loading: false, error: null, refetch: vi.fn() });
     const { container } = render(<CharacterSheet entityId="e1" />);
     // FormulaOverrides section should render with translated title
-    expect(container.textContent).toContain('sheet.overrides');
+    expect(container.textContent).toContain('Formel-Overrides');
   });
 
   it('shows use button for active abilities', () => {

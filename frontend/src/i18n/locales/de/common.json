@@ -122,7 +122,8 @@
     "editNpc": "NPC bearbeiten",
     "saving": "Speichern…",
     "deleteTitle": "NPC löschen?",
-    "deleteConfirm": "Dies löscht „{{name}}“ und alle zugehörigen Daten endgültig."
+    "deleteConfirm": "Dies löscht „{{name}}“ und alle zugehörigen Daten endgültig.",
+    "createCharacter": "Charakter erstellen"
   },
   "faction": {
     "create": "Fraktion erstellen",

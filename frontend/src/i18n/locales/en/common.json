@@ -122,7 +122,8 @@
     "editNpc": "Edit NPC",
     "saving": "Saving…",
     "deleteTitle": "Delete NPC?",
-    "deleteConfirm": "This will permanently delete \"{{name}}\" and all associated data."
+    "deleteConfirm": "This will permanently delete \"{{name}}\" and all associated data.",
+    "createCharacter": "Create character"
   },
   "faction": {
     "create": "Create Faction",
