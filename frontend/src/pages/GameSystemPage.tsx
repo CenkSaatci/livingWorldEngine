@@ -13,6 +13,7 @@ import {
   Download,
   Upload,
   Copy,
+  Share2,
 } from 'lucide-react';
 import { SyntaxHighlightedTextarea } from '../components/ui/SyntaxHighlightedTextarea';
 import { apiClient } from '../api/client';
@@ -155,6 +156,9 @@ export default function GameSystemPage() {
   const [validation, setValidation] = useState<{ valid: boolean; errors?: string[] } | null>(null);
   const [validating, setValidating] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [sharing, setSharing] = useState<GameSystem | null>(null);
+  const [shares, setShares] = useState<{ userId: string }[]>([]);
+  const [shareEmail, setShareEmail] = useState('');
   const [editorMode, setEditorMode] = useState<'wizard' | 'json'>('wizard');
   const [wizardData, setWizardData] = useState<WizardData | null>(null);
   // Ändert sich bei Template-Load, damit SystemWizard mit den neuen initialData remountet
@@ -305,6 +309,40 @@ export default function GameSystemPage() {
     }
   };
 
+  const openShares = async (sys: GameSystem) => {
+    setSharing(sys);
+    setShareEmail('');
+    try {
+      const res = await apiClient.get(`/game-systems/${sys.id}/shares`);
+      setShares(res.data ?? []);
+    } catch {
+      setShares([]);
+    }
+  };
+
+  const addShare = async () => {
+    if (!sharing || !shareEmail.trim()) return;
+    try {
+      await apiClient.post(`/game-systems/${sharing.id}/shares`, { user: shareEmail.trim() });
+      const res = await apiClient.get(`/game-systems/${sharing.id}/shares`);
+      setShares(res.data ?? []);
+      setShareEmail('');
+      toast.success('Share added');
+    } catch {
+      toast.error('Could not add share');
+    }
+  };
+
+  const removeShare = async (userId: string) => {
+    if (!sharing) return;
+    try {
+      await apiClient.delete(`/game-systems/${sharing.id}/shares/${userId}`);
+      setShares((prev) => prev.filter((s2) => s2.userId !== userId));
+    } catch {
+      toast.error('Could not remove share');
+    }
+  };
+
   const handleEdit = async (sys: GameSystem) => {
     try {
       const res = await apiClient.get<GameSystemDetail>(`/game-systems/${sys.id}`);
@@ -433,6 +471,16 @@ export default function GameSystemPage() {
                     >
                       <Copy size={14} />
                     </button>
+                    {canEdit && (
+                      <button
+                        onClick={() => openShares(sys)}
+                        aria-label={`Share ${sys.name}`}
+                        title="Share"
+                        className="text-text-secondary hover:text-accent"
+                      >
+                        <Share2 size={14} />
+                      </button>
+                    )}
                     {canEdit && (
                       <button
                         onClick={() => handleEdit(sys)}
@@ -690,6 +738,53 @@ export default function GameSystemPage() {
           </div>
         )}
       </main>
-    </div>
+    
+      {sharing && (
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+             onClick={() => setSharing(null)}>
+          <div className="w-full max-w-md rounded-lg border border-bg-elevated bg-bg-surface p-5"
+               onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-3 font-heading text-text-primary">
+              Share system: {sharing.name}
+            </h3>
+            <div className="mb-3 flex gap-2">
+              <input
+                value={shareEmail}
+                onChange={(e) => setShareEmail(e.target.value)}
+                placeholder="Email or username"
+                className="flex-1 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+              />
+              <button onClick={addShare}
+                      className="rounded bg-accent px-3 py-2 text-sm text-white hover:bg-accent/80">
+                Add
+              </button>
+            </div>
+            <ul className="mb-3 space-y-1">
+              {shares.map((s2) => (
+                <li key={s2.userId} className="flex items-center justify-between rounded bg-bg-primary/50 px-3 py-1.5 text-xs">
+                  <span className="font-mono text-text-primary">{s2.userId.slice(0, 8)}</span>
+                  <button onClick={() => removeShare(s2.userId)}
+                          className="text-text-secondary hover:text-danger"
+                          aria-label="Remove share">
+                    <Trash2 size={12} />
+                  </button>
+                </li>
+              ))}
+              {shares.length === 0 && (
+                <li className="text-xs text-text-secondary">
+                  No shares yet
+                </li>
+              )}
+            </ul>
+            <div className="flex justify-end">
+              <button onClick={() => setSharing(null)}
+                      className="rounded border border-bg-elevated px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+</div>
   );
 }

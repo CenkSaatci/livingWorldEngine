@@ -26,6 +26,8 @@ class GameSystemServiceTest {
     @Mock private com.lwe.core.repository.CampaignRepository campaignRepo;
     @Mock private com.lwe.core.repository.CampaignMemberRepository campaignMemberRepo;
     @Mock private com.lwe.core.repository.WorldRepository worldRepo;
+    @Mock private com.lwe.core.repository.GameSystemShareRepository shareRepo;
+    @Mock private com.lwe.core.repository.UserRepository userRepo;
 
     private GameSystemService service;
 
@@ -36,7 +38,7 @@ class GameSystemServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new GameSystemService(repo, validator, campaignRepo, campaignMemberRepo, worldRepo);
+        service = new GameSystemService(repo, validator, campaignRepo, campaignMemberRepo, worldRepo, shareRepo, userRepo);
     }
 
     @Test
@@ -150,6 +152,49 @@ class GameSystemServiceTest {
 
         assertThat(seeded.getOwnerId()).isNull();
         assertThat(seeded.getVisibility()).isEqualTo("PUBLIC");
+    }
+
+    @Test
+    void sharedUserCanReadAndRequiresOwnerToShare() {
+        var owner = UUID.randomUUID();
+        var friend = UUID.randomUUID();
+        var gs = new GameSystem("Geteilt", 1, validRules, schema, owner); // PRIVATE
+        setId(gs, UUID.randomUUID());
+        when(repo.findById(gs.getId())).thenReturn(Optional.of(gs));
+        when(shareRepo.existsBySystemIdAndUserId(gs.getId(), friend)).thenReturn(true);
+
+        assertThat(service.getReadable(gs.getId(), friend, false)).isSameAs(gs);
+        assertThat(service.canRead(gs, friend, false)).isTrue();
+
+        // Fremder darf nicht teilen
+        var stranger = UUID.randomUUID();
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> service.share(gs.getId(), stranger, false, "friend@test.de"))
+            .isInstanceOf(GameSystemService.GameSystemException.class)
+            .matches(e -> ((GameSystemService.GameSystemException) e).getErrorCode()
+                .equals("GAME_SYSTEM_ACCESS_DENIED"));
+    }
+
+    @Test
+    void ownerCanShareAndUnshare() {
+        var owner = UUID.randomUUID();
+        var target = UUID.randomUUID();
+        var gs = new GameSystem("Geteilt", 1, validRules, schema, owner);
+        setId(gs, UUID.randomUUID());
+        var user = new com.lwe.core.domain.User("friend@test.de", "friend", "hash", "USER", "de");
+        setId(user, target);
+        when(repo.findById(gs.getId())).thenReturn(Optional.of(gs));
+        when(userRepo.findByEmail("friend@test.de")).thenReturn(Optional.of(user));
+        when(shareRepo.existsBySystemIdAndUserId(gs.getId(), target)).thenReturn(false);
+        when(shareRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var share = service.share(gs.getId(), owner, false, "friend@test.de");
+        assertThat(share.getUserId()).isEqualTo(target);
+
+        when(shareRepo.findBySystemIdAndUserId(gs.getId(), target))
+            .thenReturn(Optional.of(share));
+        service.unshare(gs.getId(), owner, false, target);
+        verify(shareRepo).delete(share);
     }
 
     @Test

@@ -2,6 +2,9 @@ package com.lwe.core.service;
 
 import com.lwe.core.domain.GameSystem;
 import com.lwe.core.repository.CampaignMemberRepository;
+import com.lwe.core.repository.GameSystemShareRepository;
+import com.lwe.core.repository.UserRepository;
+import com.lwe.core.domain.GameSystemShare;
 import com.lwe.core.repository.CampaignRepository;
 import com.lwe.core.repository.GameSystemRepository;
 import com.lwe.core.repository.WorldRepository;
@@ -21,16 +24,22 @@ public class GameSystemService {
     private final CampaignRepository campaignRepo;
     private final CampaignMemberRepository campaignMemberRepo;
     private final WorldRepository worldRepo;
+    private final GameSystemShareRepository shareRepo;
+    private final UserRepository userRepo;
 
     public GameSystemService(GameSystemRepository repo, RuleSchemaValidator validator,
                              CampaignRepository campaignRepo,
                              CampaignMemberRepository campaignMemberRepo,
-                             WorldRepository worldRepo) {
+                             WorldRepository worldRepo,
+                             GameSystemShareRepository shareRepo,
+                             UserRepository userRepo) {
         this.repo = repo;
         this.validator = validator;
         this.campaignRepo = campaignRepo;
         this.campaignMemberRepo = campaignMemberRepo;
         this.worldRepo = worldRepo;
+        this.shareRepo = shareRepo;
+        this.userRepo = userRepo;
     }
 
     @PostConstruct
@@ -86,6 +95,7 @@ public class GameSystemService {
         if (isAdmin) return true;
         if (gs.getOwnerId() != null && gs.getOwnerId().equals(userId)) return true;
         if ("PUBLIC".equals(gs.getVisibility())) return true;
+        if (shareRepo.existsBySystemIdAndUserId(gs.getId(), userId)) return true; // T33-05
         for (var c : campaignRepo.findByGameSystemId(gs.getId())) {
             if (campaignMemberRepo.existsByCampaignIdAndUserId(c.getId(), userId)) return true;
             var owner = worldRepo.findById(c.getWorldId())
@@ -104,6 +114,41 @@ public class GameSystemService {
         return gs;
     }
 
+    // ---- T33-05: Shares (INVITE_ONLY) ----
+
+    public List<GameSystemShare> listShares(UUID systemId, UUID userId, boolean isAdmin) {
+        var gs = getById(systemId);
+        requireOwner(gs, userId, isAdmin);
+        return shareRepo.findBySystemId(systemId);
+    }
+
+    @Transactional
+    public GameSystemShare share(UUID systemId, UUID actorId, boolean isAdmin, String emailOrUsername) {
+        var gs = getById(systemId);
+        requireOwner(gs, actorId, isAdmin);
+        var target = userRepo.findByEmail(emailOrUsername)
+            .or(() -> userRepo.findByUsername(emailOrUsername))
+            .orElseThrow(() -> new GameSystemException("USER_NOT_FOUND", "User not found"));
+        if (shareRepo.existsBySystemIdAndUserId(systemId, target.getId())) {
+            throw new GameSystemException("GAME_SYSTEM_SHARE_EXISTS", "Already shared with this user");
+        }
+        // INVITE_ONLY ist die Semantik von Shares; PUBLIC braucht keine.
+        if ("PUBLIC".equals(gs.getVisibility())) {
+            gs.setVisibility("INVITE_ONLY");
+            repo.save(gs);
+        }
+        return shareRepo.save(new GameSystemShare(systemId, target.getId()));
+    }
+
+    @Transactional
+    public void unshare(UUID systemId, UUID actorId, boolean isAdmin, UUID targetUserId) {
+        var gs = getById(systemId);
+        requireOwner(gs, actorId, isAdmin);
+        var share = shareRepo.findBySystemIdAndUserId(systemId, targetUserId)
+            .orElseThrow(() -> new GameSystemException("GAME_SYSTEM_SHARE_NOT_FOUND", "Share not found"));
+        shareRepo.delete(share);
+    }
+
     /** Lesen fremder System-Inhalte (Abilities/Items) unterbinden. */
     public void requireReadableForSystem(UUID systemId, UUID userId, boolean isAdmin) {
         var gs = getById(systemId);
@@ -119,7 +164,8 @@ public class GameSystemService {
         if (isAdmin) return;
         boolean ok = "PUBLIC".equals(gs.getVisibility())
             || gs.getOwnerId() == null
-            || gs.getOwnerId().equals(userId);
+            || gs.getOwnerId().equals(userId)
+            || shareRepo.existsBySystemIdAndUserId(gs.getId(), userId); // T33-05
         if (!ok) {
             throw new GameSystemException("GAME_SYSTEM_ACCESS_DENIED",
                 "This game system is private");

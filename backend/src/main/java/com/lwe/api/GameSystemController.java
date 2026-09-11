@@ -2,6 +2,7 @@ package com.lwe.api;
 
 import com.lwe.api.dto.GameSystemInfoResponse;
 import com.lwe.core.domain.User;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.lwe.core.service.GameSystemService;
 import com.lwe.rules.RuleSchemaValidator;
 import jakarta.validation.Valid;
@@ -61,6 +62,29 @@ public class GameSystemController {
         return ResponseEntity.ok(GameSystemInfoResponse.from(gs));
     }
 
+    @GetMapping("/{id}/shares")
+    public ResponseEntity<List<ShareResponse>> listShares(@PathVariable UUID id,
+            @AuthenticationPrincipal User user) {
+        var shares = service.listShares(id, user.getId(), isAdmin(user))
+            .stream().map(ShareResponse::from).toList();
+        return ResponseEntity.ok(shares);
+    }
+
+    @PostMapping("/{id}/shares")
+    public ResponseEntity<ShareResponse> share(@PathVariable UUID id,
+            @Valid @RequestBody ShareRequest req,
+            @AuthenticationPrincipal User user) {
+        var share = service.share(id, user.getId(), isAdmin(user), req.user());
+        return ResponseEntity.status(HttpStatus.CREATED).body(ShareResponse.from(share));
+    }
+
+    @DeleteMapping("/{id}/shares/{userId}")
+    public ResponseEntity<Void> unshare(@PathVariable UUID id, @PathVariable UUID userId,
+            @AuthenticationPrincipal User user) {
+        service.unshare(id, user.getId(), isAdmin(user), userId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/validate")
     public ResponseEntity<?> validate(@RequestBody String rulesJson) {
         // Frontend sendet den rulesJson-String im Body — StringHttpMessageConverter
@@ -89,4 +113,10 @@ public class GameSystemController {
     public record CreateRequest(@NotBlank String name, @Positive int version, String rulesJson, String schemaJson) {}
     public record GameSystemDetailResponse(UUID id, String name, int version, String rulesJson, boolean active) {}
     public record ValidationResponse(boolean valid, List<String> errors) {}
+    public record ShareRequest(@NotBlank String user) {}
+    public record ShareResponse(UUID userId, String createdAt) {
+        static ShareResponse from(com.lwe.core.domain.GameSystemShare s) {
+            return new ShareResponse(s.getUserId(), s.getCreatedAt().toString());
+        }
+    }
 }

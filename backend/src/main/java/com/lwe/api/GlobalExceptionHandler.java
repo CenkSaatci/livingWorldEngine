@@ -211,6 +211,8 @@ public class GlobalExceptionHandler {
             case GameSystemService.GameSystemException e -> switch (e.getErrorCode()) {
                 case "GAME_SYSTEM_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 case "GAME_SYSTEM_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
+                case "GAME_SYSTEM_SHARE_NOT_FOUND", "USER_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                case "GAME_SYSTEM_SHARE_EXISTS" -> HttpStatus.CONFLICT;
                 case "GAME_SYSTEM_VERSION_CONFLICT" -> HttpStatus.CONFLICT;
                 default -> HttpStatus.BAD_REQUEST;
             };
