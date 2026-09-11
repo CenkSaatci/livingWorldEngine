@@ -9,7 +9,7 @@
 - **Audits:** P28, P23/P29, P30 und ein finales Gesamt-Audit — alle HIGH/MEDIUM-Findings gefixt, Rest bewusst zurückgestellt (siehe Notizen unten)
 - **P27-Status:** T01 ✅ Teilstand (Shares/Welt-PUBLIC offen) · T02 ✅ · T03 ✅ Teilstand (Quest/Adventure-Fork offen) · T04 🔄 Teilstand (Bot-Runtime-Polling) · T05 ✅ · T06 🔄 Teilstand (Bulk/WS/E2E)
 - **Offen (bewusst):** P14-T02–T04 · P22 Konzept · F8 erledigt (V098) · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
-- **Nächste sinnvolle Schritte:** P27 oder F8-Berechtigungen, danach weitere Content-Pakete/Playwright-Ausbau
+- **Nächste Schritte:** Phase 33 „Backlog-Abbau & Härtung" (Detailplan unten) — E2E-Lücken, Welt-PUBLIC, Shares, Fork-Vervollständigung, Bot-Runtime, DM-Queue-Ausbau, P14/P22
 
 ## Verifikation Alt-Phasen (2026-09-12)
 
