@@ -2386,3 +2386,55 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** E2E (Playwright)
 
 ---
+## Phase 30: Charakter-Wizard (Konsument der P28/P29-Engine)
+
+> Ziel: Pakete/Budget/Traits werden beim Erstellen eines PCs tatsächlich angewendet (Live-Vorschau + Speichern als Entity). Reine Frontend-Engine auf bestehenden Endpunkten (`POST /worlds/{id}/entities`) — kein Backend-Sonderweg. Abhängigkeit: P28/P29 (erledigt).
+
+### P30-T01: Build-Helper (Pakete + Attribut-Kauf + Traits → Kosten/Endwerte)
+- **Status:** ✅ (`CharacterBuild`, `buildCost`, `buildFinalAttributes`, `buildFinalTraits`, `buildIssues`; 4 Tests in `characterBuild.test.ts`)
+- **Beschreibung:** `CharacterBuild`-Typ + pure Helper in `gameSystem.ts`:
+  - Endattribute = gekaufter Wert + Paket-Mods (Kaufkosten auf dem gekauften Wert, Mods danach)
+  - AP-Aufschlüsselung (Attribute/Traits/Pakete) gegen `creationBudget`, Auto-Traits kostenlos (im Paketpreis)
+  - Issues: Auswahl-Fehler (P29), Attributgrenzen, Budget-Überschreitung, Trait-Exklusionen
+  - Trait-Tiers (`Hohe Lebenskraft III`), End-Traits = gewählte + Auto-Traits (dedupliziert)
+- **Akzeptanzkriterien:** Elf-Beispiel: 18 AP Paket + Attributkauf korrekt; Budget-Over wird Fehler; Tests grün
+- **Qualitäts-Check:** TDD (Vitest)
+
+### P30-T02: Wizard-UI — Pakete + Attribute mit BudgetBar
+- **Status:** 📋
+- **Beschreibung:** `CharacterWizard`-Modal (Steps: Pakete → Attribute → Traits → Übersicht), Live-Vorschau, Warnen statt blockieren; Entry in `EntityListPage`, nur wenn aktive Kampagne ein System mit `creationBudget`/`packages` hat
+- **Akzeptanzkriterien:** Attribut-Stepper live gegen Budget; Paket-Mods sichtbar; i18n DE/EN
+- **Qualitäts-Check:** UI-Test (Vitest) + tsc
+
+### P30-T03: Traits + Übersicht + Speichern
+- **Status:** 📋
+- **Beschreibung:** Trait-Auswahl (Tiers, automatische aus Paketen), Übersicht mit Endwerten/Kosten/Issues; Save legt PC an (`attributesJson` = Endwerte, `metadataJson.traits` = End-Traits, `metadataJson.package_selections`)
+- **Akzeptanzkriterien:** Speichern erzeugt PC; Sheet zeigt Traits/Attribute; Tests grün
+- **Qualitäts-Check:** TDD
+
+### P30-T04: Abnahme — DSA-Heldenbau E2E
+- **Status:** 📋
+- **Beschreibung:** Playwright: System/Welt/Kampagne per API seeden → Charakter-Wizard → Elf+Waldelf, Attribute kaufen, Trait wählen → Speichern → Sheet prüft Werte; TESTING-Checkpoint
+- **Akzeptanzkriterien:** E2E grün; Doku aktualisiert
+- **Qualitäts-Check:** E2E (Playwright)
+
+---
+
+## Phase 31: E2E-Ausbau (TESTING §15.5)
+
+### P31-T01: Sheet-E2E (DSA-Referenz)
+- **Status:** 📋
+- **Beschreibung:** Playwright: dsa5.json-System + Welt + Kampagne + Entity per API seeden → Charakter-Sheet im UI zeigt sk=7, asp nur mit Zauberer, Rüstung
+- **Qualitäts-Check:** E2E
+
+### P31-T02: Kampf-E2E (Manöver/AP/Zustände/Schadensarten)
+- **Status:** 📋
+- **Beschreibung:** Playwright: Kampf starten, Manöver-Button (AP-Gate), Zustands-Tick, Schadensarten-Log
+- **Qualitäts-Check:** E2E
+
+### P31-T03: Save-Gate-E2E + finale Abnahme
+- **Status:** 📋
+- **Beschreibung:** Playwright: neues System ohne Attribute → Speichern blockiert; Gesamt-Audit mit allen Suiten (Backend/Frontend/E2E)
+- **Qualitäts-Check:** E2E + Audit
+
+---

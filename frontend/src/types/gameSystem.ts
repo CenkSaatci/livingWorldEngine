@@ -234,6 +234,98 @@ export function packageSelectionIssues(data: WizardData, selections: PackageSele
 }
 
 /** Untypische Kombinationen (Warnungen, kein Blocker). */
+// --- Charakter-Build (P30-T01): Pakete + Attribut-Kauf + Traits ---
+
+export interface CharacterBuild {
+  packageSelections: PackageSelection[];
+  /** Gekaufte Attributwerte (vor Paket-Mods); fehlend = Attribut-Default. */
+  attributes: Record<string, number>;
+  /** Gewählte Traits; tier optional (z. B. "Hohe Lebenskraft" + "III"). */
+  traits: { name: string; tier?: string }[];
+}
+
+export interface BuildCostBreakdown {
+  attributes: number;
+  traits: number;
+  packages: number;
+  total: number;
+  budget: number | null;
+  over: boolean;
+}
+
+function attrTiers(data: WizardData, name: string): AttributeCostTier[] {
+  const attr = data.attributes.find((a) => a.name === name);
+  return attr?.costs ?? data.attributeCosts?.default ?? [];
+}
+
+function purchasedValue(data: WizardData, build: CharacterBuild, name: string): number {
+  const attr = data.attributes.find((a) => a.name === name);
+  return build.attributes[name] ?? attr?.default ?? 0;
+}
+
+/** AP-Aufschlüsselung: Attributkauf + Traits + Pakete gegen creationBudget. */
+export function buildCost(data: WizardData, build: CharacterBuild): BuildCostBreakdown {
+  let attributes = 0;
+  for (const a of data.attributes) {
+    const from = data.creationBudget?.attrBase ?? a.min;
+    attributes += attrPointCost(from, purchasedValue(data, build, a.name), attrTiers(data, a.name));
+  }
+  let traits = 0;
+  for (const sel of build.traits) {
+    const def = (data.traits ?? []).find((tr) => tr.name === sel.name);
+    if (def) traits += traitCost(def, sel.tier);
+  }
+  const packages = packageCost(data.packages ?? [], build.packageSelections);
+  const total = attributes + traits + packages;
+  const budget = data.creationBudget?.ap ?? null;
+  return { attributes, traits, packages, total, budget, over: budget != null && total > budget };
+}
+
+/** Endwerte: gekaufter Wert + Paket-Mods. */
+export function buildFinalAttributes(
+  data: WizardData,
+  build: CharacterBuild,
+): { name: string; purchased: number; mod: number; value: number }[] {
+  const mods = resolvePackageMods(data.packages ?? [], build.packageSelections);
+  return data.attributes.map((a) => {
+    const purchased = purchasedValue(data, build, a.name);
+    const mod = mods.get(a.name) ?? 0;
+    return { name: a.name, purchased, mod, value: purchased + mod };
+  });
+}
+
+/** End-Traits: gewählte (mit Tier-Suffix) + Auto-Traits, dedupliziert. */
+export function buildFinalTraits(data: WizardData, build: CharacterBuild): string[] {
+  const out: string[] = [];
+  for (const sel of build.traits) {
+    const label = sel.tier ? `${sel.name} ${sel.tier}` : sel.name;
+    if (!out.includes(label)) out.push(label);
+  }
+  for (const auto of packageAutoTraits(data.packages ?? [], build.packageSelections)) {
+    if (!out.includes(auto)) out.push(auto);
+  }
+  return out;
+}
+
+/** Build-Fehler: Paket-Auswahl (P29) + Attributgrenzen + Budget + Trait-Exklusionen. */
+export function buildIssues(data: WizardData, build: CharacterBuild): string[] {
+  const issues = [...packageSelectionIssues(data, build.packageSelections)];
+  for (const a of data.attributes) {
+    const v = purchasedValue(data, build, a.name);
+    if (v < a.min || v > a.max) issues.push(`build_attr_range:${a.name}`);
+  }
+  if (buildCost(data, build).over) issues.push('build_over_budget');
+
+  const names = build.traits.map((tr) => tr.name);
+  for (const sel of build.traits) {
+    const def = (data.traits ?? []).find((tr) => tr.name === sel.name);
+    for (const ex of def?.excludes ?? []) {
+      if (names.includes(ex)) issues.push(`build_trait_excludes:${sel.name}:${ex}`);
+    }
+  }
+  return [...new Set(issues)];
+}
+
 export function packageSelectionWarnings(data: WizardData, selections: PackageSelection[]): string[] {
   const defs = data.packages ?? [];
   const selectedNames = selections.map((s) => s.name);
