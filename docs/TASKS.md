@@ -2230,5 +2230,135 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 | 25 (Kampagnen-Integration) | 5 | ~3,0 Tage |
 | 26 (Frontend 3-Ebenen) | 3 | ~3,0 Tage |
 | 27 (Shared Universes & DM-Workflow) | 6 | ~5,5 Tage |
+| 28 (Generische Engine-Bausteine) | 6 | ~6,0 Tage |
+| 29 (Spielgefühl + Pakete) | 6 | ~6,0 Tage |
+
+---
+
+## Phase 28: Generische Engine-Bausteine
+
+> Wizard bildet generische Mechanik ab (kein DSA-Klon). Referenz: DSA-Heldenerschaffung + Grundregeln (Regelwiki). Leitprinzip: **Engine, nicht Inhalt**. Siehe [`ADR/012`](ADR/012-generic-wizard-engine.md). Voraussetzung: P23 (`damageType`) vor R4-bezogenen Arbeiten.
+
+### P28-T01: Schema + Wire-Format öffnen
+- **Status:** 📋
+- **Aufwand:** 1 Tag
+- **Beschreibung:**
+  - Neue Top-Level-Keys im Backend-Schema (`additionalProperties: false` beachten): `creationBudget`, `attributeCosts`, `packages`, `traits`, `advancement`, erweiterte `derived_values`-Einträge — strikt abwärtskompatibel (alte Systeme validieren weiter)
+  - `toRulesJson`/`fromRulesJson` für alle neuen Blöcke; Backend-Konsumenten (RulesLoader, ProbeService, Sheet, LevelUp, Validator) kennen die Keys
+- **Akzeptanzkriterien:** Altes D20Lite-System validiert + läuft unverändert; neues Minimalbeispiel mit allen Keys validiert; Tests grün
+- **Qualitäts-Check:** TDD
+
+### P28-T02: AP-Budget + Caps + Attribut-Kostenkurven
+- **Status:** 📋
+- **Aufwand:** 1 Tag
+- **Beschreibung:**
+  - `creationBudget`: AP-Topf, Maxima (Attribute gesamt/einzeln, Skills, Kampf, Zauber), Startwerte, Schicksalspunkte-Basis
+  - Kostenstaffel pro Attribut (z. B. 15 AP bis 14, dann 30/45/60/… wie DSA)
+  - Wizard-Step mit Live-Kostenanzeige + Budget-Balken; Backend lehnt überzogene Systeme mit 400 ab
+- **Akzeptanzkriterien:** 100-AP-Paket nachbaubar (DSA: 8×8 Start, Summe ≤ Max); Überziehung wird rot + blockiert Save; Tests grün
+- **Qualitäts-Check:** TDD
+
+### P28-T03: Traits-Katalog (Vor-/Nachteile)
+- **Status:** 📋
+- **Aufwand:** 1,5 Tage
+- **Beschreibung:**
+  - `traits[]`: Name, Art (Vorteil/Nachteil), Kosten fest oder gestaffelt (Stufen wie I–III), Prerequisites (Traits/Spezies/Kultur), Exklusionen („nicht: X"), Effekt-Hooks (Basiswert-Boni, Freischaltungen)
+  - Konfigurierbare Schranke (z. B. max. 80 AP Vorteile, DSA-Referenz)
+  - Wizard-UI: Katalog mit Filter, Kosten-Summe, Konflikt-Warnung bei Exklusionen
+- **Akzeptanzkriterien:** Glück-II-äquivalent (gestaffelt) + Ausschluss-Verletzung wird erkannt; Traits wirken auf Derived (z. B. AsP nur mit Zauberer-Äquivalent); Tests grün
+- **Qualitäts-Check:** TDD
+
+### P28-T04: Steigerung (Spalten, Matrix, Aktivierung)
+- **Status:** 📋
+- **Aufwand:** 1,5 Tage
+- **Beschreibung:**
+  - Kosten-Spalte pro Skill (A/B/C/D-Äquivalent), Aktivierungskosten (Zauber/Liturgien vs. auto-aktive Talente), globale Kostenmatrix pro Stufe
+  - Max-Regel: Skill ≤ höchstes beteiligtes Attribut +2 (Backend-Enforcement, 422 mit Code)
+  - Sheet zeigt Steigerungskosten-Vorschau pro Skill
+- **Akzeptanzkriterien:** Stufenweises Steigern mit korrekten Kosten; Aktivierung neuer Skills kostet; Max-Verletzung 422; Tests grün
+- **Qualitäts-Check:** TDD
+
+### P28-T05: Derived deluxe (Tabellen + Bedingungen)
+- **Status:** 📋
+- **Aufwand:** 1 Tag
+- **Beschreibung:**
+  - `derived_values`-Einträge mit Tabellen-Lookup (Wertebereich → Ergebnis, z. B. SK/ZK-Summe) und `requiresTrait` (nur mit Vorteil/X vorhanden)
+  - Spezies-Basis als Variable (Grundwert + Formel)
+  - FormulaEvaluator-Erweiterung per TDD (TDD-Pflicht: jede neue Syntax mit Parser-Tests)
+  - Wizard-Editor für Tabellen + Vorschau mit Beispiel-Attributen
+- **Akzeptanzkriterien:** SK-Tabellen-Äquivalent rechnet korrekt; AsP-Äquivalent ohne Trait → als fehlend markiert (statt „(Fehler)"-Überraschung nur mit Erklärung); Tests grün
+- **Qualitäts-Check:** TDD
+
+### P28-T06: Abnahme Engine-Bausteine
+- **Status:** 📋
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:**
+  - Referenz-System nutzt alle P28-Blöcke und validiert; Doku (RULES-SCHEMA, Wizard-Hilfe) aktuell
+  - Regression: alte Systeme (D20Lite/TwoDicePool/Fudge) laufen unverändert (E2E-Stichprobe)
+- **Akzeptanzkriterien:** Referenz-E2E grün; Doku ohne Divergenzen
+- **Qualitäts-Check:** E2E (Playwright)
+
+---
+
+## Phase 29: Spielgefühl + Pakete
+
+> R-Reihenfolge: Zustände → Schicksal → Manöver → Rüstung. Pakete (G4) hier, nicht in P28. DSA-Content als Abnahme.
+
+### P29-T01: Zustände/Status-Engine
+- **Status:** 📋
+- **Aufwand:** 1,5 Tage
+- **Beschreibung:**
+  - Generische Conditions mit mechanischen Effekten (Modifikatoren, Aktions-Sperren, Tick-Auflösung) — DSA-Zustände wie D&D-Conditions aus denselben Bausteinen
+  - UI: Status-Badges am Charakter/Token, Vergeben/Entfernen (DM), Anzeige im Sheet
+- **Akzeptanzkriterien:** Zustand modifiziert Probe/Schaden nachweislich; Ablauf-Timing korrekt; Tests grün
+- **Qualitäts-Check:** TDD
+
+### P29-T02: Schicksalspunkte
+- **Status:** 📋
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:**
+  - Meta-Währung pro Charakter: Neu würfeln, +1 Bonus, Tod abwenden; Startwert + Refresh-Regel aus `creationBudget`
+  - UI: Punkte-Anzeige + Ausgeben-Button im Sheet/Probe-Modal
+- **Akzeptanzkriterien:** Ausgeben wirkt (Re-Roll), kein Ausgeben bei 0; Tests grün
+- **Qualitäts-Check:** TDD
+
+### P29-T03: Kampfmanöver-Framework
+- **Status:** 📋
+- **Aufwand:** 1,5 Tage
+- **Beschreibung:**
+  - Generisches Tausch-Prinzip: Angriffsmalus gegen Effekt (Schaden+, Spezial) — Wuchtschlag/Finte als Content, Framework als Engine
+  - Manöver als System-Konfiguration (Voraussetzung, Kosten, Effekt-Formel); ActionBar zeigt verfügbare Manöver
+- **Akzeptanzkriterien:** Manöver mit Malus/Effekt E2E verifiziert; ohne Manöver alles wie bisher; Tests grün
+- **Qualitäts-Check:** TDD, E2E (Playwright)
+
+### P29-T04: Rüstung + Schadenstypen
+- **Status:** 📋
+- **Aufwand:** 1 Tag
+- **Beschreibung:**
+  - Rüstungswerte (Zonen optional), Schadenstypen, Resistenzen/Vulnerabilitäten in der Schadensberechnung
+  - **Abhängigkeit:** P23 (`damageType`) muss fertig sein — sonst zurückstellen
+  - UI: Rüstung am Charakter/Inventar sichtbar, Schaden nach Typ aufgeschlüsselt im Log
+- **Akzeptanzkriterien:** Resistenz halbiert, Vulnerabilität verdoppelt (E2E); Tests grün
+- **Qualitäts-Check:** TDD, E2E (Playwright)
+
+### P29-T05: Pakete (Spezies/Kultur/Profession)
+- **Status:** 📋
+- **Aufwand:** 1,5 Tage
+- **Beschreibung:**
+  - `packages[]`: Typ, AP-Kosten, Attribut-Mods mit Choice-Gruppen („MU *oder* KK −1", „eine beliebige +1"), Basiswerte, Auto-Traits, empfohlene/eingeschränkte Folge-Pakete (Kultur-Restriktionen)
+  - Wizard-Schritt mit Auswahl + Live-Vorschau (Kosten, Mods, Warnung bei untypischen Kombinationen)
+  - Validierung: Choice-Gruppen exakt 1 Treffer, Auto-Traits ohne Zusatzkosten
+- **Akzeptanzkriterien:** Elf-Äquivalent (Mods + Auto-Vorteil + 18 AP) nachbaubar; untypische Kombi warnt; Tests grün
+- **Qualitäts-Check:** TDD
+
+### P29-T06: DSA-Referenzcontent + Abnahme
+- **Status:** 📋
+- **Aufwand:** 1 Tag
+- **Beschreibung:**
+  - `docs/examples/dsa5.json` auf neues Format heben (Budget, Staffeln, Traits, Matrix, Tabellen-Derived, Pakete)
+  - E2E-Heldenbau nach DSA-Regeln: 100-AP-Paket, 3W20-Probe mit FW-Ausgleich, Basiswerte inkl. Tabellen
+  - Doku final (RULES-SCHEMA, TESTING-Checkpoints für P28/P29)
+- **Akzeptanzkriterien:** DSA-E2E grün; Doku ohne Divergenzen
+- **Qualitäts-Check:** E2E (Playwright)
 
 ---
