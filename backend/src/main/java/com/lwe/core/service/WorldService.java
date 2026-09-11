@@ -24,6 +24,9 @@ public class WorldService {
     private final WorldMapRepository worldMapRepo;
     private final RegionWeatherRepository regionWeatherRepo;
     private final EntityAbilityRepository entityAbilityRepo;
+    private final QuestRepository questRepo;
+    private final AdventureRepository adventureRepo;
+    private final AdventureNodeRepository adventureNodeRepo;
     private final com.lwe.core.util.WorldAccess worldAccess;
 
     public WorldService(WorldRepository worldRepo, WorldMemberRepository memberRepo,
@@ -34,6 +37,9 @@ public class WorldService {
                         WorldMapRepository worldMapRepo,
                         RegionWeatherRepository regionWeatherRepo,
                         EntityAbilityRepository entityAbilityRepo,
+                        QuestRepository questRepo,
+                        AdventureRepository adventureRepo,
+                        AdventureNodeRepository adventureNodeRepo,
                         com.lwe.core.util.WorldAccess worldAccess) {
         this.worldRepo = worldRepo;
         this.memberRepo = memberRepo;
@@ -46,6 +52,9 @@ public class WorldService {
         this.worldMapRepo = worldMapRepo;
         this.regionWeatherRepo = regionWeatherRepo;
         this.entityAbilityRepo = entityAbilityRepo;
+        this.questRepo = questRepo;
+        this.adventureRepo = adventureRepo;
+        this.adventureNodeRepo = adventureNodeRepo;
         this.worldAccess = worldAccess;
     }
 
@@ -286,6 +295,38 @@ public class WorldService {
                 copy.setWeatherType(rw.getWeatherType());
                 copy.setDescription(rw.getDescription());
                 regionWeatherRepo.save(copy);
+            }
+        }
+
+        // Quests (T33-04): Referenzen auf Entities/Locations remappen
+        for (var q : questRepo.findByWorldIdOrderByCreatedAtDesc(worldId)) {
+            var copy = new Quest(clone.getId(), q.getTitle(), q.getType(),
+                q.getObjectives(), q.getRewards());
+            copy.setDescription(q.getDescription());
+            copy.setStatus(q.getStatus());
+            copy.setAiGenerated(q.isAiGenerated());
+            copy.setGiverId(q.getGiverId() != null ? entityIdMap.get(q.getGiverId()) : null);
+            copy.setLocationId(q.getLocationId() != null ? locationIdMap.get(q.getLocationId()) : null);
+            questRepo.save(copy);
+        }
+
+        // Adventures + Nodes (T33-04): Node-IDs und Startknoten remappen
+        for (var a : adventureRepo.findByWorldId(worldId)) {
+            var nodeIdMap = new HashMap<UUID, UUID>();
+            var advCopy = new Adventure(clone.getId(), a.getName());
+            advCopy.setDescription(a.getDescription());
+            advCopy.setLocationId(a.getLocationId() != null ? locationIdMap.get(a.getLocationId()) : null);
+            advCopy.setGiverEntityId(a.getGiverEntityId() != null
+                ? entityIdMap.get(a.getGiverEntityId()) : null);
+            var savedAdv = adventureRepo.save(advCopy);
+            for (var n : adventureNodeRepo.findByAdventureId(a.getId())) {
+                var nodeCopy = new AdventureNode(savedAdv.getId(), n.getText(), n.isEnd());
+                nodeCopy.setImageUrl(n.getImageUrl());
+                nodeIdMap.put(n.getId(), adventureNodeRepo.save(nodeCopy).getId());
+            }
+            if (a.getStartNodeId() != null && nodeIdMap.get(a.getStartNodeId()) != null) {
+                savedAdv.setStartNodeId(nodeIdMap.get(a.getStartNodeId()));
+                adventureRepo.save(savedAdv);
             }
         }
 

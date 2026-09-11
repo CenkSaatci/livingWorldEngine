@@ -18,6 +18,9 @@ import com.lwe.core.domain.Region;
 import com.lwe.core.domain.Location;
 import com.lwe.core.domain.RegionWeather;
 import com.lwe.core.domain.Faction;
+import com.lwe.core.domain.Quest;
+import com.lwe.core.domain.Adventure;
+import com.lwe.core.domain.AdventureNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +51,9 @@ class WorldServiceTest {
     @Mock private RegionWeatherRepository regionWeatherRepo;
     @Mock private EntityAbilityRepository entityAbilityRepo;
     @Mock private com.lwe.core.util.WorldAccess worldAccess;
+    @Mock private com.lwe.core.repository.QuestRepository questRepo;
+    @Mock private com.lwe.core.repository.AdventureRepository adventureRepo;
+    @Mock private com.lwe.core.repository.AdventureNodeRepository adventureNodeRepo;
 
     private WorldService worldService;
     private final UUID ownerId = UUID.randomUUID();
@@ -57,7 +63,8 @@ class WorldServiceTest {
     void setUp() {
         worldService = new WorldService(worldRepo, memberRepo, quotaService,
             regionRepo, locationRepo, entityRepo, factionRepo, factionRelationRepo,
-            worldMapRepo, regionWeatherRepo, entityAbilityRepo, worldAccess);
+            worldMapRepo, regionWeatherRepo, entityAbilityRepo,
+            questRepo, adventureRepo, adventureNodeRepo, worldAccess);
     }
 
     @Test
@@ -319,6 +326,86 @@ class WorldServiceTest {
 
         var factionCaptor = org.mockito.ArgumentCaptor.forClass(Faction.class);
         verify(factionRepo, atLeastOnce()).save(factionCaptor.capture());
+    }
+
+    @Test
+    void cloneCopiesQuestsAndAdventuresWithRemappedReferences() {
+        var original = worldWithId("Questwelt", ownerId);
+        setId(original, UUID.randomUUID());
+
+        var region = new Region(original.getId(), "Nord");
+        setId(region, UUID.randomUUID());
+        var loc = new Location(region.getId(), "Dorf", "Startdorf");
+        setId(loc, UUID.randomUUID());
+        var giver = new GameEntity(original.getId(), "NPC", "Auftraggeber");
+        setId(giver, UUID.randomUUID());
+
+        var quest = new Quest(original.getId(), "Banditen", "kill", "[]", "{}");
+        setId(quest, UUID.randomUUID());
+        quest.setGiverId(giver.getId());
+        quest.setLocationId(loc.getId());
+        var node = new AdventureNode(UUID.randomUUID(), "Start", false);
+        setId(node, UUID.randomUUID());
+        var adv = new Adventure(original.getId(), "Die Höhle");
+        setId(adv, UUID.randomUUID());
+        adv.setLocationId(loc.getId());
+        adv.setGiverEntityId(giver.getId());
+        adv.setStartNodeId(node.getId());
+
+        when(worldRepo.findById(original.getId())).thenReturn(Optional.of(original));
+        when(worldRepo.save(any())).thenAnswer(inv -> {
+            var w = inv.<World>getArgument(0);
+            if (w.getId() == null) setId(w, UUID.randomUUID());
+            return w;
+        });
+        when(regionRepo.findByWorldIdOrderByNameAsc(original.getId())).thenReturn(List.of(region));
+        when(regionRepo.save(any())).thenAnswer(inv -> {
+            var r = inv.<Region>getArgument(0);
+            setId(r, UUID.randomUUID());
+            return r;
+        });
+        when(locationRepo.findByRegionIdIn(any())).thenReturn(List.of(loc));
+        when(locationRepo.save(any())).thenAnswer(inv -> {
+            var l = inv.<Location>getArgument(0);
+            setId(l, UUID.randomUUID());
+            return l;
+        });
+        when(entityRepo.findByWorldIdAndActiveTrue(original.getId())).thenReturn(List.of(giver));
+        when(entityRepo.save(any())).thenAnswer(inv -> {
+            var e = inv.<GameEntity>getArgument(0);
+            if (e.getId() == null) setId(e, UUID.randomUUID());
+            return e;
+        });
+        when(questRepo.findByWorldIdOrderByCreatedAtDesc(original.getId())).thenReturn(List.of(quest));
+        when(questRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(adventureRepo.findByWorldId(original.getId())).thenReturn(List.of(adv));
+        when(adventureRepo.save(any())).thenAnswer(inv -> {
+            var a2 = inv.<Adventure>getArgument(0);
+            if (a2.getId() == null) setId(a2, UUID.randomUUID());
+            return a2;
+        });
+        when(adventureNodeRepo.findByAdventureId(adv.getId())).thenReturn(List.of(node));
+        when(adventureNodeRepo.save(any())).thenAnswer(inv -> {
+            var n2 = inv.<AdventureNode>getArgument(0);
+            if (n2.getId() == null) setId(n2, UUID.randomUUID());
+            return n2;
+        });
+
+        worldService.cloneForCampaign(original.getId(), memberId);
+
+        var questCaptor = org.mockito.ArgumentCaptor.forClass(Quest.class);
+        verify(questRepo).save(questCaptor.capture());
+        var questCopy = questCaptor.getValue();
+        assertThat(questCopy.getWorldId()).isNotEqualTo(original.getId());
+        assertThat(questCopy.getGiverId()).isNotEqualTo(giver.getId());
+        assertThat(questCopy.getLocationId()).isNotEqualTo(loc.getId());
+
+        verify(adventureNodeRepo).save(any());
+        var advCaptor = org.mockito.ArgumentCaptor.forClass(Adventure.class);
+        verify(adventureRepo, atLeast(1)).save(advCaptor.capture());
+        var advCopy = advCaptor.getAllValues().getLast();
+        assertThat(advCopy.getStartNodeId()).isNotNull();
+        assertThat(advCopy.getStartNodeId()).isNotEqualTo(node.getId());
     }
 
     // -- helpers --
