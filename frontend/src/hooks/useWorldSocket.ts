@@ -80,6 +80,11 @@ export function useWorldSocket(worldId: string | undefined) {
                 );
               }
 
+              // T33-08: Intent-Aenderungen sofort an die DM-Queue melden
+              if (String(event.event_type ?? '').startsWith('NPC_INTENT')) {
+                window.dispatchEvent(new CustomEvent('lwe:npc-intents-changed'));
+              }
+
               // Combat-Events
               if (event.event_type === 'COMBAT_STARTED') {
                 const p = event.payload as Record<string, unknown>;

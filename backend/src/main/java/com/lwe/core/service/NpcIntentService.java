@@ -114,11 +114,42 @@ public class NpcIntentService {
         return intent;
     }
 
-    /** P27-T06: Queue ist DM-only (Welt-DM); der Bot legt Intents nur an. */
-    public List<NpcIntent> listPending(UUID worldId, UUID userId) {
+    /** P27-T06: Queue ist DM-only (Welt-DM); der Bot legt Intents nur an.
+     *  T33-07: optionaler Typ-Filter fuer die UI. */
+    public List<NpcIntent> listPending(UUID worldId, UUID userId, String intentType) {
         worldAccess.requireDm(worldId, userId);
+        if (intentType != null && !intentType.isBlank()) {
+            return repo.findByWorldIdAndStatusAndIntentTypeOrderByCreatedAtDesc(
+                worldId, "pending", intentType);
+        }
         return repo.findByWorldIdAndStatusOrderByCreatedAtDesc(worldId, "pending");
     }
+
+    /** T33-07: Bulk-Freigabe/-Ablehnung mit Teil-Fehler-Report. */
+    @Transactional
+    public List<BulkResult> bulk(List<UUID> ids, String action, String reason, UUID userId) {
+        var results = new java.util.ArrayList<BulkResult>();
+        for (var id : ids) {
+            try {
+                var intent = repo.findById(id)
+                    .orElseThrow(() -> new IntentException("INTENT_NOT_FOUND", "Intent not found: " + id));
+                worldAccess.requireDm(intent.getWorldId(), userId);
+                if ("approve".equalsIgnoreCase(action)) {
+                    approve(id, userId);
+                } else if ("reject".equalsIgnoreCase(action)) {
+                    reject(id, reason, userId);
+                } else {
+                    throw new IntentException("INVALID_BULK_ACTION", "action must be approve or reject");
+                }
+                results.add(new BulkResult(id, true, null));
+            } catch (Exception e) {
+                results.add(new BulkResult(id, false, e.getMessage()));
+            }
+        }
+        return results;
+    }
+
+    public record BulkResult(UUID id, boolean ok, String error) {}
 
     @Transactional
     public NpcIntent approve(UUID intentId, UUID userId) {

@@ -35,8 +35,8 @@ describe('DmQueuePanel', () => {
     render(<DmQueuePanel worldId="w1" />);
 
     await vi.waitFor(() => {
-      expect(screen.getByText('ATTACK_PLAYER')).toBeTruthy();
-      expect(screen.getByText('OFFER_QUEST')).toBeTruthy();
+      expect(screen.getAllByText('ATTACK_PLAYER')[0]).toBeTruthy();
+      expect(screen.getAllByText('OFFER_QUEST')[0]).toBeTruthy();
     });
 
     expect(screen.getByText(/The goblin sees a lone traveler/)).toBeTruthy();
@@ -58,7 +58,7 @@ describe('DmQueuePanel', () => {
     render(<DmQueuePanel worldId="w1" />);
 
     await vi.waitFor(() => {
-      expect(screen.getByText('ATTACK_PLAYER')).toBeTruthy();
+      expect(screen.getAllByText('ATTACK_PLAYER')[0]).toBeTruthy();
     });
 
     const approveButtons = screen.getAllByTitle('queue.approve');
@@ -73,7 +73,7 @@ describe('DmQueuePanel', () => {
     render(<DmQueuePanel worldId="w1" />);
 
     await vi.waitFor(() => {
-      expect(screen.getByText('ATTACK_PLAYER')).toBeTruthy();
+      expect(screen.getAllByText('ATTACK_PLAYER')[0]).toBeTruthy();
     });
 
     const rejectButtons = screen.getAllByTitle('queue.reject');

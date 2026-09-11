@@ -5,7 +5,7 @@
 ## Aktueller Projektstand (2026-09-11)
 
 - **P28 Engine-Bausteine** ✅ (T01–T06) · **P29 Spielgefühl + Pakete** ✅ (T01–T06) · **P23 Schadenstypen** ✅ (T01–T04, T05 optional) · **P30 Charakter-Wizard** ✅ (T01–T04) · **P31 E2E-Ausbau** ✅ (T01–T03)
-- **Tests:** Backend 407 (`mvn -B test`) · Frontend 169 (`npx vitest run`) · E2E 9 (`npm run test:e2e`) · ai-bot 50 · `tsc`/Build grün
+- **Tests:** Backend 409 (`mvn -B test`) · Frontend 169 (`npx vitest run`) · E2E 10 (`npm run test:e2e`) · ai-bot 50 · `tsc`/Build grün
 - **Audits:** P28, P23/P29, P30 und ein finales Gesamt-Audit — alle HIGH/MEDIUM-Findings gefixt, Rest bewusst zurückgestellt (siehe Notizen unten)
 - **P27-Status:** T01 ✅ Teilstand (Shares/Welt-PUBLIC offen) · T02 ✅ · T03 ✅ Teilstand (Quest/Adventure-Fork offen) · T04 🔄 Teilstand (Bot-Runtime-Polling) · T05 ✅ · T06 🔄 Teilstand (Bulk/WS/E2E)
 - **Offen (bewusst):** P14-T02–T04 · P22 Konzept · F8 erledigt (V098) · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
@@ -2502,14 +2502,14 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Abhängigkeit:** — · **Qualitäts-Check:** TDD (Java + pytest)
 
 ### T33-07: DM-Queue — Bulk + Filter
-- **Status:** 📋
+- **Status:** ✅ (`GET /npc-intents?worldId&status&type`; `POST /npc-intents/bulk {ids,action,reason}` mit Teil-Fehler-Report und DM-Gate; UI: Typ-Filter + Mehrfachauswahl + Bulk-Buttons; Tests)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:** `POST /npc-intents/bulk {ids[],action:"approve|reject",reason?}` (DM-gated, transaktional, Teil-Fehler als Ergebnisliste); `GET /npc-intents?worldId&status&type` mit Filtern; UI: Mehrfachauswahl + „Alle freigeben/ablehnen", Filter-Dropdown.
 - **Akzeptanz:** Bulk über 3 Intents in einem Call; nur DM; Tests (Service) + UI-Test
 - **Abhängigkeit:** T06-Gate (erledigt) · **Qualitäts-Check:** TDD
 
 ### T33-08: DM-Queue — WS-Liveupdate + E2E
-- **Status:** 📋
+- **Status:** ✅ (`useWorldSocket` meldet `NPC_INTENT_*` per CustomEvent → Panel refetcht sofort (Polling-Fallback bleibt); `dm-queue.spec.ts`: Panel erscheint <3 s, Bulk-Approve leert Queue)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:** `useWorldSocket`: `NPC_INTENT_PROPOSED/APPROVED/REJECTED` → `dmQueueStore`/Event-Refetch statt 5s-Polling (Polling als Fallback behalten); Playwright: Bot-Intent per API (BOT-frei: DM? Intent per API mit DM-Token) seeden → Panel erscheint live → Approve → verschwindet.
 - **Akzeptanz:** Panel aktualisiert ohne Reload <1s; E2E grün

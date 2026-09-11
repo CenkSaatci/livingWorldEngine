@@ -154,12 +154,45 @@ class NpcIntentServiceTest {
     }
 
     @Test
+    void bulkApprovesAndReportsFailures() {
+        var ok1 = intentWithId(worldId, npcId, "MOVE", "pending");
+        var ok2 = intentWithId(worldId, npcId, "SPEAK", "pending");
+        var missingId = UUID.randomUUID();
+        when(repo.findById(ok1.getId())).thenReturn(java.util.Optional.of(ok1));
+        when(repo.findById(ok2.getId())).thenReturn(java.util.Optional.of(ok2));
+        when(repo.findById(missingId)).thenReturn(java.util.Optional.empty());
+        when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        var results = npcIntentService.bulk(
+            java.util.List.of(ok1.getId(), missingId, ok2.getId()), "approve", null, userId);
+
+        assertThat(results).hasSize(3);
+        assertThat(results.stream().filter(r -> r.ok()).count()).isEqualTo(2);
+        assertThat(results.stream().filter(r -> !r.ok()).count()).isEqualTo(1);
+        verify(executor, times(2)).execute(any());
+    }
+
+    @Test
+    void bulkRequiresDm() {
+        var intent = intentWithId(worldId, npcId, "MOVE", "pending");
+        when(repo.findById(intent.getId())).thenReturn(java.util.Optional.of(intent));
+        doThrow(new com.lwe.core.util.WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireDm(worldId, userId);
+
+        var results = npcIntentService.bulk(java.util.List.of(intent.getId()), "approve", null, userId);
+
+        assertThat(results.getFirst().ok()).isFalse();
+        verify(executor, never()).execute(any());
+    }
+
+    @Test
     void shouldListPendingIntents() {
         var intent = intentWithId(worldId, npcId, "SPEAK", "pending");
         when(repo.findByWorldIdAndStatusOrderByCreatedAtDesc(worldId, "pending"))
             .thenReturn(List.of(intent));
 
-        var result = npcIntentService.listPending(worldId, userId);
+        var result = npcIntentService.listPending(worldId, userId, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getStatus()).isEqualTo("pending");

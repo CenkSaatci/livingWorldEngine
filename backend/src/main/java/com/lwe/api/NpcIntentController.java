@@ -35,9 +35,17 @@ public class NpcIntentController {
 
     @GetMapping
     public ResponseEntity<List<NpcIntentResponse>> listPending(@RequestParam UUID worldId,
+                                                                @RequestParam(required = false) String type,
                                                                 @AuthenticationPrincipal User user) {
-        var intents = service.listPending(worldId, user.getId()).stream().map(NpcIntentResponse::from).toList();
+        var intents = service.listPending(worldId, user.getId(), type)
+            .stream().map(NpcIntentResponse::from).toList();
         return ResponseEntity.ok(intents);
+    }
+
+    @PostMapping("/bulk")
+    public ResponseEntity<List<NpcIntentService.BulkResult>> bulk(@Valid @RequestBody BulkRequest req,
+                                                                   @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(service.bulk(req.ids(), req.action(), req.reason(), user.getId()));
     }
 
     @PostMapping("/{id}/approve")
@@ -54,6 +62,8 @@ public class NpcIntentController {
         var intent = service.reject(id, req.reason(), user.getId());
         return ResponseEntity.ok(NpcIntentResponse.from(intent));
     }
+
+    public record BulkRequest(@NotNull java.util.List<UUID> ids, @NotBlank String action, String reason) {}
 
     public record CreateRequest(
         @NotNull UUID worldId, UUID campaignId, @NotNull UUID npcId, @NotBlank String intentType,

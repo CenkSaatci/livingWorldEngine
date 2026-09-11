@@ -8,5 +8,7 @@ import java.util.UUID;
 
 public interface NpcIntentRepository extends JpaRepository<NpcIntent, UUID> {
     List<NpcIntent> findByWorldIdAndStatusOrderByCreatedAtDesc(UUID worldId, String status);
+    List<NpcIntent> findByWorldIdAndStatusAndIntentTypeOrderByCreatedAtDesc(
+        UUID worldId, String status, String intentType);
     List<NpcIntent> findByWorldIdOrderByCreatedAtDesc(UUID worldId);
 }
