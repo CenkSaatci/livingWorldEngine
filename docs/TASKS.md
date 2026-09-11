@@ -2452,3 +2452,88 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 
 ### T32-T03: Weitere E2E-Lücken (Backlog)
 - **Status:** ⏳ (Zustands-Tick + Schadensarten-Log im Kampf; Bot-Intent→Queue→DM-Entscheid; Fork-E2E Template-unverändert)
+
+---
+
+## Phase 33: Backlog-Abbau & Härtung (Plan 2026-09-12)
+
+> Ziel: offene Teilstände aus P27/P31/P32 schließen + alte Lücken (P14/P22). Reihenfolge = Risiko × Nutzen: erst schnelle Härtung, dann Fork-Vervollständigung, dann Bot-Runtime, dann DM-Queue; P14/P22 zuletzt. Nach jedem Block (3–5 Tasks) Audit + Findings-Fix, Abschluss mit Gesamt-Audit über alle Suiten.
+
+### T33-01: E2E — Zustands-Tick + Schadensarten-Log
+- **Status:** 📋
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** Neue Spec `frontend/e2e/combat-damage.spec.ts`: System mit `conditions` (Wunde: probe −4, rounds 2) + Waffe `damage_type: fire` + NPC mit `damage_resistances:["fire"]`/`damage_armor` per API seeden; Kampf im UI starten; Zustand per API (DM) auf den Actor legen → Probe/Angriff zeigt reduzierten Schaden im Log (`(fire)`, halbiert), nach 2× `next-turn` ist der Zustand weg (Sheet-Badges/API prüfen).
+- **Akzeptanz:** E2E grün; Zustand tickt nach `rounds`; Resistenz halbiert sichtbar im Log
+- **Abhängigkeit:** keine · **Qualitäts-Check:** Playwright
+
+### T33-02: Welt-PUBLIC-Lesepfad (T01-Rest, V098-Spalte nutzen)
+- **Status:** 📋
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** `WorldAccess.requireRead(worldId,userId)` (Owner ∪ Member ∪ PUBLIC; PRIVATE = Owner only) einführen und alle reinen LESEpfade darauf umstellen (WorldService.getById, Locations/Regions/Entities-Reads, Sheet/Probe bleiben requireAccess = Schreiben/Spielen). `WorldService.listAccessible` um PUBLIC-Welten ergänzen; `WorldInfoResponse.visibility` liefern; UI: Badge/Filter „Öffentlich" im Dashboard; Dokumentation in ADR-011 ergänzen.
+- **Akzeptanz:** Fremder liest PUBLIC-Welt (200) und PRIVATE nicht (403); Owner/Member unverändert; Tests grün
+- **Abhängigkeit:** — · **Qualitäts-Check:** TDD
+
+### T33-03: Member-Quota beim Campaign-Mirroring
+- **Status:** 📋
+- **Aufwand:** 0,25 Tage
+- **Beschreibung:** `CampaignMemberService.syncWorldMember` prüft vor dem Anlegen eines NEUEN World-Members `quotaService.checkCanAddMember(worldId, plan des Fork-Owners)`; bei Limit → `CampaignException("WORLD_MEMBER_LIMIT")`; Rollen-Updates bestehender Member bleiben erlaubt. Plan-Ermittlung wie in WorldService (Owner des Fork-Welts).
+- **Akzeptanz:** Kampagnen-Add über Welt-Limit schlägt sauber fehl (403), keine Orphan-Member; Tests
+- **Abhängigkeit:** — · **Qualitäts-Check:** TDD
+
+### T33-04: Fork vervollständigen (Quests + Adventures)
+- **Status:** 📋
+- **Aufwand:** 1 Tag
+- **Beschreibung:** Repo-/Modell-Analyse, dann `WorldService.cloneWorld`: Quests (`quests.world_id`) und Adventures (`adventures.world_id`, Nodes/Progress) mitkopieren; Referenzen auf Entities/Locations via vorhandene `entityIdMap`/`locationIdMap` remappen (Giver/Location/Owner-Felder prüfen); Bewusst NICHT kopieren: History-Tabellen (Events, Intents, Sessions) — im Code dokumentieren.
+- **Akzeptanz:** Fork enthält alle Template-Quests/Adventures mit korrekten Referenzen; Template bleibt unberührt; Tests + E2E-Erweiterung in T33-01-Umfeld
+- **Abhängigkeit:** — · **Qualitäts-Check:** TDD
+
+### T33-05: System-Shares (`INVITE_ONLY` scharf schalten)
+- **Status:** 📋
+- **Aufwand:** 1 Tag
+- **Beschreibung:** Migration V103 `game_system_shares(system_id,user_id,role)`; `GameSystemService.canRead/findVisibleForUser` um Shares erweitern; Endpunkte `POST/DELETE /game-systems/{id}/shares` (Owner/Admin, Ziel-User per E-Mail/Username auflösen) + `GET .../shares`; Fehlercodes `GAME_SYSTEM_SHARE_EXISTS/NOT_FOUND`; UI: „Teilen"-Dialog im GameSystemPage (Owner), Badge `INVITE_ONLY`; Wizard/Kampagnen-Auswahl zeigt gesharte Systeme.
+- **Akzeptanz:** Geshartes PRIVATE-System für Ziel lesbar/nutzbar, andere nicht; Owner kann entziehen; Tests (Service + Migration)
+- **Abhängigkeit:** T33-02-Muster (Read-Policy) · **Qualitäts-Check:** TDD
+
+### T33-06: Bot-Runtime pro Kampagne (T04-Rest)
+- **Status:** 📋
+- **Aufwand:** 1 Tag
+- **Beschreibung:** Interner Endpoint `GET /api/v1/bot/worlds` (nur Rolle BOT, Service-Token): Welten + Kampagnen + `bot.mode` + NPCs (statt `listOwned`); `ai-bot`-Poller: pro Kampagne iterieren, `off` überspringen, `campaignId` beim Intent mitsenden; respx-Tests + Compose-Doku.
+- **Akzeptanz:** Bot verarbeitet nur erlaubte Welten/Kampagnen, `off` pausiert; pytest grün; Intents tragen `campaignId`
+- **Abhängigkeit:** — · **Qualitäts-Check:** TDD (Java + pytest)
+
+### T33-07: DM-Queue — Bulk + Filter
+- **Status:** 📋
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** `POST /npc-intents/bulk {ids[],action:"approve|reject",reason?}` (DM-gated, transaktional, Teil-Fehler als Ergebnisliste); `GET /npc-intents?worldId&status&type` mit Filtern; UI: Mehrfachauswahl + „Alle freigeben/ablehnen", Filter-Dropdown.
+- **Akzeptanz:** Bulk über 3 Intents in einem Call; nur DM; Tests (Service) + UI-Test
+- **Abhängigkeit:** T06-Gate (erledigt) · **Qualitäts-Check:** TDD
+
+### T33-08: DM-Queue — WS-Liveupdate + E2E
+- **Status:** 📋
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** `useWorldSocket`: `NPC_INTENT_PROPOSED/APPROVED/REJECTED` → `dmQueueStore`/Event-Refetch statt 5s-Polling (Polling als Fallback behalten); Playwright: Bot-Intent per API (BOT-frei: DM? Intent per API mit DM-Token) seeden → Panel erscheint live → Approve → verschwindet.
+- **Akzeptanz:** Panel aktualisiert ohne Reload <1s; E2E grün
+- **Abhängigkeit:** T33-07 · **Qualitäts-Check:** E2E
+
+### T33-09: P14-Lücke — Adventure Inject-Choice + E2E
+- **Status:** 📋
+- **Aufwand:** 1 Tag
+- **Beschreibung:** `inject-choice`-UI im `LiveAdventurePanel` (Choice-Text + Ziel-Node, nutzt vorhandenen Backend-Endpoint), Override-Skillcheck-Endpoint dokumentieren/verdrahten; Playwright: Adventure-Editor öffnen, Node anlegen/verbinden, Play-Page durchspielen (inkl. Override), 1 Spec.
+- **Akzeptanz:** E2E-Flow grün; API.md ergänzt
+- **Abhängigkeit:** — · **Qualitäts-Check:** E2E
+
+### T33-10: P22 — Social-Mechanics-Konzept
+- **Status:** 📋
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** `docs/ADR/013-social-mechanics.md`: Beziehungsachse (RelationshipService existiert) → soziale Proben (Intimidate/Taunt als generische `social_actions` im rulesJson?), Furcht/Moral als Conditions-Reuse, Abgrenzung Content vs. Engine. Nur Konzept + TASKS-Ausblick, keine Implementierung.
+- **Akzeptanz:** ADR akzeptiert; Folge-Tasks skizziert
+- **Abhängigkeit:** — · **Qualitäts-Check:** Review
+
+### T33-11: Abschluss — Gesamt-Audit mit allen Suiten
+- **Status:** 📋
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:** Read-only Audit über Phase-33-Diff; alle Suiten (Backend/Frontend/E2E/ai-bot) + Build; Findings fixen; TESTING/TASKS/API/ERROR-CODES final angleichen.
+- **Akzeptanz:** Audit ohne offene HIGH/MEDIUM; alles gepusht
+- **Qualitäts-Check:** Audit
+
+> **Audit-Rhythmus:** Nach T33-01…T33-03 (Block A) → Audit; nach T33-04/T33-05 → Audit; nach T33-06…T33-08 (Block C) → Audit; T33-09/T33-10 optional; T33-11 Gesamt-Audit.
