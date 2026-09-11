@@ -52,7 +52,7 @@ Heute-Zustand (verifiziert 2026-09-11): Systeme sind global und ohne Owner (jede
 
 ### Negativ / Aufwand
 - Migrationen: `visibility` + `owner_id` (game_systems), Bestandsdaten-Zuordnung klären.
-- **Umsetzungsstand (2026-09-12):** `visibility` für Welten und Systeme implementiert (V098); System-Ownership + Read-/Write-Guards inkl. Abilities/Items (F8, P27-T01); `INVITE_ONLY`-Shares für Systeme noch offen (T33-05). Lesesemantik Welten (T33-02): `PRIVATE` owner-only, `INVITE_ONLY` Owner+Mitglieder, `PUBLIC` alle angemeldeten Nutzer lesend; Schreiben immer Owner/Mitglied, PUBLIC allein genügt nicht.
+- **Umsetzungsstand (2026-09-12):** `visibility` für Welten und Systeme implementiert (V098); System-Ownership + Read-/Write-Guards inkl. Abilities/Items (F8, P27-T01); `INVITE_ONLY`-Shares für Systeme umgesetzt (T33-05: `game_system_shares`, V102). Lesesemantik Welten (T33-02): `PRIVATE` owner-only, `INVITE_ONLY` Owner+Mitglieder, `PUBLIC` alle angemeldeten Nutzer lesend; Schreiben immer Owner/Mitglied, PUBLIC allein genügt nicht.
 - `WorldService.clone` in den Kampagnen-Create-Flow verdrahten + UI-Hinweis („erstellt eigene Kopie").
 - Kampagnen-Rollen härten (Enum DM/PLAYER, Befördern/Degradieren, mindestens-1-DM-Invariante).
 - Bot liest Konfiguration pro Kampagne statt pro Welt; UI-Schalter pro Kampagne.

@@ -27,6 +27,7 @@ public class WorldService {
     private final QuestRepository questRepo;
     private final AdventureRepository adventureRepo;
     private final AdventureNodeRepository adventureNodeRepo;
+    private final NodeChoiceRepository nodeChoiceRepo;
     private final com.lwe.core.util.WorldAccess worldAccess;
 
     public WorldService(WorldRepository worldRepo, WorldMemberRepository memberRepo,
@@ -40,6 +41,7 @@ public class WorldService {
                         QuestRepository questRepo,
                         AdventureRepository adventureRepo,
                         AdventureNodeRepository adventureNodeRepo,
+                        NodeChoiceRepository nodeChoiceRepo,
                         com.lwe.core.util.WorldAccess worldAccess) {
         this.worldRepo = worldRepo;
         this.memberRepo = memberRepo;
@@ -55,6 +57,7 @@ public class WorldService {
         this.questRepo = questRepo;
         this.adventureRepo = adventureRepo;
         this.adventureNodeRepo = adventureNodeRepo;
+        this.nodeChoiceRepo = nodeChoiceRepo;
         this.worldAccess = worldAccess;
     }
 
@@ -310,7 +313,8 @@ public class WorldService {
             questRepo.save(copy);
         }
 
-        // Adventures + Nodes (T33-04): Node-IDs und Startknoten remappen
+        // Adventures + Nodes (T33-04): Node-IDs und Startknoten remappen.
+        // AdventureProgress wird bewusst NICHT kopiert — Forks starten Spieldurchlaeufe frisch.
         for (var a : adventureRepo.findByWorldId(worldId)) {
             var nodeIdMap = new HashMap<UUID, UUID>();
             var advCopy = new Adventure(clone.getId(), a.getName());
@@ -323,6 +327,21 @@ public class WorldService {
                 var nodeCopy = new AdventureNode(savedAdv.getId(), n.getText(), n.isEnd());
                 nodeCopy.setImageUrl(n.getImageUrl());
                 nodeIdMap.put(n.getId(), adventureNodeRepo.save(nodeCopy).getId());
+            }
+            // Choices/Edges kopieren (Audit Block B): Endpunkte auf geklonte Nodes remappen.
+            for (var oldNodeId : nodeIdMap.keySet()) {
+                var newNodeId = nodeIdMap.get(oldNodeId);
+                for (var c : nodeChoiceRepo.findByNodeId(oldNodeId)) {
+                    var target = c.getTargetNodeId() != null ? nodeIdMap.get(c.getTargetNodeId()) : null;
+                    if (c.getTargetNodeId() != null && target == null) continue;
+                    var choiceCopy = new NodeChoice(newNodeId, c.getLabel(), target);
+                    choiceCopy.setSkillCheck(c.getSkillCheck());
+                    choiceCopy.setOnSuccessNodeId(c.getOnSuccessNodeId() != null
+                        ? nodeIdMap.get(c.getOnSuccessNodeId()) : null);
+                    choiceCopy.setOnFailureNodeId(c.getOnFailureNodeId() != null
+                        ? nodeIdMap.get(c.getOnFailureNodeId()) : null);
+                    nodeChoiceRepo.save(choiceCopy);
+                }
             }
             if (a.getStartNodeId() != null && nodeIdMap.get(a.getStartNodeId()) != null) {
                 savedAdv.setStartNodeId(nodeIdMap.get(a.getStartNodeId()));

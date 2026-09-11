@@ -148,6 +148,10 @@ Listet alle aktiven Regelwerke.
 ]
 ```
 
+### Shares (`/api/v1/game-systems/{id}/shares`, nur Owner/Admin, T33-05)
+`GET` listet `{userId, email, username, createdAt}`; `POST { "user": "email-oder-username" }`; `DELETE /{userId}`.
+**Fehlercodes:** `GAME_SYSTEM_SHARE_EXISTS` (409), `GAME_SYSTEM_SHARE_NOT_FOUND`/`USER_NOT_FOUND` (404), `GAME_SYSTEM_SHARE_SELF`/`GAME_SYSTEM_PUBLIC_NO_SHARE_NEEDED` (422)
+
 ### `GET /api/v1/game-systems/{id}` (auth)
 Lesbar für Owner/Admin, PUBLIC/Legacy-Systeme sowie Mitglieder einer Kampagne mit diesem System (`GAME_SYSTEM_ACCESS_DENIED` sonst).
 **Ownership:** `POST` setzt den Ersteller als Owner (PRIVATE); `PATCH/DELETE` nur Owner/Admin; `clone` auch für PUBLIC; Legacy ohne Owner nur Admin (F8/P27-T01).

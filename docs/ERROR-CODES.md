@@ -121,7 +121,11 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 
 | Code | HTTP | Bedeutung |
 |---|---|---|
-| `GAME_SYSTEM_ACCESS_DENIED` | 403 | Kein Schreib-/Lesezugriff (Owner/Admin/Public-Regeln, F8) |
+| `GAME_SYSTEM_ACCESS_DENIED` | 403 | Kein Schreib-/Lesezugriff (Owner/Admin/Public-/Share-Regeln, F8/T33-05) |
+| `GAME_SYSTEM_SHARE_EXISTS` | 409 | System ist fuer den Nutzer bereits freigegeben |
+| `GAME_SYSTEM_SHARE_NOT_FOUND` | 404 | Freigabe existiert nicht |
+| `GAME_SYSTEM_SHARE_SELF` | 422 | Owner kann sich nicht selbst freigeben |
+| `GAME_SYSTEM_PUBLIC_NO_SHARE_NEEDED` | 422 | PUBLIC-Systeme brauchen keine Freigabe |
 
 | Code | HTTP | Bedeutung |
 |---|---|---|

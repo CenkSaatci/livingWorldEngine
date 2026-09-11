@@ -5,7 +5,7 @@
 ## Aktueller Projektstand (2026-09-11)
 
 - **P28 Engine-Bausteine** ✅ (T01–T06) · **P29 Spielgefühl + Pakete** ✅ (T01–T06) · **P23 Schadenstypen** ✅ (T01–T04, T05 optional) · **P30 Charakter-Wizard** ✅ (T01–T04) · **P31 E2E-Ausbau** ✅ (T01–T03)
-- **Tests:** Backend 402 (`mvn -B test`) · Frontend 169 (`npx vitest run`) · E2E 9 (`npm run test:e2e`) · ai-bot 46 · `tsc`/Build grün
+- **Tests:** Backend 407 (`mvn -B test`) · Frontend 169 (`npx vitest run`) · E2E 9 (`npm run test:e2e`) · ai-bot 46 · `tsc`/Build grün
 - **Audits:** P28, P23/P29, P30 und ein finales Gesamt-Audit — alle HIGH/MEDIUM-Findings gefixt, Rest bewusst zurückgestellt (siehe Notizen unten)
 - **P27-Status:** T01 ✅ Teilstand (Shares/Welt-PUBLIC offen) · T02 ✅ · T03 ✅ Teilstand (Quest/Adventure-Fork offen) · T04 🔄 Teilstand (Bot-Runtime-Polling) · T05 ✅ · T06 🔄 Teilstand (Bulk/WS/E2E)
 - **Offen (bewusst):** P14-T02–T04 · P22 Konzept · F8 erledigt (V098) · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
@@ -2481,14 +2481,14 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Abhängigkeit:** — · **Qualitäts-Check:** TDD
 
 ### T33-04: Fork vervollständigen (Quests + Adventures)
-- **Status:** 📋
+- **Status:** ✅ (Quests inkl. Giver/Location-Remap; Adventures + Nodes + **Choices/Edges** inkl. Start-/Skill-Check-Knoten-Remap; Test. AdventureProgress bewusst nicht kopiert — Forks starten frisch, im Code dokumentiert; Quest-objectives/-rewards-IDs bleiben bekannte Einschränkung)
 - **Aufwand:** 1 Tag
 - **Beschreibung:** Repo-/Modell-Analyse, dann `WorldService.cloneWorld`: Quests (`quests.world_id`) und Adventures (`adventures.world_id`, Nodes/Progress) mitkopieren; Referenzen auf Entities/Locations via vorhandene `entityIdMap`/`locationIdMap` remappen (Giver/Location/Owner-Felder prüfen); Bewusst NICHT kopieren: History-Tabellen (Events, Intents, Sessions) — im Code dokumentieren.
 - **Akzeptanz:** Fork enthält alle Template-Quests/Adventures mit korrekten Referenzen; Template bleibt unberührt; Tests + E2E-Erweiterung in T33-01-Umfeld
 - **Abhängigkeit:** — · **Qualitäts-Check:** TDD
 
 ### T33-05: System-Shares (`INVITE_ONLY` scharf schalten)
-- **Status:** 📋
+- **Status:** ✅ (V102 `game_system_shares` statt V103; Shares in canRead/listVisible/requireUsable/Ability+Item-Reads; GET/POST/DELETE `/game-systems/{id}/shares` mit E-Mail/Username-Anzeige; Selbst-Share und PUBLIC-Downgrade abgelehnt (`GAME_SYSTEM_SHARE_SELF`/`GAME_SYSTEM_PUBLIC_NO_SHARE_NEEDED` 422); UI-Dialog; IT für Query)
 - **Aufwand:** 1 Tag
 - **Beschreibung:** Migration V103 `game_system_shares(system_id,user_id,role)`; `GameSystemService.canRead/findVisibleForUser` um Shares erweitern; Endpunkte `POST/DELETE /game-systems/{id}/shares` (Owner/Admin, Ziel-User per E-Mail/Username auflösen) + `GET .../shares`; Fehlercodes `GAME_SYSTEM_SHARE_EXISTS/NOT_FOUND`; UI: „Teilen"-Dialog im GameSystemPage (Owner), Badge `INVITE_ONLY`; Wizard/Kampagnen-Auswahl zeigt gesharte Systeme.
 - **Akzeptanz:** Geshartes PRIVATE-System für Ziel lesbar/nutzbar, andere nicht; Owner kann entziehen; Tests (Service + Migration)

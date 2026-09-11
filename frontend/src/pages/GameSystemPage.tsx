@@ -157,7 +157,8 @@ export default function GameSystemPage() {
   const [validating, setValidating] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [sharing, setSharing] = useState<GameSystem | null>(null);
-  const [shares, setShares] = useState<{ userId: string }[]>([]);
+  const [shares, setShares] = useState<{ userId: string; email?: string; username?: string }[]>([]);
+  const [shareError, setShareError] = useState('');
   const [shareEmail, setShareEmail] = useState('');
   const [editorMode, setEditorMode] = useState<'wizard' | 'json'>('wizard');
   const [wizardData, setWizardData] = useState<WizardData | null>(null);
@@ -315,8 +316,12 @@ export default function GameSystemPage() {
     try {
       const res = await apiClient.get(`/game-systems/${sys.id}/shares`);
       setShares(res.data ?? []);
-    } catch {
+    } catch (e) {
       setShares([]);
+      setShareError(
+        (e as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message
+        ?? 'Could not load shares',
+      );
     }
   };
 
@@ -327,9 +332,12 @@ export default function GameSystemPage() {
       const res = await apiClient.get(`/game-systems/${sharing.id}/shares`);
       setShares(res.data ?? []);
       setShareEmail('');
+      setShareError('');
       toast.success('Share added');
-    } catch {
-      toast.error('Could not add share');
+    } catch (e) {
+      const msg = (e as { response?: { data?: { error?: { message?: string } } } })
+        ?.response?.data?.error?.message;
+      setShareError(msg ?? 'Could not add share');
     }
   };
 
@@ -338,8 +346,10 @@ export default function GameSystemPage() {
     try {
       await apiClient.delete(`/game-systems/${sharing.id}/shares/${userId}`);
       setShares((prev) => prev.filter((s2) => s2.userId !== userId));
-    } catch {
-      toast.error('Could not remove share');
+    } catch (e) {
+      const msg = (e as { response?: { data?: { error?: { message?: string } } } })
+        ?.response?.data?.error?.message;
+      setShareError(msg ?? 'Could not remove share');
     }
   };
 
@@ -449,9 +459,14 @@ export default function GameSystemPage() {
                           Public
                         </span>
                       )}
-                      {sys.visibility && sys.visibility !== 'PUBLIC' && (
+                      {sys.visibility === 'INVITE_ONLY' && (
                         <span className="ml-2 rounded bg-bg-elevated px-1.5 py-0.5 text-[10px] text-text-secondary">
-                          Privat
+                          Shared
+                        </span>
+                      )}
+                      {sys.visibility && sys.visibility !== 'PUBLIC' && sys.visibility !== 'INVITE_ONLY' && (
+                        <span className="ml-2 rounded bg-bg-elevated px-1.5 py-0.5 text-[10px] text-text-secondary">
+                          Private
                         </span>
                       )}
                     </p>
@@ -741,6 +756,8 @@ export default function GameSystemPage() {
     
       {sharing && (
         <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+             role="dialog" aria-modal="true" tabIndex={-1}
+             onKeyDown={(e) => { if (e.key === 'Escape') setSharing(null); }}
              onClick={() => setSharing(null)}>
           <div className="w-full max-w-md rounded-lg border border-bg-elevated bg-bg-surface p-5"
                onClick={(e) => e.stopPropagation()}>
@@ -759,10 +776,13 @@ export default function GameSystemPage() {
                 Add
               </button>
             </div>
+            {shareError && (
+              <p className="mb-2 text-xs text-danger">{shareError}</p>
+            )}
             <ul className="mb-3 space-y-1">
               {shares.map((s2) => (
                 <li key={s2.userId} className="flex items-center justify-between rounded bg-bg-primary/50 px-3 py-1.5 text-xs">
-                  <span className="font-mono text-text-primary">{s2.userId.slice(0, 8)}</span>
+                  <span className="text-text-primary">{s2.email || s2.username || s2.userId.slice(0, 8)}</span>
                   <button onClick={() => removeShare(s2.userId)}
                           className="text-text-secondary hover:text-danger"
                           aria-label="Remove share">

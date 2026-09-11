@@ -213,6 +213,7 @@ public class GlobalExceptionHandler {
                 case "GAME_SYSTEM_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
                 case "GAME_SYSTEM_SHARE_NOT_FOUND", "USER_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 case "GAME_SYSTEM_SHARE_EXISTS" -> HttpStatus.CONFLICT;
+                case "GAME_SYSTEM_SHARE_SELF", "GAME_SYSTEM_PUBLIC_NO_SHARE_NEEDED" -> HttpStatus.UNPROCESSABLE_ENTITY;
                 case "GAME_SYSTEM_VERSION_CONFLICT" -> HttpStatus.CONFLICT;
                 default -> HttpStatus.BAD_REQUEST;
             };

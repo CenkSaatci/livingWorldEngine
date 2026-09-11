@@ -3,9 +3,13 @@ package com.lwe.integration;
 import com.lwe.core.domain.User;
 import com.lwe.core.domain.World;
 import com.lwe.core.domain.WorldMember;
+import com.lwe.core.repository.GameSystemRepository;
+import com.lwe.core.repository.GameSystemShareRepository;
 import com.lwe.core.repository.UserRepository;
 import com.lwe.core.repository.WorldMemberRepository;
 import com.lwe.core.repository.WorldRepository;
+import com.lwe.core.domain.GameSystem;
+import com.lwe.core.domain.GameSystemShare;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -28,6 +32,28 @@ class WorldVisibilityQueryIT {
     @Autowired private WorldRepository worldRepo;
     @Autowired private WorldMemberRepository memberRepo;
     @Autowired private UserRepository userRepo;
+    @Autowired private GameSystemRepository systemRepo;
+    @Autowired private GameSystemShareRepository shareRepo;
+
+    @Test
+    void systemVisibleQueryIncludesShares() {
+        var tag = UUID.randomUUID().toString().substring(0, 8);
+        var owner = userRepo.save(new User("gs-owner+" + tag + "@test.de", "gso_" + tag,
+            "$2a$10$dummyhash", "USER", "de"));
+        var target = userRepo.save(new User("gs-target+" + tag + "@test.de", "gst_" + tag,
+            "$2a$10$dummyhash", "USER", "de"));
+        var stranger = userRepo.save(new User("gs-stranger+" + tag + "@test.de", "gss_" + tag,
+            "$2a$10$dummyhash", "USER", "de"));
+        var system = systemRepo.save(new GameSystem("ShareSys_" + tag, 1,
+            "{\"version\":1,\"attributes\":[{\"name\":\"x\",\"type\":\"INT\",\"default\":1}],"
+                + "\"dice_mechanics\":{\"probe\":\"1d20\"}}", "{}", owner.getId()));
+        shareRepo.save(new GameSystemShare(system.getId(), target.getId()));
+
+        assertThat(systemRepo.findVisibleForUser(target.getId()))
+            .extracting(GameSystem::getId).contains(system.getId());
+        assertThat(systemRepo.findVisibleForUser(stranger.getId()))
+            .extracting(GameSystem::getId).doesNotContain(system.getId());
+    }
 
     @Test
     void accessibleQueryRespectsVisibility() {

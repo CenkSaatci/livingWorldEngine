@@ -54,6 +54,7 @@ class WorldServiceTest {
     @Mock private com.lwe.core.repository.QuestRepository questRepo;
     @Mock private com.lwe.core.repository.AdventureRepository adventureRepo;
     @Mock private com.lwe.core.repository.AdventureNodeRepository adventureNodeRepo;
+    @Mock private com.lwe.core.repository.NodeChoiceRepository nodeChoiceRepo;
 
     private WorldService worldService;
     private final UUID ownerId = UUID.randomUUID();
@@ -64,7 +65,7 @@ class WorldServiceTest {
         worldService = new WorldService(worldRepo, memberRepo, quotaService,
             regionRepo, locationRepo, entityRepo, factionRepo, factionRelationRepo,
             worldMapRepo, regionWeatherRepo, entityAbilityRepo,
-            questRepo, adventureRepo, adventureNodeRepo, worldAccess);
+            questRepo, adventureRepo, adventureNodeRepo, nodeChoiceRepo, worldAccess);
     }
 
     @Test
@@ -384,7 +385,11 @@ class WorldServiceTest {
             if (a2.getId() == null) setId(a2, UUID.randomUUID());
             return a2;
         });
+        var choice = new com.lwe.core.domain.NodeChoice(node.getId(), "Weiter", node.getId());
+        setId(choice, UUID.randomUUID());
         when(adventureNodeRepo.findByAdventureId(adv.getId())).thenReturn(List.of(node));
+        when(nodeChoiceRepo.findByNodeId(node.getId())).thenReturn(List.of(choice));
+        when(nodeChoiceRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(adventureNodeRepo.save(any())).thenAnswer(inv -> {
             var n2 = inv.<AdventureNode>getArgument(0);
             if (n2.getId() == null) setId(n2, UUID.randomUUID());
@@ -401,6 +406,10 @@ class WorldServiceTest {
         assertThat(questCopy.getLocationId()).isNotEqualTo(loc.getId());
 
         verify(adventureNodeRepo).save(any());
+        var choiceCaptor = org.mockito.ArgumentCaptor.forClass(com.lwe.core.domain.NodeChoice.class);
+        verify(nodeChoiceRepo).save(choiceCaptor.capture());
+        assertThat(choiceCaptor.getValue().getNodeId()).isNotEqualTo(node.getId());
+        assertThat(choiceCaptor.getValue().getTargetNodeId()).isNotEqualTo(node.getId());
         var advCaptor = org.mockito.ArgumentCaptor.forClass(Adventure.class);
         verify(adventureRepo, atLeast(1)).save(advCaptor.capture());
         var advCopy = advCaptor.getAllValues().getLast();

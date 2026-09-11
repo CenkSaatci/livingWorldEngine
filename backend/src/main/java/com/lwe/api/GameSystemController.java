@@ -21,10 +21,13 @@ public class GameSystemController {
 
     private final GameSystemService service;
     private final RuleSchemaValidator validator;
+    private final com.lwe.core.repository.UserRepository userRepo;
 
-    public GameSystemController(GameSystemService service, RuleSchemaValidator validator) {
+    public GameSystemController(GameSystemService service, RuleSchemaValidator validator,
+                                com.lwe.core.repository.UserRepository userRepo) {
         this.service = service;
         this.validator = validator;
+        this.userRepo = userRepo;
     }
 
     @PostMapping
@@ -65,9 +68,13 @@ public class GameSystemController {
     @GetMapping("/{id}/shares")
     public ResponseEntity<List<ShareResponse>> listShares(@PathVariable UUID id,
             @AuthenticationPrincipal User user) {
-        var shares = service.listShares(id, user.getId(), isAdmin(user))
-            .stream().map(ShareResponse::from).toList();
-        return ResponseEntity.ok(shares);
+        var shares = service.listShares(id, user.getId(), isAdmin(user));
+        var userIds = shares.stream().map(com.lwe.core.domain.GameSystemShare::getUserId).toList();
+        var users = userRepo.findAllById(userIds).stream()
+            .collect(java.util.stream.Collectors.toMap(com.lwe.core.domain.User::getId, u -> u));
+        var response = shares.stream()
+            .map(s2 -> ShareResponse.from(s2, users.get(s2.getUserId()))).toList();
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{id}/shares")
@@ -75,7 +82,8 @@ public class GameSystemController {
             @Valid @RequestBody ShareRequest req,
             @AuthenticationPrincipal User user) {
         var share = service.share(id, user.getId(), isAdmin(user), req.user());
-        return ResponseEntity.status(HttpStatus.CREATED).body(ShareResponse.from(share));
+        var shareUser = userRepo.findById(share.getUserId()).orElse(null);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ShareResponse.from(share, shareUser));
     }
 
     @DeleteMapping("/{id}/shares/{userId}")
@@ -114,9 +122,12 @@ public class GameSystemController {
     public record GameSystemDetailResponse(UUID id, String name, int version, String rulesJson, boolean active) {}
     public record ValidationResponse(boolean valid, List<String> errors) {}
     public record ShareRequest(@NotBlank String user) {}
-    public record ShareResponse(UUID userId, String createdAt) {
-        static ShareResponse from(com.lwe.core.domain.GameSystemShare s) {
-            return new ShareResponse(s.getUserId(), s.getCreatedAt().toString());
+    public record ShareResponse(UUID userId, String email, String username, String createdAt) {
+        static ShareResponse from(com.lwe.core.domain.GameSystemShare s,
+                                  com.lwe.core.domain.User u) {
+            return new ShareResponse(s.getUserId(),
+                u != null ? u.getEmail() : "", u != null ? u.getUsername() : "",
+                s.getCreatedAt().toString());
         }
     }
 }

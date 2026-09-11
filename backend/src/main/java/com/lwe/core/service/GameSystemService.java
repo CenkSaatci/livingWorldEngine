@@ -132,10 +132,13 @@ public class GameSystemService {
         if (shareRepo.existsBySystemIdAndUserId(systemId, target.getId())) {
             throw new GameSystemException("GAME_SYSTEM_SHARE_EXISTS", "Already shared with this user");
         }
-        // INVITE_ONLY ist die Semantik von Shares; PUBLIC braucht keine.
+        if (target.getId().equals(gs.getOwnerId())) {
+            throw new GameSystemException("GAME_SYSTEM_SHARE_SELF", "Cannot share with yourself");
+        }
+        // Audit Block B: PUBLIC nicht still downgraden — erst Sichtbarkeit aendern.
         if ("PUBLIC".equals(gs.getVisibility())) {
-            gs.setVisibility("INVITE_ONLY");
-            repo.save(gs);
+            throw new GameSystemException("GAME_SYSTEM_PUBLIC_NO_SHARE_NEEDED",
+                "Public systems are readable by everyone; set INVITE_ONLY first");
         }
         return shareRepo.save(new GameSystemShare(systemId, target.getId()));
     }
