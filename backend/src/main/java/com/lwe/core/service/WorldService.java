@@ -24,6 +24,7 @@ public class WorldService {
     private final WorldMapRepository worldMapRepo;
     private final RegionWeatherRepository regionWeatherRepo;
     private final EntityAbilityRepository entityAbilityRepo;
+    private final com.lwe.core.util.WorldAccess worldAccess;
 
     public WorldService(WorldRepository worldRepo, WorldMemberRepository memberRepo,
                         QuotaService quotaService,
@@ -32,7 +33,8 @@ public class WorldService {
                         FactionRelationRepository factionRelationRepo,
                         WorldMapRepository worldMapRepo,
                         RegionWeatherRepository regionWeatherRepo,
-                        EntityAbilityRepository entityAbilityRepo) {
+                        EntityAbilityRepository entityAbilityRepo,
+                        com.lwe.core.util.WorldAccess worldAccess) {
         this.worldRepo = worldRepo;
         this.memberRepo = memberRepo;
         this.quotaService = quotaService;
@@ -44,6 +46,7 @@ public class WorldService {
         this.worldMapRepo = worldMapRepo;
         this.regionWeatherRepo = regionWeatherRepo;
         this.entityAbilityRepo = entityAbilityRepo;
+        this.worldAccess = worldAccess;
     }
 
     @Transactional
@@ -87,22 +90,32 @@ public class WorldService {
      * Welt-Detail — Owner und Mitglieder haben Zugriff.
      */
     public World getById(UUID worldId, UUID userId) {
-        var world = worldRepo.findById(worldId)
+        // T33-02: Lesen erlaubt auch PUBLIC-Welten; Schreibpfade pruefen separat.
+        worldAccess.requireRead(worldId, userId);
+        return worldRepo.findById(worldId)
             .orElseThrow(() -> new WorldException("WORLD_NOT_FOUND", "World not found"));
-        if (!world.getOwnerId().equals(userId) && !memberRepo.existsByWorldIdAndUserId(worldId, userId)) {
-            throw new WorldException("WORLD_ACCESS_DENIED", "Access denied");
-        }
-        return world;
     }
 
     @Transactional
     public World update(UUID worldId, UUID userId, String name, String settingsJson) {
+        return update(worldId, userId, name, settingsJson, null);
+    }
+
+    @Transactional
+    public World update(UUID worldId, UUID userId, String name, String settingsJson, String visibility) {
         var world = getById(worldId, userId);
         if (!world.getOwnerId().equals(userId)) {
             throw new WorldException("WORLD_OWNER_REQUIRED", "Only the owner may update this world");
         }
         if (name != null) world.setName(name);
         if (settingsJson != null) world.setSettingsJson(settingsJson);
+        if (visibility != null) {
+            if (!java.util.Set.of("PRIVATE", "INVITE_ONLY", "PUBLIC").contains(visibility)) {
+                throw new WorldException("INVALID_VISIBILITY",
+                    "visibility must be PRIVATE, INVITE_ONLY or PUBLIC");
+            }
+            world.setVisibility(visibility);
+        }
         return worldRepo.save(world);
     }
 

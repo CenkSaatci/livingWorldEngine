@@ -47,6 +47,7 @@ class WorldServiceTest {
     @Mock private WorldMapRepository worldMapRepo;
     @Mock private RegionWeatherRepository regionWeatherRepo;
     @Mock private EntityAbilityRepository entityAbilityRepo;
+    @Mock private com.lwe.core.util.WorldAccess worldAccess;
 
     private WorldService worldService;
     private final UUID ownerId = UUID.randomUUID();
@@ -56,7 +57,7 @@ class WorldServiceTest {
     void setUp() {
         worldService = new WorldService(worldRepo, memberRepo, quotaService,
             regionRepo, locationRepo, entityRepo, factionRepo, factionRelationRepo,
-            worldMapRepo, regionWeatherRepo, entityAbilityRepo);
+            worldMapRepo, regionWeatherRepo, entityAbilityRepo, worldAccess);
     }
 
     @Test
@@ -106,9 +107,8 @@ class WorldServiceTest {
 
     @Test
     void shouldAllowMemberAccess() {
-        var world = worldWithId("Test", UUID.randomUUID()); // owned by someone else
+        var world = worldWithId("Test", UUID.randomUUID());
         when(worldRepo.findById(world.getId())).thenReturn(Optional.of(world));
-        when(memberRepo.existsByWorldIdAndUserId(world.getId(), memberId)).thenReturn(true);
 
         var result = worldService.getById(world.getId(), memberId);
         assertThat(result.getName()).isEqualTo("Test");
@@ -117,12 +117,12 @@ class WorldServiceTest {
     @Test
     void shouldRejectAccessToStranger() {
         var world = worldWithId("Secret", UUID.randomUUID());
-        when(worldRepo.findById(world.getId())).thenReturn(Optional.of(world));
-        when(memberRepo.existsByWorldIdAndUserId(world.getId(), ownerId)).thenReturn(false);
+        doThrow(new com.lwe.core.util.WorldAccess.WorldAccessException(
+                "WORLD_ACCESS_DENIED", "Access denied"))
+            .when(worldAccess).requireRead(world.getId(), ownerId);
 
         assertThatThrownBy(() -> worldService.getById(world.getId(), ownerId))
-            .isInstanceOf(WorldService.WorldException.class)
-            .matches(e -> ((WorldService.WorldException) e).getErrorCode().equals("WORLD_ACCESS_DENIED"));
+            .isInstanceOf(com.lwe.core.util.WorldAccess.WorldAccessException.class);
     }
 
     @Test
@@ -174,6 +174,22 @@ class WorldServiceTest {
         assertThatThrownBy(() -> worldService.addMember(world.getId(), ownerId, memberId, "PLAYER"))
             .isInstanceOf(WorldService.WorldException.class)
             .matches(e -> ((WorldService.WorldException) e).getErrorCode().equals("WORLD_MEMBER_ALREADY"));
+    }
+
+    @Test
+    void ownerCanSetVisibilityAndInvalidVisibilityIsRejected() {
+        var world = worldWithId("W", ownerId);
+        setId(world, UUID.randomUUID());
+        when(worldRepo.findById(world.getId())).thenReturn(Optional.of(world));
+        when(worldRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var updated = worldService.update(world.getId(), ownerId, null, null, "PUBLIC");
+        assertThat(updated.getVisibility()).isEqualTo("PUBLIC");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> worldService.update(world.getId(), ownerId, null, null, "CHAOS"))
+            .isInstanceOf(WorldService.WorldException.class)
+            .matches(e -> ((WorldService.WorldException) e).getErrorCode().equals("INVALID_VISIBILITY"));
     }
 
     @Test

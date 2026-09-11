@@ -24,7 +24,10 @@ public interface WorldRepository extends JpaRepository<World, UUID> {
         (SELECT * FROM worlds WHERE owner_id = :userId AND active = true)
         UNION
         (SELECT w.* FROM worlds w JOIN world_members m ON w.id = m.world_id
-         WHERE m.user_id = :userId AND w.active = true AND w.owner_id != :userId)
+         WHERE m.user_id = :userId AND w.active = true AND w.owner_id != :userId
+           AND w.visibility != 'PRIVATE')
+        UNION
+        (SELECT * FROM worlds WHERE visibility = 'PUBLIC' AND active = true)
         ORDER BY created_at DESC
         """,
         countQuery = """
@@ -32,7 +35,10 @@ public interface WorldRepository extends JpaRepository<World, UUID> {
           (SELECT id FROM worlds WHERE owner_id = :userId AND active = true)
           UNION
           (SELECT w.id FROM worlds w JOIN world_members m ON w.id = m.world_id
-           WHERE m.user_id = :userId AND w.active = true AND w.owner_id != :userId)
+           WHERE m.user_id = :userId AND w.active = true AND w.owner_id != :userId
+             AND w.visibility != 'PRIVATE')
+          UNION
+          (SELECT id FROM worlds WHERE visibility = 'PUBLIC' AND active = true)
         ) AS cnt
         """,
         nativeQuery = true)

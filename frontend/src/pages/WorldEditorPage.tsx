@@ -90,6 +90,7 @@ export default function WorldEditorPage() {
 
   // Editable state
   const [name, setName] = useState('');
+  const [visibility, setVisibility] = useState('INVITE_ONLY');
   const [description, setDescription] = useState('');
   const [settings, setSettings] = useState<WorldSettings>({});
   const [dirty, setDirty] = useState(false);
@@ -97,6 +98,7 @@ export default function WorldEditorPage() {
   // Sync API data → local state when loaded
   const initFromWorld = useCallback((w: WorldDetail) => {
     setName(w.name);
+    setVisibility(w.visibility ?? 'INVITE_ONLY');
     try {
       const parsed = JSON.parse(w.settingsJson) as Record<string, unknown>;
       setDescription((parsed.description as string) ?? '');
@@ -135,6 +137,7 @@ export default function WorldEditorPage() {
       await apiClient.patch(`/worlds/${id}`, {
         name,
         settingsJson: JSON.stringify(mergedSettings),
+        visibility,
       });
       toast.success(t('worldEditor.saved'));
       setDirty(false);
@@ -261,6 +264,21 @@ export default function WorldEditorPage() {
                 }}
                 className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
               />
+
+            <label className="mb-1 mt-4 block text-xs text-text-secondary">
+              {t('worldEditor.visibility')}
+            </label>
+            <select
+              value={visibility}
+              onChange={(e) => { setVisibility(e.target.value); setDirty(true); }}
+              aria-label={t('worldEditor.visibility')}
+              className="mb-4 w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2
+                         text-text-primary focus:border-accent focus:outline-none"
+            >
+              <option value="PRIVATE">{t('worldEditor.visibilityPrivate')}</option>
+              <option value="INVITE_ONLY">{t('worldEditor.visibilityInvite')}</option>
+              <option value="PUBLIC">{t('worldEditor.visibilityPublic')}</option>
+            </select>
             </div>
             <div>
               <label className="block text-xs text-text-secondary mb-1">Description</label>

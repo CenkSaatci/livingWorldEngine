@@ -63,7 +63,7 @@ public class WorldController {
     public ResponseEntity<WorldInfoResponse> update(@PathVariable UUID id, @Valid @RequestBody UpdateRequest req,
                                                      @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(WorldInfoResponse.from(
-            worldService.update(id, user.getId(), req.name(), req.settingsJson())));
+            worldService.update(id, user.getId(), req.name(), req.settingsJson(), req.visibility())));
     }
 
     @DeleteMapping("/{id}")
@@ -106,6 +106,6 @@ public class WorldController {
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
     public record CreateRequest(@NotBlank String name, String settingsJson) {}
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
-    public record UpdateRequest(String name, String settingsJson) {}
+    public record UpdateRequest(String name, String settingsJson, String visibility) {}
     public record MemberRequest(@NotNull UUID userId, @NotBlank String role) {}
 }

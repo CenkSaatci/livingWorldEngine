@@ -70,7 +70,11 @@
     "memberAdded": "Spieler hinzugefügt",
     "memberAddFailed": "Hinzufügen fehlgeschlagen",
     "memberRemoved": "Spieler entfernt",
-    "memberRemoveFailed": "Entfernen fehlgeschlagen"
+    "memberRemoveFailed": "Entfernen fehlgeschlagen",
+    "visibility": "Sichtbarkeit",
+    "visibilityPrivate": "Privat (nur ich)",
+    "visibilityInvite": "Nur Eingeladene",
+    "visibilityPublic": "Öffentlich (alle lesend)"
   },
   "combat": {
     "target": "Ziel",
@@ -204,7 +208,8 @@
     "gameSystems": "Spielsysteme",
     "createWorld": "Welt erstellen",
     "worldName": "Weltname",
-    "editWorldSettings": "Welteinstellungen bearbeiten"
+    "editWorldSettings": "Welteinstellungen bearbeiten",
+    "public": "Öffentlich"
   },
   "campaign": {
     "title": "Kampagnen",

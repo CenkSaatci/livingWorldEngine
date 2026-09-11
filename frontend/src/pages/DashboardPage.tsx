@@ -238,7 +238,14 @@ export default function DashboardPage() {
                            transition hover:border-accent/50 hover:bg-bg-elevated/50"
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="font-heading text-text-primary">{w.name}</h3>
+                  <h3 className="font-heading text-text-primary">
+                    {w.name}
+                    {w.visibility === 'PUBLIC' && (
+                      <span className="ml-2 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] text-accent align-middle">
+                        {t('dashboard.public')}
+                      </span>
+                    )}
+                  </h3>
                   <span
                     onClick={(e) => {
                       e.stopPropagation();

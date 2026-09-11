@@ -9,6 +9,7 @@ export interface WorldSummary {
   // Seit P25-T06 liefert das Backend kein gameSystemId mehr (Welten sind
   // systemunabhängig); optional für Abwärtskompatibilität.
   gameSystemId?: string | null;
+  visibility?: string;
   currentGameTime: string | null;
   createdAt: string;
 }

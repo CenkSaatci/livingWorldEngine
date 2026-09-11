@@ -61,6 +61,39 @@ class WorldAccessTest {
     }
 
     @Test
+    void publicWorldIsReadableByStrangerButNotWritable() {
+        var ownerId = UUID.randomUUID();
+        var stranger = UUID.randomUUID();
+        var worldId = UUID.randomUUID();
+        var world = world(ownerId);
+        world.setVisibility("PUBLIC");
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+
+        var access = new WorldAccess(memberRepo, worldRepo);
+        org.assertj.core.api.Assertions.assertThatCode(
+                () -> access.requireRead(worldId, stranger))
+            .doesNotThrowAnyException();
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> access.requireAccess(worldId, stranger))
+            .isInstanceOf(WorldAccess.WorldAccessException.class)
+            .matches(e -> ((WorldAccess.WorldAccessException) e).getErrorCode().equals("WORLD_ACCESS_DENIED"));
+    }
+
+    @Test
+    void privateWorldIsOwnerOnlyEvenForReads() {
+        var ownerId = UUID.randomUUID();
+        var stranger = UUID.randomUUID();
+        var worldId = UUID.randomUUID();
+        var world = world(ownerId);
+        world.setVisibility("PRIVATE");
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> new WorldAccess(memberRepo, worldRepo).requireRead(worldId, stranger))
+            .isInstanceOf(WorldAccess.WorldAccessException.class);
+    }
+
+    @Test
     void deletedWorldIsDenied() {
         var ownerId = UUID.randomUUID();
         var worldId = UUID.randomUUID();
