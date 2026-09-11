@@ -248,8 +248,10 @@ public class AdventureService {
             p.setCurrentNodeId(nodeId);
             progressRepo.save(p);
         }
-        eventService.publish(node.getAdventureId(), ADVENTURE_NODE_CHANGED, null, null, Map.of(
-            "adventureId", adventureId.toString(), "nodeId", nodeId.toString()));
+        // Audit T33-09: Event gehoert zur WELT (worldId), nicht zur Adventure-ID.
+        adventureRepo.findById(adventureId).ifPresent(adv ->
+            eventService.publish(adv.getWorldId(), ADVENTURE_NODE_CHANGED, null, null, Map.of(
+                "adventureId", adventureId.toString(), "nodeId", nodeId.toString())));
     }
 
     @Transactional
@@ -259,8 +261,9 @@ public class AdventureService {
         var choice = new NodeChoice(nodeId, label, targetNodeId);
         if (skillCheckJson != null) choice.setSkillCheck(skillCheckJson);
         choice = choiceRepo.save(choice);
-        eventService.publish(adventureId, ADVENTURE_CHOICES_CHANGED, null, null, Map.of(
-            "adventureId", adventureId.toString(), "nodeId", nodeId.toString()));
+        adventureRepo.findById(adventureId).ifPresent(adv ->
+            eventService.publish(adv.getWorldId(), ADVENTURE_CHOICES_CHANGED, null, null, Map.of(
+                "adventureId", adventureId.toString(), "nodeId", nodeId.toString())));
         return choice;
     }
 

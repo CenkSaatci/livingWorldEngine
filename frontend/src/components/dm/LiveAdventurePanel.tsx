@@ -13,6 +13,9 @@ export function LiveAdventurePanel({ worldId }: Props) {
   const [overrideText, setOverrideText] = useState('');
   const [selectedAdv, setSelectedAdv] = useState<string | null>(null);
   const [nodes, setNodes] = useState<any[]>([]);
+  const [choiceLabel, setChoiceLabel] = useState('');
+  const [choiceSource, setChoiceSource] = useState('');
+  const [choiceTarget, setChoiceTarget] = useState('');
 
   useEffect(() => {
     if (!worldId) return;
@@ -42,6 +45,20 @@ export function LiveAdventurePanel({ worldId }: Props) {
       toast.success('Text updated — players see changes immediately');
     } catch {
       toast.error('Failed to override');
+    }
+  };
+
+  const handleInjectChoice = async () => {
+    if (!selectedAdv || !choiceSource || !choiceTarget || !choiceLabel.trim()) return;
+    try {
+      await apiClient.post(`/adventures/${selectedAdv}/inject-choice/${choiceSource}`, {
+        label: choiceLabel.trim(),
+        targetNodeId: choiceTarget,
+      });
+      toast.success('Choice injected — players see it immediately');
+      setChoiceLabel('');
+    } catch {
+      toast.error('Failed to inject choice');
     }
   };
 
@@ -86,6 +103,48 @@ export function LiveAdventurePanel({ worldId }: Props) {
               >
                 Override Text
               </button>
+              {nodes.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-[10px] text-text-secondary mb-1">Inject Choice:</p>
+                  <input
+                    value={choiceLabel}
+                    onChange={(e) => setChoiceLabel(e.target.value)}
+                    placeholder="Choice label..."
+                    className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                  <div className="flex gap-1">
+                    <select
+                      value={choiceSource}
+                      onChange={(e) => setChoiceSource(e.target.value)}
+                      aria-label="Source node"
+                      className="w-1/2 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-[10px] text-text-primary"
+                    >
+                      <option value="">Source…</option>
+                      {nodes.map((n: any) => (
+                        <option key={n.id} value={n.id}>{(n.text || '').slice(0, 20)}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={choiceTarget}
+                      onChange={(e) => setChoiceTarget(e.target.value)}
+                      aria-label="Target node"
+                      className="w-1/2 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-[10px] text-text-primary"
+                    >
+                      <option value="">Target…</option>
+                      {nodes.map((n: any) => (
+                        <option key={n.id} value={n.id}>{(n.text || '').slice(0, 20)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={handleInjectChoice}
+                    disabled={!choiceLabel.trim() || !choiceSource || !choiceTarget}
+                    className="w-full rounded bg-accent px-2 py-1 text-xs text-white hover:bg-accent/80 disabled:opacity-40"
+                  >
+                    Inject Choice
+                  </button>
+                </div>
+              )}
               {nodes.length > 0 && (
                 <div>
                   <p className="text-[10px] text-text-secondary mb-1">Force Node:</p>

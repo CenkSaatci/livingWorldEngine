@@ -56,6 +56,19 @@ class AdventureServiceTest {
     }
 
     @Test
+    void injectChoicePublishesEventForWorldNotAdventure() {
+        // Audit T33-09: worldId im Event, sonst FK-Crash in world_events.
+        var actorId = UUID.randomUUID();
+        when(adventureRepo.findById(adventure.getId())).thenReturn(java.util.Optional.of(adventure));
+        when(choiceRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.injectChoice(adventure.getId(), actorId, startNodeId, "Weiter", null, null);
+
+        verify(eventService).publish(eq(worldId),
+            eq(WorldEventService.EventType.ADVENTURE_CHOICES_CHANGED), any(), any(), any());
+    }
+
+    @Test
     void shouldStartAdventure() {
         var entityId = UUID.randomUUID();
         var advNode = new AdventureNode(adventure.getId(), "Start", false);
