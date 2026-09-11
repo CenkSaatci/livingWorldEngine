@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Play, UserPlus, Trash2, Crown, User } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { useCampaignStore } from '../store/campaignStore';
+import { useAuthStore } from '../store/authStore';
 import { useWorldStore } from '../store/worldStore';
 import { useToastStore } from '../store/toastStore';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -57,6 +58,7 @@ export default function CampaignDetailPage() {
   const [searchTimer, setSearchTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [adding, setAdding] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [roleChangingId, setRoleChangingId] = useState<string | null>(null);
   const addToast = useToastStore((s) => s.addToast);
 
   useEffect(() => {
@@ -136,6 +138,22 @@ export default function CampaignDetailPage() {
       addToast(t('campaign.memberRemoveFailed'), 'error');
     } finally {
       setRemovingId(null);
+    }
+  };
+
+  const currentUser = useAuthStore((s2) => s2.user);
+  const currentIsDm = members.some((m) => m.userId === currentUser?.id && m.role === 'DM');
+
+  const handleRoleChange = async (member: CampaignMember, role: 'DM' | 'PLAYER') => {
+    setRoleChangingId(member.id);
+    try {
+      await apiClient.patch(`/campaigns/${campaignId}/members/${member.userId}`, { role });
+      setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, role } : m)));
+      addToast(t('campaign.memberRoleChanged'), 'success');
+    } catch {
+      addToast(t('campaign.memberRoleChangeFailed'), 'error');
+    } finally {
+      setRoleChangingId(null);
     }
   };
 
@@ -257,15 +275,24 @@ export default function CampaignDetailPage() {
                       {m.role === 'DM' ? t('campaign.dm') : t('campaign.player')}
                     </span>
                   </div>
-                  {m.role !== 'DM' && (
-                    <button
-                      onClick={() => handleRemove(m)}
-                      disabled={removingId === m.id}
-                      className="text-text-secondary hover:text-danger disabled:opacity-40"
-                      aria-label={t('actions.delete')}
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                  {currentIsDm && (
+                    <span className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleRoleChange(m, m.role === 'DM' ? 'PLAYER' : 'DM')}
+                        disabled={roleChangingId === m.id}
+                        className="text-xs text-text-secondary hover:text-accent disabled:opacity-40"
+                      >
+                        {m.role === 'DM' ? t('campaign.makePlayer') : t('campaign.makeDm')}
+                      </button>
+                      <button
+                        onClick={() => handleRemove(m)}
+                        disabled={removingId === m.id}
+                        className="text-text-secondary hover:text-danger disabled:opacity-40"
+                        aria-label={t('actions.delete')}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </span>
                   )}
                 </li>
               ))}

@@ -156,16 +156,81 @@ class CampaignMemberServiceTest {
     }
 
     @Test
-    void removeDmRejected() {
+    void removeLastDmRejected() {
         var campaign = campaign();
         var dmMember = new CampaignMember(campaignId, otherUserId, "DM");
         setId(dmMember, UUID.randomUUID());
+        var actorDm = new CampaignMember(campaignId, userId, "DM");
         when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(Optional.of(dmMember));
+        when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
+        when(memberRepo.countByCampaignIdAndRole(campaignId, "DM")).thenReturn(1L);
 
         assertThatThrownBy(() -> service.removeMember(campaignId, userId, otherUserId))
             .isInstanceOf(CampaignMemberService.CampaignMemberException.class)
             .matches(e -> ((CampaignMemberService.CampaignMemberException) e).getErrorCode().equals("DM_REMOVAL_DENIED"));
+    }
+
+    @Test
+    void secondDmCanBeRemoved() {
+        var campaign = campaign();
+        var dmMember = new CampaignMember(campaignId, otherUserId, "DM");
+        setId(dmMember, UUID.randomUUID());
+        var actorDm = new CampaignMember(campaignId, userId, "DM");
+        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        when(memberRepo.findByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(Optional.of(dmMember));
+        when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
+        when(memberRepo.countByCampaignIdAndRole(campaignId, "DM")).thenReturn(2L);
+
+        service.removeMember(campaignId, userId, otherUserId);
+
+        verify(memberRepo).delete(dmMember);
+    }
+
+    @Test
+    void addMemberRejectsInvalidRole() {
+        var campaign = campaign();
+        var actorDm = new CampaignMember(campaignId, userId, "DM");
+        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
+        when(userRepo.findById(otherUserId)).thenReturn(Optional.of(mock(User.class)));
+        when(memberRepo.existsByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.addMember(campaignId, userId, otherUserId, "SUPERUSER"))
+            .isInstanceOf(CampaignMemberService.CampaignMemberException.class)
+            .matches(e -> ((CampaignMemberService.CampaignMemberException) e).getErrorCode().equals("INVALID_ROLE"));
+    }
+
+    @Test
+    void updateRolePromotesAndDemotes() {
+        var campaign = campaign();
+        var actorDm = new CampaignMember(campaignId, userId, "DM");
+        var player = new CampaignMember(campaignId, otherUserId, "PLAYER");
+        setId(player, UUID.randomUUID());
+        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
+        when(memberRepo.findByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(Optional.of(player));
+        when(memberRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.updateRole(campaignId, userId, otherUserId, "DM");
+        assertThat(player.getRole()).isEqualTo("DM");
+
+        when(memberRepo.countByCampaignIdAndRole(campaignId, "DM")).thenReturn(2L);
+        service.updateRole(campaignId, userId, otherUserId, "PLAYER");
+        assertThat(player.getRole()).isEqualTo("PLAYER");
+    }
+
+    @Test
+    void updateRoleProtectsLastDm() {
+        var campaign = campaign();
+        var actorDm = new CampaignMember(campaignId, userId, "DM");
+        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
+        when(memberRepo.countByCampaignIdAndRole(campaignId, "DM")).thenReturn(1L);
+
+        assertThatThrownBy(() -> service.updateRole(campaignId, userId, userId, "PLAYER"))
+            .isInstanceOf(CampaignMemberService.CampaignMemberException.class)
+            .matches(e -> ((CampaignMemberService.CampaignMemberException) e).getErrorCode().equals("LAST_DM"));
     }
 
     @Test

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -39,6 +40,14 @@ public class CampaignMemberService {
         return memberRepo.save(new CampaignMember(campaign.getId(), userId, "DM"));
     }
 
+    private static final Set<String> ROLES = Set.of("PLAYER", "DM");
+
+    private void validateRole(String role) {
+        if (role == null || !ROLES.contains(role)) {
+            throw new CampaignMemberException("INVALID_ROLE", "role must be PLAYER or DM");
+        }
+    }
+
     /** Nur der DM (bzw. Welt-Owner) kann Mitglieder hinzufügen. */
     @Transactional
     public CampaignMember addMember(UUID campaignId, UUID actorUserId, UUID targetUserId, String role) {
@@ -50,21 +59,39 @@ public class CampaignMemberService {
             throw new CampaignMemberException("MEMBER_ALREADY", "User is already a campaign member");
         }
         requireDm(campaignId, actorUserId);
+        validateRole(role);
         return memberRepo.save(new CampaignMember(campaignId, targetUserId, role));
     }
 
-    /** DM kann Spieler entfernen; der DM selbst kann nicht entfernt werden. */
+    /** DM kann Mitglieder entfernen; der letzte DM bleibt geschützt (P27-T02). */
     @Transactional
     public void removeMember(UUID campaignId, UUID actorUserId, UUID targetUserId) {
         var campaign = requireCampaign(campaignId);
         worldAccess.requireAccess(campaign.getWorldId(), actorUserId);
         var member = memberRepo.findByCampaignIdAndUserId(campaignId, targetUserId)
             .orElseThrow(() -> new CampaignMemberException("MEMBER_NOT_FOUND", "Member not found"));
-        if (member.getRole().equals("DM")) {
-            throw new CampaignMemberException("DM_REMOVAL_DENIED", "The DM cannot be removed");
-        }
         requireDm(campaignId, actorUserId);
+        if (member.getRole().equals("DM") && memberRepo.countByCampaignIdAndRole(campaignId, "DM") <= 1) {
+            throw new CampaignMemberException("DM_REMOVAL_DENIED", "The last DM cannot be removed");
+        }
         memberRepo.delete(member);
+    }
+
+    /** Rolle aendern (P27-T02): DM kann befoerdern/degradieren; letzter DM geschuetzt. */
+    @Transactional
+    public CampaignMember updateRole(UUID campaignId, UUID actorUserId, UUID targetUserId, String role) {
+        var campaign = requireCampaign(campaignId);
+        worldAccess.requireAccess(campaign.getWorldId(), actorUserId);
+        requireDm(campaignId, actorUserId);
+        validateRole(role);
+        var member = memberRepo.findByCampaignIdAndUserId(campaignId, targetUserId)
+            .orElseThrow(() -> new CampaignMemberException("MEMBER_NOT_FOUND", "Member not found"));
+        if (member.getRole().equals("DM") && role.equals("PLAYER")
+            && memberRepo.countByCampaignIdAndRole(campaignId, "DM") <= 1) {
+            throw new CampaignMemberException("LAST_DM", "At least one DM must remain");
+        }
+        member.setRole(role);
+        return memberRepo.save(member);
     }
 
     public List<CampaignMember> listMembers(UUID campaignId, UUID actorUserId) {

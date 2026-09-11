@@ -235,7 +235,11 @@
     "deleted": "Kampagne gelöscht",
     "deleteFailed": "Kampagne konnte nicht gelöscht werden",
     "state": "Spielzustand",
-    "loadFailed": "Kampagne konnte nicht geladen werden"
+    "loadFailed": "Kampagne konnte nicht geladen werden",
+    "makeDm": "Zum DM",
+    "makePlayer": "Zum Spieler",
+    "memberRoleChanged": "Rolle geändert",
+    "memberRoleChangeFailed": "Rolle konnte nicht geändert werden"
   },
   "settings": {
     "title": "Einstellungen",

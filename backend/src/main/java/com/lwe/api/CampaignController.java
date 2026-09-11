@@ -78,6 +78,16 @@ public class CampaignController {
         return ResponseEntity.ok(members.stream().map(CampaignMemberResponse::from).toList());
     }
 
+    @PatchMapping("/{id}/members/{memberId}")
+    public ResponseEntity<Void> updateMemberRole(@PathVariable UUID id,
+                                                  @PathVariable UUID memberId,
+                                                  @RequestBody java.util.Map<String, Object> body,
+                                                  @AuthenticationPrincipal User user) {
+        var role = body.get("role") instanceof String s2 ? s2 : null;
+        memberService.updateRole(id, user.getId(), memberId, role);
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{id}/members/{memberId}")
     public ResponseEntity<Void> removeMember(@PathVariable UUID id, @PathVariable UUID memberId,
                                               @AuthenticationPrincipal User user) {

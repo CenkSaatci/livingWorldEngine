@@ -186,6 +186,8 @@ public class GlobalExceptionHandler {
                 case "CAMPAIGN_NOT_FOUND", "USER_NOT_FOUND", "MEMBER_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 case "DM_REMOVAL_DENIED", "DM_REQUIRED", "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
                 case "MEMBER_ALREADY" -> HttpStatus.CONFLICT;
+                case "INVALID_ROLE" -> HttpStatus.BAD_REQUEST;
+                case "LAST_DM" -> HttpStatus.CONFLICT;
                 default -> HttpStatus.BAD_REQUEST;
             };
             case RestService.RestException e -> switch (e.getErrorCode()) {

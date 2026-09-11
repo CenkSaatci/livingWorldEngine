@@ -37,5 +37,6 @@ public class CampaignMember {
     public UUID getCampaignId() { return campaignId; }
     public UUID getUserId() { return userId; }
     public String getRole() { return role; }
+    public void setRole(String v) { this.role = v; }
     public Instant getJoinedAt() { return joinedAt; }
 }

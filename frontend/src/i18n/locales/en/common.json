@@ -235,7 +235,11 @@
     "deleted": "Campaign deleted",
     "deleteFailed": "Could not delete campaign",
     "state": "Campaign state",
-    "loadFailed": "Could not load campaign"
+    "loadFailed": "Could not load campaign",
+    "makeDm": "Make DM",
+    "makePlayer": "Make player",
+    "memberRoleChanged": "Role changed",
+    "memberRoleChangeFailed": "Could not change role"
   },
   "settings": {
     "title": "Settings",
