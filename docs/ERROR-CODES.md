@@ -112,6 +112,8 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `ENTITY_ATTRIBUTES_INVALID` | 400 | `attributes_json` passt nicht zum Welt-Regelwerk |
 | `ENTITY_POSITION_INVALID` | 400 | Position außerhalb der Karte oder belegt |
 | `ENTITY_FACTION_NOT_FOUND` | 400 | Referenzierter `faction_id` existiert nicht |
+| `UNKNOWN_CONDITION` | 422 | Zustand nicht im Katalog des Systems (`rules.conditions`) |
+| `FATE_NONE_LEFT` | 422 | Keine Schicksalspunkte mehr zum Ausgeben |
 
 ### 3.5 Game Systems (`GAME_SYSTEM_*`)
 
@@ -160,6 +162,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `COMBAT_TARGET_INVALID` | 422 | Ziel-Entity existiert oder ist verbündet |
 | `COMBAT_ACTION_TYPE_INVALID` | 400 | `action_type` nicht bekannt |
 | `COMBAT_INSUFFICIENT_PARTICIPANTS` | 400 | Weniger als 2 Teilnehmer beim Kampfstart |
+| `COMBAT_MANEUVER_UNKNOWN` | 422 | Manöver nicht in `dice_mechanics.combat.maneuvers` konfiguriert |
 
 ### 3.9 Adventures (`ADVENTURE_*`)
 

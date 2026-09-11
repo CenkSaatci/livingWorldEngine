@@ -295,6 +295,16 @@ Body (optional): `name`, `stateJson`
 ### `GET /api/v1/worlds/{worldId}/entities/{id}` (**Fehlercodes:** `ENTITY_NOT_FOUND`)
 ### `PATCH /api/v1/worlds/{worldId}/entities/{id}` → Update attributes/inventory/metadata
 
+### `POST /api/v1/entities/{entityId}/conditions?campaignId=uuid`
+**Request:** `{ "name": "Wunde", "rounds": 3 }` (DM-only; `rounds` default aus Katalog)
+Modifiziert Proben/Schaden und tickt beim Zugbeginn in `nextTurn`. **Fehlercodes:** `UNKNOWN_CONDITION`, `WORLD_ACCESS_DENIED`
+
+### `DELETE /api/v1/entities/{entityId}/conditions/{name}` (DM-only)
+**Fehlercodes:** `WORLD_ACCESS_DENIED`
+
+### `POST /api/v1/entities/{entityId}/fate/spend?campaignId=uuid`
+Gibt einen Schicksalspunkt aus (Metadata `fate_points`). **Fehlercodes:** `FATE_NONE_LEFT`
+
 ### `PATCH /api/v1/worlds/{worldId}/entities/{entityId}/attributes`
 **Request:** `{ "staerke": 16 }` — merged in attributesJson
 **Fehlercodes:** `ENTITY_NOT_FOUND`, `WORLD_ACCESS_DENIED`
@@ -421,6 +431,17 @@ Charakter-Probe (Per-Character-Skills, Vor-/Nachteil). `campaignId` optional im 
 **Response 200:** Ergebnis + WS-Broadcast an `/topic/combat/{sessionId}`.
 
 **Fehlercodes:** `COMBAT_AP_INSUFFICIENT`, `COMBAT_RANGE_INVALID`, `COMBAT_LINE_OF_SIGHT_BLOCKED`, `COMBAT_TARGET_INVALID`, `COMBAT_ACTION_TYPE_INVALID`, `COMBAT_NOT_ACTIVE`, `COMBAT_NOT_YOUR_TURN`
+
+### `POST /api/v1/combat/{sessionId}/maneuver`
+**Request:**
+```json
+{ "actorId": "uuid", "targetId": "uuid", "maneuver": "Wuchtschlag" }
+```
+
+Führt ein System-Manöver aus: AP-Kosten + Schadens-Effekte aus `dice_mechanics.combat.maneuvers[]`,
+Rüstung/Resistenz/Vulnerabilität des Ziels werden angewendet (Schadensart aus `damageType`).
+
+**Fehlercodes:** `COMBAT_MANEUVER_UNKNOWN`, `COMBAT_AP_INSUFFICIENT`, `COMBAT_NOT_YOUR_TURN`
 
 ### `POST /api/v1/combat/{sessionId}/end`
 

@@ -2,6 +2,14 @@
 
 > Master-Task-Liste. ID-Referenzen (z. B. `P2-T04`) können in Commits, PRs und Reviews verwendet werden.
 
+## Aktueller Projektstand (2026-09-11)
+
+- **P28 Engine-Bausteine** ✅ (T01–T06) · **P29 Spielgefühl + Pakete** ✅ (T01–T06) · **P23 Schadenstypen** ✅ (T01–T04, T05 optional) · **P30 Charakter-Wizard** ✅ (T01–T04) · **P31 E2E-Ausbau** ✅ (T01–T03)
+- **Tests:** Backend 362 (`mvn -B test`) · Frontend 168 (`npx vitest run`) · E2E 7 (`npm run test:e2e`) · `tsc`/Build grün
+- **Audits:** P28, P23/P29, P30 und ein finales Gesamt-Audit — alle HIGH/MEDIUM-Findings gefixt, Rest bewusst zurückgestellt (siehe Notizen unten)
+- **Offen (bewusst):** P27 Shared Universes (ADR-011 akzeptiert, Tasks 📋) · F8-Ticket: globale Game-Systeme ohne Owner-Check · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
+- **Nächste sinnvolle Schritte:** P27 oder F8-Berechtigungen, danach weitere Content-Pakete/Playwright-Ausbau
+
 ## Legende
 
 | Symbol | Bedeutung |
@@ -2236,6 +2244,10 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 | 27 (Shared Universes & DM-Workflow) | 6 | ~5,5 Tage |
 | 28 (Generische Engine-Bausteine) | 6 | ~6,0 Tage |
 | 29 (Spielgefühl + Pakete) | 6 | ~6,0 Tage |
+| 30 (Charakter-Wizard) | 4 | ~4,0 Tage |
+| 31 (E2E-Ausbau) | 3 | ~1,0 Tag |
+
+**Stand 2026-09-11:** P28–P31 abgeschlossen, alle Suiten grün (362/168/7), Audits (P28, P23/P29, P30, final) abgearbeitet.
 
 ---
 
@@ -2316,7 +2328,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
   - Override + Trait-Effekt auf denselben Derived-Wert addieren sich (gewollt, additiv)
 
 ### P28-T06: Abnahme Engine-Bausteine
-- **Status:** 📋
+- **Status:** ✅ (2026-09-11: `p28-reference.json` validiert + Sheet rechnet Tabelle/Traits/Advancement; Doku entdupliziert; committed `8876435`)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:**
   - Referenz-System nutzt alle P28-Blöcke und validiert; Doku (RULES-SCHEMA, Wizard-Hilfe) aktuell
@@ -2349,7 +2361,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD
 
 ### P29-T03: Kampfmanöver-Framework
-- **Status:** ✅ (`dice_mechanics.combat.maneuvers[]`: apCost+effects[dmg]; POST /combat/{id}/maneuver + ActionBar-Buttons mit AP-Gate; TDD Backend 350/Frontend 150 zum Task-Abschluss, heute 360/168) — Teilstand: `attackMalus` ohne Wirkung (kein Attack-Roll-Modell), voller Playwright-E2E im E2E-Paket nach P29
+- **Status:** ✅ (`dice_mechanics.combat.maneuvers[]`: apCost+effects[dmg]; POST /combat/{id}/maneuver + ActionBar-Buttons mit AP-Gate; TDD Backend 350/Frontend 150 zum Task-Abschluss, heute 362/168 (plus E2E 7) — Teilstand: `attackMalus` ohne Wirkung (kein Attack-Roll-Modell), voller Playwright-E2E im E2E-Paket nach P29
 - **Aufwand:** 1,5 Tage
 - **Beschreibung:**
   - Generisches Tausch-Prinzip: Angriffsmalus gegen Effekt (Schaden+, Spezial) — Wuchtschlag/Finte als Content, Framework als Engine

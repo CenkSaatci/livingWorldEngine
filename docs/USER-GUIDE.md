@@ -42,6 +42,19 @@ Nachdem du eine Welt betreten hast, siehst du:
 - Attribute anzeigen/bearbeiten (INT = Range, BOOL = Switch)
 - Skill-Liste mit Würfel-Button pro Skill
 - Klick auf Würfel → API-Call → Ergebnis in der UI
+- Zustands-Badges (z. B. „Wunde"), Schicksalspunkte ★ (Re-Roll), Rüstungswert im Kopfbereich
+- „Formel-Overrides" überschreiben abgeleitete Werte pro Charakter
+
+### Charakter-Wizard (P30)
+- Voraussetzung: aktive Kampagne, deren Game-System ein Erstellungs-Budget (`creationBudget`) oder Pakete (`packages`) definiert
+- Welt → Charaktere → **Charakter-Wizard**: Pakete wählen (Spezies/Kultur/Profession, inkl. Auswahl-Gruppen wie „MU oder KK −1"), Attribute kaufen, Merkmale wählen, speichern
+- Live-Budget zeigt verbrauchte/verfügbare AP; Hinweise (Empfehlungen) und Probleme (Budget, Bereiche, Exklusionen) erscheinen vor dem Speichern
+- Auto-Merkmale aus Paketen werden übernommen (z. B. „Nachtsicht"); der Charakter erhält Endwerte + Traits + Schicksalspunkte
+
+### Game-System bauen (System-Wizard, P28/P29)
+- Game Systems → **New System**/Bearbeiten öffnet den Wizard (Steps u. a. Budget, Merkmale, Pakete, Bedingungen)
+- Vorlagen laden (D20Lite/TwoDicePool/Fudge) oder Referenz nutzen: `docs/examples/dsa5.json`
+- Speichern ist gated: fehlende Attribute/Paketnamen o. Ä. blockieren mit Prüfbericht
 
 ---
 
