@@ -20,17 +20,23 @@ interface Props {
 export function DmQueuePanel({ worldId }: Props) {
   const { t } = useTranslation('dm');
   const [intents, setIntents] = useState<NpcIntent[]>([]);
+  const [forbidden, setForbidden] = useState(false);
 
   const fetchIntents = useCallback(async () => {
+    if (forbidden) return;
     try {
       const res = await apiClient.get('/npc-intents', {
         params: { worldId, status: 'pending' },
       });
       setIntents(res.data ?? []);
-    } catch {
-      /* poll will retry */
+    } catch (e) {
+      // P27-T06: Queue ist DM-only — 403 blendet das Panel aus (kein Dauer-Polling).
+      if ((e as { response?: { status?: number } })?.response?.status === 403) {
+        setForbidden(true);
+        setIntents([]);
+      }
     }
-  }, [worldId]);
+  }, [worldId, forbidden]);
 
   useEffect(() => {
     fetchIntents();
@@ -47,7 +53,7 @@ export function DmQueuePanel({ worldId }: Props) {
     }
   };
 
-  if (intents.length === 0) return null;
+  if (forbidden || intents.length === 0) return null;
 
   return (
     <div className="rounded-lg border border-accent/20 bg-accent/5 p-3">
