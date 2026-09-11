@@ -2237,7 +2237,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 
 ## Phase 28: Generische Engine-Bausteine
 
-> Wizard bildet generische Mechanik ab (kein DSA-Klon). Referenz: DSA-Heldenerschaffung + Grundregeln (Regelwiki). Leitprinzip: **Engine, nicht Inhalt**. Siehe [`ADR/012`](ADR/012-generic-wizard-engine.md). Voraussetzung: P23 (`damageType`) vor R4-bezogenen Arbeiten.
+> Wizard bildet generische Mechanik ab (kein DSA-Klon). Referenz: DSA-Heldenerschaffung + Grundregeln (Regelwiki). Leitprinzip: **Engine, nicht Inhalt**. Siehe [`ADR/012`](ADR/012-generic-wizard-engine.md). **Detail-Design (Datenmodell, Backend, UI/UX, Tests): [`WIZARD-PLAN.md`](WIZARD-PLAN.md) §3.** Voraussetzung: P23 (`damageType`) vor R4-bezogenen Arbeiten.
 
 ### P28-T01: Schema + Wire-Format öffnen
 - **Status:** 📋
@@ -2302,7 +2302,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 
 ## Phase 29: Spielgefühl + Pakete
 
-> R-Reihenfolge: Zustände → Schicksal → Manöver → Rüstung. Pakete (G4) hier, nicht in P28. DSA-Content als Abnahme.
+> R-Reihenfolge: Zustände → Schicksal → Manöver → Rüstung. Pakete (G4) hier, nicht in P28. DSA-Content als Abnahme. **Detail-Design: [`WIZARD-PLAN.md`](WIZARD-PLAN.md) §4.**
 
 ### P29-T01: Zustände/Status-Engine
 - **Status:** 📋
