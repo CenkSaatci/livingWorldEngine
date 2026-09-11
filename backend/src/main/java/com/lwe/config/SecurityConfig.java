@@ -42,6 +42,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/service-login").permitAll()
+                // öffentliche Self-Service-Routen (vergessenes Passwort, Verifikation):
+                // müssen ohne Token erreichbar sein, sonst ist der Flow tot.
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/verify-email").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/resend-verification").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/forgot-password").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/reset-password").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/uploads/**").permitAll()
                 .requestMatchers("/ws").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")

@@ -53,7 +53,8 @@ lwe:
     access-token-expiration-hours: ${JWT_EXPIRATION_HOURS:24}
     refresh-token-expiration-days: ${JWT_REFRESH_EXPIRATION_DAYS:7}
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+    # Beide Dev-Hosts freigeben: Vite läuft je nach Aufruf unter localhost oder 127.0.0.1.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
   time:
     tick-check-interval-ms: 1000
   rate-limit:
