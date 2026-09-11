@@ -99,11 +99,13 @@ test.describe('Kampf-Zustände + Schadensart (T33-01)', () => {
       });
       expect(equip.ok()).toBeTruthy();
     }
-    // Golem: Ruestung 100 → deterministisch 0 Schaden trotz Wuerfelglück
-    const patch = await request.patch(`${API}/api/v1/worlds/${worldId}/entities/${golemId}`, {
-      headers: auth(), data: { metadataJson: JSON.stringify({ damage_armor: 100 }) },
-    });
-    expect(patch.ok()).toBeTruthy();
+    // BEIDE: Ruestung 100 → deterministisch 0 Schaden, unabhaengig von der Initiative-Reihenfolge
+    for (const entityId of [heroId, golemId]) {
+      const patch = await request.patch(`${API}/api/v1/worlds/${worldId}/entities/${entityId}`, {
+        headers: auth(), data: { metadataJson: JSON.stringify({ damage_armor: 100 }) },
+      });
+      expect(patch.ok()).toBeTruthy();
+    }
 
     // Kampf im UI starten und Start-Response abfangen (Session + Teilnehmer)
     await page.goto(`/campaigns/${campaignId}`);
