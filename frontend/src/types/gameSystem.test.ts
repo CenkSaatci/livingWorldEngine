@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import dsa5json from '../../../docs/examples/dsa5.json';
+import dnd5ejson from '../../../docs/examples/dnd5e.json';
+import coc7ejson from '../../../docs/examples/coc7e.json';
 import { defaultWizardData, toRulesJson, fromRulesJson, attrPointCost, calcBudget, traitCost, danglingTraitRefs, traitSelectionErrors, advanceCost, skillAdvanceCost, wizardIssues, resolvePackageMods, packageCost, packageAutoTraits, packageSelectionIssues, packageSelectionWarnings, packageChoiceCount, type PackageSelection } from './gameSystem';
 
 describe('gameSystem roundtrip', () => {
@@ -329,6 +331,20 @@ describe('packages (P29-T05)', () => {
 
     const noCulture = packageSelectionWarnings(data, [{ name: 'Elf', choices: ['KK'] }]);
     expect(noCulture).toContain('recommended:Elf:Waldelf');
+  });
+});
+
+describe('Beispiel-Content P23/P28 (T32)', () => {
+  it('dnd5e/coc7e parsen inkl. damageType', () => {
+    const dnd = fromRulesJson(JSON.stringify(dnd5ejson))!;
+    expect(dnd.creationBudget?.ap).toBe(27);
+    expect(dnd.abilities?.some((a) => a.damageType === 'slashing')).toBe(true);
+    expect((dnd5ejson as { conditions?: { name: string }[] }).conditions).toHaveLength(2);
+
+    const coc = fromRulesJson(JSON.stringify(coc7ejson))!;
+    expect(coc.abilities?.some((a) => a.damageType === 'piercing')).toBe(true);
+    expect((coc7ejson as { conditions?: { name: string }[] }).conditions?.[0]?.name)
+      .toBe('Frightened');
   });
 });
 

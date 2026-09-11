@@ -1,5 +1,4 @@
 {
-  "description": "Call of Cthulhu 7th Edition — Beispielkonfiguration",
   "version": 1,
   "progressionType": "improvement",
   "probeType": "d100_threshold",
@@ -11,98 +10,469 @@
     "armorPenalty": false
   },
   "attributes": [
-    { "name": "staerke", "type": "INT", "min": 3, "max": 18, "default": 10 },
-    { "name": "konstitution", "type": "INT", "min": 3, "max": 18, "default": 10 },
-    { "name": "geschick", "type": "INT", "min": 3, "max": 18, "default": 10 },
-    { "name": "aussehen", "type": "INT", "min": 3, "max": 18, "default": 10 },
-    { "name": "willenskraft", "type": "INT", "min": 3, "max": 18, "default": 10 },
-    { "name": "intelligenz", "type": "INT", "min": 3, "max": 18, "default": 10 },
-    { "name": "groesse", "type": "INT", "min": 3, "max": 18, "default": 10 },
-    { "name": "bildung", "type": "INT", "min": 3, "max": 18, "default": 10 }
+    {
+      "name": "staerke",
+      "type": "INT",
+      "min": 3,
+      "max": 18,
+      "default": 10
+    },
+    {
+      "name": "konstitution",
+      "type": "INT",
+      "min": 3,
+      "max": 18,
+      "default": 10
+    },
+    {
+      "name": "geschick",
+      "type": "INT",
+      "min": 3,
+      "max": 18,
+      "default": 10
+    },
+    {
+      "name": "aussehen",
+      "type": "INT",
+      "min": 3,
+      "max": 18,
+      "default": 10
+    },
+    {
+      "name": "willenskraft",
+      "type": "INT",
+      "min": 3,
+      "max": 18,
+      "default": 10
+    },
+    {
+      "name": "intelligenz",
+      "type": "INT",
+      "min": 3,
+      "max": 18,
+      "default": 10
+    },
+    {
+      "name": "groesse",
+      "type": "INT",
+      "min": 3,
+      "max": 18,
+      "default": 10
+    },
+    {
+      "name": "bildung",
+      "type": "INT",
+      "min": 3,
+      "max": 18,
+      "default": 10
+    }
   ],
   "derived_values": [
-    { "name": "hp", "formula": "(staerke+konstitution)/2" },
-    { "name": "sanity", "formula": "willenskraft*5" },
-    { "name": "luck", "formula": "50" },
-    { "name": "move", "formula": "8" }
+    {
+      "name": "hp",
+      "formula": "(staerke+konstitution)/2"
+    },
+    {
+      "name": "sanity",
+      "formula": "willenskraft*5"
+    },
+    {
+      "name": "luck",
+      "formula": "50"
+    },
+    {
+      "name": "move",
+      "formula": "8"
+    }
   ],
   "skills": [
-    { "name": "Anthropologie", "attributes": ["intelligenz"], "bonus": 1 },
-    { "name": "Archäologie", "attributes": ["intelligenz"], "bonus": 1 },
-    { "name": "Astronomie", "attributes": ["intelligenz"], "bonus": 1 },
-    { "name": "Athletik", "attributes": ["staerke"], "bonus": 30 },
-    { "name": "Bürokratie", "attributes": ["intelligenz"], "bonus": 10 },
-    { "name": "Charlatanerie", "attributes": ["aussehen"], "bonus": 5 },
-    { "name": "Drohnensteuerung", "attributes": ["geschick"], "bonus": 5 },
-    { "name": "Elektronik", "attributes": ["intelligenz"], "bonus": 1 },
-    { "name": "Erste Hilfe", "attributes": ["intelligenz"], "bonus": 30 },
-    { "name": "Fahren (PKW)", "attributes": ["geschick"], "bonus": 20 },
-    { "name": "Feuerwaffen (Hand)", "attributes": ["geschick"], "bonus": 20 },
-    { "name": "Feuerwaffen (Lang)", "attributes": ["geschick"], "bonus": 25 },
-    { "name": "Geschichte", "attributes": ["intelligenz"], "bonus": 5 },
-    { "name": "Handwerk", "attributes": ["geschick"], "bonus": 5 },
-    { "name": "Heimlichkeit", "attributes": ["geschick"], "bonus": 20 },
-    { "name": "Informatik", "attributes": ["intelligenz"], "bonus": 5 },
-    { "name": "Instandsetzung", "attributes": ["geschick"], "bonus": 10 },
-    { "name": "Kampf (Raufen)", "attributes": ["staerke"], "bonus": 25 },
-    { "name": "Kampf (Schwert)", "attributes": ["staerke"], "bonus": 15 },
-    { "name": "Kunst", "attributes": ["intelligenz"], "bonus": 5 },
-    { "name": "Lauschen", "attributes": ["intelligenz"], "bonus": 20 },
-    { "name": "Menschenkenntnis", "attributes": ["willenskraft"], "bonus": 5 },
-    { "name": "Naturkunde", "attributes": ["intelligenz"], "bonus": 10 },
-    { "name": "Navigieren", "attributes": ["intelligenz"], "bonus": 10 },
-    { "name": "Okultismus", "attributes": ["intelligenz"], "bonus": 5 },
-    { "name": "Psychoanalyse", "attributes": ["intelligenz"], "bonus": 1 },
-    { "name": "Psychologie", "attributes": ["willenskraft"], "bonus": 10 },
-    { "name": "Recht", "attributes": ["intelligenz"], "bonus": 5 },
-    { "name": "Reiten", "attributes": ["geschick"], "bonus": 5 },
-    { "name": "Sammeln", "attributes": ["intelligenz"], "bonus": 5 },
-    { "name": "Scharfschiessen", "attributes": ["geschick"], "bonus": 15 },
-    { "name": "Schleichen", "attributes": ["geschick"], "bonus": 20 },
-    { "name": "Schlossknacken", "attributes": ["geschick"], "bonus": 1 },
-    { "name": "Schwimmen", "attributes": ["staerke"], "bonus": 20 },
-    { "name": "Sprachen (andere)", "attributes": ["bildung"], "bonus": 1 },
-    { "name": "Sprachen (eigene)", "attributes": ["bildung"], "bonus": 50 },
-    { "name": "Spurensuche", "attributes": ["intelligenz"], "bonus": 25 },
-    { "name": "Tauchen", "attributes": ["staerke"], "bonus": 1 },
-    { "name": "Überlebenskunst", "attributes": ["intelligenz"], "bonus": 10 },
-    { "name": "Verborgenes erkennen", "attributes": ["intelligenz"], "bonus": 25 },
-    { "name": "Verkleiden", "attributes": ["aussehen"], "bonus": 5 },
-    { "name": "Vermögen", "attributes": ["bildung"], "bonus": 0 },
-    { "name": "Wahrnehmung", "attributes": ["intelligenz"], "bonus": 25 },
-    { "name": "Werfen", "attributes": ["geschick"], "bonus": 20 },
-    { "name": "Wissen (Botanik)", "attributes": ["intelligenz"], "bonus": 1 },
-    { "name": "Wissen (Geologie)", "attributes": ["intelligenz"], "bonus": 1 },
-    { "name": "Wissen (Medizin)", "attributes": ["intelligenz"], "bonus": 5 },
-    { "name": "Wissen (Pharmazie)", "attributes": ["intelligenz"], "bonus": 1 },
-    { "name": "Wissen (Physik)", "attributes": ["intelligenz"], "bonus": 1 }
+    {
+      "name": "Anthropologie",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 1
+    },
+    {
+      "name": "Archäologie",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 1
+    },
+    {
+      "name": "Astronomie",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 1
+    },
+    {
+      "name": "Athletik",
+      "attributes": [
+        "staerke"
+      ],
+      "bonus": 30
+    },
+    {
+      "name": "Bürokratie",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 10
+    },
+    {
+      "name": "Charlatanerie",
+      "attributes": [
+        "aussehen"
+      ],
+      "bonus": 5
+    },
+    {
+      "name": "Drohnensteuerung",
+      "attributes": [
+        "geschick"
+      ],
+      "bonus": 5
+    },
+    {
+      "name": "Elektronik",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 1
+    },
+    {
+      "name": "Erste Hilfe",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 30
+    },
+    {
+      "name": "Fahren (PKW)",
+      "attributes": [
+        "geschick"
+      ],
+      "bonus": 20
+    },
+    {
+      "name": "Feuerwaffen (Hand)",
+      "attributes": [
+        "geschick"
+      ],
+      "bonus": 20
+    },
+    {
+      "name": "Feuerwaffen (Lang)",
+      "attributes": [
+        "geschick"
+      ],
+      "bonus": 25
+    },
+    {
+      "name": "Geschichte",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 5
+    },
+    {
+      "name": "Handwerk",
+      "attributes": [
+        "geschick"
+      ],
+      "bonus": 5
+    },
+    {
+      "name": "Heimlichkeit",
+      "attributes": [
+        "geschick"
+      ],
+      "bonus": 20
+    },
+    {
+      "name": "Informatik",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 5
+    },
+    {
+      "name": "Instandsetzung",
+      "attributes": [
+        "geschick"
+      ],
+      "bonus": 10
+    },
+    {
+      "name": "Kampf (Raufen)",
+      "attributes": [
+        "staerke"
+      ],
+      "bonus": 25
+    },
+    {
+      "name": "Kampf (Schwert)",
+      "attributes": [
+        "staerke"
+      ],
+      "bonus": 15
+    },
+    {
+      "name": "Kunst",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 5
+    },
+    {
+      "name": "Lauschen",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 20
+    },
+    {
+      "name": "Menschenkenntnis",
+      "attributes": [
+        "willenskraft"
+      ],
+      "bonus": 5
+    },
+    {
+      "name": "Naturkunde",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 10
+    },
+    {
+      "name": "Navigieren",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 10
+    },
+    {
+      "name": "Okultismus",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 5
+    },
+    {
+      "name": "Psychoanalyse",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 1
+    },
+    {
+      "name": "Psychologie",
+      "attributes": [
+        "willenskraft"
+      ],
+      "bonus": 10
+    },
+    {
+      "name": "Recht",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 5
+    },
+    {
+      "name": "Reiten",
+      "attributes": [
+        "geschick"
+      ],
+      "bonus": 5
+    },
+    {
+      "name": "Sammeln",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 5
+    },
+    {
+      "name": "Scharfschiessen",
+      "attributes": [
+        "geschick"
+      ],
+      "bonus": 15
+    },
+    {
+      "name": "Schleichen",
+      "attributes": [
+        "geschick"
+      ],
+      "bonus": 20
+    },
+    {
+      "name": "Schlossknacken",
+      "attributes": [
+        "geschick"
+      ],
+      "bonus": 1
+    },
+    {
+      "name": "Schwimmen",
+      "attributes": [
+        "staerke"
+      ],
+      "bonus": 20
+    },
+    {
+      "name": "Sprachen (andere)",
+      "attributes": [
+        "bildung"
+      ],
+      "bonus": 1
+    },
+    {
+      "name": "Sprachen (eigene)",
+      "attributes": [
+        "bildung"
+      ],
+      "bonus": 50
+    },
+    {
+      "name": "Spurensuche",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 25
+    },
+    {
+      "name": "Tauchen",
+      "attributes": [
+        "staerke"
+      ],
+      "bonus": 1
+    },
+    {
+      "name": "Überlebenskunst",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 10
+    },
+    {
+      "name": "Verborgenes erkennen",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 25
+    },
+    {
+      "name": "Verkleiden",
+      "attributes": [
+        "aussehen"
+      ],
+      "bonus": 5
+    },
+    {
+      "name": "Vermögen",
+      "attributes": [
+        "bildung"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Wahrnehmung",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 25
+    },
+    {
+      "name": "Werfen",
+      "attributes": [
+        "geschick"
+      ],
+      "bonus": 20
+    },
+    {
+      "name": "Wissen (Botanik)",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 1
+    },
+    {
+      "name": "Wissen (Geologie)",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 1
+    },
+    {
+      "name": "Wissen (Medizin)",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 5
+    },
+    {
+      "name": "Wissen (Pharmazie)",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 1
+    },
+    {
+      "name": "Wissen (Physik)",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 1
+    }
   ],
   "abilities": [
     {
-      "name": "Angriff (Nahkampf)", "type": "active",
-      "costType": "AP", "cost": 1,
+      "name": "Angriff (Nahkampf)",
+      "type": "active",
+      "costType": "AP",
+      "cost": 1,
       "diceExpression": "1d100",
       "effect": "Kampf (Raufen/Schwert) Probe",
       "bonus": "",
-      "tags": ["attack", "melee"],
-      "category": "ability"
+      "tags": [
+        "attack",
+        "melee"
+      ],
+      "category": "ability",
+      "damageType": "bludgeoning"
     },
     {
-      "name": "Schießen", "type": "active",
-      "costType": "AP", "cost": 1,
+      "name": "Schießen",
+      "type": "active",
+      "costType": "AP",
+      "cost": 1,
       "diceExpression": "1d100",
       "effect": "Feuerwaffen Probe",
       "bonus": "",
-      "tags": ["attack", "ranged"],
-      "category": "ability"
+      "tags": [
+        "attack",
+        "ranged"
+      ],
+      "category": "ability",
+      "damageType": "piercing"
     },
     {
-      "name": "Ausweichen", "type": "active",
-      "costType": "AP", "cost": 0,
+      "name": "Ausweichen",
+      "type": "active",
+      "costType": "AP",
+      "cost": 0,
       "diceExpression": "1d100",
       "effect": "Ausweichen Probe als Reaktion",
       "bonus": "",
-      "tags": ["defensive", "reaction"],
+      "tags": [
+        "defensive",
+        "reaction"
+      ],
       "category": "ability"
     }
   ],
@@ -110,7 +480,13 @@
     "levels": [],
     "xpCosts": [],
     "improvements": [
-      { "name": "Fertigkeit steigern", "count": 1, "dice": "1d100", "comparison": "gte", "target": 0 }
+      {
+        "name": "Fertigkeit steigern",
+        "count": 1,
+        "dice": "1d100",
+        "comparison": "gte",
+        "target": 0
+      }
     ]
   },
   "magic": {
@@ -133,7 +509,28 @@
     "combat": {
       "initiative": "1d10+geschick",
       "damage": "1d8",
-      "action_points": { "standard": 1, "max": 1 }
+      "action_points": {
+        "standard": 1,
+        "max": 1
+      }
     }
-  }
+  },
+  "creationBudget": {
+    "ap": 0,
+    "attrBase": 10,
+    "fatePoints": 1
+  },
+  "conditions": [
+    {
+      "name": "Frightened",
+      "rounds": 3,
+      "effects": [
+        {
+          "target": "probe",
+          "op": "add",
+          "value": -2
+        }
+      ]
+    }
+  ]
 }

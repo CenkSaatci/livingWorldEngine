@@ -5,7 +5,7 @@
 ## Aktueller Projektstand (2026-09-11)
 
 - **P28 Engine-Bausteine** ✅ (T01–T06) · **P29 Spielgefühl + Pakete** ✅ (T01–T06) · **P23 Schadenstypen** ✅ (T01–T04, T05 optional) · **P30 Charakter-Wizard** ✅ (T01–T04) · **P31 E2E-Ausbau** ✅ (T01–T03)
-- **Tests:** Backend 395 (`mvn -B test`) · Frontend 168 (`npx vitest run`) · E2E 7 (`npm run test:e2e`) · ai-bot 46 · `tsc`/Build grün
+- **Tests:** Backend 396 (`mvn -B test`) · Frontend 169 (`npx vitest run`) · E2E 8 (`npm run test:e2e`) · ai-bot 46 · `tsc`/Build grün
 - **Audits:** P28, P23/P29, P30 und ein finales Gesamt-Audit — alle HIGH/MEDIUM-Findings gefixt, Rest bewusst zurückgestellt (siehe Notizen unten)
 - **P27-Status:** T01 ✅ Teilstand (Shares/Welt-PUBLIC offen) · T02 ✅ · T03 ✅ Teilstand (Quest/Adventure-Fork offen) · T04 🔄 Teilstand (Bot-Runtime-Polling) · T05 ✅ · T06 🔄 Teilstand (Bulk/WS/E2E)
 - **Offen (bewusst):** P14-T02–T04 · P22 Konzept · F8 erledigt (V098) · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
@@ -2439,3 +2439,16 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** E2E + Audit
 
 ---
+
+---
+
+## Phase 32: Content- & E2E-Ausbau (nach P27-Audit)
+
+### T32-T01: Beispiel-Content dnd5e/coc7e auf P23/P28-Niveau
+- **Status:** ✅ (`creationBudget`/`conditions`/`damageType` ergänzt, `description` entfernt; Schema-Validierung beider Beispiele + Frontend-Roundtrip-Test)
+
+### T32-T02: Playwright System-Pin + Nachziehen
+- **Status:** ✅ (`system-pin.spec.ts`: Regeln ändern → Version bumpt, Kampagne gepinnt → Badge → UI-Pull → Pin aktualisiert)
+
+### T32-T03: Weitere E2E-Lücken (Backlog)
+- **Status:** ⏳ (Zustands-Tick + Schadensarten-Log im Kampf; Bot-Intent→Queue→DM-Entscheid; Fork-E2E Template-unverändert)

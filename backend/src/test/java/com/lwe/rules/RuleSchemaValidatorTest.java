@@ -261,6 +261,15 @@ class RuleSchemaValidatorTest {
     }
 
     @Test
+    void shouldValidateDnd5eAndCoc7eExamplesAgainstDefaultSchema() throws IOException {
+        for (var file : java.util.List.of("dnd5e.json", "coc7e.json")) {
+            var json = java.nio.file.Files.readString(java.nio.file.Path.of("../docs/examples/" + file));
+            assertThat(validator.validate(json, RuleSchemaValidator.DEFAULT_SCHEMA))
+                .as("%s muss gegen DEFAULT_SCHEMA validieren", file).isEmpty();
+        }
+    }
+
+    @Test
     void shouldValidateDsa5ExampleAgainstDefaultSchema() throws IOException {
         // P29-T06: Referenz-Content (P23/P28/P29) muss schema-valide sein.
         var json = java.nio.file.Files.readString(java.nio.file.Path.of("../docs/examples/dsa5.json"));

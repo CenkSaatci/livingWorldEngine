@@ -704,7 +704,7 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 
 ## 15. P28/P29 Wizard-Engine Checkpoints
 
-> Stand P31 + Audits. Backend-Tests: `mvn -B test` (395); Frontend: `npx vitest run` (168); E2E: `cd frontend && npm run test:e2e` (Playwright, 7 Tests — Login-Setup, Wizard-Pakete, Charakter-Wizard, Sheet-DSA, Kampf-Manöver, Save-Gate, Dashboard-Smoke). Voraussetzung: pm2 `lwe-frontend`/`lwe-backend` laufen, `npx playwright install chromium` einmalig; Zugang via `E2E_EMAIL`/`E2E_PASSWORD` (Default devbe).
+> Stand P31 + Audits. Backend-Tests: `mvn -B test` (396); Frontend: `npx vitest run` (169); E2E: `cd frontend && npm run test:e2e` (Playwright, 8 Tests — Login-Setup, Wizard-Pakete, Charakter-Wizard, Sheet-DSA, Kampf-Manöver, Save-Gate, Dashboard-Smoke). Voraussetzung: pm2 `lwe-frontend`/`lwe-backend` laufen, `npx playwright install chromium` einmalig; Zugang via `E2E_EMAIL`/`E2E_PASSWORD` (Default devbe).
 
 ### 15.1 Autorierung (SystemWizard)
 - [x] **Automatisiert (Playwright):** Paket-Step zeigt gespeicherte Pakete (Name/Kosten/Auto-Merkmale/Restriktionen), Live-Vorschau rechnet („Kosten: 18 AP · staerke +1 · Nachtsicht"), Save öffnet die Übersicht erfolgreich
@@ -733,4 +733,5 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 - [x] Sheet-E2E (DSA-Referenz): sk=7, asp nur mit Zauberer, Rüstung (P31-T01)
 - [x] Kampf-E2E: Session im UI starten → Manöver + AP-Gate (P31-T02); offen: Zustands-Tick + Schadensarten-Log
 - [x] Wizard-Save-Gate-E2E: ohne Attribute blockiert mit Toast (P31-T03)
+- [x] System-Pin-E2E: Version-Bump, Badge, UI-Pull (T32-T02)
 - [x] CombatPage-Stabilität: Ursache war kein WS-Loop, sondern eine ResizeObserver-Schleife in `usePixiApp` (Border-Box statt Content-Box → Canvas wuchs kontinuierlich). Fix: `clientWidth/Height`; E2E klickt wieder ohne `force` (finaler Audit F1)

@@ -1,5 +1,4 @@
 {
-  "description": "Dungeons & Dragons 5th Edition — Beispielkonfiguration",
   "version": 1,
   "progressionType": "level",
   "probeType": "d20_target",
@@ -12,107 +11,368 @@
     "armorPenalty": false
   },
   "attributes": [
-    { "name": "staerke", "type": "INT", "min": 3, "max": 20, "default": 10 },
-    { "name": "geschick", "type": "INT", "min": 3, "max": 20, "default": 10 },
-    { "name": "konstitution", "type": "INT", "min": 3, "max": 20, "default": 10 },
-    { "name": "intelligenz", "type": "INT", "min": 3, "max": 20, "default": 10 },
-    { "name": "weisheit", "type": "INT", "min": 3, "max": 20, "default": 10 },
-    { "name": "charisma", "type": "INT", "min": 3, "max": 20, "default": 10 },
-    { "name": "armor_class", "type": "INT", "min": 0, "max": 30, "default": 10 }
+    {
+      "name": "staerke",
+      "type": "INT",
+      "min": 3,
+      "max": 20,
+      "default": 10
+    },
+    {
+      "name": "geschick",
+      "type": "INT",
+      "min": 3,
+      "max": 20,
+      "default": 10
+    },
+    {
+      "name": "konstitution",
+      "type": "INT",
+      "min": 3,
+      "max": 20,
+      "default": 10
+    },
+    {
+      "name": "intelligenz",
+      "type": "INT",
+      "min": 3,
+      "max": 20,
+      "default": 10
+    },
+    {
+      "name": "weisheit",
+      "type": "INT",
+      "min": 3,
+      "max": 20,
+      "default": 10
+    },
+    {
+      "name": "charisma",
+      "type": "INT",
+      "min": 3,
+      "max": 20,
+      "default": 10
+    },
+    {
+      "name": "armor_class",
+      "type": "INT",
+      "min": 0,
+      "max": 30,
+      "default": 10
+    }
   ],
   "derived_values": [
-    { "name": "hp", "formula": "10+konstitution" },
-    { "name": "ac", "formula": "floor((geschick-10)/2)+armor_class" }
+    {
+      "name": "hp",
+      "formula": "10+konstitution"
+    },
+    {
+      "name": "ac",
+      "formula": "floor((geschick-10)/2)+armor_class"
+    }
   ],
   "skills": [
-    { "name": "Athletik", "attributes": ["staerke"], "bonus": 0 },
-    { "name": "Akrobatik", "attributes": ["geschick"], "bonus": 0 },
-    { "name": "Heimlichkeit", "attributes": ["geschick"], "bonus": 0 },
-    { "name": "Arkane Kunde", "attributes": ["intelligenz"], "bonus": 0 },
-    { "name": "Geschichte", "attributes": ["intelligenz"], "bonus": 0 },
-    { "name": "Nachforschungen", "attributes": ["intelligenz"], "bonus": 0 },
-    { "name": "Naturkunde", "attributes": ["intelligenz"], "bonus": 0 },
-    { "name": "Religion", "attributes": ["intelligenz"], "bonus": 0 },
-    { "name": "Tierkunde", "attributes": ["weisheit"], "bonus": 0 },
-    { "name": "Einsicht", "attributes": ["weisheit"], "bonus": 0 },
-    { "name": "Medizin", "attributes": ["weisheit"], "bonus": 0 },
-    { "name": "Motiv erkennen", "attributes": ["weisheit"], "bonus": 0 },
-    { "name": "Wahrnehmung", "attributes": ["weisheit"], "bonus": 0 },
-    { "name": "Überleben", "attributes": ["weisheit"], "bonus": 0 },
-    { "name": "Täuschung", "attributes": ["charisma"], "bonus": 0 },
-    { "name": "Einschüchterung", "attributes": ["charisma"], "bonus": 0 },
-    { "name": "Performance", "attributes": ["charisma"], "bonus": 0 },
-    { "name": "Überzeugen", "attributes": ["charisma"], "bonus": 0 }
+    {
+      "name": "Athletik",
+      "attributes": [
+        "staerke"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Akrobatik",
+      "attributes": [
+        "geschick"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Heimlichkeit",
+      "attributes": [
+        "geschick"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Arkane Kunde",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Geschichte",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Nachforschungen",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Naturkunde",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Religion",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Tierkunde",
+      "attributes": [
+        "weisheit"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Einsicht",
+      "attributes": [
+        "weisheit"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Medizin",
+      "attributes": [
+        "weisheit"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Motiv erkennen",
+      "attributes": [
+        "weisheit"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Wahrnehmung",
+      "attributes": [
+        "weisheit"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Überleben",
+      "attributes": [
+        "weisheit"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Täuschung",
+      "attributes": [
+        "charisma"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Einschüchterung",
+      "attributes": [
+        "charisma"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Performance",
+      "attributes": [
+        "charisma"
+      ],
+      "bonus": 0
+    },
+    {
+      "name": "Überzeugen",
+      "attributes": [
+        "charisma"
+      ],
+      "bonus": 0
+    }
   ],
   "abilities": [
     {
-      "name": "Angriff (Nahkampf)", "type": "active",
-      "costType": "AP", "cost": 1,
+      "name": "Angriff (Nahkampf)",
+      "type": "active",
+      "costType": "AP",
+      "cost": 1,
       "diceExpression": "1d20+staerke",
       "effect": "Waffe + Staerke-Mod Schaden",
       "bonus": "",
-      "tags": ["attack", "melee"],
-      "category": "ability"
+      "tags": [
+        "attack",
+        "melee"
+      ],
+      "category": "ability",
+      "damageType": "slashing"
     },
     {
-      "name": "Angriff (Fernkampf)", "type": "active",
-      "costType": "AP", "cost": 1,
+      "name": "Angriff (Fernkampf)",
+      "type": "active",
+      "costType": "AP",
+      "cost": 1,
       "diceExpression": "1d20+geschick",
       "effect": "Waffe + Geschick-Mod Schaden",
       "bonus": "",
-      "tags": ["attack", "ranged"],
-      "category": "ability"
+      "tags": [
+        "attack",
+        "ranged"
+      ],
+      "category": "ability",
+      "damageType": "piercing"
     },
     {
-      "name": "Zauber wirken", "type": "active",
-      "costType": "MP", "cost": 1,
+      "name": "Zauber wirken",
+      "type": "active",
+      "costType": "MP",
+      "cost": 1,
       "diceExpression": "",
       "effect": "Zaubereffekt lt. Beschreibung",
       "bonus": "",
-      "tags": ["magic"],
+      "tags": [
+        "magic"
+      ],
       "category": "ability"
     },
     {
-      "name": "Extra Attack", "type": "passive",
-      "costType": "", "cost": 0,
+      "name": "Extra Attack",
+      "type": "passive",
+      "costType": "",
+      "cost": 0,
       "diceExpression": "",
       "effect": "",
       "bonus": "multiAttack:2",
-      "tags": ["attack", "class_feature"],
+      "tags": [
+        "attack",
+        "class_feature"
+      ],
       "category": "ability"
     },
     {
-      "name": "Ausweichen", "type": "active",
-      "costType": "AP", "cost": 1,
+      "name": "Ausweichen",
+      "type": "active",
+      "costType": "AP",
+      "cost": 1,
       "diceExpression": "",
       "effect": "Angriffe bis zum nächsten Zug mit Nachteil",
       "bonus": "",
-      "tags": ["defensive"],
+      "tags": [
+        "defensive"
+      ],
       "category": "ability"
     }
   ],
   "progression": {
     "levels": [
-      { "level": 1, "xpRequired": 0, "features": "Grobe Waffen, Leichte Rüstung" },
-      { "level": 2, "xpRequired": 300, "features": "Action Surge" },
-      { "level": 3, "xpRequired": 900, "features": "Martial Archetype" },
-      { "level": 4, "xpRequired": 2700, "features": "Feat / ASI" },
-      { "level": 5, "xpRequired": 6500, "features": "Extra Attack" },
-      { "level": 6, "xpRequired": 14000, "features": "Feat / ASI" },
-      { "level": 7, "xpRequired": 23000, "features": "" },
-      { "level": 8, "xpRequired": 34000, "features": "Feat / ASI" },
-      { "level": 9, "xpRequired": 48000, "features": "Indomitable" },
-      { "level": 10, "xpRequired": 64000, "features": "Feat / ASI" },
-      { "level": 11, "xpRequired": 85000, "features": "Extra Attack (3)" },
-      { "level": 12, "xpRequired": 100000, "features": "Feat / ASI" },
-      { "level": 13, "xpRequired": 120000, "features": "" },
-      { "level": 14, "xpRequired": 140000, "features": "Feat / ASI" },
-      { "level": 15, "xpRequired": 165000, "features": "" },
-      { "level": 16, "xpRequired": 195000, "features": "Feat / ASI" },
-      { "level": 17, "xpRequired": 225000, "features": "Action Surge (2)" },
-      { "level": 18, "xpRequired": 265000, "features": "" },
-      { "level": 19, "xpRequired": 305000, "features": "Feat / ASI" },
-      { "level": 20, "xpRequired": 355000, "features": "Extra Attack (4)" }
+      {
+        "level": 1,
+        "xpRequired": 0,
+        "features": "Grobe Waffen, Leichte Rüstung"
+      },
+      {
+        "level": 2,
+        "xpRequired": 300,
+        "features": "Action Surge"
+      },
+      {
+        "level": 3,
+        "xpRequired": 900,
+        "features": "Martial Archetype"
+      },
+      {
+        "level": 4,
+        "xpRequired": 2700,
+        "features": "Feat / ASI"
+      },
+      {
+        "level": 5,
+        "xpRequired": 6500,
+        "features": "Extra Attack"
+      },
+      {
+        "level": 6,
+        "xpRequired": 14000,
+        "features": "Feat / ASI"
+      },
+      {
+        "level": 7,
+        "xpRequired": 23000,
+        "features": ""
+      },
+      {
+        "level": 8,
+        "xpRequired": 34000,
+        "features": "Feat / ASI"
+      },
+      {
+        "level": 9,
+        "xpRequired": 48000,
+        "features": "Indomitable"
+      },
+      {
+        "level": 10,
+        "xpRequired": 64000,
+        "features": "Feat / ASI"
+      },
+      {
+        "level": 11,
+        "xpRequired": 85000,
+        "features": "Extra Attack (3)"
+      },
+      {
+        "level": 12,
+        "xpRequired": 100000,
+        "features": "Feat / ASI"
+      },
+      {
+        "level": 13,
+        "xpRequired": 120000,
+        "features": ""
+      },
+      {
+        "level": 14,
+        "xpRequired": 140000,
+        "features": "Feat / ASI"
+      },
+      {
+        "level": 15,
+        "xpRequired": 165000,
+        "features": ""
+      },
+      {
+        "level": 16,
+        "xpRequired": 195000,
+        "features": "Feat / ASI"
+      },
+      {
+        "level": 17,
+        "xpRequired": 225000,
+        "features": "Action Surge (2)"
+      },
+      {
+        "level": 18,
+        "xpRequired": 265000,
+        "features": ""
+      },
+      {
+        "level": 19,
+        "xpRequired": 305000,
+        "features": "Feat / ASI"
+      },
+      {
+        "level": 20,
+        "xpRequired": 355000,
+        "features": "Extra Attack (4)"
+      }
     ],
     "xpCosts": [],
     "improvements": []
@@ -141,10 +401,58 @@
     "combat": {
       "initiative": "1d20+geschick",
       "damage": "1d8+staerke",
-      "action_points": { "standard": 1, "max": 2 },
-      "critical_hit": { "threshold": 20, "multiplier": 2 },
-      "saving_throws": { "base_dc": 8, "proficiency_bonus": "floor((attr-10)/2)" },
-      "resting": { "short_rest": { "heal_percent": 0.5, "recover_resources": true }, "long_rest": { "full_heal": true, "recover_all": true } }
+      "action_points": {
+        "standard": 1,
+        "max": 2
+      },
+      "critical_hit": {
+        "threshold": 20,
+        "multiplier": 2
+      },
+      "saving_throws": {
+        "base_dc": 8,
+        "proficiency_bonus": "floor((attr-10)/2)"
+      },
+      "resting": {
+        "short_rest": {
+          "heal_percent": 0.5,
+          "recover_resources": true
+        },
+        "long_rest": {
+          "full_heal": true,
+          "recover_all": true
+        }
+      }
     }
-  }
+  },
+  "creationBudget": {
+    "ap": 27,
+    "attrBase": 8,
+    "maxAttrValue": 15,
+    "fatePoints": 0
+  },
+  "conditions": [
+    {
+      "name": "Prone",
+      "rounds": 2,
+      "effects": [
+        {
+          "target": "probe",
+          "op": "add",
+          "value": -2
+        }
+      ]
+    },
+    {
+      "name": "Blessed",
+      "rounds": 3,
+      "effects": [
+        {
+          "target": "probe",
+          "op": "add",
+          "value": 1
+        }
+      ]
+    }
+  ]
 }
