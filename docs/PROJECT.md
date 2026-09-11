@@ -131,6 +131,9 @@ Die LWE unterscheidet konzeptionell zwei Modi, die nicht gegeneinander austausch
 | **Karte** | 2D-Repräsentation einer Region einer Welt, mit Grid, Token, Fog of War |
 | **Session** | Aktiver Zeitraum, in dem DM + Spieler gleichzeitig mit derselben Welt interagieren |
 | **Tenant** | Isolierte Organisationseinheit (typischerweise ein Welten-Besitzer) im SaaS-Betrieb |
+| **Template** | Geteiltes, unveränderliches Ausgangsmaterial: ein Spielsystem oder eine Welt mit Sichtbarkeit (privat / Einladungsliste / öffentlich) |
+| **Universum** | Geforkte, bespielte Kopie eines Templates im Rahmen einer Kampagne — Änderungen (tote NPCs, Kriege, …) landen hier, nie im Template |
+| **Sichtbarkeit** | Wer ein Template sieht/nutzt: `PRIVATE` (nur Ersteller), `INVITE_ONLY` (Ersteller + Eingeladene), `PUBLIC` (alle, lesend/nutzend); ändern darf nur der Ersteller |
 
 ---
 

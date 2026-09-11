@@ -2153,6 +2153,75 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 
 ---
 
+## Phase 27: Shared Universes & DM-Workflow
+
+> Geteilte Templates (Systeme/Welten mit Sichtbarkeit), Kampagnen als geforkte Universen, Bot pro Kampagne. Siehe [`ADR/011`](ADR/011-shared-universes-visibility.md). Entscheidungen (2026-09-11): Clone-on-Create (kein Copy-on-Write), Sichtbarkeit privat/Einladungsliste/öffentlich, Version-Pinning mit manuellem Nachziehen, Bot pro Kampagne (Abo-Gate später).
+
+### P27-T01: Visibility-Modell + Ownership (Systeme + Welten)
+- **Status:** 📋
+- **Aufwand:** 1 Tag
+- **Beschreibung:**
+  - `visibility` (`PRIVATE`/`INVITE_ONLY`/`PUBLIC`) auf `game_systems` + `worlds` (Migration)
+  - `owner_id` auf `game_systems` (Migration; Bestandsrows → definierter Migrations-Owner, dokumentieren)
+  - Listen filtern: eigene + `PUBLIC` + explizit geteilte (`world_members` bzw. System-Freigaben)
+  - Ändern/Löschen nur Ersteller (403 für Fremde, auch bei geratenen IDs)
+  - Einladungsliste nutzt bestehende Member-Mechanismen (Welt-Einladungslinks)
+- **Akzeptanzkriterien:** Sichtbarkeits-Matrix per API verifiziert (privat/invite/public × owner/fremd); Fremd-Edit → 403; Tests grün
+- **Qualitäts-Check:** TDD, Security
+
+### P27-T02: Campaign-Rollen härten (Spieler + Spielleiter)
+- **Status:** 📋
+- **Aufwand:** 0,5 Tage
+- **Beschreibung:**
+  - Rollen-Enum `DM`/`PLAYER` statt freiem String (Backend-Validierung in `addMember`)
+  - DM kann Mitglieder zu DMs befördern / degradieren
+  - Invariante: mindestens 1 DM pro Kampagne (`DM_REMOVAL_DENIED` auch bei Degradierung des letzten DMs)
+- **Akzeptanzkriterien:** Multi-DM-Kampagne funktioniert (2 DMs verwalten Mitglieder); letzter DM nicht entfernbar/degradierbar; Tests grün
+- **Qualitäts-Check:** TDD, Security
+
+### P27-T03: Fork bei Kampagnen-Erstellung (eigenes Universum)
+- **Status:** 📋
+- **Aufwand:** 1 Tag
+- **Beschreibung:**
+  - Kampagne anlegen = Welt tief kopieren (`WorldService.clone`: Regionen, Orte, NPCs, Fraktionen, Entities, Karten), Kampagne zeigt auf den Fork
+  - UI-Hinweis „erstellt eigene Kopie" im Erstellen-Modal; Template bleibt unverändert (per Test nachweisen: Template-Entities vs. Fork-Entities divergieren)
+  - Geteilte Kampagnen-Welten lassen sich später über P27-T01-Mechanismus weiterteilen
+- **Akzeptanzkriterien:** Template nach Kampagnen-Aktionen unverändert; Fork unabhängig bespielbar; Fraktionsführer-Tod im Fork betrifft Template nicht; Tests grün
+- **Qualitäts-Check:** TDD, E2E (Playwright: Template → Kampagne → NPC töten → Template prüfen)
+
+### P27-T04: Bot pro Kampagne konfigurierbar
+- **Status:** 📋
+- **Aufwand:** 1 Tag
+- **Beschreibung:**
+  - Bot-Konfiguration in `campaigns.settings_json` (`{"bot": {"mode": "autonom|suggest|off"}}`, keine neue Spalte)
+  - Bot liest Konfiguration pro Kampagne (statt nur Welt-`ai_mode`); `off` pausiert Polling für die Kampagne
+  - Kampagnen-UI: Bot-Schalter (an/aus/Modus) in Kampagnen-Detail
+  - Abo-Gate nur als Stub/Flag vorbereiten (keine Logik — aktuell unwichtig)
+- **Akzeptanzkriterien:** Bot reagiert nur in Kampagnen mit aktivem Modus; `off` → keine Intents; Tests (MockLLMClient) grün
+- **Qualitäts-Check:** TDD
+
+### P27-T05: System-Versionierung (Pin + Nachziehen)
+- **Status:** 📋
+- **Aufwand:** 1 Tag
+- **Beschreibung:**
+  - Kampagnen pinnen System-Version zum Erstellungszeitpunkt (stabile Regeln während der Kampagne)
+  - „Update verfügbar"-Anzeige bei neuerer Version desselben Systems (Namens-Match + Versionsvergleich)
+  - Manuelles Nachziehen (Button; Re-Point auf neue Version + Validierung); automatisiertes Nachziehen explizit später
+- **Akzeptanzkriterien:** Laufende Kampagne bleibt auf alter Version; Update-Flow per UI + API verifiziert; Tests grün
+- **Qualitäts-Check:** TDD
+
+### P27-T06: DM-Queue fertig + Abnahme
+- **Status:** 📋
+- **Aufwand:** 1 Tag
+- **Beschreibung:**
+  - Aktionsliste: Bulk-Freigabe/Ablehnung, Filter (Typ/Status), WS-Live-Update statt 5s-Polling wo sinnvoll
+  - E2E nach TESTING-Plan (Bot-Intent → Queue → DM-Entscheid → Welt-Effekt sichtbar)
+  - Doku final: ARCHITECTURE-Sharing-Modell gegenprüfen, API-Visibility-Parameter + Fork-Verhalten dokumentieren
+- **Akzeptanzkriterien:** DM arbeitet Queue vollständig per UI ab; Doku ohne Divergenzen; Tests grün
+- **Qualitäts-Check:** TDD, E2E (Playwright)
+
+---
+
 ## Gesamtstatistik (aktualisiert)
 
 | Phase | Tasks | Sum Aufwand |
@@ -2160,5 +2229,6 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 | 24 (Datenmodell 3-Ebenen) | 5 | ~2,5 Tage |
 | 25 (Kampagnen-Integration) | 5 | ~3,0 Tage |
 | 26 (Frontend 3-Ebenen) | 3 | ~3,0 Tage |
+| 27 (Shared Universes & DM-Workflow) | 6 | ~5,5 Tage |
 
 ---

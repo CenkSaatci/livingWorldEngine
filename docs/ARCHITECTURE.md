@@ -187,12 +187,21 @@ sequenceDiagram
   1. Regelwerk-Reglelement (APs, Range)
   2. Sichtbarkeit (Fog of War)
   3. Ressourcen (Inventar / HP)
-- Siehe [`ADR/005`](ADR/005-ki-validation-layer.md)
+- Menschliche SLs arbeiten **dieselbe Pipeline** über die Aktionsliste ab (Pending-Intents ansehen, bearbeiten, freigeben/ablehnen) — Entscheider ist je nach Modus Bot oder Mensch
+- Bot-Konfiguration pro Kampagne (`campaigns.settings_json → {"bot": {"mode": "autonom|suggest|off"}}`); Abo-Koppelung vorbereitet, nicht implementiert
+- Siehe [`ADR/005`](ADR/005-ki-validation-layer.md), [`ADR/011`](ADR/011-shared-universes-visibility.md)
 
 ### 4.5 Input-Validierung
 - Spring Validation (`@Valid`, `@NotNull`) für Request-Bodies
 - JSON-Schema-Validator für hochgeladene Regelwerke
 - Pydantic-Validation im Bot für interne RPCs
+
+### 4.6 Sharing, Ownership & Universen (Templates)
+- Systeme und Welten sind **teilbare Templates** mit Sichtbarkeit `PRIVATE` (nur Ersteller) / `INVITE_ONLY` (Ersteller + Eingeladene via Member-Mechanismen) / `PUBLIC` (alle, lesend/nutzend)
+- **Nur Ersteller** ändern/löschen Templates (`owner_id`; gilt auch für aus Kampagnen entstandene Welten beim späteren Teilen)
+- Kampagne anlegen = **Fork**: Die Welt wird tief kopiert (`WorldService.clone`), die Kampagne zeigt auf die Kopie — Template bleibt pristine, Gruppen spielen isolierte Universen
+- Kampagnen **pinnen** die System-Version; Updates werden angezeigt und **manuell** nachgezogen (kein Zwang, später automatisierbar)
+- Siehe [`ADR/011`](ADR/011-shared-universes-visibility.md), Umsetzung Phase 27 in [`TASKS.md`](TASKS.md)
 
 ---
 
