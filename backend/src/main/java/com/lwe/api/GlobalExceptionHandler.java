@@ -115,10 +115,11 @@ public class GlobalExceptionHandler {
                 default -> HttpStatus.BAD_REQUEST;
             };
             case CombatService.CombatException e -> switch (e.getErrorCode()) {
-                case "COMBAT_NOT_FOUND", "COMBAT_MANEUVER_UNKNOWN" -> HttpStatus.NOT_FOUND;
+                case "COMBAT_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 case "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
                 case "COMBAT_NOT_ACTIVE", "COMBAT_NOT_YOUR_TURN", "COMBAT_AP_INSUFFICIENT",
-                     "COMBAT_RANGE_INVALID", "COMBAT_TARGET_INVALID" -> HttpStatus.UNPROCESSABLE_ENTITY;
+                     "COMBAT_RANGE_INVALID", "COMBAT_TARGET_INVALID",
+                     "COMBAT_MANEUVER_UNKNOWN" -> HttpStatus.UNPROCESSABLE_ENTITY;
                 case "COMBAT_INSUFFICIENT_PARTICIPANTS" -> HttpStatus.BAD_REQUEST;
                 default -> HttpStatus.BAD_REQUEST;
             };
@@ -141,7 +142,7 @@ public class GlobalExceptionHandler {
             case EntityService.EntityException e -> switch (e.getErrorCode()) {
                 case "ENTITY_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 case "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
-                case "SKILL_MAX_EXCEEDED" -> HttpStatus.UNPROCESSABLE_ENTITY;
+                case "SKILL_MAX_EXCEEDED", "FATE_NONE_LEFT", "UNKNOWN_CONDITION" -> HttpStatus.UNPROCESSABLE_ENTITY;
                 default -> HttpStatus.BAD_REQUEST;
             };
             case EntityAbilityService.EntityAbilityException e -> switch (e.getErrorCode()) {

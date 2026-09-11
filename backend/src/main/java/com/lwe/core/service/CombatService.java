@@ -113,6 +113,14 @@ public class CombatService {
         session.setCurrentTurnEntityId(participants.getFirst().getEntityId());
         session = sessionRepo.save(session);
 
+        // Zustands-Tick auch fuer den Start-Actor (P29-Audit): Zugbeginn #1
+        entityRepo.findById(participants.getFirst().getEntityId()).ifPresent(e -> {
+            if (conditionService.active(e).stream().anyMatch(c -> c.rounds() != null)) {
+                conditionService.tick(e);
+                entityRepo.save(e);
+            }
+        });
+
         var entityIdsList = participants.stream().map(CombatParticipant::getEntityId).toList();
         eventService.publish(worldId, campaignId, COMBAT_STARTED, null, null, Map.of(
             "sessionId", session.getId(),
@@ -334,6 +342,9 @@ public class CombatService {
                 "Unknown maneuver: " + maneuverName));
 
         requireAp(actor);
+        int apCost = def.get("apCost") instanceof Number n ? Math.max(1, n.intValue()) : 1;
+        if (actor.getApCurrent() < apCost)
+            throw new CombatException("COMBAT_AP_INSUFFICIENT", "Not enough AP");
         checkRange("ACTION", targetId, actorId);
 
         var base = rollDamage(userId, session.getWorldId(), actorId, "ACTION", session.getCampaignId());
@@ -347,8 +358,7 @@ public class CombatService {
             }
         }
         var damage = Math.max(0, base + bonus);
-        int apCost = def.get("apCost") instanceof Number n ? Math.max(1, n.intValue()) : 1;
-        actor.setApCurrent(Math.max(0, actor.getApCurrent() - apCost));
+        actor.setApCurrent(actor.getApCurrent() - apCost);
         participantRepo.save(actor);
 
         if (targetId != null && damage > 0) {

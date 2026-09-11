@@ -25,6 +25,16 @@ public class WorldAccess {
         }
     }
 
+    /** DM-Rechte: Welt-Owner oder Mitglied mit Rolle DM. */
+    public void requireDm(UUID worldId, UUID userId) {
+        var world = worldRepo.findById(worldId)
+            .orElseThrow(() -> new WorldAccessException("WORLD_NOT_FOUND", "World not found"));
+        if (world.getOwnerId().equals(userId)) return;
+        var member = memberRepo.findByWorldIdAndUserId(worldId, userId);
+        if (member.isEmpty() || !"DM".equals(member.get().getRole()))
+            throw new WorldAccessException("WORLD_ACCESS_DENIED", "DM access required");
+    }
+
     public static class WorldAccessException extends RuntimeException {
         private final String errorCode;
         public WorldAccessException(String errorCode, String message) {

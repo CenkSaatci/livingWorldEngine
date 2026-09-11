@@ -28,6 +28,7 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate }:
   const toast = useToast();
   const [result, setResult] = useState<ProbeResult | null>(null);
   const [rolling, setRolling] = useState(false);
+  const [spending, setSpending] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [failed, setFailed] = useState(false);
   const activeCampaignId = useCampaignStore((s) => s.activeCampaignId);
@@ -68,8 +69,21 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate }:
       </button>
       {result && fateAvailable && onSpendFate && (
         <button
-          onClick={async () => { await onSpendFate(); await handleRoll(); }}
-          className="text-xs text-warning hover:text-warning/70"
+          onClick={async () => {
+            if (rolling || spending) return;
+            setSpending(true);
+            try {
+              await onSpendFate();
+              await handleRoll();
+            } catch {
+              // Punkt weg oder Wurf fehlgeschlagen: handleRoll zeigt den Wurf-Fehler.
+              toast.error(t('sheet.spendFateFailed')!);
+            } finally {
+              setSpending(false);
+            }
+          }}
+          disabled={rolling || spending}
+          className="text-xs text-warning hover:text-warning/70 disabled:opacity-40"
           title={t('sheet.spendFate')!}
           aria-label={t('sheet.spendFate')!}
         >

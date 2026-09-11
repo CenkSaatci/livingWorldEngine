@@ -202,7 +202,7 @@ class EntityServiceTest {
     void addConditionValidatesCatalogAndPersists() {
         var entity = entityWithId("{\"staerke\":10}");
         var campaignId = campaignInWorld();
-        when(entityRepo.findById(any())).thenReturn(Optional.of(entity));
+        when(entityRepo.findByIdForUpdate(any())).thenReturn(Optional.of(entity));
         doNothing().when(worldAccess).requireAccess(any(), any());
         when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(rulesLoader.loadRules(campaignId, worldId)).thenReturn(Map.of(
@@ -214,10 +214,26 @@ class EntityServiceTest {
     }
 
     @Test
+    void addConditionDefaultsRoundsFromCatalog() {
+        var entity = entityWithId("{\"staerke\":10}");
+        var campaignId = campaignInWorld();
+        when(entityRepo.findByIdForUpdate(any())).thenReturn(Optional.of(entity));
+        doNothing().when(worldAccess).requireAccess(any(), any());
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(rulesLoader.loadRules(campaignId, worldId)).thenReturn(Map.of(
+            "conditions", List.of(Map.of("name", "Wunde", "rounds", 3))));
+
+        service.addCondition(entity.getId(), userId, "Wunde", null, campaignId);
+
+        verify(conditionService).add(eq(entity), org.mockito.ArgumentMatchers.argThat(
+            c -> c.rounds() != null && c.rounds() == 3));
+    }
+
+    @Test
     void addConditionRejectsUnknownName() {
         var entity = entityWithId("{\"staerke\":10}");
         var campaignId = campaignInWorld();
-        when(entityRepo.findById(any())).thenReturn(Optional.of(entity));
+        when(entityRepo.findByIdForUpdate(any())).thenReturn(Optional.of(entity));
         doNothing().when(worldAccess).requireAccess(any(), any());
         when(rulesLoader.loadRules(campaignId, worldId)).thenReturn(Map.of(
             "conditions", List.of(Map.of("name", "Wunde"))));
@@ -231,7 +247,7 @@ class EntityServiceTest {
     @Test
     void removeConditionDelegates() {
         var entity = entityWithId("{\"staerke\":10}");
-        when(entityRepo.findById(any())).thenReturn(Optional.of(entity));
+        when(entityRepo.findByIdForUpdate(any())).thenReturn(Optional.of(entity));
         doNothing().when(worldAccess).requireAccess(any(), any());
         when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -244,7 +260,7 @@ class EntityServiceTest {
     void spendFatePointDecrementsAndRejectsAtZero() {
         var entity = entityWithId("{\"staerke\":10}");
         var campaignId = campaignInWorld();
-        when(entityRepo.findById(any())).thenReturn(Optional.of(entity));
+        when(entityRepo.findByIdForUpdate(any())).thenReturn(Optional.of(entity));
         doNothing().when(worldAccess).requireAccess(any(), any());
         when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(rulesLoader.loadRules(campaignId, worldId)).thenReturn(Map.of(

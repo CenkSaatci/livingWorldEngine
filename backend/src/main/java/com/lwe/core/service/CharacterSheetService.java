@@ -167,10 +167,13 @@ public class CharacterSheetService {
         var activeConditions = conditionService.active(entity).stream()
             .map(c -> new SheetResponse.ConditionInfo(c.name(), c.rounds()))
             .toList();
-        var conditionCatalog = ((List<Map<String, Object>>) rules.getOrDefault("conditions", List.of()))
+        var conditionsRaw = rules.getOrDefault("conditions", List.of());
+        var conditionCatalog = (conditionsRaw instanceof List<?> cl ? cl : List.<Object>of())
             .stream()
-            .map(c -> (String) c.getOrDefault("name", ""))
-            .filter(n -> !n.isBlank())
+            .filter(Map.class::isInstance)
+            .map(c -> ((Map<?, ?>) c).get("name"))
+            .filter(n -> n instanceof String s2 && !s2.isBlank())
+            .map(Object::toString)
             .toList();
 
         return new SheetResponse(

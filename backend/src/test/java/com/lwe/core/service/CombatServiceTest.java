@@ -421,6 +421,63 @@ class CombatServiceTest {
     }
 
     @Test
+    void executeManeuverRejectsInsufficientAp() {
+        var session = new CombatSession(worldId, null);
+        setId(session, UUID.randomUUID());
+        var attackerId = UUID.randomUUID();
+        session.setCurrentTurnEntityId(attackerId);
+        var attacker = new GameEntity(worldId, "PC", "Aragorn");
+        setId(attacker, attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        when(sessionRepo.findById(session.getId())).thenReturn(java.util.Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(java.util.Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
+            .thenReturn(new java.util.ArrayList<>(java.util.List.of(
+                new CombatParticipant(session.getId(), attackerId, 15, 1, "A"))));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of(
+            "dice_mechanics", Map.of("combat", Map.of(
+                "maneuvers", java.util.List.of(Map.of("name", "Wuchtschlag", "apCost", 2))))));
+
+        assertThatThrownBy(() -> combatService.executeManeuver(userId, session.getId(), attackerId, null, "Wuchtschlag"))
+            .isInstanceOf(CombatService.CombatException.class)
+            .satisfies(e -> assertThat(((CombatService.CombatException) e).getErrorCode())
+                .isEqualTo("COMBAT_AP_INSUFFICIENT"));
+    }
+
+    @Test
+    void startCombatTicksTimedConditionsOfFirstActor() {
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Aragorn");
+        setId(attacker, attackerId);
+        attacker.setMetadataJson("{\"conditions\":[{\"name\":\"Wunde\",\"rounds\":1}]}");
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        setId(defender, defenderId);
+
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        when(entityRepo.findAllById(any())).thenReturn(List.of(attacker, defender));
+        when(entityRepo.findById(any())).thenReturn(java.util.Optional.of(attacker));
+        when(worldRepo.findById(worldId)).thenReturn(java.util.Optional.of(world));
+        when(sessionRepo.save(any())).thenAnswer(inv -> {
+            var s = inv.<CombatSession>getArgument(0);
+            setId(s, UUID.randomUUID());
+            return s;
+        });
+        when(participantRepo.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+        when(conditionService.active(attacker)).thenReturn(java.util.List.of(
+            new ConditionService.ConditionInstance("Wunde", 1)));
+
+        combatService.startCombat(userId, worldId, List.of(attackerId, defenderId));
+
+        verify(conditionService).tick(attacker);
+    }
+
+    @Test
     void executeManeuverRejectsUnknownName() {
         var session = new CombatSession(worldId, null);
         setId(session, UUID.randomUUID());

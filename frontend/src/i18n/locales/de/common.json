@@ -83,7 +83,8 @@
     "ap": "AP",
     "used": " (verbraucht)",
     "remaining": "{{remaining}}/{{total}} verbleibend",
-    "apCost": "AP: {{cost}}"
+    "apCost": "AP: {{cost}}",
+    "maneuverFailed": "Manöver fehlgeschlagen"
   },
   "entityTimeline": {
     "today": "heute",

@@ -193,7 +193,7 @@ export function ActionBar({ worldId }: Props) {
         {maneuvers.map((m) => (
           <button key={m.name}
             onClick={() => handleManeuver(m.name)}
-            disabled={!currentActor || !targetEntityId}
+            disabled={!currentActor || !targetEntityId || (currentActor.apCurrent ?? 0) < (m.apCost ?? 1)}
             className="flex items-center gap-1 rounded bg-warning/10 px-3 py-1.5 text-xs text-warning hover:bg-warning/25 disabled:opacity-40"
             title={t('combat.apCost', { cost: m.apCost ?? 1 })}
           >

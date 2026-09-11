@@ -39,7 +39,8 @@
     "noConditions": "No conditions",
     "conditionFailed": "Failed to update conditions",
     "fate": "Fate points",
-    "spendFate": "Spend fate point and re-roll"
+    "spendFate": "Spend fate point and re-roll",
+    "spendFateFailed": "Could not spend fate point"
   },
   "attribute": {
     "modifier": "Modifier"

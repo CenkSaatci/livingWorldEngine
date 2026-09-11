@@ -39,7 +39,8 @@
     "noConditions": "Keine Zustände",
     "conditionFailed": "Zustände konnten nicht geändert werden",
     "fate": "Schicksalspunkte",
-    "spendFate": "Schicksalspunkt ausgeben und neu würfeln"
+    "spendFate": "Schicksalspunkt ausgeben und neu würfeln",
+    "spendFateFailed": "Schicksalspunkt konnte nicht ausgegeben werden"
   },
   "attribute": {
     "modifier": "Modifikator"

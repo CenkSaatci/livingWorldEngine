@@ -77,7 +77,12 @@ public class ConditionService {
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> conditions(Map<String, Object> rules) {
         var raw = rules.get("conditions");
-        return raw instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
+        if (!(raw instanceof List<?> list)) return List.of();
+        // Custom-Schemas koennen untypisierte Eintraege liefern (Audit): nur Maps.
+        return list.stream()
+            .filter(Map.class::isInstance)
+            .map(m -> (Map<String, Object>) m)
+            .toList();
     }
 
     /** Decrementiert Runden; abgelaufene Zustände fallen raus. Mutiert das Entity-Metadata. */

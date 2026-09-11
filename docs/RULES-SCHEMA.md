@@ -26,6 +26,8 @@
 | `traits` | array | Vor-/Nachteile-Katalog (P28) |
 | `advancement` | object | Steigerungs-Matrix + Max-Regel (P28) |
 | `packages` | array | Reserviert (P29: Spezies/Kultur/Profession) |
+| `conditions` | array | Zustands-Katalog (P29): `name`, optional `rounds`, `effects[]` (`target`/`op`/`value`) |
+| `dice_mechanics.combat.maneuvers` | array | Kampfmanöver (P29): `name`, `apCost` (≥1), optional `attackMalus`¹, `effects[]` |
 
 ---
 
@@ -112,6 +114,9 @@ Siehe [`docs/examples/`](examples/) für drei vollständige Beispielsysteme:
 ## 8. Schema-Erweiterungen
 
 Neue optionale Properties können jederzeit ergänzt werden. Aktuell nutzbar:
+- `conditions` — Zustands-Katalog: Effekte (`probe`/`damage`) wirken summiert; Katalog-`rounds` gilt, wenn beim Anwenden keine Runden mitgegeben werden; Tick beim Zugbeginn
+- `dice_mechanics.combat.maneuvers` — AP-Kosten + Schadens-Effekte; ActionBar zeigt Katalog-Buttons
+  - ¹ `attackMalus` wird als Feld akzeptiert/dokumentiert, aber noch nicht angewandt — es gibt (noch) kein Attack-Roll-Modell im Kampf (P29-T03-Teilstand, siehe TASKS.md)
 - `conditionals` — Bedingte Boni/Mali (via `ConditionEvaluator`)
 - `derived_values` — Abgeleitete Werte; drei Formen: `formula`, `input`+`table` (Lookup, Lücken/Überlappungen = Fehler), `requiresTrait` (Eintrag fehlt ohne Trait)
 - `abilities` — Charakter-Fähigkeiten für den Kampf

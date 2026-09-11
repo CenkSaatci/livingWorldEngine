@@ -192,10 +192,18 @@ public class EntityService {
         }
     }
 
+    /** Entity mit Schreib-Lock laden (verhindert Metadata-Races bei fate/conditions). */
+    private GameEntity getLocked(UUID entityId, UUID userId) {
+        var entity = entityRepo.findByIdForUpdate(entityId)
+            .orElseThrow(() -> new EntityException("ENTITY_NOT_FOUND", "Entity not found"));
+        worldAccess.requireAccess(entity.getWorldId(), userId);
+        return entity;
+    }
+
     /** Schicksalspunkt ausgeben (P29-T02). */
     @Transactional
     public GameEntity spendFatePoint(UUID entityId, UUID userId, UUID campaignId) {
-        var entity = getById(entityId, userId);
+        var entity = getLocked(entityId, userId);
         int max = 0;
         if (campaignId != null && rulesLoader.campaignBelongsToWorld(campaignId, entity.getWorldId())) {
             var rules = rulesLoader.loadRules(campaignId, entity.getWorldId());
@@ -239,16 +247,24 @@ public class EntityService {
     /** Zustand anwenden (P29-T01); Katalog prueft/freigibt die Namen. */
     @Transactional
     public GameEntity addCondition(UUID entityId, UUID userId, String name, Integer rounds, UUID campaignId) {
-        var entity = getById(entityId, userId);
+        var entity = getLocked(entityId, userId);
+        worldAccess.requireDm(entity.getWorldId(), userId);
         if (campaignId != null) {
             if (!rulesLoader.campaignBelongsToWorld(campaignId, entity.getWorldId())) {
                 throw new EntityException("WORLD_ACCESS_DENIED", "Campaign does not belong to world");
             }
             var rules = rulesLoader.loadRules(campaignId, entity.getWorldId());
             if (rules.get("conditions") instanceof List<?> catalog && !catalog.isEmpty()) {
-                boolean known = catalog.stream().anyMatch(c ->
-                    c instanceof Map<?, ?> m && name.equals(m.get("name")));
-                if (!known) throw new EntityException("UNKNOWN_CONDITION", "Unknown condition: " + name);
+                var match = catalog.stream()
+                    .filter(c -> c instanceof Map<?, ?> m && name.equals(m.get("name")))
+                    .findFirst();
+                if (match.isEmpty())
+                    throw new EntityException("UNKNOWN_CONDITION", "Unknown condition: " + name);
+                // Katalog-Dauer greift, wenn kein explizites rounds mitgegeben wurde.
+                if (rounds == null && match.get() instanceof Map<?, ?> m
+                    && m.get("rounds") instanceof Number r) {
+                    rounds = r.intValue();
+                }
             }
         }
         conditionService.add(entity, new ConditionService.ConditionInstance(name, rounds));
@@ -257,7 +273,8 @@ public class EntityService {
 
     @Transactional
     public GameEntity removeCondition(UUID entityId, UUID userId, String name) {
-        var entity = getById(entityId, userId);
+        var entity = getLocked(entityId, userId);
+        worldAccess.requireDm(entity.getWorldId(), userId);
         conditionService.remove(entity, name);
         return entityRepo.save(entity);
     }

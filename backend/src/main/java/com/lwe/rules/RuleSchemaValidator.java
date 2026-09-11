@@ -185,7 +185,7 @@ public class RuleSchemaValidator {
               "properties": {
                 "name":        { "type": "string", "minLength": 1 },
                 "attackMalus": { "type": "integer" },
-                "apCost":      { "type": "integer", "minimum": 0 },
+                "apCost":      { "type": "integer", "minimum": 1 },
                 "effects":     { "type": "array", "items": { "$ref": "#/$defs/traitEffect" } }
               }
             },
