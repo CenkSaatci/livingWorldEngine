@@ -3,6 +3,7 @@ package com.lwe.core.service;
 import com.lwe.core.domain.NpcIntent;
 import com.lwe.core.repository.NpcIntentRepository;
 import com.lwe.core.repository.WorldRepository;
+import com.lwe.core.util.WorldAccess;
 import com.lwe.rules.IntentExecutor;
 import com.lwe.rules.IntentValidator;
 import org.springframework.stereotype.Service;
@@ -20,15 +21,17 @@ public class NpcIntentService {
     private final WorldEventService eventService;
     private final WorldRepository worldRepo;
     private final IntentExecutor executor;
+    private final WorldAccess worldAccess;
 
     public NpcIntentService(NpcIntentRepository repo, IntentValidator validator,
                             WorldEventService eventService, WorldRepository worldRepo,
-                            IntentExecutor executor) {
+                            IntentExecutor executor, WorldAccess worldAccess) {
         this.repo = repo;
         this.validator = validator;
         this.eventService = eventService;
         this.worldRepo = worldRepo;
         this.executor = executor;
+        this.worldAccess = worldAccess;
     }
 
     @Transactional
@@ -89,14 +92,17 @@ public class NpcIntentService {
         return intent;
     }
 
-    public List<NpcIntent> listPending(UUID worldId) {
+    /** P27-T06: Queue ist DM-only (Welt-DM); der Bot legt Intents nur an. */
+    public List<NpcIntent> listPending(UUID worldId, UUID userId) {
+        worldAccess.requireDm(worldId, userId);
         return repo.findByWorldIdAndStatusOrderByCreatedAtDesc(worldId, "pending");
     }
 
     @Transactional
-    public NpcIntent approve(UUID intentId) {
+    public NpcIntent approve(UUID intentId, UUID userId) {
         var intent = repo.findById(intentId)
             .orElseThrow(() -> new IntentException("INTENT_NOT_FOUND", "Intent not found"));
+        worldAccess.requireDm(intent.getWorldId(), userId);
         intent.setStatus("approved");
         intent.setValidatedAt(Instant.now());
         intent = repo.save(intent);
@@ -111,9 +117,10 @@ public class NpcIntentService {
     }
 
     @Transactional
-    public NpcIntent reject(UUID intentId, String reason) {
+    public NpcIntent reject(UUID intentId, String reason, UUID userId) {
         var intent = repo.findById(intentId)
             .orElseThrow(() -> new IntentException("INTENT_NOT_FOUND", "Intent not found"));
+        worldAccess.requireDm(intent.getWorldId(), userId);
         intent.setStatus("rejected");
         intent.setRejectionReason(reason);
         intent.setValidatedAt(Instant.now());

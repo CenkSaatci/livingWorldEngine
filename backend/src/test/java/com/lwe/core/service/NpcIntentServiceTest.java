@@ -28,8 +28,10 @@ class NpcIntentServiceTest {
     @Mock private WorldEventService eventService;
     @Mock private WorldRepository worldRepo;
     @Mock private IntentExecutor executor;
+    @Mock private com.lwe.core.util.WorldAccess worldAccess;
 
     @InjectMocks private NpcIntentService npcIntentService;
+    private final UUID userId = UUID.randomUUID();
 
     private final UUID worldId = UUID.randomUUID();
     private final UUID npcId = UUID.randomUUID();
@@ -118,7 +120,7 @@ class NpcIntentServiceTest {
         when(repo.save(any())).thenAnswer(inv -> inv.<NpcIntent>getArgument(0));
         when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
-        var result = npcIntentService.approve(intentId);
+        var result = npcIntentService.approve(intentId, userId);
 
         assertThat(result.getStatus()).isEqualTo("approved");
         assertThat(result.getValidatedAt()).isNotNull();
@@ -136,7 +138,7 @@ class NpcIntentServiceTest {
         when(repo.save(any())).thenAnswer(inv -> inv.<NpcIntent>getArgument(0));
         when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
-        var result = npcIntentService.reject(intentId, "not appropriate");
+        var result = npcIntentService.reject(intentId, "not appropriate", userId);
 
         assertThat(result.getStatus()).isEqualTo("rejected");
         assertThat(result.getRejectionReason()).isEqualTo("not appropriate");
@@ -151,7 +153,7 @@ class NpcIntentServiceTest {
         when(repo.findByWorldIdAndStatusOrderByCreatedAtDesc(worldId, "pending"))
             .thenReturn(List.of(intent));
 
-        var result = npcIntentService.listPending(worldId);
+        var result = npcIntentService.listPending(worldId, userId);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getStatus()).isEqualTo("pending");

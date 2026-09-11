@@ -35,14 +35,14 @@ public class NpcIntentController {
     @GetMapping
     public ResponseEntity<List<NpcIntentResponse>> listPending(@RequestParam UUID worldId,
                                                                 @AuthenticationPrincipal User user) {
-        var intents = service.listPending(worldId).stream().map(NpcIntentResponse::from).toList();
+        var intents = service.listPending(worldId, user.getId()).stream().map(NpcIntentResponse::from).toList();
         return ResponseEntity.ok(intents);
     }
 
     @PostMapping("/{id}/approve")
     public ResponseEntity<NpcIntentResponse> approve(@PathVariable UUID id,
                                                       @AuthenticationPrincipal User user) {
-        var intent = service.approve(id);
+        var intent = service.approve(id, user.getId());
         return ResponseEntity.ok(NpcIntentResponse.from(intent));
     }
 
@@ -50,7 +50,7 @@ public class NpcIntentController {
     public ResponseEntity<NpcIntentResponse> reject(@PathVariable UUID id,
                                                      @RequestBody RejectRequest req,
                                                      @AuthenticationPrincipal User user) {
-        var intent = service.reject(id, req.reason());
+        var intent = service.reject(id, req.reason(), user.getId());
         return ResponseEntity.ok(NpcIntentResponse.from(intent));
     }
 
