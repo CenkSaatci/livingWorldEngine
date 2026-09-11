@@ -5,7 +5,7 @@
 ## Aktueller Projektstand (2026-09-11)
 
 - **P28 Engine-Bausteine** ✅ (T01–T06) · **P29 Spielgefühl + Pakete** ✅ (T01–T06) · **P23 Schadenstypen** ✅ (T01–T04, T05 optional) · **P30 Charakter-Wizard** ✅ (T01–T04) · **P31 E2E-Ausbau** ✅ (T01–T03)
-- **Tests:** Backend 396 (`mvn -B test`) · Frontend 169 (`npx vitest run`) · E2E 8 (`npm run test:e2e`) · ai-bot 46 · `tsc`/Build grün
+- **Tests:** Backend 402 (`mvn -B test`) · Frontend 169 (`npx vitest run`) · E2E 9 (`npm run test:e2e`) · ai-bot 46 · `tsc`/Build grün
 - **Audits:** P28, P23/P29, P30 und ein finales Gesamt-Audit — alle HIGH/MEDIUM-Findings gefixt, Rest bewusst zurückgestellt (siehe Notizen unten)
 - **P27-Status:** T01 ✅ Teilstand (Shares/Welt-PUBLIC offen) · T02 ✅ · T03 ✅ Teilstand (Quest/Adventure-Fork offen) · T04 🔄 Teilstand (Bot-Runtime-Polling) · T05 ✅ · T06 🔄 Teilstand (Bulk/WS/E2E)
 - **Offen (bewusst):** P14-T02–T04 · P22 Konzept · F8 erledigt (V098) · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
@@ -2460,21 +2460,21 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 > Ziel: offene Teilstände aus P27/P31/P32 schließen + alte Lücken (P14/P22). Reihenfolge = Risiko × Nutzen: erst schnelle Härtung, dann Fork-Vervollständigung, dann Bot-Runtime, dann DM-Queue; P14/P22 zuletzt. Nach jedem Block (3–5 Tasks) Audit + Findings-Fix, Abschluss mit Gesamt-Audit über alle Suiten.
 
 ### T33-01: E2E — Zustands-Tick + Schadensarten-Log
-- **Status:** 📋
+- **Status:** ✅ (`combat-damage.spec.ts`: Feuer-Waffe → Log „(fire)"; Rüstung 100 deterministisch 0 Schaden; `rounds:2` tickt über zwei Züge; Session-Cleanup. Resistenz-Mathematik bleibt Unit-getestet — E2E belegt Pipeline+Armor)
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:** Neue Spec `frontend/e2e/combat-damage.spec.ts`: System mit `conditions` (Wunde: probe −4, rounds 2) + Waffe `damage_type: fire` + NPC mit `damage_resistances:["fire"]`/`damage_armor` per API seeden; Kampf im UI starten; Zustand per API (DM) auf den Actor legen → Probe/Angriff zeigt reduzierten Schaden im Log (`(fire)`, halbiert), nach 2× `next-turn` ist der Zustand weg (Sheet-Badges/API prüfen).
 - **Akzeptanz:** E2E grün; Zustand tickt nach `rounds`; Resistenz halbiert sichtbar im Log
 - **Abhängigkeit:** keine · **Qualitäts-Check:** Playwright
 
 ### T33-02: Welt-PUBLIC-Lesepfad (T01-Rest, V098-Spalte nutzen)
-- **Status:** 📋
+- **Status:** ✅ (`WorldAccess.requireRead` + PRIVATE/PUBLIC-Semantik; Reads: World/Entities/Regions/Locations/Quests/Map; `findAccessibleByUserId` inkl. PUBLIC, PRIVATE-Mitglieder raus; `WorldInfoResponse.visibility`; UI Badge + Sichtbarkeits-Select (owner-gated); IT `WorldVisibilityQueryIT`. Offen: Dashboard-FILTER nach Sichtbarkeit (nur Badge))
 - **Aufwand:** 0,5 Tage
 - **Beschreibung:** `WorldAccess.requireRead(worldId,userId)` (Owner ∪ Member ∪ PUBLIC; PRIVATE = Owner only) einführen und alle reinen LESEpfade darauf umstellen (WorldService.getById, Locations/Regions/Entities-Reads, Sheet/Probe bleiben requireAccess = Schreiben/Spielen). `WorldService.listAccessible` um PUBLIC-Welten ergänzen; `WorldInfoResponse.visibility` liefern; UI: Badge/Filter „Öffentlich" im Dashboard; Dokumentation in ADR-011 ergänzen.
 - **Akzeptanz:** Fremder liest PUBLIC-Welt (200) und PRIVATE nicht (403); Owner/Member unverändert; Tests grün
 - **Abhängigkeit:** — · **Qualitäts-Check:** TDD
 
 ### T33-03: Member-Quota beim Campaign-Mirroring
-- **Status:** 📋
+- **Status:** ✅ (`syncWorldMember` prüft `checkCanAddMember` vor Neuanlage → `WORLD_MEMBER_LIMIT` 403; Rollen-Updates bleiben frei; Test)
 - **Aufwand:** 0,25 Tage
 - **Beschreibung:** `CampaignMemberService.syncWorldMember` prüft vor dem Anlegen eines NEUEN World-Members `quotaService.checkCanAddMember(worldId, plan des Fork-Owners)`; bei Limit → `CampaignException("WORLD_MEMBER_LIMIT")`; Rollen-Updates bestehender Member bleiben erlaubt. Plan-Ermittlung wie in WorldService (Owner des Fork-Welts).
 - **Akzeptanz:** Kampagnen-Add über Welt-Limit schlägt sauber fehl (403), keine Orphan-Member; Tests

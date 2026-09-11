@@ -49,14 +49,14 @@ public class RegionService {
     }
 
     public List<Region> list(UUID worldId, UUID userId) {
-        requireOwner(worldId, userId);
+        worldAccess.requireRead(worldId, userId); // T33-02
         return repo.findByWorldIdOrderByNameAsc(worldId);
     }
 
     public Region getById(UUID regionId, UUID userId) {
         var region = repo.findById(regionId)
             .orElseThrow(() -> new RegionException("REGION_NOT_FOUND", "Region not found"));
-        requireOwner(region.getWorldId(), userId);
+        worldAccess.requireRead(region.getWorldId(), userId); // T33-02
         return region;
     }
 

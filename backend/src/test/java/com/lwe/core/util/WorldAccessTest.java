@@ -94,6 +94,35 @@ class WorldAccessTest {
     }
 
     @Test
+    void privateWorldDeniesMemberDmToo() {
+        var ownerId = UUID.randomUUID();
+        var memberDm = UUID.randomUUID();
+        var worldId = UUID.randomUUID();
+        var world = world(ownerId);
+        world.setVisibility("PRIVATE");
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> new WorldAccess(memberRepo, worldRepo).requireDm(worldId, memberDm))
+            .isInstanceOf(WorldAccess.WorldAccessException.class);
+    }
+
+    @Test
+    void inviteOnlyMemberCanRead() {
+        var ownerId = UUID.randomUUID();
+        var member = UUID.randomUUID();
+        var worldId = UUID.randomUUID();
+        var world = world(ownerId);
+        world.setVisibility("INVITE_ONLY");
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(memberRepo.existsByWorldIdAndUserId(worldId, member)).thenReturn(true);
+
+        org.assertj.core.api.Assertions.assertThatCode(
+                () -> new WorldAccess(memberRepo, worldRepo).requireRead(worldId, member))
+            .doesNotThrowAnyException();
+    }
+
+    @Test
     void deletedWorldIsDenied() {
         var ownerId = UUID.randomUUID();
         var worldId = UUID.randomUUID();

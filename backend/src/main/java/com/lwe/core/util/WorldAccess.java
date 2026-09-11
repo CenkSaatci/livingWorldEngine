@@ -59,6 +59,10 @@ public class WorldAccess {
         if (!world.isActive()) {
             throw new WorldAccessException("WORLD_ACCESS_DENIED", "World is deleted");
         }
+        // T33-02: PRIVATE-Welten sind owner-only, auch fuer DM-Mitglieder.
+        if ("PRIVATE".equals(world.getVisibility())) {
+            throw new WorldAccessException("WORLD_ACCESS_DENIED", "Access denied");
+        }
         var member = memberRepo.findByWorldIdAndUserId(worldId, userId);
         if (member.isEmpty() || !"DM".equals(member.get().getRole()))
             throw new WorldAccessException("WORLD_ACCESS_DENIED", "DM access required");

@@ -98,7 +98,9 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `WORLD_ACCESS_DENIED` | 403 | User ist nicht Mitglied der Welt |
 | `WORLD_OWNER_REQUIRED` | 403 | Nur Owner darf diese Aktion (z. B. löschen) |
 | `WORLD_MEMBER_ALREADY` | 409 | User ist bereits Mitglied |
-| `WORLD_MEMBER_LIMIT` | 422 | Mitglieder-Limit erreicht (Phase 5 Konfigurierbar) |
+| `INVALID_VISIBILITY` | 400 | Sichtbarkeit nicht PRIVATE/INVITE_ONLY/PUBLIC |
+| `METHOD_NOT_ALLOWED` | 405 | HTTP-Methode für die Route nicht erlaubt |
+| `WORLD_MEMBER_LIMIT` | 403 | Mitglieder-Limit erreicht (Phase 5 Konfigurierbar) |
 | `WORLD_LIMIT_REACHED` | 403 | Welten-Limit des Plans erreicht |
 | `WORLD_GAME_SYSTEM_INACTIVE` | 422 | Referenziertes Regelwerk ist deaktiviert |
 | `MAP_NOT_FOUND` | 404 | Karte zu dieser Welt nicht vorhanden |

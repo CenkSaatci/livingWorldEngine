@@ -10,6 +10,7 @@ import { SkeletonCard } from '../components/ui/SkeletonCard';
 import CampaignSection from '../components/campaign/CampaignSection';
 
 export default function DashboardPage() {
+  const currentUser = useAuthStore((s2) => s2.user);
   const { t, i18n } = useTranslation('common');
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
@@ -246,6 +247,7 @@ export default function DashboardPage() {
                       </span>
                     )}
                   </h3>
+                  {(w.ownerId === currentUser?.id) && (
                   <span
                     onClick={(e) => {
                       e.stopPropagation();
@@ -256,6 +258,7 @@ export default function DashboardPage() {
                   >
                     <Settings size={14} />
                   </span>
+                  )}
                 </div>
                 <p className="mt-1 text-xs text-text-secondary">
                   {dateStr}

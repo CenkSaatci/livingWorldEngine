@@ -20,9 +20,13 @@ test.describe('Kampf-Zustände + Schadensart (T33-01)', () => {
   let systemId = '';
   let campaignId = '';
   let worldId = '';
+  let combatSessionId = '';
   const entityIds: string[] = [];
 
   test.afterAll(async ({ request }) => {
+    if (combatSessionId) {
+      await request.post(`${API}/api/v1/combat/${combatSessionId}/end`, { headers: auth() });
+    }
     for (const id of entityIds) {
       if (id && worldId) {
         await request.delete(`${API}/api/v1/worlds/${worldId}/entities/${id}`, { headers: auth() });
@@ -102,7 +106,13 @@ test.describe('Kampf-Zustände + Schadensart (T33-01)', () => {
     // BEIDE: Ruestung 100 → deterministisch 0 Schaden, unabhaengig von der Initiative-Reihenfolge
     for (const entityId of [heroId, golemId]) {
       const patch = await request.patch(`${API}/api/v1/worlds/${worldId}/entities/${entityId}`, {
-        headers: auth(), data: { metadataJson: JSON.stringify({ damage_armor: 100 }) },
+        headers: auth(),
+        data: {
+          metadataJson: JSON.stringify({
+            damage_armor: 100,
+            damage_resistances: ['fire'],
+          }),
+        },
       });
       expect(patch.ok()).toBeTruthy();
     }
@@ -123,6 +133,7 @@ test.describe('Kampf-Zustände + Schadensart (T33-01)', () => {
     ]);
     expect(startResponse.ok()).toBeTruthy();
     const startBody = await startResponse.json();
+    combatSessionId = startBody.id as string;
     const current = startBody.currentTurnEntityId as string;
     const targetId = [heroId, golemId].find((id) => id !== current)!;
     const targetName = [heroId, golemId].indexOf(targetId) === 0
@@ -140,7 +151,7 @@ test.describe('Kampf-Zustände + Schadensart (T33-01)', () => {
     // Zustand auf das Ziel (DM) → Sheet zeigt ihn
     const addCondition = await request.post(
       `${API}/api/v1/entities/${targetId}/conditions?campaignId=${campaignId}`,
-      { headers: auth(), data: { name: 'Wunde', rounds: 1 } },
+      { headers: auth(), data: { name: 'Wunde', rounds: 2 } },
     );
     expect(addCondition.ok()).toBeTruthy();
     const sheetBefore = await request.get(
@@ -149,7 +160,20 @@ test.describe('Kampf-Zustände + Schadensart (T33-01)', () => {
     );
     expect((await sheetBefore.json()).activeConditions).toHaveLength(1);
 
-    // Naechster Zug → Ziel beginnt seinen Zug → rounds=1 tickt ab
+    // Naechster Zug → Ziel beginnt seinen Zug → rounds 2 -> 1
+    await page.getByRole('button', { name: /Nächster Zug/ }).click();
+    await expect
+      .poll(async () => {
+        const res = await request.get(
+          `${API}/api/v1/entities/${targetId}/sheet?campaignId=${campaignId}`,
+          { headers: auth() },
+        );
+        return ((await res.json()).activeConditions as { rounds?: number }[])[0]?.rounds ?? -1;
+      }, { timeout: 10_000 })
+      .toBe(1);
+
+    // Zwei weitere Zuege → Ziel wieder am Zug → 1 -> 0 (abgelaufen)
+    await page.getByRole('button', { name: /Nächster Zug/ }).click();
     await page.getByRole('button', { name: /Nächster Zug/ }).click();
     await expect
       .poll(async () => {

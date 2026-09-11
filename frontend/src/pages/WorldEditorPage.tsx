@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Copy, Users, Trash2, Save, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../store/authStore';
 import { useApiGet } from '../hooks/useApiGet';
 import { apiClient } from '../api/client';
 import { useToast } from '../hooks/useToast';
@@ -50,6 +51,7 @@ export default function WorldEditorPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const { t } = useTranslation('common');
+  const currentUser = useAuthStore((s2) => s2.user);
   const [newMemberId, setNewMemberId] = useState('');
   const [searchResults, setSearchResults] = useState<
     { id: string; username: string; email: string }[]
@@ -96,6 +98,8 @@ export default function WorldEditorPage() {
   const [dirty, setDirty] = useState(false);
 
   // Sync API data → local state when loaded
+  const isOwner = !!world && !!currentUser && world.ownerId === currentUser.id;
+
   const initFromWorld = useCallback((w: WorldDetail) => {
     setName(w.name);
     setVisibility(w.visibility ?? 'INVITE_ONLY');
@@ -238,6 +242,7 @@ export default function WorldEditorPage() {
           )}
           <button
             onClick={handleSave}
+            disabled={!isOwner}
             className={`flex items-center gap-1 rounded px-3 py-1.5 text-xs ${
               dirty
                 ? 'bg-accent text-white hover:bg-accent/80'
@@ -270,6 +275,7 @@ export default function WorldEditorPage() {
             </label>
             <select
               value={visibility}
+              disabled={!isOwner}
               onChange={(e) => { setVisibility(e.target.value); setDirty(true); }}
               aria-label={t('worldEditor.visibility')}
               className="mb-4 w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2

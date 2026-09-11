@@ -57,7 +57,7 @@ public class EntityService {
     }
 
     public List<GameEntity> list(UUID worldId, UUID userId, String entityType) {
-        requireWorldAccess(worldId, userId);
+        worldAccess.requireRead(worldId, userId); // T33-02
         if (entityType != null) {
             return entityRepo.findByWorldIdAndEntityTypeAndActiveTrue(worldId, entityType);
         }
@@ -67,7 +67,7 @@ public class EntityService {
     public GameEntity getById(UUID entityId, UUID userId) {
         var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new EntityException("ENTITY_NOT_FOUND", "Entity not found"));
-        requireWorldAccess(entity.getWorldId(), userId);
+        worldAccess.requireRead(entity.getWorldId(), userId); // T33-02
         return entity;
     }
 
@@ -77,6 +77,10 @@ public class EntityService {
                               String backstory, Integer age, String experienceLevel,
                               String socialStanding, UUID factionId) {
         var entity = getById(entityId, userId);
+        requireWorldAccess(entity.getWorldId(), userId);
+        requireWorldAccess(entity.getWorldId(), userId);
+        requireWorldAccess(entity.getWorldId(), userId);
+        requireWorldAccess(entity.getWorldId(), userId);
         if (name != null) entity.setName(name);
         if (nonBlank(attributesJson)) entity.setAttributesJson(attributesJson);
         if (nonBlank(inventoryJson)) entity.setInventoryJson(inventoryJson);
@@ -126,6 +130,7 @@ public class EntityService {
     @Transactional
     public GameEntity updateSkills(UUID entityId, UUID userId, Map<String, Integer> skills, UUID campaignId) {
         var entity = getById(entityId, userId);
+        requireWorldAccess(entity.getWorldId(), userId);
         enforceSkillMax(entity, skills, campaignId);
         try {
             var existing = entity.getSkillsJson() != null && !entity.getSkillsJson().isBlank()
@@ -297,6 +302,7 @@ public class EntityService {
     @Transactional
     public void delete(UUID entityId, UUID userId) {
         var entity = getById(entityId, userId);
+        requireWorldAccess(entity.getWorldId(), userId);
         entity.setActive(false);
         entityRepo.save(entity);
     }

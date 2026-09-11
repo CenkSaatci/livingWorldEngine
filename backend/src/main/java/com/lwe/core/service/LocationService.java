@@ -49,14 +49,14 @@ public class LocationService {
     }
 
     public List<Location> list(UUID regionId, UUID userId) {
-        requireAccess(regionId, userId);
+        requireRead(regionId, userId); // T33-02
         return repo.findByRegionIdOrderByNameAsc(regionId);
     }
 
     public Location getById(UUID locationId, UUID userId) {
         var loc = repo.findById(locationId)
             .orElseThrow(() -> new LocationException("LOCATION_NOT_FOUND", "Location not found"));
-        requireAccess(loc.getRegionId(), userId);
+        requireRead(loc.getRegionId(), userId); // T33-02
         return loc;
     }
 
@@ -90,6 +90,12 @@ public class LocationService {
         var loc = getById(locationId, userId);
         loc.setPositionJson(positionJson);
         repo.save(loc);
+    }
+
+    private void requireRead(UUID regionId, UUID userId) {
+        var region = regionRepo.findById(regionId)
+            .orElseThrow(() -> new LocationException("REGION_NOT_FOUND", "Region not found"));
+        worldAccess.requireRead(region.getWorldId(), userId);
     }
 
     private void requireAccess(UUID regionId, UUID userId) {

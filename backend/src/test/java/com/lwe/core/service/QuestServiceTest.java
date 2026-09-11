@@ -36,7 +36,7 @@ class QuestServiceTest {
 
     @Test
     void shouldCreateQuest() {
-        doNothing().when(worldAccess).requireAccess(worldId, userId);
+        lenient().doNothing().when(worldAccess).requireAccess(worldId, userId);
         when(repo.save(any())).thenAnswer(inv -> {
             var q = inv.<Quest>getArgument(0);
             setId(q, UUID.randomUUID());
@@ -56,7 +56,7 @@ class QuestServiceTest {
 
     @Test
     void shouldListQuestsByWorld() {
-        doNothing().when(worldAccess).requireAccess(worldId, userId);
+        lenient().doNothing().when(worldAccess).requireAccess(worldId, userId);
         when(repo.findByWorldIdOrderByCreatedAtDesc(worldId)).thenReturn(List.of());
 
         var list = service.list(worldId, userId, null);
@@ -67,7 +67,7 @@ class QuestServiceTest {
 
     @Test
     void shouldFilterQuestsByStatus() {
-        doNothing().when(worldAccess).requireAccess(worldId, userId);
+        lenient().doNothing().when(worldAccess).requireAccess(worldId, userId);
         when(repo.findByWorldIdAndStatusOrderByCreatedAtDesc(worldId, "ACTIVE")).thenReturn(List.of());
 
         var list = service.list(worldId, userId, "ACTIVE");
@@ -81,7 +81,7 @@ class QuestServiceTest {
         var quest = new Quest(worldId, "Test", "SIDE", "[]", "{}");
         setId(quest, UUID.randomUUID());
         when(repo.findById(quest.getId())).thenReturn(Optional.of(quest));
-        doNothing().when(worldAccess).requireAccess(worldId, userId);
+        lenient().doNothing().when(worldAccess).requireAccess(worldId, userId);
 
         var result = service.getById(quest.getId(), userId);
 
@@ -93,7 +93,7 @@ class QuestServiceTest {
         var quest = new Quest(worldId, "Test", "SIDE", "[]", "{}");
         setId(quest, UUID.randomUUID());
         when(repo.findById(quest.getId())).thenReturn(Optional.of(quest));
-        doNothing().when(worldAccess).requireAccess(worldId, userId);
+        lenient().doNothing().when(worldAccess).requireAccess(worldId, userId);
         when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(eventService.publish(any(), any(), any(), any(), any(), anyInt(), any())).thenReturn(null);
 
@@ -108,7 +108,7 @@ class QuestServiceTest {
         var quest = new Quest(worldId, "Test", "SIDE", "[]", "{}");
         setId(quest, UUID.randomUUID());
         when(repo.findById(quest.getId())).thenReturn(Optional.of(quest));
-        doNothing().when(worldAccess).requireAccess(worldId, userId);
+        lenient().doNothing().when(worldAccess).requireAccess(worldId, userId);
 
         service.delete(quest.getId(), userId);
 

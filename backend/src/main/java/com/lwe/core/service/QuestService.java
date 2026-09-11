@@ -43,7 +43,7 @@ public class QuestService {
     }
 
     public List<Quest> list(UUID worldId, UUID userId, String status) {
-        requireOwner(worldId, userId);
+        worldAccess.requireRead(worldId, userId); // T33-02
         if (status != null) {
             return repo.findByWorldIdAndStatusOrderByCreatedAtDesc(worldId, status);
         }
@@ -53,7 +53,7 @@ public class QuestService {
     public Quest getById(UUID questId, UUID userId) {
         var quest = repo.findById(questId)
             .orElseThrow(() -> new QuestException("QUEST_NOT_FOUND", "Quest not found"));
-        requireOwner(quest.getWorldId(), userId);
+        worldAccess.requireRead(quest.getWorldId(), userId); // T33-02
         return quest;
     }
 

@@ -67,16 +67,22 @@ public class WorldService {
      * Welten, auf die der User Zugriff hat (Owner + Member).
      */
     public List<World> listAccessible(UUID userId) {
-        var memberWorldIds = memberRepo.findWorldIdsByUserId(userId);
-        if (memberWorldIds.isEmpty()) {
-            return worldRepo.findByOwnerIdAndActiveTrue(userId);
-        }
+        // Konsistent zur Paginated-Variante (T33-02/Audit): PUBLIC rein, PRIVATE-Mitglieder raus.
         var owned = worldRepo.findByOwnerIdAndActiveTrue(userId);
+        var memberWorldIds = memberRepo.findWorldIdsByUserId(userId);
         var joined = worldRepo.findAllById(memberWorldIds).stream()
             .filter(World::isActive)
             .filter(w -> !w.getOwnerId().equals(userId)) // nicht doppelt
+            .filter(w -> !"PRIVATE".equals(w.getVisibility()))
             .toList();
-        return java.util.stream.Stream.concat(owned.stream(), joined.stream()).toList();
+        var publicWorlds = worldRepo.findByActiveTrue().stream()
+            .filter(w -> "PUBLIC".equals(w.getVisibility()))
+            .filter(w -> !w.getOwnerId().equals(userId))
+            .filter(w -> joined.stream().noneMatch(j -> j.getId().equals(w.getId())))
+            .toList();
+        return java.util.stream.Stream.concat(
+            java.util.stream.Stream.concat(owned.stream(), joined.stream()), publicWorlds.stream())
+            .toList();
     }
 
     public AccessibleResult listAccessible(UUID userId, int page, int size) {
