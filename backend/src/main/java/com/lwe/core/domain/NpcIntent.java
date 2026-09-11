@@ -15,6 +15,9 @@ public class NpcIntent {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Column(name = "campaign_id")
+    private UUID campaignId;
+
     @Column(name = "world_id", nullable = false)
     private UUID worldId;
 
@@ -52,6 +55,9 @@ public class NpcIntent {
         this.paramsJson = paramsJson;
         this.reasoning = reasoning;
     }
+
+    public UUID getCampaignId() { return campaignId; }
+    public void setCampaignId(UUID v) { this.campaignId = v; }
 
     public UUID getId() { return id; }
     public UUID getWorldId() { return worldId; }

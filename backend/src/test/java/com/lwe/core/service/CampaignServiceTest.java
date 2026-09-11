@@ -116,7 +116,7 @@ class CampaignServiceTest {
         when(memberService.isDm(campaign.getId(), userId)).thenReturn(true);
         when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        var updated = service.update(campaign.getId(), userId, "Runde 2", "{\"war\":\"active\"}");
+        var updated = service.update(campaign.getId(), userId, "Runde 2", "{\"war\":\"active\"}", null);
 
         assertThat(updated.getName()).isEqualTo("Runde 2");
         assertThat(updated.getStateJson()).isEqualTo("{\"war\":\"active\"}");
@@ -130,8 +130,26 @@ class CampaignServiceTest {
         doThrow(new WorldAccessException("WORLD_ACCESS_DENIED", "Access denied"))
             .when(worldAccess).requireAccess(worldId, userId);
 
-        assertThatThrownBy(() -> service.update(campaign.getId(), userId, null, null))
+        assertThatThrownBy(() -> service.update(campaign.getId(), userId, null, null, null))
             .isInstanceOf(WorldAccessException.class);
+    }
+
+    @Test
+    void botModeValidation() {
+        var campaign = new Campaign(worldId, gameSystemId, "Runde 1");
+        setId(campaign, UUID.randomUUID());
+        when(repo.findById(campaign.getId())).thenReturn(Optional.of(campaign));
+        when(memberService.isDm(campaign.getId(), userId)).thenReturn(true);
+        when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var updated = service.update(campaign.getId(), userId, null, null,
+            "{\"bot\":{\"mode\":\"autonom\"}}");
+        assertThat(updated.getSettingsJson()).contains("autonom");
+
+        assertThatThrownBy(() -> service.update(campaign.getId(), userId, null, null,
+            "{\"bot\":{\"mode\":\"chaos\"}}"))
+            .isInstanceOf(CampaignService.CampaignException.class)
+            .matches(e -> ((CampaignService.CampaignException) e).getErrorCode().equals("INVALID_AI_MODE"));
     }
 
     @Test

@@ -159,6 +159,34 @@ export default function CampaignDetailPage() {
     }
   };
 
+  const botMode: string = (() => {
+    try {
+      return JSON.parse(campaign?.settingsJson || '{}')?.bot?.mode ?? '';
+    } catch {
+      return '';
+    }
+  })();
+
+  const handleBotMode = async (mode: string) => {
+    try {
+      let settings: Record<string, unknown> = {};
+      try {
+        settings = JSON.parse(campaign?.settingsJson || '{}');
+      } catch {
+        settings = {};
+      }
+      const bot = (settings.bot as Record<string, unknown>) ?? {};
+      settings.bot = { ...bot, mode };
+      const res = await apiClient.patch(`/campaigns/${campaignId}`, {
+        settingsJson: JSON.stringify(settings),
+      });
+      setCampaign(res.data);
+      addToast(t('campaign.botModeSaved'), 'success');
+    } catch {
+      addToast(t('campaign.botModeFailed'), 'error');
+    }
+  };
+
   const handlePullSystem = async () => {
     try {
       const res = await apiClient.post(`/campaigns/${campaignId}/pull-system`);
@@ -252,6 +280,21 @@ export default function CampaignDetailPage() {
             <p className="mt-1 font-heading text-text-primary">{members.length}</p>
           </div>
         </div>
+
+        <section className="mb-6 rounded-lg border border-bg-elevated bg-bg-surface p-4">
+          <p className="text-xs text-text-secondary">{t('campaign.botMode')}</p>
+          <select
+            value={botMode}
+            onChange={(e) => handleBotMode(e.target.value)}
+            className="mt-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-sm text-text-primary outline-none focus:border-accent"
+          >
+            <option value="">{t('campaign.botModeWorld')}</option>
+            <option value="autonom">{t('campaign.botModeAutonom')}</option>
+            <option value="suggest">{t('campaign.botModeSuggest')}</option>
+            <option value="off">{t('campaign.botModeOff')}</option>
+          </select>
+          <p className="mt-1 text-[10px] text-text-secondary">{t('campaign.botModeHint')}</p>
+        </section>
 
         <section>
           <h2 className="mb-3 flex items-center gap-2 font-heading text-text-primary">

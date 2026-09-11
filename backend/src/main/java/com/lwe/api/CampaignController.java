@@ -52,7 +52,7 @@ public class CampaignController {
     public ResponseEntity<CampaignResponse> update(@PathVariable UUID id,
                                                     @Valid @RequestBody UpdateRequest req,
                                                     @AuthenticationPrincipal User user) {
-        var campaign = service.update(id, user.getId(), req.name(), req.stateJson());
+        var campaign = service.update(id, user.getId(), req.name(), req.stateJson(), req.settingsJson());
         return ResponseEntity.ok(CampaignResponse.from(campaign));
     }
 
@@ -108,7 +108,7 @@ public class CampaignController {
         @NotBlank String name
     ) {}
 
-    public record UpdateRequest(String name, String stateJson) {}
+    public record UpdateRequest(String name, String stateJson, String settingsJson) {}
 
     public record MemberRequest(@NotNull UUID userId, @NotBlank String role) {}
 

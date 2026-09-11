@@ -243,7 +243,15 @@
     "forkHint": "Beim Erstellen wird eine eigene Kopie der Welt angelegt — Änderungen betreffen nicht die Vorlage.",
     "systemUpdateAvailable": "System-Update verfügbar (v{{from}} → v{{to}})",
     "pullSystem": "System aktualisieren",
-    "pullSystemFailed": "System konnte nicht aktualisiert werden"
+    "pullSystemFailed": "System konnte nicht aktualisiert werden",
+    "botMode": "KI-Modus (Bot pro Kampagne)",
+    "botModeWorld": "Welt-Einstellung verwenden",
+    "botModeAutonom": "Autonom (NPC handelt sofort)",
+    "botModeSuggest": "Vorschlagen (DM bestätigt)",
+    "botModeOff": "Aus (keine KI-Aktionen)",
+    "botModeHint": "Überschreibt den Welt-Modus; gilt für Intents dieser Kampagne (P27-T04).",
+    "botModeSaved": "KI-Modus gespeichert",
+    "botModeFailed": "KI-Modus konnte nicht gespeichert werden"
   },
   "settings": {
     "title": "Einstellungen",

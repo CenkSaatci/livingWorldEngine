@@ -90,12 +90,33 @@ public class CampaignService {
     }
 
     @Transactional
-    public Campaign update(UUID id, UUID userId, String name, String stateJson) {
+    public Campaign update(UUID id, UUID userId, String name, String stateJson, String settingsJson) {
         var campaign = getById(id, userId);
         requireCampaignDmOrWorldOwner(campaign, userId);
         if (name != null) campaign.setName(name);
         if (stateJson != null) campaign.setStateJson(stateJson);
+        if (settingsJson != null) {
+            validateBotMode(settingsJson); // P27-T04
+            campaign.setSettingsJson(settingsJson);
+        }
         return repo.save(campaign);
+    }
+
+    private void validateBotMode(String settingsJson) {
+        try {
+            var mode = new com.fasterxml.jackson.databind.ObjectMapper().readTree(settingsJson)
+                .path("bot").path("mode");
+            if (mode.isMissingNode() || mode.isNull()) return;
+            if (!mode.isTextual()
+                || !java.util.Set.of("autonom", "suggest", "off").contains(mode.asText())) {
+                throw new CampaignException("INVALID_AI_MODE",
+                    "bot.mode must be autonom, suggest or off");
+            }
+        } catch (CampaignException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new CampaignException("INVALID_AI_MODE", "Malformed settings");
+        }
     }
 
     @Transactional

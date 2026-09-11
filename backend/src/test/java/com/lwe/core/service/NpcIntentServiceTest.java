@@ -29,6 +29,7 @@ class NpcIntentServiceTest {
     @Mock private WorldRepository worldRepo;
     @Mock private IntentExecutor executor;
     @Mock private com.lwe.core.util.WorldAccess worldAccess;
+    @Mock private com.lwe.core.repository.CampaignRepository campaignRepo;
 
     @InjectMocks private NpcIntentService npcIntentService;
     private final UUID userId = UUID.randomUUID();
@@ -46,14 +47,14 @@ class NpcIntentServiceTest {
             setId(intent, UUID.randomUUID());
             return intent;
         });
-        when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
-        var result = npcIntentService.create(worldId, npcId, "MOVE", "{\"x\":5,\"y\":5}", "moving north");
+        var result = npcIntentService.create(worldId, null, npcId, "MOVE", "{\"x\":5,\"y\":5}", "moving north");
 
         assertThat(result.getStatus()).isEqualTo("approved");
         verify(repo).save(any());
         verify(executor).execute(result);
-        verify(eventService).publish(eq(worldId), eq(WorldEventService.EventType.NPC_INTENT_PROPOSED), eq(npcId), isNull(), any());
+        verify(eventService).publish(eq(worldId), any(), eq(WorldEventService.EventType.NPC_INTENT_PROPOSED), eq(npcId), isNull(), any());
     }
 
     @Test
@@ -66,9 +67,9 @@ class NpcIntentServiceTest {
             setId(intent, UUID.randomUUID());
             return intent;
         });
-        when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
-        var result = npcIntentService.create(worldId, npcId, "SPEAK", "{}", "hello");
+        var result = npcIntentService.create(worldId, null, npcId, "SPEAK", "{}", "hello");
 
         assertThat(result.getStatus()).isEqualTo("pending");
         verify(executor, never()).execute(any());
@@ -85,7 +86,7 @@ class NpcIntentServiceTest {
             return intent;
         });
 
-        var result = npcIntentService.create(worldId, npcId, "MOVE", "{}", "nope");
+        var result = npcIntentService.create(worldId, null, npcId, "MOVE", "{}", "nope");
 
         assertThat(result.getStatus()).isEqualTo("rejected");
         assertThat(result.getRejectionReason()).isEqualTo("AI mode is off");
@@ -101,9 +102,9 @@ class NpcIntentServiceTest {
             setId(intent, UUID.randomUUID());
             return intent;
         });
-        when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
-        var result = npcIntentService.create(worldId, npcId, "ATTACK", "{}", "attack");
+        var result = npcIntentService.create(worldId, null, npcId, "ATTACK", "{}", "attack");
 
         assertThat(result.getStatus()).isEqualTo("rejected");
         assertThat(result.getRejectionReason()).isEqualTo("NPC not found");
@@ -118,7 +119,7 @@ class NpcIntentServiceTest {
 
         when(repo.findById(intentId)).thenReturn(Optional.of(intent));
         when(repo.save(any())).thenAnswer(inv -> inv.<NpcIntent>getArgument(0));
-        when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
         var result = npcIntentService.approve(intentId, userId);
 
@@ -126,7 +127,7 @@ class NpcIntentServiceTest {
         assertThat(result.getValidatedAt()).isNotNull();
         verify(repo).save(any());
         verify(executor).execute(intent);
-        verify(eventService).publish(eq(worldId), eq(WorldEventService.EventType.NPC_INTENT_APPROVED), eq(npcId), isNull(), any());
+        verify(eventService).publish(eq(worldId), any(), eq(WorldEventService.EventType.NPC_INTENT_APPROVED), eq(npcId), isNull(), any());
     }
 
     @Test
@@ -136,7 +137,7 @@ class NpcIntentServiceTest {
 
         when(repo.findById(intentId)).thenReturn(Optional.of(intent));
         when(repo.save(any())).thenAnswer(inv -> inv.<NpcIntent>getArgument(0));
-        when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
         var result = npcIntentService.reject(intentId, "not appropriate", userId);
 
@@ -144,7 +145,7 @@ class NpcIntentServiceTest {
         assertThat(result.getRejectionReason()).isEqualTo("not appropriate");
         verify(repo).save(any());
         verify(executor, never()).execute(any());
-        verify(eventService).publish(eq(worldId), eq(WorldEventService.EventType.NPC_INTENT_REJECTED), eq(npcId), isNull(), any());
+        verify(eventService).publish(eq(worldId), any(), eq(WorldEventService.EventType.NPC_INTENT_REJECTED), eq(npcId), isNull(), any());
     }
 
     @Test

@@ -101,6 +101,14 @@ class DatabaseMigrationTest {
     }
 
     @Test
+    void npcIntentsTableHasCampaignIdColumn() throws SQLException {
+        try (var conn = dataSource.getConnection()) {
+            var col = conn.getMetaData().getColumns(null, "public", "npc_intents", "campaign_id");
+            assertThat(col.next()).as("V101: npc_intents.campaign_id (P27-T04)").isTrue();
+        }
+    }
+
+    @Test
     void itemsTableHasGameSystemIdColumn() throws SQLException {
         try (var conn = dataSource.getConnection()) {
             var rs = conn.getMetaData()

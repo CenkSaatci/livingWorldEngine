@@ -178,6 +178,7 @@ public class GlobalExceptionHandler {
             case FormulaEvaluator.EvaluationException e -> HttpStatus.BAD_REQUEST;
             case IllegalArgumentException e -> HttpStatus.BAD_REQUEST;
             case CampaignService.CampaignException e -> switch (e.getErrorCode()) {
+                case "INVALID_AI_MODE" -> HttpStatus.BAD_REQUEST;
                 case "CAMPAIGN_NOT_FOUND", "WORLD_NOT_FOUND", "GAME_SYSTEM_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 case "DM_REQUIRED" -> HttpStatus.FORBIDDEN;
                 case "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;

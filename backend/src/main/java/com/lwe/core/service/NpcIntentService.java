@@ -1,6 +1,7 @@
 package com.lwe.core.service;
 
 import com.lwe.core.domain.NpcIntent;
+import com.lwe.core.repository.CampaignRepository;
 import com.lwe.core.repository.NpcIntentRepository;
 import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.util.WorldAccess;
@@ -22,22 +23,26 @@ public class NpcIntentService {
     private final WorldRepository worldRepo;
     private final IntentExecutor executor;
     private final WorldAccess worldAccess;
+    private final CampaignRepository campaignRepo;
 
     public NpcIntentService(NpcIntentRepository repo, IntentValidator validator,
                             WorldEventService eventService, WorldRepository worldRepo,
-                            IntentExecutor executor, WorldAccess worldAccess) {
+                            IntentExecutor executor, WorldAccess worldAccess,
+                            CampaignRepository campaignRepo) {
         this.repo = repo;
         this.validator = validator;
         this.eventService = eventService;
         this.worldRepo = worldRepo;
         this.executor = executor;
         this.worldAccess = worldAccess;
+        this.campaignRepo = campaignRepo;
     }
 
     @Transactional
-    public NpcIntent create(UUID worldId, UUID npcId, String intentType,
+    public NpcIntent create(UUID worldId, UUID campaignId, UUID npcId, String intentType,
                             String paramsJson, String reasoning) {
         var intent = new NpcIntent(worldId, npcId, intentType, paramsJson, reasoning);
+        intent.setCampaignId(campaignId);
 
         // 1. Validieren
         var result = validator.validate(intent);
@@ -45,7 +50,7 @@ public class NpcIntentService {
             intent.setStatus("rejected");
             intent.setRejectionReason(result.rejectionReason());
             intent = repo.save(intent);
-            eventService.publish(worldId, WorldEventService.EventType.NPC_INTENT_PROPOSED,
+            eventService.publish(worldId, campaignId, WorldEventService.EventType.NPC_INTENT_PROPOSED,
                 npcId, null, java.util.Map.of(
                     "intentId", intent.getId(),
                     "intentType", intentType,
@@ -54,8 +59,8 @@ public class NpcIntentService {
             return intent;
         }
 
-        // 2. ai_mode aus worlds.settings_json auslesen
-        var aiMode = readAiMode(worldId);
+        // 2. ai_mode: Kampagnen-Settings haben Vorrang (P27-T04), sonst Welt-Fallback
+        var aiMode = readAiMode(campaignId, worldId);
 
         if ("autonom".equals(aiMode)) {
             // Autonom: sofort approven + ausführen
@@ -63,7 +68,7 @@ public class NpcIntentService {
             intent.setValidatedAt(Instant.now());
             intent = repo.save(intent);
 
-            eventService.publish(worldId, WorldEventService.EventType.NPC_INTENT_PROPOSED,
+            eventService.publish(worldId, campaignId, WorldEventService.EventType.NPC_INTENT_PROPOSED,
                 npcId, null, java.util.Map.of(
                     "intentId", intent.getId(),
                     "intentType", intentType,
@@ -76,7 +81,7 @@ public class NpcIntentService {
             intent.setStatus("pending");
             intent = repo.save(intent);
 
-            eventService.publish(worldId, WorldEventService.EventType.NPC_INTENT_PROPOSED,
+            eventService.publish(worldId, campaignId, WorldEventService.EventType.NPC_INTENT_PROPOSED,
                 npcId, null, java.util.Map.of(
                     "intentId", intent.getId(),
                     "intentType", intentType,
@@ -107,7 +112,8 @@ public class NpcIntentService {
         intent.setValidatedAt(Instant.now());
         intent = repo.save(intent);
 
-        eventService.publish(intent.getWorldId(), WorldEventService.EventType.NPC_INTENT_APPROVED,
+        eventService.publish(intent.getWorldId(), intent.getCampaignId(),
+            WorldEventService.EventType.NPC_INTENT_APPROVED,
             intent.getNpcId(), null, java.util.Map.of("intentId", intentId));
 
         // Intent ausführen
@@ -126,12 +132,35 @@ public class NpcIntentService {
         intent.setValidatedAt(Instant.now());
         intent = repo.save(intent);
 
-        eventService.publish(intent.getWorldId(), WorldEventService.EventType.NPC_INTENT_REJECTED,
+        eventService.publish(intent.getWorldId(), intent.getCampaignId(),
+            WorldEventService.EventType.NPC_INTENT_REJECTED,
             intent.getNpcId(), null, java.util.Map.of("intentId", intentId, "reason", reason));
         return intent;
     }
 
-    private String readAiMode(UUID worldId) {
+    private String readAiMode(UUID campaignId, UUID worldId) {
+        if (campaignId != null) {
+            var campaign = campaignRepo.findById(campaignId).orElse(null);
+            if (campaign != null) {
+                var mode = readBotMode(campaign.getSettingsJson());
+                if (mode != null) return mode;
+            }
+        }
+        return readWorldAiMode(worldId);
+    }
+
+    private String readBotMode(String settingsJson) {
+        if (settingsJson == null || settingsJson.isBlank()) return null;
+        try {
+            var tree = new com.fasterxml.jackson.databind.ObjectMapper().readTree(settingsJson)
+                .path("bot").path("mode");
+            return tree.isTextual() ? tree.asText() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String readWorldAiMode(UUID worldId) {
         return worldRepo.findById(worldId)
             .map(w -> {
                 try {

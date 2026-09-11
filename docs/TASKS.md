@@ -2186,7 +2186,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD, E2E (Playwright: Template → Kampagne → NPC töten → Template prüfen)
 
 ### P27-T04: Bot pro Kampagne konfigurierbar
-- **Status:** 📋
+- **Status:** 🔄 Teilstand (Kampagnen-`settingsJson` mit validiertem `bot.mode` (autonom|suggest|off) via PATCH; Intents tragen `campaign_id` (V101) und nutzen Kampagnen-Modus vor Welt-Modus; UI-Select mit Welt-Fallback. Offen: Bot-Runtime pollt weiter Welt-weit — Multi-Tenant-Polling braucht einen internen Welten-Endpoint/Zuordnung (separates Ticket))
 - **Aufwand:** 1 Tag
 - **Beschreibung:**
   - Bot-Konfiguration in `campaigns.settings_json` (`{"bot": {"mode": "autonom|suggest|off"}}`, keine neue Spalte)

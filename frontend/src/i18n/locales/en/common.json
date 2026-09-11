@@ -243,7 +243,15 @@
     "forkHint": "Creating a campaign forks your own copy of the world — changes do not affect the template.",
     "systemUpdateAvailable": "System update available (v{{from}} → v{{to}})",
     "pullSystem": "Update system",
-    "pullSystemFailed": "Could not update system"
+    "pullSystemFailed": "Could not update system",
+    "botMode": "AI mode (bot per campaign)",
+    "botModeWorld": "Use world setting",
+    "botModeAutonom": "Autonomous (NPC acts immediately)",
+    "botModeSuggest": "Suggest (DM approves)",
+    "botModeOff": "Off (no AI actions)",
+    "botModeHint": "Overrides the world mode for intents of this campaign (P27-T04).",
+    "botModeSaved": "AI mode saved",
+    "botModeFailed": "Could not save AI mode"
   },
   "settings": {
     "title": "Settings",

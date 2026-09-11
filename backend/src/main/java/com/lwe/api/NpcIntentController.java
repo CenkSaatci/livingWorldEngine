@@ -27,7 +27,7 @@ public class NpcIntentController {
     @PostMapping
     public ResponseEntity<NpcIntentResponse> create(@Valid @RequestBody CreateRequest req,
                                                      @AuthenticationPrincipal User user) {
-        var intent = service.create(req.worldId(), req.npcId(), req.intentType(),
+        var intent = service.create(req.worldId(), req.campaignId(), req.npcId(), req.intentType(),
             req.paramsJson(), req.reasoning());
         return ResponseEntity.status(HttpStatus.CREATED).body(NpcIntentResponse.from(intent));
     }
@@ -55,7 +55,7 @@ public class NpcIntentController {
     }
 
     public record CreateRequest(
-        @NotNull UUID worldId, @NotNull UUID npcId, @NotBlank String intentType,
+        @NotNull UUID worldId, UUID campaignId, @NotNull UUID npcId, @NotBlank String intentType,
         String paramsJson, String reasoning
     ) {}
     public record RejectRequest(String reason) {}
