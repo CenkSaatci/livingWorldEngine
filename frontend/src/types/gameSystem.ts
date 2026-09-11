@@ -8,12 +8,15 @@ export interface AttributeDef {
   min: number;
   max: number;
   default: number;
+  costs?: AttributeCostTier[];
 }
 
 export interface SkillDef {
   name: string;
   attributes: string[];
   bonus: number;
+  costColumn?: string;
+  activationCost?: number;
 }
 
 export interface DiceCombat {
@@ -37,7 +40,10 @@ export interface SystemFeatures {
 
 export interface DerivedValue {
   name: string;
-  formula: string;
+  formula?: string;
+  input?: string;
+  table?: { min: number; max: number; value: number }[];
+  requiresTrait?: string;
 }
 
 export interface AbilityDef {
@@ -93,6 +99,56 @@ export interface ConditionalDef {
   target: string;
 }
 
+// P28-Blöcke. Absichtlich schlank typisiert — Verschärfung (Pflichtfelder,
+// Wertebereiche, Effekt-Semantik) erfolgt in T02–T05 mit den Features.
+export interface AttributeCostTier {
+  upTo: number;
+  cost: number;
+}
+
+export interface CreationBudget {
+  ap: number;
+  apCarryoverMax?: number;
+  fatePoints?: number;
+  maxAttrTotal?: number;
+  maxAttrValue?: number;
+  maxSkillValue?: number;
+  maxCombatValue?: number;
+  maxSpells?: number;
+  maxAdvantageAp?: number;
+}
+
+export interface PkgDef {
+  name: string;
+  kind: string;
+  cost?: number;
+}
+
+export interface TraitCost {
+  tier: string;
+  cost: number;
+}
+
+export interface TraitEffect {
+  target: string;
+  op: string;
+  value: number;
+}
+
+export interface TraitDef {
+  name: string;
+  kind: string;
+  costs?: TraitCost[];
+  requires?: string[];
+  excludes?: string[];
+  effects?: TraitEffect[];
+}
+
+export interface AdvancementDef {
+  columns?: string[];
+  table?: Record<string, unknown>[];
+}
+
 export interface WizardData {
   name: string;
   version: number;
@@ -115,6 +171,12 @@ export interface WizardData {
   probe: string;
   enableCombat: boolean;
   combat: DiceCombat;
+  // P28-Blöcke, alle optional (alte Systeme und defaultWizardData bleiben gültig).
+  creationBudget?: CreationBudget;
+  attributeCosts?: { default: AttributeCostTier[] };
+  packages?: PkgDef[];
+  traits?: TraitDef[];
+  advancement?: AdvancementDef;
 }
 
 export const DEFAULT_FEATURES: SystemFeatures = {
@@ -196,6 +258,12 @@ export function toRulesJson(data: WizardData): string {
     // progressionType nur setzen, wenn gewählt — das Backend-Schema verlangt
     // einen String und würde `null` ablehnen.
     ...(data.progressionType ? { progressionType: data.progressionType } : {}),
+    // P28-Blöcke: nur setzen, wenn vorhanden (abwärtskompatibel).
+    ...(data.creationBudget ? { creationBudget: data.creationBudget } : {}),
+    ...(data.attributeCosts ? { attributeCosts: data.attributeCosts } : {}),
+    ...(data.packages ? { packages: data.packages } : {}),
+    ...(data.traits ? { traits: data.traits } : {}),
+    ...(data.advancement ? { advancement: data.advancement } : {}),
     features: data.features,
     derived_values: data.derivedValues,
     abilities: data.abilities,
@@ -261,12 +329,15 @@ export function fromRulesJson(json: string): WizardData | null {
         min: (a.min as number) ?? 1,
         max: (a.max as number) ?? 20,
         default: (a.default as number) ?? 10,
+        ...(a.costs !== undefined ? { costs: a.costs as AttributeCostTier[] } : {}),
       }),
     );
     const skills: SkillDef[] = ((parsed.skills as Record<string, unknown>[] | undefined) ?? []).map((s: Record<string, unknown>) => ({
       name: (s.name as string) ?? '',
       attributes: (s.attributes as string[]) ?? ((s.attribute as string) ? [s.attribute as string] : []),
       bonus: (s.bonus as number) ?? 0,
+      ...(s.costColumn !== undefined ? { costColumn: s.costColumn as string } : {}),
+      ...(s.activationCost !== undefined ? { activationCost: s.activationCost as number } : {}),
     }));
     const dice = (parsed.dice_mechanics ?? {}) as Record<string, unknown>;
     const combat = (dice.combat ?? {}) as Record<string, any>;
@@ -276,6 +347,12 @@ export function fromRulesJson(json: string): WizardData | null {
       version: (parsed.version as number) ?? 1,
       description: (parsed.description as string) ?? '',
       probeType: (parsed.probeType as WizardData['probeType']) ?? 'd20_target',
+      // P28-Blöcke: fehlen → undefined (alte JSONs bleiben unverändert lesbar).
+      creationBudget: parsed.creationBudget as CreationBudget | undefined,
+      attributeCosts: parsed.attributeCosts as { default: AttributeCostTier[] } | undefined,
+      packages: parsed.packages as PkgDef[] | undefined,
+      traits: parsed.traits as TraitDef[] | undefined,
+      advancement: parsed.advancement as AdvancementDef | undefined,
       attributes: attrs,
       skills,
       probe: (dice.probe as string) ?? '1d20+mod',
@@ -319,7 +396,12 @@ export function fromRulesJson(json: string): WizardData | null {
       derivedValues: ((parsed.derived_values as Record<string, unknown>[]) ?? []).map(
         (dv: Record<string, unknown>) => ({
           name: (dv.name as string) ?? '',
-          formula: (dv.formula as string) ?? '',
+          ...(dv.formula !== undefined ? { formula: dv.formula as string } : {}),
+          ...(dv.input !== undefined ? { input: dv.input as string } : {}),
+          ...(dv.table !== undefined
+            ? { table: dv.table as { min: number; max: number; value: number }[] }
+            : {}),
+          ...(dv.requiresTrait !== undefined ? { requiresTrait: dv.requiresTrait as string } : {}),
         }),
       ),
       abilities: ((parsed.abilities as Record<string, unknown>[]) ?? []).map(

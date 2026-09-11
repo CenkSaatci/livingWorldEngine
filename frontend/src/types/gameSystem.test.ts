@@ -78,4 +78,29 @@ describe('gameSystem roundtrip', () => {
     expect(restored!.skills).toEqual([{ name: 'Athletik', attributes: ['staerke'], bonus: 2 }]);
     expect(restored!.conditionals[0].operator).toBe('gt');
   });
+
+  it('roundtrip preserves P28 blocks', () => {
+    const data = defaultWizardData();
+    data.creationBudget = { ap: 1100, maxAttrTotal: 100, fatePoints: 3 };
+    data.attributeCosts = { default: [{ upTo: 14, cost: 15 }] };
+    data.packages = [{ name: 'Elf', kind: 'species', cost: 18 }];
+    data.traits = [{ name: 'Glück', kind: 'advantage', costs: [{ tier: 'I', cost: 30 }] }];
+    data.advancement = { columns: ['A', 'B'], table: [] };
+    data.attributes = [{ name: 'staerke', type: 'INT', min: 1, max: 20, default: 10, costs: [{ upTo: 14, cost: 15 }] }];
+    data.skills = [{ name: 'Athletik', attributes: ['staerke'], bonus: 0, costColumn: 'C', activationCost: 0 }];
+    data.derivedValues = [{ name: 'sk', input: 'mut+klugheit', table: [{ min: 24, max: 26, value: 4 }], requiresTrait: 'Zauberer' }];
+
+    const restored = fromRulesJson(toRulesJson(data));
+
+    expect(restored!.creationBudget).toEqual({ ap: 1100, maxAttrTotal: 100, fatePoints: 3 });
+    expect(restored!.attributeCosts).toEqual({ default: [{ upTo: 14, cost: 15 }] });
+    expect(restored!.packages).toEqual([{ name: 'Elf', kind: 'species', cost: 18 }]);
+    expect(restored!.traits).toEqual([{ name: 'Glück', kind: 'advantage', costs: [{ tier: 'I', cost: 30 }] }]);
+    expect(restored!.advancement).toEqual({ columns: ['A', 'B'], table: [] });
+    expect(restored!.attributes[0].costs).toEqual([{ upTo: 14, cost: 15 }]);
+    expect(restored!.skills[0].costColumn).toBe('C');
+    expect(restored!.derivedValues).toEqual([
+      { name: 'sk', input: 'mut+klugheit', table: [{ min: 24, max: 26, value: 4 }], requiresTrait: 'Zauberer' },
+    ]);
+  });
 });

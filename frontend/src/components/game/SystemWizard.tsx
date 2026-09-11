@@ -325,7 +325,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
               <div className="flex-[2]">
                 <label className="block text-[10px] text-text-secondary mb-1">{t('sdv_header_formula')}</label>
                 <FormulaBuilder
-                  value={dv.formula}
+                  value={dv.formula ?? ''}
                   onChange={(v) => {
                     const a = [...data.derivedValues];
                     a[i] = { ...a[i], formula: v };

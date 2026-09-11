@@ -146,6 +146,34 @@ class RuleSchemaValidatorTest {
             .isInstanceOf(RuleSchemaValidator.SchemaValidationException.class);
     }
 
+    @Test
+    void shouldValidateD20LiteAgainstDefaultSchema() throws IOException {
+        // Regression (P28-T01): alte Systeme müssen gegen das echte
+        // Backend-Schema validieren, nicht nur gegen das Test-Minimalschema.
+        var errors = validator.validate(loadFixture("d20lite.json"),
+            RuleSchemaValidator.DEFAULT_SCHEMA);
+        assertThat(errors).as("D20Lite should validate against DEFAULT_SCHEMA").isEmpty();
+    }
+
+    @Test
+    void shouldAcceptP28BlocksAgainstDefaultSchema() {
+        // P28-T01: neue Top-Level-Blöcke als permissive Container.
+        var json = """
+            {"version":1,
+             "attributes":[{"name":"staerke","type":"INT","min":1,"max":20,"default":10}],
+             "dice_mechanics":{"probe":"1d20+mod"},
+             "creationBudget":{"ap":1100,"maxAttrTotal":100},
+             "attributeCosts":{"default":[{"upTo":14,"cost":15}]},
+             "packages":[{"name":"Elf","kind":"species","cost":18}],
+             "traits":[{"name":"Glück","kind":"advantage","costs":[{"tier":"I","cost":30}]}],
+             "advancement":{"columns":["A","B"],"table":[]},
+             "derived_values":[{"name":"sk","input":"mut+klugheit+intuition",
+               "table":[{"min":24,"max":26,"value":4}],"requiresTrait":"Zauberer"}]}
+            """;
+        var errors = validator.validate(json, RuleSchemaValidator.DEFAULT_SCHEMA);
+        assertThat(errors).as("P28 blocks should validate against DEFAULT_SCHEMA").isEmpty();
+    }
+
     private String loadFixture(String name) throws IOException {
         return Files.readString(Path.of("src/test/resources/rules/" + name));
     }
