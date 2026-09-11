@@ -30,8 +30,10 @@ export function DmQueuePanel({ worldId }: Props) {
       const res = await apiClient.get('/npc-intents', {
         params: { worldId, status: 'pending', type: typeFilter || undefined },
       });
-      setIntents(res.data ?? []);
-      setSelected(new Set());
+      const list = (res.data ?? []) as NpcIntent[];
+      setIntents(list);
+      // Auswahl behalten, nur verschwundene IDs entfernen (Audit Block C).
+      setSelected((prev) => new Set([...prev].filter((id) => list.some((i) => i.id === id))));
     } catch (e) {
       // P27-T06: Queue ist DM-only — 403 blendet das Panel aus (kein Dauer-Polling).
       if ((e as { response?: { status?: number } })?.response?.status === 403) {

@@ -29,7 +29,11 @@ class BackendClient:
                     headers=self.headers,
                     timeout=10,
                 )
-                return resp.json() if resp.status_code == 200 else []
+                if resp.status_code != 200:
+                    logger.warning("bot/worlds failed: status=%s body=%.200s",
+                                   resp.status_code, resp.text)
+                    return []
+                return resp.json()
             except Exception as e:  # inkl. Test-Router/Restfehler → Welten-Fallback
                 logger.warning("Failed to call %s: %s", f"{self.base}/bot/worlds", e)
                 return []

@@ -59,9 +59,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
     public ResponseEntity<ApiError> handleStatus(
             org.springframework.web.server.ResponseStatusException ex) {
+        var msg = ex.getReason() != null ? ex.getReason() : ex.getStatusCode().toString();
         return ResponseEntity.status(ex.getStatusCode())
             .body(ApiError.of(ex.getStatusCode() == HttpStatus.FORBIDDEN ? "FORBIDDEN" : "REQUEST_FAILED",
-                ex.getReason()));
+                msg));
     }
 
     @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
@@ -195,6 +196,7 @@ public class GlobalExceptionHandler {
             case NpcIntentService.IntentException e -> switch (e.getErrorCode()) {
                 case "INTENT_NOT_FOUND", "NPC_NOT_FOUND", "CAMPAIGN_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 case "INTENT_WORLD_MISMATCH" -> HttpStatus.UNPROCESSABLE_ENTITY;
+                case "INTENT_NOT_PENDING" -> HttpStatus.CONFLICT;
                 default -> HttpStatus.BAD_REQUEST;
             };
             case CampaignService.CampaignException e -> switch (e.getErrorCode()) {

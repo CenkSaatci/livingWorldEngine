@@ -63,7 +63,7 @@ public class NpcIntentController {
         return ResponseEntity.ok(NpcIntentResponse.from(intent));
     }
 
-    public record BulkRequest(@NotNull java.util.List<UUID> ids, @NotBlank String action, String reason) {}
+    public record BulkRequest(@NotNull @jakarta.validation.constraints.Size(max = 100) java.util.List<UUID> ids, @NotBlank String action, String reason) {}
 
     public record CreateRequest(
         @NotNull UUID worldId, UUID campaignId, @NotNull UUID npcId, @NotBlank String intentType,

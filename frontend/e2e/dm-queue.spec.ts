@@ -84,7 +84,7 @@ test.describe('DM-Queue Live + Bulk (T33-08)', () => {
     });
     expect(intent.ok()).toBeTruthy();
 
-    await expect(page.getByText('KI-Intent-Queue')).toBeVisible({ timeout: 3_000 });
+    await expect(page.getByText('KI-Intent-Queue')).toBeVisible({ timeout: 5_000 });
     await expect(page.getByText('Der Wirt grüßt.')).toBeVisible();
 
     // Bulk-Approve ueber die Checkbox

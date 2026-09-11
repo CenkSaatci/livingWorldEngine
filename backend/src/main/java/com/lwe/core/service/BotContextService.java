@@ -33,7 +33,6 @@ public class BotContextService {
     public List<WorldBotContext> listBotContexts() {
         return worldRepo.findByActiveTrue().stream().map(w -> {
             var campaigns = campaignRepo.findByWorldId(w.getId()).stream()
-                .filter(c -> !c.isForkedWorld() || true) // alle Kampagnen der (Fork-)Welt
                 .map(c -> new CampaignBotContext(c.getId(), c.getName(), readBotMode(c.getSettingsJson())))
                 .toList();
             return new WorldBotContext(w.getId(), w.getName(), readWorldAiMode(w.getSettingsJson()),

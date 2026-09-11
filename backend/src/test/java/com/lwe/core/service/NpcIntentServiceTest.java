@@ -174,6 +174,19 @@ class NpcIntentServiceTest {
     }
 
     @Test
+    void bulkDedupesAndRejectsNonPending() {
+        var approved = intentWithId(worldId, npcId, "MOVE", "approved");
+        when(repo.findById(approved.getId())).thenReturn(java.util.Optional.of(approved));
+
+        var results = npcIntentService.bulk(
+            java.util.List.of(approved.getId(), approved.getId()), "approve", null, userId);
+
+        assertThat(results).hasSize(1);
+        assertThat(results.getFirst().ok()).isFalse();
+        assertThat(results.getFirst().error()).contains("not pending");
+    }
+
+    @Test
     void bulkRequiresDm() {
         var intent = intentWithId(worldId, npcId, "MOVE", "pending");
         when(repo.findById(intent.getId())).thenReturn(java.util.Optional.of(intent));

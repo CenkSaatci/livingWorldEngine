@@ -125,11 +125,14 @@ public class NpcIntentService {
         return repo.findByWorldIdAndStatusOrderByCreatedAtDesc(worldId, "pending");
     }
 
-    /** T33-07: Bulk-Freigabe/-Ablehnung mit Teil-Fehler-Report. */
+    /** T33-07: Bulk-Freigabe/-Ablehnung mit Teil-Fehler-Report.
+     *  Audit Block C: laeuft in EINER Transaktion; logische Fehler werden pro Eintrag
+     *  gemeldet, DB-Fehler brechen den Batch ab. */
     @Transactional
     public List<BulkResult> bulk(List<UUID> ids, String action, String reason, UUID userId) {
         var results = new java.util.ArrayList<BulkResult>();
-        for (var id : ids) {
+        var unique = new java.util.ArrayList<>(new java.util.LinkedHashSet<>(ids));
+        for (var id : unique) {
             try {
                 var intent = repo.findById(id)
                     .orElseThrow(() -> new IntentException("INTENT_NOT_FOUND", "Intent not found: " + id));
@@ -156,6 +159,9 @@ public class NpcIntentService {
         var intent = repo.findById(intentId)
             .orElseThrow(() -> new IntentException("INTENT_NOT_FOUND", "Intent not found"));
         worldAccess.requireDm(intent.getWorldId(), userId);
+        if (!"pending".equals(intent.getStatus())) {
+            throw new IntentException("INTENT_NOT_PENDING", "Intent is not pending");
+        }
         intent.setStatus("approved");
         intent.setValidatedAt(Instant.now());
         intent = repo.save(intent);
@@ -175,6 +181,9 @@ public class NpcIntentService {
         var intent = repo.findById(intentId)
             .orElseThrow(() -> new IntentException("INTENT_NOT_FOUND", "Intent not found"));
         worldAccess.requireDm(intent.getWorldId(), userId);
+        if (!"pending".equals(intent.getStatus())) {
+            throw new IntentException("INTENT_NOT_PENDING", "Intent is not pending");
+        }
         intent.setStatus("rejected");
         intent.setRejectionReason(reason);
         intent.setValidatedAt(Instant.now());
