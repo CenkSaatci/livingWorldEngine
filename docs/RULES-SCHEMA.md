@@ -6,93 +6,26 @@
 
 ## 1. Schema (JSON Schema 2020-12)
 
-Das aktuelle Schema wird von `RuleSchemaValidator.DEFAULT_SCHEMA` definiert:
+> **Single Source of Truth:** `RuleSchemaValidator.DEFAULT_SCHEMA` (Backend-Code).
+> Das Schema wird hier nicht mehr dupliziert — die frühere Kopie ist bereits
+> einmal vom Code abgedriftet (u. a. `description` existierte nie im Code).
 
-```json
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "GameSystem",
-  "type": "object",
-  "required": ["version", "attributes", "dice_mechanics"],
-  "additionalProperties": false,
-  "properties": {
-    "version":          { "type": "integer", "minimum": 1 },
-    "description":      { "type": "string" },
-    "probeType":        { "type": "string", "enum": ["d20_target", "d100_threshold", "d20_3attr"] },
-    "progressionType":  { "type": "string" },
-    "modifierFormula":  { "type": "string" },
-    "features":         { "type": "object" },
-    "derived_values":   { "type": "array", "items": { "type": "object" } },
-    "abilities":        { "type": "array", "items": { "type": "object" } },
-    "progression":      { "type": "object" },
-    "magic":            { "type": "object" },
-    "psionics":         { "type": "object" },
-    "conditionals":     { "type": "array", "items": { "type": "object" } },
-    "attributes": {
-      "type": "array",
-      "minItems": 1,
-      "items": { "$ref": "#/$defs/attribute" }
-    },
-    "skills": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/skill" }
-    },
-    "dice_mechanics": {
-      "type": "object",
-      "required": ["probe"],
-      "properties": {
-        "probe":        { "type": "string" },
-        "combat":       { "$ref": "#/$defs/combat" }
-      }
-    }
-  },
-  "$defs": {
-    "attribute": {
-      "type": "object",
-      "required": ["name", "type", "default"],
-      "properties": {
-        "name":    { "type": "string", "minLength": 1, "maxLength": 50 },
-        "type":    { "enum": ["INT", "FLOAT", "STRING", "BOOL"] },
-        "min":     { "type": "number" },
-        "max":     { "type": "number" },
-        "default": { }
-      }
-    },
-    "skill": {
-      "type": "object",
-      "required": ["name"],
-      "anyOf": [
-        { "required": ["attribute"] },
-        { "required": ["attributes"] }
-      ],
-      "properties": {
-        "name":       { "type": "string" },
-        "attribute":  { "type": "string", "description": "Legacy single attribute reference" },
-        "attributes": { "type": "array", "items": { "type": "string" }, "description": "Multi-attribute reference (z.B. DSA 3er-Proben)" },
-        "bonus":      { "type": "integer", "default": 0 }
-      }
-    },
-    "combat": {
-      "type": "object",
-      "required": ["initiative", "damage"],
-      "properties": {
-        "initiative":       { "type": "string" },
-        "damage":           { "type": "string" },
-        "action_points":    { "$ref": "#/$defs/actionPoints" },
-        "action_types":     { "type": "array", "items": { "type": "string" } },
-        "actions_per_turn": { "type": "object" }
-      }
-    },
-    "actionPoints": {
-      "type": "object",
-      "properties": {
-        "standard": { "type": "integer", "default": 2 },
-        "max":      { "type": "integer", "default": 4 }
-      }
-    }
-  }
-}
-```
+**Top-Level-Keys** (`additionalProperties: false`):
+
+| Key | Typ | Zweck |
+|---|---|---|
+| `version` | integer ≥ 1 | Pflicht |
+| `attributes` | array (min 1) | Pflicht — Attribut-Definitionen |
+| `dice_mechanics` | object (`probe` Pflicht) | Pflicht — Probe/Kampf-Ausdrücke |
+| `probeType` | enum | `d20_target` \| `d100_threshold` \| `d20_3attr` |
+| `progressionType` | string | `level` \| `xp` \| `improvement` |
+| `features` / `magic` / `psionics` / `conditionals` / `abilities` / `progression` | object/array | Bestehende Blöcke |
+| `derived_values` | array | Formeln, Tabellen, `requiresTrait` (P28) |
+| `creationBudget` | object | AP-Topf + Caps (P28) |
+| `attributeCosts` | object | Attribut-Kostenkurven (P28) |
+| `traits` | array | Vor-/Nachteile-Katalog (P28) |
+| `advancement` | object | Steigerungs-Matrix + Max-Regel (P28) |
+| `packages` | array | Reserviert (P29: Spezies/Kultur/Profession) |
 
 ---
 
@@ -178,10 +111,35 @@ Siehe [`docs/examples/`](examples/) für drei vollständige Beispielsysteme:
 
 ## 8. Schema-Erweiterungen
 
-Neue optionale Properties können jederzeit ergänzt werden. Aktuell geplant/nutzbar:
+Neue optionale Properties können jederzeit ergänzt werden. Aktuell nutzbar:
 - `conditionals` — Bedingte Boni/Mali (via `ConditionEvaluator`)
-- `derived_values` — Abgeleitete Werte (HP, AC, Ini, etc.)
+- `derived_values` — Abgeleitete Werte; drei Formen: `formula`, `input`+`table` (Lookup, Lücken/Überlappungen = Fehler), `requiresTrait` (Eintrag fehlt ohne Trait)
 - `abilities` — Charakter-Fähigkeiten für den Kampf
 - `features` — System-Feature-Flags (magic, psionics, armorPenalty)
 - `progression` — Level/XP-Tabellen und Verbesserungen
 - `magic` / `psionics` — Magie- und Psionik-Subsystem
+
+### P28: Engine-Bausteine (Beispiel: [`p28-reference.json`](https://github.com/CenkSaatci/livingWorldEngine/blob/main/backend/src/test/resources/rules/p28-reference.json))
+
+```json
+{
+  "creationBudget": { "ap": 1100, "attrBase": 8, "maxAttrTotal": 100, "maxAdvantageAp": 80, "fatePoints": 3 },
+  "attributeCosts": { "default": [{ "upTo": 14, "cost": 15 }, { "upTo": 15, "cost": 30 }] },
+  "traits": [
+    { "name": "Hohe Lebenskraft", "kind": "advantage",
+      "costs": [{ "tier": "I", "cost": 6 }],
+      "excludes": ["Niedrige Lebenskraft"],
+      "effects": [{ "target": "derived:hp", "op": "add", "value": 3 }] }
+  ],
+  "advancement": {
+    "columns": ["A", "B", "C", "D"],
+    "maxRule": "highestAttributePlus2",
+    "table": [{ "from": 1, "to": 12, "costs": { "A": 1, "B": 2, "C": 3, "D": 4 } }]
+  },
+  "skills": [{ "name": "Zauber", "attributes": ["klugheit"], "costColumn": "C", "activationCost": 3 }]
+}
+```
+
+- **Traits:** Effekte nur `derived:<name>` / `attribute:<name>` mit `add`; gewählte Traits stehen am Charakter in `entities.metadata_json.traits` (Tier-Suffix wie `"Glück II"` wird ignoriert).
+- **Advancement:** `maxRule: "highestAttributePlus2"` erzwingt beim Skill-PATCH mit `campaignId` ein 422 (`SKILL_MAX_EXCEEDED`).
+- **Budget-Durchsetzung:** Schema prüft Shapes; AP-Durchsetzung erfolgt im Wizard (Save-Gate), nicht am System-Save.

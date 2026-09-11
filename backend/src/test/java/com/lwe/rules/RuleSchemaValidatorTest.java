@@ -202,6 +202,14 @@ class RuleSchemaValidatorTest {
     }
 
     @Test
+    void shouldValidateP28ReferenceAgainstDefaultSchema() throws IOException {
+        // P28-T06: Referenz-System nutzt alle P28-Bloecke.
+        var json = loadFixture("p28-reference.json");
+        var errors = validator.validate(json, RuleSchemaValidator.DEFAULT_SCHEMA);
+        assertThat(errors).as("P28-Referenz muss gegen DEFAULT_SCHEMA validieren").isEmpty();
+    }
+
+    @Test
     void shouldThrowOnInvalidInput() {
         assertThatThrownBy(() -> validator.validateOrThrow("not json", schemaJson))
             .isInstanceOf(RuleSchemaValidator.SchemaValidationException.class);

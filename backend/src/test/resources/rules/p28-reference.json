@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "probeType": "d20_3attr",
+  "creationBudget": {
+    "ap": 1100,
+    "apCarryoverMax": 10,
+    "fatePoints": 3,
+    "attrBase": 8,
+    "maxAttrTotal": 100,
+    "maxAttrValue": 14,
+    "maxSkillValue": 10,
+    "maxCombatValue": 12,
+    "maxAdvantageAp": 80
+  },
+  "attributeCosts": {
+    "default": [
+      { "upTo": 14, "cost": 15 },
+      { "upTo": 15, "cost": 30 },
+      { "upTo": 16, "cost": 45 }
+    ]
+  },
+  "attributes": [
+    { "name": "mut", "type": "INT", "min": 1, "max": 20, "default": 8 },
+    { "name": "klugheit", "type": "INT", "min": 1, "max": 20, "default": 8 },
+    { "name": "intuition", "type": "INT", "min": 1, "max": 20, "default": 8 },
+    { "name": "konstitution", "type": "INT", "min": 1, "max": 20, "default": 8 },
+    { "name": "koerperkraft", "type": "INT", "min": 1, "max": 20, "default": 8 }
+  ],
+  "skills": [
+    { "name": "Klettern", "attributes": ["mut", "koerperkraft"], "bonus": 0, "costColumn": "B" },
+    { "name": "Zauber", "attributes": ["klugheit"], "bonus": 0, "costColumn": "C", "activationCost": 3 }
+  ],
+  "derived_values": [
+    { "name": "sk", "input": "mut+klugheit+intuition", "table": [
+      { "min": 24, "max": 26, "value": 4 },
+      { "min": 27, "max": 32, "value": 5 },
+      { "min": 33, "max": 38, "value": 6 },
+      { "min": 39, "max": 44, "value": 7 }
+    ] },
+    { "name": "asp", "formula": "20+mut", "requiresTrait": "Zauberer" },
+    { "name": "hp", "formula": "10+konstitution" }
+  ],
+  "traits": [
+    { "name": "Zauberer", "kind": "advantage", "costs": [{ "tier": "I", "cost": 25 }], "effects": [] },
+    { "name": "Hohe Lebenskraft", "kind": "advantage",
+      "costs": [{ "tier": "I", "cost": 6 }, { "tier": "II", "cost": 12 }, { "tier": "III", "cost": 18 }],
+      "excludes": ["Niedrige Lebenskraft"],
+      "effects": [{ "target": "derived:hp", "op": "add", "value": 3 }] }
+  ],
+  "advancement": {
+    "columns": ["A", "B", "C", "D"],
+    "maxRule": "highestAttributePlus2",
+    "table": [
+      { "from": 1, "to": 12, "costs": { "A": 1, "B": 2, "C": 3, "D": 4 } },
+      { "from": 13, "to": 13, "costs": { "A": 2, "B": 4, "C": 6, "D": 8 } }
+    ]
+  },
+  "dice_mechanics": { "probe": "3d20" }
+}

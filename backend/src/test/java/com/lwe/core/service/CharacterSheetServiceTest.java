@@ -271,4 +271,42 @@ class CharacterSheetServiceTest {
         var sheet = service.getSheet(entityId, userId);
         assertThat(sheet.attributes()).extracting(a -> a.name()).containsExactly("staerke");
     }
+
+    @Test
+    void getSheet_computesP28ReferenceSystem() throws Exception {
+        // P28-T06 Abnahme: Referenz-System (Budget, Traits, Tabelle, Advancement).
+        var entity = mockEntity("{\"mut\":14,\"klugheit\":12,\"intuition\":14,\"konstitution\":10,\"koerperkraft\":10}",
+            "{\"Klettern\":12}");
+        when(entity.getMetadataJson()).thenReturn("{\"traits\":[\"Zauberer\",\"Hohe Lebenskraft III\"]}");
+        mockWorld(systemId);
+        stubRules(java.nio.file.Files.readString(
+            java.nio.file.Path.of("src/test/resources/rules/p28-reference.json")));
+
+        var sheet = service.getSheet(entityId, userId);
+
+        // Tabelle: 14+12+14 = 40 -> Zeile 39-44 -> 7
+        var sk = sheet.derivedValues().stream().filter(d -> d.name().equals("sk")).findFirst().orElseThrow();
+        assertThat(sk.value()).isEqualTo(7.0);
+        // requiresTrait Zauberer ist gewaehlt -> 20+14
+        var asp = sheet.derivedValues().stream().filter(d -> d.name().equals("asp")).findFirst().orElseThrow();
+        assertThat(asp.value()).isEqualTo(34.0);
+        // Trait-Effekt auf hp: 10+10 (+0 konstitution) + 3 = 23
+        var hp = sheet.derivedValues().stream().filter(d -> d.name().equals("hp")).findFirst().orElseThrow();
+        assertThat(hp.value()).isEqualTo(23.0);
+        // Advancement: Klettern gespeichert 12 -> naechster Schritt 13 -> Spalte B = 4
+        var klettern = sheet.skills().stream().filter(sk2 -> sk2.name().equals("Klettern")).findFirst().orElseThrow();
+        assertThat(klettern.advanceCost()).isEqualTo(4);
+    }
+
+    @Test
+    void getSheet_omitsRequiresTraitEntryWhenMissing() throws Exception {
+        var entity = mockEntity("{\"mut\":14,\"klugheit\":12,\"intuition\":14,\"konstitution\":10,\"koerperkraft\":10}", null);
+        mockWorld(systemId);
+        stubRules(java.nio.file.Files.readString(
+            java.nio.file.Path.of("src/test/resources/rules/p28-reference.json")));
+
+        var sheet = service.getSheet(entityId, userId);
+
+        assertThat(sheet.derivedValues()).extracting(d -> d.name()).doesNotContain("asp");
+    }
 }
