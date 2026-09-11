@@ -44,7 +44,7 @@ public class RuleSchemaValidator {
             "attributeCosts":   { "type": "object", "properties": {
               "default": { "type": "array", "items": { "$ref": "#/$defs/costTier" } }
             } },
-            "packages":         { "type": "array", "items": { "type": "object" } },
+            "packages":         { "type": "array", "items": { "$ref": "#/$defs/package" } },
             "traits":           { "type": "array", "items": { "$ref": "#/$defs/trait" } },
             "advancement":      { "type": "object", "properties": {
               "columns":   { "type": "array", "items": { "type": "string" } },
@@ -183,6 +183,38 @@ public class RuleSchemaValidator {
                 "target": { "type": "string" },
                 "op":     { "enum": ["add"] },
                 "value":  { "type": "number" }
+              }
+            },
+            "package": {
+              "type": "object",
+              "required": ["name"],
+              "properties": {
+                "name":          { "type": "string", "minLength": 1 },
+                "kind":          { "type": "string" },
+                "cost":          { "type": "integer" },
+                "attributeMods": { "type": "array", "items": {
+                  "type": "object",
+                  "required": ["value"],
+                  "properties": {
+                    "attr":   { "type": "string" },
+                    "choice": { "oneOf": [
+                      { "type": "string" },
+                      { "type": "array", "items": { "type": "string" } }
+                    ] },
+                    "value":  { "type": "integer" }
+                  }
+                } },
+                "autoTraits":    { "type": "array", "items": { "type": "string" } },
+                "baseValues":    { "type": "array", "items": {
+                  "type": "object",
+                  "required": ["name", "value"],
+                  "properties": {
+                    "name":  { "type": "string" },
+                    "value": { "type": "number" }
+                  }
+                } },
+                "recommended":   { "type": "array", "items": { "type": "string" } },
+                "restricted":    { "type": "array", "items": { "type": "string" } }
               }
             },
             "maneuver": {

@@ -13,13 +13,21 @@ import {
   wizardIssues,
   type AttributeDef,
   type ConditionalDef,
+  type PkgDef,
+  type PackageSelection,
   type TraitDef,
   type WizardData,
+  findPackage,
+  resolvePackageMods,
+  packageCost,
+  packageAutoTraits,
+  packageSelectionIssues,
+  packageSelectionWarnings,
 } from '../../types/gameSystem';
 
 export type { WizardData };
 
-const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_dv', 'step_label_3', 'step_label_5a', 'step_label_6', 'step_label_7', 'step_label_8', 'step_label_4', 'step_label_budget', 'step_label_traits', 'step_label_5'];
+const STEPS = ['step_label_0', 'step_label_1', 'step_label_2', 'step_label_dv', 'step_label_3', 'step_label_5a', 'step_label_6', 'step_label_7', 'step_label_8', 'step_label_4', 'step_label_budget', 'step_label_traits', 'step_label_packages', 'step_label_5'];
 
 const DICE_PRESETS = [
   { v: '1d2', l: '1d2' }, { v: '1d3', l: '1d3' }, { v: '1d4', l: '1d4' }, { v: '1d6', l: '1d6' },
@@ -51,6 +59,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
   const [step, setStep] = useState(0);
   const [data, setData] = useState<WizardData>(() => initialData ?? INITIAL);
   const [saving, setSaving] = useState(false);
+  const [pkgPreview, setPkgPreview] = useState<PackageSelection[]>([]);
   const toast = useToast();
 
   useImperativeHandle(ref, () => ({ buildRulesJson }), [data]);
@@ -1797,6 +1806,232 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
       )}
 
       {step === 12 && (
+        <div className="space-y-4">
+          <h3 className="font-heading text-text-primary">{t('spk_title')}</h3>
+          <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('spk_hint') }} />
+
+          {(data.packages ?? []).map((pkg, i) => {
+            const setPkg = (next: Partial<PkgDef>) => {
+              const list = [...(data.packages ?? [])];
+              list[i] = { ...list[i], ...next };
+              update('packages', list);
+            };
+            const listOf = (v: string) => v.split(',').map((x) => x.trim()).filter(Boolean);
+            return (
+              <div key={i} className="space-y-2 rounded border border-bg-elevated bg-bg-primary/40 p-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    value={pkg.name}
+                    onChange={(e) => setPkg({ name: e.target.value })}
+                    placeholder={t('spk_name')}
+                    className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                  <select
+                    value={pkg.kind}
+                    onChange={(e) => setPkg({ kind: e.target.value })}
+                    className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  >
+                    <option value="">-</option>
+                    <option value="species">{t('spk_species')}</option>
+                    <option value="culture">{t('spk_culture')}</option>
+                    <option value="profession">{t('spk_profession')}</option>
+                  </select>
+                  <input
+                    type="number"
+                    value={pkg.cost ?? 0}
+                    onChange={(e) => setPkg({ cost: Number(e.target.value) })}
+                    title={t('spk_cost')}
+                    className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                  <button
+                    aria-label={t('spk_delete')}
+                    onClick={() => update('packages', (data.packages ?? []).filter((_, j) => j !== i))}
+                    className="text-danger hover:text-danger/80"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+
+                <div>
+                  <p className="mb-1 text-[10px] uppercase text-text-secondary">{t('spk_mods')}</p>
+                  {(pkg.attributeMods ?? []).map((mod, mi) => {
+                    const isChoice = mod.choice !== undefined;
+                    return (
+                      <div key={mi} className="mb-1 flex items-center gap-2">
+                        <select
+                          value={isChoice ? 'choice' : 'fixed'}
+                          onChange={(e) => {
+                            const mods = [...(pkg.attributeMods ?? [])];
+                            mods[mi] = e.target.value === 'choice'
+                              ? { choice: '*', value: mods[mi].value }
+                              : { attr: '', value: mods[mi].value };
+                            setPkg({ attributeMods: mods });
+                          }}
+                          className="w-24 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                        >
+                          <option value="fixed">{t('spk_fixed')}</option>
+                          <option value="choice">{t('spk_choice')}</option>
+                        </select>
+                        <input
+                          value={isChoice
+                            ? (mod.choice === '*' ? '*' : (mod.choice ?? []).join(','))
+                            : (mod.attr ?? '')}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const mods = [...(pkg.attributeMods ?? [])];
+                            if (mods[mi].choice !== undefined) {
+                              mods[mi] = { ...mods[mi], choice: raw === '*' ? '*' : listOf(raw) };
+                            } else {
+                              mods[mi] = { ...mods[mi], attr: raw };
+                            }
+                            setPkg({ attributeMods: mods });
+                          }}
+                          placeholder={t('spk_attr_or_list')}
+                          className="w-32 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs font-mono text-text-primary outline-none focus:border-accent"
+                        />
+                        <input
+                          type="number"
+                          value={mod.value}
+                          onChange={(e) => {
+                            const mods = [...(pkg.attributeMods ?? [])];
+                            mods[mi] = { ...mods[mi], value: Number(e.target.value) };
+                            setPkg({ attributeMods: mods });
+                          }}
+                          className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                        />
+                        <button
+                          aria-label={t('spk_delete')}
+                          onClick={() => setPkg({ attributeMods: (pkg.attributeMods ?? []).filter((_, j) => j !== mi) })}
+                          className="text-danger hover:text-danger/80"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                  <button
+                    onClick={() => setPkg({ attributeMods: [...(pkg.attributeMods ?? []), { attr: '', value: 0 }] })}
+                    className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+                  >
+                    <Plus size={12} /> {t('spk_add_mod')}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {(['autoTraits', 'recommended', 'restricted'] as const).map((key) => (
+                    <label key={key} className="text-[10px] uppercase text-text-secondary">
+                      {t(`spk_${key}`)}
+                      <input
+                        value={(pkg[key] ?? []).join(', ')}
+                        onChange={(e) => setPkg({ [key]: listOf(e.target.value) } as Partial<PkgDef>)}
+                        className="mt-1 w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          <button
+            onClick={() => update('packages', [...(data.packages ?? []), { name: '', kind: 'species', cost: 0 }])}
+            className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+          >
+            <Plus size={14} /> {t('spk_add')}
+          </button>
+
+          {(data.packages ?? []).length > 0 && (
+            <div className="space-y-2 rounded border border-bg-elevated bg-bg-primary/40 p-3">
+              <p className="text-xs font-medium text-text-primary">{t('spk_preview')}</p>
+              <div className="flex flex-wrap gap-3">
+                {(['species', 'culture', 'profession'] as const).map((kind) => {
+                  const options = (data.packages ?? []).filter((pk) => pk.kind === kind && pk.name);
+                  if (options.length === 0) return null;
+                  const current = pkgPreview.find((sel) => options.some((o) => o.name === sel.name));
+                  return (
+                    <label key={kind} className="text-[10px] uppercase text-text-secondary">
+                      {t(`spk_${kind}`)}
+                      <select
+                        value={current?.name ?? ''}
+                        onChange={(e) => {
+                          const rest = pkgPreview.filter((sel) => !options.some((o) => o.name === sel.name));
+                          const chosen = options.find((o) => o.name === e.target.value);
+                          setPkgPreview(chosen ? [...rest, { name: chosen.name, choices: [] }] : rest);
+                        }}
+                        className="ml-1 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                      >
+                        <option value="">-</option>
+                        {options.map((o) => <option key={o.name} value={o.name}>{o.name}</option>)}
+                      </select>
+                    </label>
+                  );
+                })}
+              </div>
+
+              {pkgPreview.map((sel) => {
+                const def = findPackage(data.packages ?? [], sel.name);
+                if (!def) return null;
+                const choiceMods = (def.attributeMods ?? []).filter((m) => m.choice !== undefined);
+                if (choiceMods.length === 0) return null;
+                return (
+                  <div key={sel.name} className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="text-text-secondary">{sel.name}:</span>
+                    {choiceMods.map((m, ci) => {
+                      const allowed = m.choice === '*' ? data.attributes.map((a) => a.name) : (m.choice ?? []);
+                      return (
+                        <select
+                          key={ci}
+                          value={sel.choices?.[ci] ?? ''}
+                          onChange={(e) => {
+                            const choices = [...(sel.choices ?? [])];
+                            choices[ci] = e.target.value;
+                            setPkgPreview(pkgPreview.map((s2) => s2.name === sel.name ? { ...s2, choices } : s2));
+                          }}
+                          className="rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                        >
+                          <option value="">-</option>
+                          {allowed.map((a) => <option key={a} value={a}>{a}</option>)}
+                        </select>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+
+              {pkgPreview.length > 0 && (
+                <p className="text-xs text-text-secondary">
+                  {t('spk_cost')}:{' '}
+                  <span className="text-text-primary">
+                    {packageCost(data.packages ?? [], pkgPreview)} {t('spk_ap')}
+                  </span>
+                  {(() => {
+                    const mods = resolvePackageMods(data.packages ?? [], pkgPreview);
+                    return mods.size > 0
+                      ? ' · ' + [...mods.entries()].map(([k2, v]) => `${k2} ${v > 0 ? '+' : ''}${v}`).join(', ')
+                      : '';
+                  })()}
+                  {(() => {
+                    const traits = packageAutoTraits(data.packages ?? [], pkgPreview);
+                    return traits.length > 0 ? ' · ' + traits.join(', ') : '';
+                  })()}
+                </p>
+              )}
+
+              {packageSelectionIssues(data, pkgPreview).map((code) => (
+                <p key={code} className="text-xs text-danger">
+                  {t('spk_issue')}: {code.split(':').join(' · ')}
+                </p>
+              ))}
+              {packageSelectionWarnings(data, pkgPreview).map((code) => (
+                <p key={code} className="text-xs text-warning">
+                  {t('spk_warning')}: {code.split(':').join(' · ')}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {step === 13 && (
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s5_title')}</h3>
 

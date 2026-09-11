@@ -122,10 +122,116 @@ export interface CreationBudget {
   maxAdvantageAp?: number;
 }
 
+export interface PackageAttributeMod {
+  /** Festes Attribut (z. B. "MU"). Entweder attr oder choice. */
+  attr?: string;
+  /** Choice-Gruppe: genau ein Attribut aus der Liste oder "*" = beliebiges. */
+  choice?: string[] | '*';
+  value: number;
+}
+
 export interface PkgDef {
   name: string;
+  /** 'species' | 'culture' | 'profession' (frei, aber Konvention). */
   kind: string;
   cost?: number;
+  attributeMods?: PackageAttributeMod[];
+  autoTraits?: string[];
+  baseValues?: { name: string; value: number }[];
+  recommended?: string[];
+  restricted?: string[];
+}
+
+/** Auswahl eines Pakets; choices = aufgelöste Choice-Gruppen in Reihenfolge der Mods. */
+export interface PackageSelection {
+  name: string;
+  choices?: string[];
+}
+
+export function findPackage(defs: PkgDef[], name: string): PkgDef | undefined {
+  return defs.find((d) => d.name === name);
+}
+
+export function packageChoiceCount(def: PkgDef): number {
+  return (def.attributeMods ?? []).filter((m) => m.choice !== undefined).length;
+}
+
+/** Attribut-Mods aller gewählten Pakete (Fest + aufgelöste Choices), summiert. */
+export function resolvePackageMods(defs: PkgDef[], selections: PackageSelection[]): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const sel of selections) {
+    const def = findPackage(defs, sel.name);
+    if (!def) continue;
+    let choiceIdx = 0;
+    for (const mod of def.attributeMods ?? []) {
+      const target = mod.attr
+        ?? (mod.choice !== undefined ? sel.choices?.[choiceIdx++] : undefined);
+      if (!target) continue;
+      out.set(target, (out.get(target) ?? 0) + mod.value);
+    }
+  }
+  return out;
+}
+
+export function packageCost(defs: PkgDef[], selections: PackageSelection[]): number {
+  return selections.reduce((sum, sel) => sum + (findPackage(defs, sel.name)?.cost ?? 0), 0);
+}
+
+export function packageAutoTraits(defs: PkgDef[], selections: PackageSelection[]): string[] {
+  const out: string[] = [];
+  for (const sel of selections) {
+    for (const t of findPackage(defs, sel.name)?.autoTraits ?? []) {
+      if (!out.includes(t)) out.push(t);
+    }
+  }
+  return out;
+}
+
+/** Strukturelle Fehler der Paket-Auswahl (Codes für i18n). */
+export function packageSelectionIssues(data: WizardData, selections: PackageSelection[]): string[] {
+  const defs = data.packages ?? [];
+  const knownAttrs = data.attributes.map((a) => a.name);
+  const issues: string[] = [];
+  const seenKinds = new Set<string>();
+  for (const sel of selections) {
+    const def = findPackage(defs, sel.name);
+    if (!def) { issues.push(`unknown:${sel.name}`); continue; }
+    if (def.kind) {
+      if (seenKinds.has(def.kind)) issues.push(`duplicate_kind:${def.kind}`);
+      seenKinds.add(def.kind);
+    }
+    const choiceMods = (def.attributeMods ?? []).filter((m) => m.choice !== undefined);
+    if ((sel.choices?.length ?? 0) !== choiceMods.length) {
+      issues.push(`choice_count:${def.name}`);
+    } else {
+      choiceMods.forEach((m, i) => {
+        const chosen = sel.choices![i];
+        const allowed = m.choice === '*' ? knownAttrs : (m.choice ?? []);
+        if (!allowed.includes(chosen)) issues.push(`choice_invalid:${def.name}:${chosen}`);
+      });
+    }
+  }
+  const selectedNames = selections.map((s) => s.name);
+  for (const sel of selections) {
+    for (const r of findPackage(defs, sel.name)?.restricted ?? []) {
+      if (selectedNames.includes(r)) issues.push(`restricted:${sel.name}:${r}`);
+    }
+  }
+  return [...new Set(issues)];
+}
+
+/** Untypische Kombinationen (Warnungen, kein Blocker). */
+export function packageSelectionWarnings(data: WizardData, selections: PackageSelection[]): string[] {
+  const defs = data.packages ?? [];
+  const selectedNames = selections.map((s) => s.name);
+  const warnings: string[] = [];
+  for (const sel of selections) {
+    const rec = findPackage(defs, sel.name)?.recommended ?? [];
+    if (rec.length > 0 && !rec.some((r) => selectedNames.includes(r))) {
+      warnings.push(`recommended:${sel.name}:${rec.join(',')}`);
+    }
+  }
+  return warnings;
 }
 
 export interface TraitCost {

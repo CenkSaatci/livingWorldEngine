@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { defaultWizardData, toRulesJson, fromRulesJson, attrPointCost, calcBudget, traitCost, danglingTraitRefs, traitSelectionErrors, advanceCost, skillAdvanceCost, wizardIssues } from './gameSystem';
+import { defaultWizardData, toRulesJson, fromRulesJson, attrPointCost, calcBudget, traitCost, danglingTraitRefs, traitSelectionErrors, advanceCost, skillAdvanceCost, wizardIssues, resolvePackageMods, packageCost, packageAutoTraits, packageSelectionIssues, packageSelectionWarnings, type PackageSelection } from './gameSystem';
 
 describe('gameSystem roundtrip', () => {
   it('toRulesJson/fromRulesJson preserves all ability fields', () => {
@@ -235,5 +235,71 @@ describe('wizard save gate (P28 audit)', () => {
 
     data.traits[0].name = 'Glück';
     expect(wizardIssues(data)).toEqual([]);
+  });
+});
+
+describe('packages (P29-T05)', () => {
+  const withPackages = () => {
+    const data = defaultWizardData();
+    data.attributes = [
+      { name: 'MU', type: 'INT', min: 1, max: 20, default: 10 },
+      { name: 'KK', type: 'INT', min: 1, max: 20, default: 10 },
+      { name: 'KO', type: 'INT', min: 1, max: 20, default: 10 },
+    ];
+    data.packages = [
+      {
+        name: 'Elf', kind: 'species', cost: 18,
+        attributeMods: [{ attr: 'MU', value: 1 }, { choice: ['KK', 'KO'], value: -1 }],
+        autoTraits: ['Nachtsicht'],
+        recommended: ['Waldelf'],
+      },
+      { name: 'Waldelf', kind: 'culture', cost: 0, restricted: ['Zwerg'] },
+      { name: 'Zwerg', kind: 'species', cost: 12 },
+      { name: 'Söldner', kind: 'profession', cost: 5, attributeMods: [{ choice: '*', value: 1 }] },
+    ];
+    return data;
+  };
+
+  it('resolves fixed and choice attribute mods (Elf-Äquivalent)', () => {
+    const data = withPackages();
+    const sel: PackageSelection[] = [{ name: 'Elf', choices: ['KK'] }];
+    const mods = resolvePackageMods(data.packages!, sel);
+    expect(mods.get('MU')).toBe(1);
+    expect(mods.get('KK')).toBe(-1);
+    expect(mods.has('KO')).toBe(false);
+    expect(packageCost(data.packages!, sel)).toBe(18);
+    expect(packageAutoTraits(data.packages!, sel)).toEqual(['Nachtsicht']);
+  });
+
+  it('roundtrips packages through toRulesJson/fromRulesJson', () => {
+    const data = withPackages();
+    const restored = fromRulesJson(toRulesJson(data));
+    expect(restored!.packages).toEqual(data.packages);
+  });
+
+  it('validates choice groups exactly once and flags untypical combos', () => {
+    const data = withPackages();
+    const ok: PackageSelection[] = [{ name: 'Elf', choices: ['KK'] }, { name: 'Waldelf' }];
+    expect(packageSelectionIssues(data, ok)).toEqual([]);
+    // Elf empfiehlt Waldelf → gewählt: keine Warnung
+    expect(packageSelectionWarnings(data, ok)).toEqual([]);
+
+    const missing = packageSelectionIssues(data, [{ name: 'Elf' }]);
+    expect(missing).toContain('choice_count:Elf');
+    const badChoice = packageSelectionIssues(data, [{ name: 'Elf', choices: ['GE'] }]);
+    expect(badChoice).toContain('choice_invalid:Elf:GE');
+    const star = packageSelectionIssues(data, [{ name: 'Söldner', choices: ['KO'] }]);
+    expect(star).toEqual([]);
+    const starBad = packageSelectionIssues(data, [{ name: 'Söldner', choices: ['XX'] }]);
+    expect(starBad).toContain('choice_invalid:Söldner:XX');
+
+    const restricted = packageSelectionIssues(data, [{ name: 'Zwerg' }, { name: 'Waldelf' }]);
+    expect(restricted).toContain('restricted:Waldelf:Zwerg');
+
+    const duplicate = packageSelectionIssues(data, [{ name: 'Elf', choices: ['KK'] }, { name: 'Zwerg' }]);
+    expect(duplicate).toContain('duplicate_kind:species');
+
+    const noCulture = packageSelectionWarnings(data, [{ name: 'Elf', choices: ['KK'] }]);
+    expect(noCulture).toContain('recommended:Elf:Waldelf');
   });
 });

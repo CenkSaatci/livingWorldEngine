@@ -2364,7 +2364,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Qualitäts-Check:** TDD, E2E (Playwright)
 
 ### P29-T05: Pakete (Spezies/Kultur/Profession)
-- **Status:** 📋
+- **Status:** ✅ (`packages[]` Schema+PkgDef: kind/cost/attributeMods (Fest + Choice-Gruppen `["MU","KK"]`/`"*"`)/autoTraits/baseValues/recommended/restricted; Wizard-Step 12 mit Editor + Live-Vorschau (Mods, Kosten, Auto-Traits, Fehler/Warnungen); Helper `resolvePackageMods`/`packageSelectionIssues` etc. mit Elf-Abnahme-Tests; i18n DE/EN)
 - **Aufwand:** 1,5 Tage
 - **Beschreibung:**
   - `packages[]`: Typ, AP-Kosten, Attribut-Mods mit Choice-Gruppen („MU *oder* KK −1", „eine beliebige +1"), Basiswerte, Auto-Traits, empfohlene/eingeschränkte Folge-Pakete (Kultur-Restriktionen)

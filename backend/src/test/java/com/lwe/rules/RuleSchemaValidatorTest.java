@@ -167,6 +167,38 @@ class RuleSchemaValidatorTest {
         assertThat(validator.validate(bad, RuleSchemaValidator.DEFAULT_SCHEMA)).isNotEmpty();
     }
 
+
+    @Test
+    void shouldValidatePackageShapes() throws IOException {
+        var ok = """
+            {
+              "version": 1,
+              "attributes": [{"name":"MU","type":"INT","min":3,"max":20,"default":10}],
+              "dice_mechanics": {"probe": "1d20+mod"},
+              "packages": [
+                {
+                  "name": "Elf", "kind": "species", "cost": 18,
+                  "attributeMods": [
+                    {"attr": "MU", "value": 1},
+                    {"choice": ["KK", "KO"], "value": -1},
+                    {"choice": "*", "value": 1}
+                  ],
+                  "autoTraits": ["Nachtsicht"],
+                  "baseValues": [{"name": "LE", "value": 8}],
+                  "recommended": ["Waldelf"],
+                  "restricted": ["Zwerg"]
+                }
+              ]
+            }
+            """;
+        assertThat(validator.validate(ok, RuleSchemaValidator.DEFAULT_SCHEMA)).isEmpty();
+
+        var badChoice = ok.replace("\"choice\": [\"KK\", \"KO\"]", "\"choice\": 5");
+        assertThat(validator.validate(badChoice, RuleSchemaValidator.DEFAULT_SCHEMA)).isNotEmpty();
+        var missingValue = ok.replace("{\"attr\": \"MU\", \"value\": 1}", "{\"attr\": \"MU\"}");
+        assertThat(validator.validate(missingValue, RuleSchemaValidator.DEFAULT_SCHEMA)).isNotEmpty();
+    }
+
     @Test
     void shouldRejectInvalidTraitShapes() {
         // P28-T03: Traits sind jetzt streng typisiert.
