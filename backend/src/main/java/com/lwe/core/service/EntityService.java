@@ -192,6 +192,50 @@ public class EntityService {
         }
     }
 
+    /** Schicksalspunkt ausgeben (P29-T02). */
+    @Transactional
+    public GameEntity spendFatePoint(UUID entityId, UUID userId, UUID campaignId) {
+        var entity = getById(entityId, userId);
+        int max = 0;
+        if (campaignId != null && rulesLoader.campaignBelongsToWorld(campaignId, entity.getWorldId())) {
+            var rules = rulesLoader.loadRules(campaignId, entity.getWorldId());
+            if (rules.get("creationBudget") instanceof Map<?, ?> b && b.get("fatePoints") instanceof Number n) {
+                max = n.intValue();
+            }
+        }
+        int current = fatePoints(entity, max);
+        if (current <= 0) throw new EntityException("FATE_NONE_LEFT", "No fate points left");
+        writeFatePoints(entity, current - 1);
+        return entityRepo.save(entity);
+    }
+
+    /** Aktuelle Schicksalspunkte (metadataJson.fate_points), Default = Budget-Wert. */
+    public int fatePoints(GameEntity entity, int defaultMax) {
+        if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank()) return defaultMax;
+        try {
+            var node = objectMapper.readTree(entity.getMetadataJson()).path("fate_points");
+            return node.isInt() || node.isLong() ? node.asInt() : defaultMax;
+        } catch (Exception e) {
+            return defaultMax;
+        }
+    }
+
+    private void writeFatePoints(GameEntity entity, int value) {
+        try {
+            ObjectNode meta;
+            if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank()) {
+                meta = objectMapper.createObjectNode();
+            } else {
+                var parsed = objectMapper.readTree(entity.getMetadataJson());
+                meta = parsed.isObject() ? (ObjectNode) parsed : objectMapper.createObjectNode();
+            }
+            meta.put("fate_points", value);
+            entity.setMetadataJson(objectMapper.writeValueAsString(meta));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update fate points", e);
+        }
+    }
+
     /** Zustand anwenden (P29-T01); Katalog prueft/freigibt die Namen. */
     @Transactional
     public GameEntity addCondition(UUID entityId, UUID userId, String name, Integer rounds, UUID campaignId) {

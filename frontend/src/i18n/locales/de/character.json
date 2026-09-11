@@ -37,7 +37,9 @@
     "addCondition": "Zustand hinzufügen",
     "removeCondition": "Zustand entfernen",
     "noConditions": "Keine Zustände",
-    "conditionFailed": "Zustände konnten nicht geändert werden"
+    "conditionFailed": "Zustände konnten nicht geändert werden",
+    "fate": "Schicksalspunkte",
+    "spendFate": "Schicksalspunkt ausgeben und neu würfeln"
   },
   "attribute": {
     "modifier": "Modifikator"

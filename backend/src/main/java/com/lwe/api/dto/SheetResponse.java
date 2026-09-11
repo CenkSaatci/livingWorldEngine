@@ -7,6 +7,8 @@ public record SheetResponse(
     EntityInfo entity,
     int experiencePoints,
     int level,
+    int fatePoints,
+    int fateMax,
     List<AttributeInfo> attributes,
     List<DerivedValueInfo> derivedValues,
     List<SkillInfo> skills,

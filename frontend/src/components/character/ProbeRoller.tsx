@@ -9,6 +9,8 @@ interface Props {
   entityId: string;
   skillName: string;
   skillTotal: number;
+  fateAvailable?: boolean;
+  onSpendFate?: () => Promise<void>;
 }
 
 interface ProbeResult {
@@ -21,7 +23,7 @@ interface ProbeResult {
   activeConditionals: { name: string; bonus: string; target: string }[];
 }
 
-export function ProbeRoller({ entityId, skillName }: Props) {
+export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate }: Props) {
   const { t } = useTranslation('character');
   const toast = useToast();
   const [result, setResult] = useState<ProbeResult | null>(null);
@@ -64,6 +66,16 @@ export function ProbeRoller({ entityId, skillName }: Props) {
       >
         <Dice size={14} className={rolling ? 'animate-spin' : ''} />
       </button>
+      {result && fateAvailable && onSpendFate && (
+        <button
+          onClick={async () => { await onSpendFate(); await handleRoll(); }}
+          className="text-xs text-warning hover:text-warning/70"
+          title={t('sheet.spendFate')!}
+          aria-label={t('sheet.spendFate')!}
+        >
+          ★
+        </button>
+      )}
       {failed && !result && (
         <span className="text-xs font-mono text-danger" title={t('sheet.probeFailed')!}>
           !

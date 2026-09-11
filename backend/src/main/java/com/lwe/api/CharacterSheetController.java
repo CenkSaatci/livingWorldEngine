@@ -69,6 +69,14 @@ public class CharacterSheetController {
         return ResponseEntity.ok(EntityResponse.from(entity));
     }
 
+    @PostMapping("/{entityId}/fate/spend")
+    public ResponseEntity<EntityResponse> spendFatePoint(@PathVariable UUID entityId,
+                                                          @RequestParam(required = false) UUID campaignId,
+                                                          @AuthenticationPrincipal User user) {
+        var entity = entityService.spendFatePoint(entityId, user.getId(), campaignId);
+        return ResponseEntity.ok(EntityResponse.from(entity));
+    }
+
     @PostMapping("/{entityId}/conditions")
     public ResponseEntity<EntityResponse> addCondition(@PathVariable UUID entityId,
                                                         @RequestBody Map<String, Object> body,

@@ -332,4 +332,23 @@ class CharacterSheetServiceTest {
         assertThat(sheet.activeConditions().get(0).rounds()).isEqualTo(2);
         assertThat(sheet.conditionCatalog()).containsExactly("Wunde", "Betaeubt");
     }
+
+    @Test
+    void getSheet_includesFatePoints() throws Exception {
+        var entity = mockEntity("{\"staerke\":10}", null);
+        when(entity.getMetadataJson()).thenReturn("{\"fate_points\":1}");
+        mockWorld(systemId);
+        stubRules("""
+            {
+                "attributes": [{"name":"staerke","type":"INT","default":10}],
+                "creationBudget": {"ap": 1100, "fatePoints": 3},
+                "dice_mechanics":{"probe":"1d20+mod"}
+            }
+            """);
+
+        var sheet = service.getSheet(entityId, userId);
+
+        assertThat(sheet.fatePoints()).isEqualTo(1);
+        assertThat(sheet.fateMax()).isEqualTo(3);
+    }
 }

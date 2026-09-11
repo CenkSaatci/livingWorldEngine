@@ -239,4 +239,24 @@ class EntityServiceTest {
 
         verify(conditionService).remove(entity, "Wunde");
     }
+
+    @Test
+    void spendFatePointDecrementsAndRejectsAtZero() {
+        var entity = entityWithId("{\"staerke\":10}");
+        var campaignId = campaignInWorld();
+        when(entityRepo.findById(any())).thenReturn(Optional.of(entity));
+        doNothing().when(worldAccess).requireAccess(any(), any());
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(rulesLoader.loadRules(campaignId, worldId)).thenReturn(Map.of(
+            "creationBudget", Map.of("fatePoints", 2)));
+
+        service.spendFatePoint(entity.getId(), userId, campaignId); // 2 -> 1
+        assertThat(service.fatePoints(entity, 2)).isEqualTo(1);
+
+        service.spendFatePoint(entity.getId(), userId, campaignId); // 1 -> 0
+        assertThatThrownBy(() -> service.spendFatePoint(entity.getId(), userId, campaignId))
+            .isInstanceOf(EntityService.EntityException.class)
+            .satisfies(e -> assertThat(((EntityService.EntityException) e).getErrorCode())
+                .isEqualTo("FATE_NONE_LEFT"));
+    }
 }

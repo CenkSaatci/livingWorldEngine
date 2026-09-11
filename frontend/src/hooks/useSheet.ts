@@ -6,6 +6,8 @@ export interface SheetData {
   entity: { id: string; name: string; entityType: string };
   experiencePoints: number;
   level: number;
+  fatePoints?: number;
+  fateMax?: number;
   attributes: { name: string; value: number; modifier: number; min: number; max: number }[];
   derivedValues: { name: string; value: number; error?: string | null }[];
   skills: { name: string; total: number; perCharacterValue?: number | null; advanceCost?: number | null }[];

@@ -157,6 +157,13 @@ public class CharacterSheetService {
             level = levelUpService.getLevel(entity, gs);
         }
 
+        int fateMax = 0;
+        if (rules.get("creationBudget") instanceof Map<?, ?> budget
+            && budget.get("fatePoints") instanceof Number n) {
+            fateMax = n.intValue();
+        }
+        int fateCurrent = fatePoints(entity, fateMax);
+
         var activeConditions = conditionService.active(entity).stream()
             .map(c -> new SheetResponse.ConditionInfo(c.name(), c.rounds()))
             .toList();
@@ -168,7 +175,8 @@ public class CharacterSheetService {
 
         return new SheetResponse(
             new SheetResponse.EntityInfo(entity.getId().toString(), entity.getName(), entity.getEntityType()),
-            entity.getExperiencePoints(), level, attributes, derivedValues, skills, conditionals, abilities,
+            entity.getExperiencePoints(), level, fateCurrent, fateMax,
+            attributes, derivedValues, skills, conditionals, abilities,
             activeConditions, conditionCatalog
         );
     }
@@ -180,6 +188,16 @@ public class CharacterSheetService {
         worldAccess.requireAccess(entity.getWorldId(), userId);
         entity.setExperiencePoints(experiencePoints);
         entityRepo.save(entity);
+    }
+
+    private int fatePoints(GameEntity entity, int defaultMax) {
+        if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank()) return defaultMax;
+        try {
+            var node = objectMapper.readTree(entity.getMetadataJson()).path("fate_points");
+            return node.isInt() || node.isLong() ? node.asInt() : defaultMax;
+        } catch (Exception e) {
+            return defaultMax;
+        }
     }
 
     private Map<String, Object> parseOverrides(GameEntity entity) {

@@ -154,6 +154,11 @@ export function CharacterSheet({ entityId }: Props) {
             <div className="h-full rounded-full bg-warning" style={{ width: `${Math.min(100, (data.experiencePoints % 1000) / 10)}%` }} />
           </div>
           <XpInput value={data.experiencePoints} entityId={entityId} onSaved={refetch} />
+          {(data.fateMax ?? 0) > 0 && (
+            <span className="flex items-center gap-1 text-warning" title={t('sheet.fate')!}>
+              ★ {data.fatePoints ?? 0}/{data.fateMax}
+            </span>
+          )}
         </div>
       </div>
 
@@ -223,7 +228,14 @@ export function CharacterSheet({ entityId }: Props) {
           {filteredSkills.map((skill) => (
             <SkillRow key={skill.name} skill={skill} entityId={entityId}
               skillOverrides={skillOverrides} setSkillOverrides={setSkillOverrides}
-              onSaved={refetch} />
+              onSaved={refetch}
+              fateAvailable={(data.fatePoints ?? 0) > 0}
+              onSpendFate={async () => {
+                const campaignId = useCampaignStore.getState().activeCampaignId;
+                await apiClient.post(
+                  `/entities/${entityId}/fate/spend${campaignId ? `?campaignId=${campaignId}` : ''}`, {});
+                refetch();
+              }} />
           ))}
           {filteredSkills.length === 0 && (
             <p className="text-xs text-text-secondary">{t('sheet.noSkills')}</p>
@@ -278,10 +290,12 @@ export function CharacterSheet({ entityId }: Props) {
   );
 }
 
-function SkillRow({ skill, entityId, skillOverrides, setSkillOverrides, onSaved }: {
+function SkillRow({ skill, entityId, skillOverrides, setSkillOverrides, onSaved, fateAvailable, onSpendFate }: {
   skill: SheetData['skills'][0]; entityId: string;
   skillOverrides: Record<string, number>; setSkillOverrides: (v: Record<string, number>) => void;
   onSaved: () => void;
+  fateAvailable?: boolean;
+  onSpendFate?: () => Promise<void>;
 }) {
   const toast = useToast();
   const { t } = useTranslation('character');
@@ -337,7 +351,8 @@ function SkillRow({ skill, entityId, skillOverrides, setSkillOverrides, onSaved 
             )}
           </button>
         )}
-        <ProbeRoller entityId={entityId} skillName={skill.name} skillTotal={skill.total} />
+        <ProbeRoller entityId={entityId} skillName={skill.name} skillTotal={skill.total}
+          fateAvailable={fateAvailable} onSpendFate={onSpendFate} />
       </div>
     </div>
   );
