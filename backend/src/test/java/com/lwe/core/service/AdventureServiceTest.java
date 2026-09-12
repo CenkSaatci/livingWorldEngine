@@ -7,6 +7,7 @@ import com.lwe.core.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -53,6 +54,36 @@ class AdventureServiceTest {
 
         var result = service.createAdventure(worldId, userId, "Quest", null, null, null);
         assertThat(result.getName()).isEqualTo("Quest");
+    }
+
+    @Test
+    void listByLocationFiltersForeignWorlds() {
+        var foreignWorld = UUID.randomUUID();
+        var foreign = new Adventure(foreignWorld, "Fremd");
+        setId(foreign, UUID.randomUUID());
+        var locId = UUID.randomUUID();
+        when(adventureRepo.findByLocationId(locId)).thenReturn(List.of(adventure, foreign));
+        doThrow(new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireRead(foreignWorld, userId);
+
+        assertThat(service.listByLocation(locId, userId)).containsExactly(adventure);
+    }
+
+    @Test
+    void listByGiverDeniesStranger() {
+        var giverId = UUID.randomUUID();
+        when(adventureRepo.findByGiverEntityId(giverId)).thenReturn(List.of(adventure));
+        doThrow(new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireRead(worldId, userId);
+
+        assertThat(service.listByGiver(giverId, userId)).isEmpty();
+    }
+
+    @Test
+    void listByLocationUnknownReturnsEmpty() {
+        when(adventureRepo.findByLocationId(any())).thenReturn(List.of());
+
+        assertThat(service.listByLocation(UUID.randomUUID(), userId)).isEmpty();
     }
 
     @Test

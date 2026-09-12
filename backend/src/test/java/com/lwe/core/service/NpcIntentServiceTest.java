@@ -6,6 +6,7 @@ import com.lwe.core.repository.NpcIntentRepository;
 import com.lwe.core.repository.WorldRepository;
 import com.lwe.rules.IntentExecutor;
 import com.lwe.rules.IntentValidator;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -31,9 +32,18 @@ class NpcIntentServiceTest {
     @Mock private com.lwe.core.util.WorldAccess worldAccess;
     @Mock private com.lwe.core.repository.CampaignRepository campaignRepo;
     @Mock private com.lwe.core.repository.GameEntityRepository entityRepo;
+    @Mock private org.springframework.transaction.support.TransactionOperations txOps;
 
     @InjectMocks private NpcIntentService npcIntentService;
     private final UUID userId = UUID.randomUUID();
+
+    @BeforeEach
+    void runTransactionsInline() {
+        // Tx-Grenzen im Unit-Test transparent: Callback sofort ausfuehren.
+        lenient().when(txOps.execute(any())).thenAnswer(inv ->
+            ((org.springframework.transaction.support.TransactionCallback<Object>) inv.getArgument(0))
+                .doInTransaction(mock(org.springframework.transaction.TransactionStatus.class)));
+    }
 
     private final UUID worldId = UUID.randomUUID();
     private final UUID npcId = UUID.randomUUID();
@@ -171,6 +181,23 @@ class NpcIntentServiceTest {
         assertThat(results.stream().filter(r -> r.ok()).count()).isEqualTo(2);
         assertThat(results.stream().filter(r -> !r.ok()).count()).isEqualTo(1);
         verify(executor, times(2)).execute(any());
+    }
+
+    @Test
+    void bulkRunsEachItemInOwnTransaction() {
+        var first = intentWithId(worldId, npcId, "MOVE", "pending");
+        var done = intentWithId(worldId, npcId, "SPEAK", "approved");
+        when(repo.findByIdForUpdate(first.getId())).thenReturn(java.util.Optional.of(first));
+        when(repo.findByIdForUpdate(done.getId())).thenReturn(java.util.Optional.of(done));
+        when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        var results = npcIntentService.bulk(
+            java.util.List.of(first.getId(), done.getId()), "approve", null, userId);
+
+        assertThat(results.stream().filter(r -> r.ok()).count()).isEqualTo(1);
+        assertThat(first.getStatus()).isEqualTo("approved");
+        verify(txOps, times(2)).execute(any());
     }
 
     @Test

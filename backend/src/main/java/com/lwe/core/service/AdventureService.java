@@ -56,12 +56,26 @@ public class AdventureService {
         return adventureRepo.findByWorldId(worldId);
     }
 
-    public List<Adventure> listByLocation(UUID locationId) {
-        return adventureRepo.findByLocationId(locationId);
+    public List<Adventure> listByLocation(UUID locationId, UUID userId) {
+        return adventureRepo.findByLocationId(locationId).stream()
+            .filter(a -> canRead(a, userId))
+            .toList();
     }
 
-    public List<Adventure> listByGiver(UUID giverEntityId) {
-        return adventureRepo.findByGiverEntityId(giverEntityId);
+    public List<Adventure> listByGiver(UUID giverEntityId, UUID userId) {
+        return adventureRepo.findByGiverEntityId(giverEntityId).stream()
+            .filter(a -> canRead(a, userId))
+            .toList();
+    }
+
+    /** P34-T01: Unbekannte ID und fehlender Zugriff liefern beide leere Liste (kein Existenz-Orakel). */
+    private boolean canRead(Adventure a, UUID userId) {
+        try {
+            worldAccess.requireRead(a.getWorldId(), userId);
+            return true;
+        } catch (com.lwe.core.util.WorldAccess.WorldAccessException e) {
+            return false;
+        }
     }
 
     @Transactional

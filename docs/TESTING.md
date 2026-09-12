@@ -700,13 +700,14 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 
 **Ergebnis-Erfassung:** Abgehakte Checkpoints + gefundene Fehler mit Reproduktionsschritten hier unten notieren (Datum, Ticket-Nummer).
 
-**Bekannte Dev-DB-Altlasten (P34-T02):** E2E-Läufe hinterlassen soft-deleted Fork-Welten mit geklonten Inhalten, inaktive Systeme/Items, verwaiste NPC-Intents und Test-User. Vor einem DB-Reset/Release einmal aufräumen (Cleanup-Skript geplant).
+**Dev-DB-Hygiene (P34-T02, umgesetzt):** 8/9 E2E-Specs räumen per `afterAll` auf (Entities/Campaigns/Systeme); `wizard-save-gate.spec.ts` braucht keins (Save wird geblockt, keine Artefakte). Campaign-Delete entfernt die Fork-Welt mit (soft). Verbleibende Reste: inaktive Systeme/Items, NPC-Intents ohne DELETE-Endpoint (werden mit der Welt unsichtbar). Cleanup vor DB-Reset/Release:
+`E2E_EMAIL=devbe@test.de E2E_PASSWORD='...' ./scripts/e2e-cleanup.sh [--dry-run] [--filter E2E]` (nur eigene Objekte, Ownership via API erzwungen).
 
 ---
 
 ## 15. P28/P29 Wizard-Engine Checkpoints
 
-> Stand Phase 33 + Audits. Backend-Tests: `mvn -B test` (416); Frontend: `npx vitest run` (169); E2E: `cd frontend && npm run test:e2e` (Playwright, 11 Tests — inkl. Adventure-Inject — Login-Setup, Wizard-Pakete, Charakter-Wizard, Sheet-DSA, Kampf-Manöver, Kampf-Zustände/Schadensart, DM-Queue, System-Pin, Save-Gate, Dashboard-Smoke). Voraussetzung: pm2 `lwe-frontend`/`lwe-backend` laufen, `npx playwright install chromium` einmalig; Zugang via `E2E_EMAIL`/`E2E_PASSWORD` (Default devbe).
+> Stand Phase 33 + Audits. Backend-Tests: `mvn -B test` (420); Frontend: `npx vitest run` (169); E2E: `cd frontend && npm run test:e2e` (Playwright, 11 Tests — inkl. Adventure-Inject — Login-Setup, Wizard-Pakete, Charakter-Wizard, Sheet-DSA, Kampf-Manöver, Kampf-Zustände/Schadensart, DM-Queue, System-Pin, Save-Gate, Dashboard-Smoke). Voraussetzung: pm2 `lwe-frontend`/`lwe-backend` laufen, `npx playwright install chromium` einmalig; Zugang via `E2E_EMAIL`/`E2E_PASSWORD` (Default devbe).
 
 ### 15.1 Autorierung (SystemWizard)
 - [x] **Automatisiert (Playwright):** Paket-Step zeigt gespeicherte Pakete (Name/Kosten/Auto-Merkmale/Restriktionen), Live-Vorschau rechnet („Kosten: 18 AP · staerke +1 · Nachtsicht"), Save öffnet die Übersicht erfolgreich

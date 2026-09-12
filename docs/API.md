@@ -583,7 +583,7 @@ Wechselt Zeit-Modus. Akzeptierte Werte: `"automatic"`, `"manual"`, `"hybrid"`. P
 
 ### `POST /api/v1/npc-intents`
 **Body:** `{ "worldId", "campaignId"?, "npcId", "intentType", "paramsJson"?, "reasoning"? }` (camelCase!). NPC/Kampagne müssen zur Welt gehören (`INTENT_WORLD_MISMATCH` 422); Modus: Kampagne (`settingsJson.bot.mode`) vor Welt-`ai_mode` (P27-T04).
-**Queue (DM):** `GET ?worldId&type` (immer nur `pending`; Filter T33-07), `POST /{id}/approve|reject`, `POST /bulk { ids[], action: "approve"|"reject", reason? }` → Ergebnisliste `{id, ok, error}` (Teil-Fehler). (auth, meist vom Bot via Service-Token)
+**Queue (DM):** `GET ?worldId&type` (immer nur `pending`; Filter T33-07), `POST /{id}/approve|reject`, `POST /bulk { ids[], action: "approve"|"reject", reason? }` → Ergebnisliste `{id, ok, error}` (Teil-Fehler). P34-T03: jeder Eintrag eigene Tx — Teilerfolg möglich, Fehler rollen nur den Eintrag zurück. (auth, meist vom Bot via Service-Token)
 **Request:**
 ```json
 {

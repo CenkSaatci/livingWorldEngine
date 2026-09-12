@@ -43,14 +43,16 @@ public class AdventureController {
     }
 
     @GetMapping("/by-location/{locationId}")
-    public ResponseEntity<List<AdventureResponse>> listByLocation(@PathVariable UUID locationId) {
-        var list = adventureService.listByLocation(locationId).stream().map(AdventureResponse::from).toList();
+    public ResponseEntity<List<AdventureResponse>> listByLocation(@PathVariable UUID locationId,
+                                                                   @AuthenticationPrincipal User user) {
+        var list = adventureService.listByLocation(locationId, user.getId()).stream().map(AdventureResponse::from).toList();
         return ResponseEntity.ok(list);
     }
 
     @GetMapping("/by-giver/{giverEntityId}")
-    public ResponseEntity<List<AdventureResponse>> listByGiver(@PathVariable UUID giverEntityId) {
-        var list = adventureService.listByGiver(giverEntityId).stream().map(AdventureResponse::from).toList();
+    public ResponseEntity<List<AdventureResponse>> listByGiver(@PathVariable UUID giverEntityId,
+                                                                @AuthenticationPrincipal User user) {
+        var list = adventureService.listByGiver(giverEntityId, user.getId()).stream().map(AdventureResponse::from).toList();
         return ResponseEntity.ok(list);
     }
 

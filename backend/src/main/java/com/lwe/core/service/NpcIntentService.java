@@ -26,11 +26,13 @@ public class NpcIntentService {
     private final WorldAccess worldAccess;
     private final CampaignRepository campaignRepo;
     private final GameEntityRepository entityRepo;
+    private final org.springframework.transaction.support.TransactionOperations txOps;
 
     public NpcIntentService(NpcIntentRepository repo, IntentValidator validator,
                             WorldEventService eventService, WorldRepository worldRepo,
                             IntentExecutor executor, WorldAccess worldAccess,
-                            CampaignRepository campaignRepo, GameEntityRepository entityRepo) {
+                            CampaignRepository campaignRepo, GameEntityRepository entityRepo,
+                            org.springframework.transaction.support.TransactionOperations txOps) {
         this.repo = repo;
         this.validator = validator;
         this.eventService = eventService;
@@ -39,6 +41,7 @@ public class NpcIntentService {
         this.worldAccess = worldAccess;
         this.campaignRepo = campaignRepo;
         this.entityRepo = entityRepo;
+        this.txOps = txOps;
     }
 
     @Transactional
@@ -126,24 +129,28 @@ public class NpcIntentService {
     }
 
     /** T33-07: Bulk-Freigabe/-Ablehnung mit Teil-Fehler-Report.
-     *  Audit Block C: laeuft in EINER Transaktion; logische Fehler werden pro Eintrag
-     *  gemeldet, DB-Fehler brechen den Batch ab. */
-    @Transactional
+     *  P34-T03: KEINE umschliessende Transaktion — jeder Eintrag laeuft in
+     *  eigener Tx (REQUIRES_NEW via TransactionOperations). Logische wie
+     *  DB-Fehler betreffen nur den Eintrag; Teilerfolg ist moeglich, der
+     *  Client wertet BulkResult[] aus. */
     public List<BulkResult> bulk(List<UUID> ids, String action, String reason, UUID userId) {
         var results = new java.util.ArrayList<BulkResult>();
         var unique = new java.util.ArrayList<>(new java.util.LinkedHashSet<>(ids));
         for (var id : unique) {
             try {
-                var intent = repo.findByIdForUpdate(id)
-                    .orElseThrow(() -> new IntentException("INTENT_NOT_FOUND", "Intent not found: " + id));
-                worldAccess.requireDm(intent.getWorldId(), userId);
-                if ("approve".equalsIgnoreCase(action)) {
-                    approve(id, userId);
-                } else if ("reject".equalsIgnoreCase(action)) {
-                    reject(id, reason, userId);
-                } else {
-                    throw new IntentException("INVALID_BULK_ACTION", "action must be approve or reject");
-                }
+                txOps.execute(status -> {
+                    var intent = repo.findByIdForUpdate(id)
+                        .orElseThrow(() -> new IntentException("INTENT_NOT_FOUND", "Intent not found: " + id));
+                    worldAccess.requireDm(intent.getWorldId(), userId);
+                    if ("approve".equalsIgnoreCase(action)) {
+                        approve(id, userId);
+                    } else if ("reject".equalsIgnoreCase(action)) {
+                        reject(id, reason, userId);
+                    } else {
+                        throw new IntentException("INVALID_BULK_ACTION", "action must be approve or reject");
+                    }
+                    return null;
+                });
                 results.add(new BulkResult(id, true, null));
             } catch (Exception e) {
                 results.add(new BulkResult(id, false, e.getMessage()));
