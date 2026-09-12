@@ -79,7 +79,7 @@ class PublicWorldWriteAccessIT {
 
         // SCHREIBEN verboten
         assertThatThrownBy(() -> entityService.updateAttributes(
-                entity.getId(), stranger.getId(), Map.of("staerke", 99)))
+                entity.getId(), stranger.getId(), Map.of("staerke", 99), null))
             .isInstanceOf(WorldAccess.WorldAccessException.class);
         assertThatThrownBy(() -> entityService.updateOverrides(
                 entity.getId(), stranger.getId(), Map.of("hp", 1)))
@@ -98,7 +98,7 @@ class PublicWorldWriteAccessIT {
 
         // Owner darf schreiben
         assertThatCode(() -> entityService.updateAttributes(
-                entity.getId(), owner.getId(), Map.of("staerke", 15)))
+                entity.getId(), owner.getId(), Map.of("staerke", 15), null))
             .doesNotThrowAnyException();
     }
 }

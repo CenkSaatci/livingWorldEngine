@@ -84,8 +84,8 @@ test.describe('Sheet-E2E DSA-Referenz (P31-T01)', () => {
     await expect(page.getByRole('heading', { name: `E2E DSA Held ${stamp}` })).toBeVisible({ timeout: 10_000 });
     // sk: MU14+KL13+IN12 = 39 -> Tabelle 39-44 -> 7
     await expect(page.getByText('sk', { exact: true }).locator('xpath=..')).toContainText('7');
-    // asp: (14+13+12)/2 = 19.5, nur mit Trait Zauberer
-    await expect(page.getByText('asp', { exact: true }).locator('xpath=..')).toContainText('19.5');
+    // asp: ceil((14+13+12)/2) = 20 (B9: Aufrunden), nur mit Trait Zauberer
+    await expect(page.getByText('asp', { exact: true }).locator('xpath=..')).toContainText('20');
     // Rüstung aus metadata.damage_armor
     await expect(page.locator('[title="Rüstung"]')).toContainText('3');
 

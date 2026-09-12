@@ -118,3 +118,38 @@ describe('Charakter-Build (P30-T01)', () => {
     expect(buildIssues(data, badPkg)).toContain('choice_count:Elf');
   });
 });
+
+describe('Skill-FW bei Erstellung (B1)', () => {
+  const skillBase = () => {
+    const data = defaultWizardData();
+    data.creationBudget = { ap: 100, maxSkillValue: 12 };
+    data.advancement = {
+      columns: ['A', 'B'],
+      table: [{ from: 0, to: 12, costs: { A: 1, B: 2 } }],
+      maxRule: '',
+    };
+    data.skills = [
+      { name: 'Klettern', attributes: ['mut'], bonus: 0, costColumn: 'B' },
+      { name: 'Singen', attributes: ['charisma'], bonus: 0, costColumn: 'A' },
+    ];
+    return data;
+  };
+
+  it('rechnet Skill-FW kumulativ (B=2 AP je Punkt)', () => {
+    const data = skillBase();
+    const build: CharacterBuild = { packageSelections: [], attributes: {}, traits: [], skills: { Klettern: 3 } };
+    expect(buildCost(data, build).skills).toBe(6);
+  });
+
+  it('meldet Skill-Cap-Verletzung', () => {
+    const data = skillBase();
+    const build: CharacterBuild = { packageSelections: [], attributes: {}, traits: [], skills: { Klettern: 13 } };
+    expect(buildIssues(data, build)).toContain('build_skill_cap:Klettern');
+  });
+
+  it('meldet negative Skill-Werte', () => {
+    const data = skillBase();
+    const build: CharacterBuild = { packageSelections: [], attributes: {}, traits: [], skills: { Klettern: -1 } };
+    expect(buildIssues(data, build)).toContain('build_skill_range:Klettern');
+  });
+});

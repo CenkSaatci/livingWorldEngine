@@ -150,5 +150,14 @@
   "msg_created": "System created",
   "msg_updated": "System updated",
   "msg_create_failed": "Failed to create",
-  "msg_update_failed": "Failed to update"
+  "msg_update_failed": "Failed to update",
+  "s8_states_title": "Catalogue d’états",
+  "s8_states_hint": "Les états agissent sur plusieurs rounds. Les effets utilisent l’opération add.",
+  "s8_states_name": "Nom",
+  "s8_states_rounds": "Rounds",
+  "s8_states_add": "Ajouter un état",
+  "s8_states_add_effect": "Ajouter un effet",
+  "sa_casting": "Sort (AsP/KaP)",
+  "sa_casting_cost": "Coût AsP/KaP",
+  "sa_casting_trait": "Trait requis"
 }

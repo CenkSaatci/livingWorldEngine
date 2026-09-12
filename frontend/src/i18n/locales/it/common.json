@@ -101,7 +101,14 @@
   "faction": {
     "create": "Create Faction",
     "name": "Nome",
-    "color": "Color"
+    "color": "Color",
+    "title": "Fazioni",
+    "new": "Nuova",
+    "namePlaceholder": "Nome della fazione",
+    "hasLeader": "Ha un capo",
+    "deleteTitle": "Eliminare la fazione?",
+    "empty": "Nessuna fazione. Creane una.",
+    "deleteConfirm": "Questa fazione verrà eliminata definitivamente."
   },
   "location": {
     "create": "Crea luogo",
@@ -109,7 +116,12 @@
     "type": "Tipo",
     "wealth": "Ricchezza (1-10)",
     "population": "Popolazione",
-    "description": "Descrizione"
+    "description": "Descrizione",
+    "title": "Luogo",
+    "editTitle": "Modifica luogo",
+    "deleteTitle": "Eliminare il luogo?",
+    "mapX": "Mappa X",
+    "mapY": "Mappa Y"
   },
   "session": {
     "title": "Session",
@@ -201,6 +213,76 @@
     "dangerLevel": "Livello di pericolo (1-10)",
     "create": "Crea regione",
     "creating": "Creazione…",
-    "saveFailed": "Impossibile salvare la regione"
+    "saveFailed": "Impossibile salvare la regione",
+    "selectRegion": "Seleziona regione",
+    "noRegions": "Nessuna regione. Creane prima una.",
+    "editTitle": "Modifica regione",
+    "description": "Descrizione",
+    "population": "Popolazione",
+    "resourcesJson": "Risorse (JSON)",
+    "factionsJson": "Fazioni (JSON)",
+    "noLocations": "Nessun luogo in questa regione",
+    "history": "Storia",
+    "saving": "Salvataggio…",
+    "deleteTitle": "Eliminare la regione?",
+    "deleteConfirm": "«{name}» e tutti i dati associati verranno eliminati definitivamente."
+  },
+  "quest": {
+    "title": "Missioni",
+    "create": "Crea",
+    "titlePlaceholder": "Titolo della missione",
+    "descriptionPlaceholder": "Descrizione (facoltativa)",
+    "approve": "Accetta",
+    "reject": "Rifiuta",
+    "noQuests": "Nessuna missione"
+  },
+  "market": {
+    "title": "Mercato",
+    "noServices": "Nessun servizio disponibile qui.",
+    "service": "Servizio",
+    "base": "Base",
+    "price": "Prezzo",
+    "svc_sell_weapons": "⚔️ Armi",
+    "svc_repair": "🔧 Riparazione",
+    "svc_buy_ore": "⛏️ Minerale",
+    "svc_sell_potions": "🧪 Pozioni",
+    "svc_training": "🏋️ Allenamento",
+    "svc_healing": "❤️‍🩹 Cure",
+    "svc_inn_stay": "🍺 Locanda",
+    "svc_buy_food": "🍞 Cibo",
+    "svc_sell_scrolls": "📜 Pergamene",
+    "svc_identification": "🔍 Identificazione"
+  },
+  "adventure": {
+    "success": "✅ Successo!",
+    "failed": "❌ Fallito!",
+    "completed": "🏁 Completato",
+    "whatNext": "Cosa fate?",
+    "backToWorld": "Torna al mondo",
+    "noCharacter": "Nessun personaggio trovato",
+    "startFailed": "Avvio fallito",
+    "noCharacterStarted": "Nessun personaggio ha iniziato questa avventura"
+  },
+  "map": {
+    "loadFailed": "Impossibile caricare la mappa",
+    "zoomIn": "Avvicina",
+    "zoomOut": "Allontana",
+    "resetView": "Ripristina vista"
+  },
+  "trade": {
+    "title": "Commercio",
+    "partner": "Partner",
+    "youGive": "Dai",
+    "youWant": "Vuoi",
+    "empty": "Vuoto",
+    "sendOffer": "Invia offerta",
+    "sendCounter": "Invia controfferta",
+    "accept": "Accetta",
+    "counter": "Controfferta",
+    "cancel": "Annulla",
+    "countering": "Controfferta",
+    "gives": "Dà",
+    "wants": "Vuole",
+    "failed": "Scambio fallito"
   }
 }

@@ -109,7 +109,8 @@ public class GlobalExceptionHandler {
             case QuotaService.QuotaException e -> e.getErrorCode();
             case NpcIntentService.IntentException e -> e.getErrorCode();
             case InventoryService.InventoryException e -> e.getErrorCode();
-            case EntityService.EntityException e -> e.getErrorCode();
+            case ProbeService.CastException e -> e.getErrorCode();
+            case TradeService.TradeException e -> e.getErrorCode();            case EntityService.EntityException e -> e.getErrorCode();
             case AbilityService.AbilityException e -> e.getErrorCode();
             case EntityAbilityService.EntityAbilityException e -> e.getErrorCode();
             case RestService.RestException e -> e.getErrorCode();
@@ -137,8 +138,17 @@ public class GlobalExceptionHandler {
                 case "AUTH_RATE_LIMITED" -> HttpStatus.TOO_MANY_REQUESTS;
                 default -> HttpStatus.BAD_REQUEST;
             };
-            case CombatService.CombatException e -> switch (e.getErrorCode()) {
-                case "COMBAT_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+            case ProbeService.CastException e -> switch (e.getErrorCode()) {
+                case "CAST_ENTITY_NOT_FOUND", "CAST_SKILL_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                default -> HttpStatus.UNPROCESSABLE_ENTITY;
+            };
+            case TradeService.TradeException e -> switch (e.getErrorCode()) {
+                case "TRADE_NOT_FOUND", "TRADE_ENTITY_NOT_FOUND", "TRADE_ENTITY_GONE",
+                     "TRADE_ITEM_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                case "TRADE_WORLD_MISMATCH", "TRADE_NOT_PARTICIPANT" -> HttpStatus.FORBIDDEN;
+                default -> HttpStatus.UNPROCESSABLE_ENTITY;
+            };
+            case CombatService.CombatException e -> switch (e.getErrorCode()) {                case "COMBAT_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 case "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
                 case "COMBAT_NOT_ACTIVE", "COMBAT_NOT_YOUR_TURN", "COMBAT_AP_INSUFFICIENT",
                      "COMBAT_RANGE_INVALID", "COMBAT_TARGET_INVALID",

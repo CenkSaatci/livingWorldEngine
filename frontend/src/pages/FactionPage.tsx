@@ -151,13 +151,13 @@ export default function FactionPage() {
           <button onClick={() => navigate(-1)} className="text-text-secondary hover:text-accent">
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-lg font-heading text-text-primary">Factions</h1>
+          <h1 className="text-lg font-heading text-text-primary">{t('faction.title')}</h1>
         </div>
         <button
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-1 rounded bg-accent px-3 py-1.5 text-xs text-white hover:bg-accent/80"
         >
-          <Plus size={14} /> New
+          <Plus size={14} /> {t('faction.new')}
         </button>
       </header>
 
@@ -168,7 +168,7 @@ export default function FactionPage() {
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Faction name"
+              placeholder={t('faction.namePlaceholder')}
               className="flex-1 rounded border border-bg-elevated bg-bg-primary px-3 py-1.5 text-sm text-text-primary outline-none focus:border-accent"
             />
             <input
@@ -181,13 +181,13 @@ export default function FactionPage() {
               onClick={handleCreate}
               className="rounded bg-accent px-3 py-1.5 text-xs text-white"
             >
-              Create
+              {t('actions.create')}
             </button>
             <button
               onClick={() => setShowCreate(false)}
               className="text-xs text-text-secondary hover:text-text-primary"
             >
-              Cancel
+              {t('actions.cancel')}
             </button>
           </div>
         )}
@@ -207,20 +207,20 @@ export default function FactionPage() {
                   />
                   <span className="font-medium text-text-primary">{f.name}</span>
                   {f.leaderEntityId && (
-                    <span className="text-xs text-text-secondary">Has leader</span>
+                    <span className="text-xs text-text-secondary">{t('faction.hasLeader')}</span>
                   )}
                 </button>
                 <button
                   onClick={() => openEdit(f)}
                   className="text-xs text-accent hover:text-accent/60"
                 >
-                  Edit
+                  {t('actions.edit')}
                 </button>
                 <button
                   onClick={() => setShowDeleteFaction(f.id)}
                   className="text-xs text-danger hover:text-danger/60"
                 >
-                  Delete
+                  {t('actions.delete')}
                 </button>
               </div>
 
@@ -270,13 +270,13 @@ export default function FactionPage() {
                         onClick={() => openEdit(f)}
                         className="text-xs text-accent hover:text-accent/60"
                       >
-                        Edit
+                        {t('actions.edit')}
                       </button>
                       <button
                         onClick={() => setShowDeleteFaction(f.id)}
                         className="text-xs text-danger hover:text-danger/60"
                       >
-                        Delete
+                        {t('actions.delete')}
                       </button>
                     </div>
                   )}
@@ -330,7 +330,7 @@ export default function FactionPage() {
 
           {factions.length === 0 && (
             <p className="py-12 text-center text-sm text-text-secondary">
-              No factions yet. Create one to get started.
+              {t('faction.empty')}
             </p>
           )}
         </div>
@@ -346,22 +346,22 @@ export default function FactionPage() {
             className="w-72 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-heading text-text-primary mb-2">Delete Faction?</h3>
+            <h3 className="font-heading text-text-primary mb-2">{t('faction.deleteTitle')}</h3>
             <p className="text-sm text-text-secondary mb-4">
-              This will permanently delete this faction.
+              {t('faction.deleteConfirm')}
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowDeleteFaction(null)}
                 className="flex-1 rounded border border-bg-elevated py-2 text-sm text-text-secondary hover:text-text-primary"
               >
-                Cancel
+                {t('actions.cancel')}
               </button>
               <button
                 onClick={() => handleDeleteConfirm(showDeleteFaction)}
                 className="flex-1 rounded bg-danger py-2 text-sm text-white hover:bg-danger/80"
               >
-                Delete
+                {t('actions.delete')}
               </button>
             </div>
           </div>

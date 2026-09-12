@@ -10,6 +10,7 @@ import com.lwe.core.repository.GameSystemRepository;
 import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -34,12 +35,13 @@ public class ProbeService {
     private final RulesLoader rulesLoader;
     private final ObjectMapper objectMapper;
     private final ConditionService conditionService;
+    private final DerivedValueService derivedValueService;
 
     public ProbeService(GameEntityRepository entityRepo, WorldRepository worldRepo,
                         WorldAccess worldAccess,
                         ConditionEvaluator conditionEvaluator, ModifierService modifierService,
                         RulesLoader rulesLoader, ObjectMapper objectMapper,
-                        ConditionService conditionService) {
+                        ConditionService conditionService, DerivedValueService derivedValueService) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldRepo = worldRepo;
@@ -48,6 +50,7 @@ public class ProbeService {
         this.modifierService = modifierService;
         this.rulesLoader = rulesLoader;
         this.conditionService = conditionService;
+        this.derivedValueService = derivedValueService;
     }
 
     public ProbeResponse executeProbe(UUID entityId, UUID userId, String skillName,
@@ -181,6 +184,92 @@ public class ProbeService {
             return objectMapper.readValue(entity.getAttributesJson(), new TypeReference<>() {});
         } catch (Exception e) {
             return Map.of();
+        }
+    }
+
+    /** B3: Zauber/Liturgien wirken — Probe + Ressourcen-Abzug (AsP/KaP). */
+    @Transactional
+    public CastResult cast(UUID entityId, UUID userId, String skillName, UUID campaignId) {
+        var entity = entityRepo.findById(entityId)
+            .orElseThrow(() -> new CastException("CAST_ENTITY_NOT_FOUND", "Entity not found"));
+        worldAccess.requireAccess(entity.getWorldId(), userId);
+        var rules = rulesLoader.loadRules(campaignId, entity.getWorldId());
+
+        var skills = (List<Map<String, Object>>) rules.getOrDefault("skills", List.of());
+        var skill = skills.stream()
+            .filter(s -> s.getOrDefault("name", "").equals(skillName))
+            .findFirst()
+            .orElseThrow(() -> new CastException("CAST_SKILL_NOT_FOUND", "Skill not found"));
+        var casting = (Map<String, Object>) skill.get("casting");
+        if (casting == null)
+            throw new CastException("CAST_NOT_CASTABLE", "Skill is not castable");
+        var resource = (String) casting.getOrDefault("resource", "asp");
+        if (!("asp".equals(resource) || "kap".equals(resource)))
+            throw new CastException("CAST_NOT_CASTABLE", "Unknown cast resource");
+        var cost = ((Number) casting.getOrDefault("cost", 0)).intValue();
+        if (cost < 1)
+            throw new CastException("CAST_NOT_CASTABLE", "Cast has no cost");
+
+        var requiredTrait = (String) casting.get("requiresTrait");
+        if (requiredTrait != null && !requiredTrait.isBlank() && !entityTraits(entity).contains(requiredTrait))
+            throw new CastException("CAST_MISSING_TRAIT", "Missing required trait: " + requiredTrait);
+
+        var attributes = parseAttributes(entity);
+        var max = derivedValueService
+            .evaluate((List<Map<String, Object>>) rules.getOrDefault("derived_values", List.of()),
+                attributes, entityTraits(entity)).stream()
+            .filter(dv -> dv.name().equals(resource))
+            .map(dv -> (int) Math.round(dv.value()))
+            .findFirst().orElse(0);
+        var meta = readMeta(entity);
+        var key = resource + "_current";
+        var current = meta.has(key) ? meta.get(key).asInt(max) : max;
+        if (current < cost)
+            throw new CastException("CAST_INSUFFICIENT_RESOURCE",
+                "Not enough " + resource.toUpperCase() + " (" + current + "/" + cost + ")");
+
+        var probe = executeProbe(entityId, userId, skillName, 0, false, campaignId);
+        var remaining = current - cost;
+        meta.put(key, remaining);
+        entity.setMetadataJson(meta.toString());
+        entityRepo.save(entity);
+        return new CastResult(probe, resource, cost, remaining, max);
+    }
+
+    public record CastResult(ProbeResponse probe, String resource, int cost,
+                             int resourceRemaining, int resourceMax) {}
+
+    public static class CastException extends RuntimeException {
+        private final String errorCode;
+        public CastException(String errorCode, String message) {
+            super(message);
+            this.errorCode = errorCode;
+        }
+        public String getErrorCode() { return errorCode; }
+    }
+
+    private List<String> entityTraits(GameEntity entity) {
+        if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank()) return List.of();
+        try {
+            var node = objectMapper.readTree(entity.getMetadataJson()).path("traits");
+            if (!node.isArray()) return List.of();
+            var out = new java.util.ArrayList<String>();
+            node.forEach(n -> { if (n.isTextual()) out.add(n.asText()); });
+            return out;
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    private com.fasterxml.jackson.databind.node.ObjectNode readMeta(GameEntity entity) {
+        if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank())
+            return objectMapper.createObjectNode();
+        try {
+            var parsed = objectMapper.readTree(entity.getMetadataJson());
+            return parsed.isObject() ? (com.fasterxml.jackson.databind.node.ObjectNode) parsed
+                : objectMapper.createObjectNode();
+        } catch (Exception e) {
+            return objectMapper.createObjectNode();
         }
     }
 }

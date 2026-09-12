@@ -46,6 +46,18 @@ class AdventureServiceTest {
     }
 
     @Test
+    void createAdventureRequiresDm() {
+        doThrow(new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireDm(worldId, userId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+        when(worldRepo.findById(worldId)).thenReturn(java.util.Optional.of(world));
+
+        assertThatThrownBy(() -> service.createAdventure(worldId, userId, "Quest", null, null, null))
+            .isInstanceOf(WorldAccess.WorldAccessException.class);
+    }
+
+    @Test
     void shouldCreateAdventure() {
         var world = new com.lwe.core.domain.World("W", userId, "{}");
         setId(world, worldId);

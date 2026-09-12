@@ -150,5 +150,14 @@
   "msg_created": "System created",
   "msg_updated": "System updated",
   "msg_create_failed": "Failed to create",
-  "msg_update_failed": "Failed to update"
+  "msg_update_failed": "Failed to update",
+  "s8_states_title": "Catalogo delle condizioni",
+  "s8_states_hint": "Le condizioni agiscono per round. Gli effetti usano l’operazione add.",
+  "s8_states_name": "Nome",
+  "s8_states_rounds": "Round",
+  "s8_states_add": "Aggiungi condizione",
+  "s8_states_add_effect": "Aggiungi effetto",
+  "sa_casting": "Incantesimo (AsP/KaP)",
+  "sa_casting_cost": "Costo AsP/KaP",
+  "sa_casting_trait": "Tratto richiesto"
 }

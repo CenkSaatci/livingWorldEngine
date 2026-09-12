@@ -380,6 +380,22 @@ describe('DSA5-Referenz (P29-T06)', () => {
   });
 });
 
+describe('conditions editor (B2)', () => {
+  it('fromRulesJson mappt Runden und Effekte typisiert', () => {
+    const data = fromRulesJson(JSON.stringify(dsa5json))!;
+    const wunde = data.conditions!.find((c) => c.name === 'Wunde')!;
+    expect(wunde.rounds).toBe(3);
+    expect(wunde.effects).toEqual([{ target: 'probe', op: 'add', value: -4 }]);
+  });
+
+  it('leere Zustands-Namen blockieren den Save-Gate', () => {
+    const data = defaultWizardData();
+    data.attributes = [{ name: 'mut', type: 'INT', min: 1, max: 20, default: 8 }];
+    data.conditions = [{ name: '  ', effects: [] }];
+    expect(wizardIssues(data)).toContain('v_empty_condition_name');
+  });
+});
+
 describe('conditions roundtrip (Playtest-Befund #2)', () => {
   it('fromRulesJson übernimmt den Zustands-Katalog opak', () => {
     const data = fromRulesJson(JSON.stringify(dsa5json))!;
@@ -391,5 +407,15 @@ describe('conditions roundtrip (Playtest-Befund #2)', () => {
     const rules = JSON.parse(toRulesJson(data));
     expect(rules.conditions).toHaveLength(3);
     expect(rules.conditions[0].name).toBe('Wunde');
+  });
+});
+
+describe('conditions speichern (B2-Fix)', () => {
+  it('toRulesJson streicht null-Runden (Backend-Schema)', () => {
+    const data = defaultWizardData();
+    data.attributes = [{ name: 'mut', type: 'INT', min: 1, max: 20, default: 8 }];
+    data.conditions = [{ name: 'Test', rounds: null, effects: [] }];
+    const rules = JSON.parse(toRulesJson(data));
+    expect(rules.conditions).toEqual([{ name: 'Test', effects: [] }]);
   });
 });

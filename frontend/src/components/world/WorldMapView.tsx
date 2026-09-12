@@ -16,6 +16,7 @@ import {
 import { apiClient, BACKEND_ORIGIN } from '../../api/client';
 import { useApiGet } from '../../hooks/useApiGet';
 import { useToast } from '../../hooks/useToast';
+import { useTranslation } from 'react-i18next';
 
 interface Region {
   id: string;
@@ -120,6 +121,7 @@ export function WorldMapView({
 
   const { data: regions } = useApiGet<Region[]>(`/worlds/${worldId}/regions`, [worldId]);
   const mapLayerRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation('common');
   const toastError = useToast().error;
 
   useEffect(() => {
@@ -164,7 +166,7 @@ export function WorldMapView({
           setMapUrl(BACKEND_ORIGIN + mapRes.data.imageUrl);
         }
       } catch {
-        toastError('Failed to load map');
+        toastError(t('map.loadFailed'));
       }
     };
     load();
@@ -211,11 +213,11 @@ export function WorldMapView({
     <div className="relative h-full w-full overflow-hidden bg-bg-primary">
       {/* Zoom controls */}
       <div className="absolute top-3 right-3 z-20 flex flex-col gap-1">
-        <button onClick={() => setZoom((z) => Math.min(4, z * 1.3))}
+        <button onClick={() => setZoom((z) => Math.min(4, z * 1.3))} aria-label={t('map.zoomIn')}
           className="rounded bg-bg-surface/80 px-2 py-1 text-xs text-text-primary hover:bg-bg-surface border border-bg-elevated">+</button>
-        <button onClick={() => setZoom((z) => Math.max(0.25, z / 1.3))}
+        <button onClick={() => setZoom((z) => Math.max(0.25, z / 1.3))} aria-label={t('map.zoomOut')}
           className="rounded bg-bg-surface/80 px-2 py-1 text-xs text-text-primary hover:bg-bg-surface border border-bg-elevated">−</button>
-        <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
+        <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} aria-label={t('map.resetView')}
           className="rounded bg-bg-surface/80 px-2 py-1 text-xs text-text-primary hover:bg-bg-surface border border-bg-elevated">⟲</button>
       </div>
 

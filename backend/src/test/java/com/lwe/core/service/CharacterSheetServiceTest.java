@@ -349,9 +349,9 @@ class CharacterSheetServiceTest {
 
         var sheet = service.getSheet(entityId, userId);
 
-        // asp: (14+13+12)/2 = 19.5
+        // asp: ceil((14+13+12)/2) = ceil(19.5) = 20 (B9: Aufrunden)
         var asp = sheet.derivedValues().stream().filter(d -> d.name().equals("asp")).findFirst().orElseThrow();
-        assertThat(asp.value()).isEqualTo(19.5);
+        assertThat(asp.value()).isEqualTo(20.0);
     }
 
     @Test

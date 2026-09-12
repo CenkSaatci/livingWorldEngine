@@ -283,5 +283,14 @@
   "spk_cost": "Cost",
   "spk_ap": "AP",
   "spk_issue": "Problem",
-  "spk_warning": "Notice"
+  "spk_warning": "Notice",
+  "s8_states_title": "Condition Catalog",
+  "s8_states_hint": "Catalog conditions act over rounds (e.g. Wound: −4 on probes). Effects use the add operation.",
+  "s8_states_name": "Name",
+  "s8_states_rounds": "Rounds",
+  "s8_states_add": "Add condition",
+  "s8_states_add_effect": "Add effect",
+  "sa_casting": "Cast (AsP/KaP)",
+  "sa_casting_cost": "AsP/KaP cost",
+  "sa_casting_trait": "Trait (e.g. Spellcaster)"
 }

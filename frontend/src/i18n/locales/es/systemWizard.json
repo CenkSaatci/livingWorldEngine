@@ -150,5 +150,14 @@
   "msg_created": "System created",
   "msg_updated": "System updated",
   "msg_create_failed": "Failed to create",
-  "msg_update_failed": "Failed to update"
+  "msg_update_failed": "Failed to update",
+  "s8_states_title": "Catálogo de estados",
+  "s8_states_hint": "Los estados actúan durante rondas. Los efectos usan la operación add.",
+  "s8_states_name": "Nombre",
+  "s8_states_rounds": "Rondas",
+  "s8_states_add": "Añadir estado",
+  "s8_states_add_effect": "Añadir efecto",
+  "sa_casting": "Hechizo (AsP/KaP)",
+  "sa_casting_cost": "Coste AsP/KaP",
+  "sa_casting_trait": "Rasgo requerido"
 }

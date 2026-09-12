@@ -55,8 +55,9 @@ public class CharacterSheetController {
     @PatchMapping("/{entityId}/attributes")
     public ResponseEntity<EntityResponse> updateAttributes(@PathVariable UUID entityId,
                                                             @RequestBody Map<String, Integer> attrs,
+                                                            @RequestParam(required = false) UUID campaignId,
                                                             @AuthenticationPrincipal User user) {
-        var entity = entityService.updateAttributes(entityId, user.getId(), attrs);
+        var entity = entityService.updateAttributes(entityId, user.getId(), attrs, campaignId);
         return ResponseEntity.ok(EntityResponse.from(entity));
     }
 

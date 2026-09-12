@@ -423,6 +423,22 @@ Charakter-Probe (Per-Character-Skills, Vor-/Nachteil). `campaignId` optional im 
 }
 ```
 
+### `POST /api/v1/rolls/cast` (B3)
+Zauber/Liturgie wirken: Probe + AsP-/KaP-Abzug (Kosten aus `skills[].casting`,
+Merkmal-Pflicht via `requiresTrait`). Fehler: `CAST_NOT_CASTABLE` /
+`CAST_MISSING_TRAIT` / `CAST_INSUFFICIENT_RESOURCE` (422).
+
+### `GET /api/v1/combat/active?worldId=` (Playtest #10)
+Aktive Kampf-Session einer Welt (Reload-/Deep-Link-Rehydrate), 204 wenn keine.
+
+### Handel (`/api/v1/trades`, B4)
+`POST /` (Angebot), `POST /{id}/counter` (Gegenangebot, schreibt aus Editor-Sicht),
+`POST /{id}/accept` (nur Gegenüber des letzten Editors, atomarer Tausch),
+`POST /{id}/cancel`, `GET ?worldId&entityId` (eigene Trades, mit Item-Namen).
+
+### `GET /api/v1/chat/{worldId}` (B5)
+Chat-Verlauf (neueste 50, chronologisch). POST persistiert zusätzlich zur WS-Übertragung.
+
 **Fehlercodes:** `ROLL_EXPRESSION_INVALID`, `ROLL_ATTRIBUTE_NOT_FOUND`, `ROLL_ENTITY_NOT_CHARACTER`, `ROLL_TARGET_REQUIRED`
 
 ---

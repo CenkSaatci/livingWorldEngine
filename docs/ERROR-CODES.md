@@ -175,6 +175,25 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `COMBAT_ACTION_TYPE_INVALID` | 400 | `action_type` nicht bekannt |
 | `COMBAT_INSUFFICIENT_PARTICIPANTS` | 400 | Weniger als 2 Teilnehmer beim Kampfstart |
 | `COMBAT_MANEUVER_UNKNOWN` | 422 | Manöver nicht in `dice_mechanics.combat.maneuvers` konfiguriert |
+| `COMBAT_TARGET_DEFEATED` | 422 | Ziel bereits besiegt (Heilung weiter erlaubt) |
+| `COMBAT_ACTOR_DEFEATED` | 422 | Actor besiegt — kann nicht handeln |
+
+### 3.8a Zauber (`CAST_*`)
+
+| Code | HTTP | Bedeutung |
+|---|---|---|
+| `CAST_SKILL_NOT_FOUND` / `CAST_ENTITY_NOT_FOUND` | 404 | Skill/Entity existiert nicht |
+| `CAST_NOT_CASTABLE` | 422 | Skill hat keine Casting-Definition |
+| `CAST_MISSING_TRAIT` | 422 | Nötiges Merkmal (z. B. Zauberer) fehlt |
+| `CAST_INSUFFICIENT_RESOURCE` | 422 | Nicht genug AsP/KaP |
+
+### 3.8b Handel (`TRADE_*`)
+
+| Code | HTTP | Bedeutung |
+|---|---|---|
+| `TRADE_NOT_FOUND` / `TRADE_ENTITY_NOT_FOUND` / `TRADE_ENTITY_GONE` / `TRADE_ITEM_NOT_FOUND` | 404 | Trade/Entity/Item existiert nicht |
+| `TRADE_WORLD_MISMATCH` / `TRADE_NOT_PARTICIPANT` | 403 | Weltfremd / kein Teilnehmer |
+| `TRADE_SELF` / `TRADE_SELF_ACCEPT` / `TRADE_NOT_PROPOSED` / `TRADE_INVALID_QUANTITY` / `TRADE_INSUFFICIENT_QUANTITY` | 422 | Selbsthandel, Annahme des eigenen Angebots, geschlossen, Menge ungültig/fehlend |
 
 ### 3.9 Adventures (`ADVENTURE_*`)
 

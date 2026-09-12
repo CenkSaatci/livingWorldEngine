@@ -41,7 +41,11 @@
     "fate": "Schicksalspunkte",
     "spendFate": "Schicksalspunkt ausgeben und neu würfeln",
     "spendFateFailed": "Schicksalspunkt konnte nicht ausgegeben werden",
-    "armor": "Rüstung"
+    "armor": "Rüstung",
+    "castCost": "{cost} {resource} pro Anwendung",
+    "castNoResource": "Nicht genug AsP/KaP für diesen Zauber",
+    "castNoTrait": "Erforderliches Merkmal fehlt",
+    "trade": "Handeln"
   },
   "attribute": {
     "modifier": "Modifikator"
@@ -90,6 +94,14 @@
     "codeDuplicateKind": "Mehrere Pakete gleicher Art: {{a}}",
     "codeRestricted": "{{a}} ist eingeschränkt mit {{b}}",
     "codeUnknown": "Unbekanntes Paket: {{a}}",
-    "codeRecommended": "Empfohlen für {{a}}: {{b}}"
+    "codeRecommended": "Empfohlen für {{a}}: {{b}}",
+    "stepSkills": "Fertigkeiten",
+    "skills": "Fertigkeiten",
+    "skillCost": "Fertigkeiten",
+    "finalSkills": "End-FW",
+    "noSkills": "Keine Fertigkeiten im System",
+    "search": "Suchen …",
+    "codeSkillCap": "FW über Maximum ({a})",
+    "codeSkillRange": "Ungültiger FW ({a})"
   }
 }

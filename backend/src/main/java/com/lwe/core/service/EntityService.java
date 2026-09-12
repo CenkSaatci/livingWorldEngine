@@ -41,7 +41,7 @@ public class EntityService {
                               String attributesJson, String inventoryJson, String positionJson,
                               String metadataJson, UUID factionId,
                               String backstory, Integer age, String experienceLevel,
-                              String socialStanding, UUID campaignId) {
+                              String socialStanding, UUID campaignId, String skillsJson) {
         requireWorldAccess(worldId, userId);
 
         var entity = new GameEntity(worldId, entityType, name);
@@ -49,19 +49,30 @@ public class EntityService {
         if (nonBlank(inventoryJson)) entity.setInventoryJson(inventoryJson);
         if (nonBlank(positionJson)) entity.setPositionJson(positionJson);
         if (nonBlank(metadataJson)) entity.setMetadataJson(metadataJson);
+        if (nonBlank(skillsJson)) entity.setSkillsJson(skillsJson);
         if (factionId != null) entity.setFactionId(factionId);
         if (backstory != null) entity.setBackstory(backstory);
         if (age != null) entity.setAge(age);
         if (experienceLevel != null) entity.setExperienceLevel(experienceLevel);
         if (socialStanding != null) entity.setSocialStanding(socialStanding);
-        initHpFromDerived(entity, worldId, campaignId);
+        if (nonBlank(skillsJson) && campaignId != null) {
+            try {
+                enforceSkillMax(entity, objectMapper.readValue(skillsJson, ATTR_MAP), campaignId);
+            } catch (EntityException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to validate skills", e);
+            }
+        }
+        refreshHpFromDerived(entity, worldId, campaignId);
 
         return entityRepo.save(entity);
     }
 
-    /** Playtest-Befund #8: Start-HP aus abgeleitetem `lep`/`hp` statt Default 10.
-     *  Ohne Kampagnen-Kontext (Template-Welten ohne System) bleibt der Default. */
-    private void initHpFromDerived(GameEntity entity, UUID worldId, UUID campaignId) {
+    /** B7/B9: Start-HP aus abgeleitetem `lep`/`hp` (aufgerundet); bei posteriori
+     *  Aenderungen bleibt erlittener Schaden erhalten. Ohne Kampagnen-Kontext
+     *  (Template-Welten ohne System) bleibt der Default. */
+    private void refreshHpFromDerived(GameEntity entity, UUID worldId, UUID campaignId) {
         if (campaignId == null) return;
         if (!rulesLoader.campaignBelongsToWorld(campaignId, worldId))
             throw new EntityException("WORLD_ACCESS_DENIED", "Campaign does not belong to world");
@@ -75,7 +86,11 @@ public class EntityService {
                 .map(dv -> (int) Math.round(dv.value()))
                 .filter(v -> v > 0)
                 .findFirst();
-            hp.ifPresent(v -> { entity.setHpMax(v); entity.setHpCurrent(v); });
+            hp.ifPresent(v -> {
+                int damage = entity.getHpMax() - entity.getHpCurrent();
+                entity.setHpMax(v);
+                entity.setHpCurrent(Math.max(0, v - damage));
+            });
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -142,7 +157,8 @@ public class EntityService {
     }
 
     @Transactional
-    public GameEntity updateAttributes(UUID entityId, UUID userId, Map<String, Integer> newAttrs) {
+    public GameEntity updateAttributes(UUID entityId, UUID userId, Map<String, Integer> newAttrs,
+                                       UUID campaignId) {
         var entity = getById(entityId, userId);
         requireWorldAccess(entity.getWorldId(), userId); // F1: Write-Guard
         try {
@@ -151,6 +167,7 @@ public class EntityService {
             var current = objectMapper.readValue(raw, ATTR_MAP);
             current.putAll(newAttrs);
             entity.setAttributesJson(objectMapper.writeValueAsString(current));
+            refreshHpFromDerived(entity, entity.getWorldId(), campaignId);
             return entityRepo.save(entity);
         } catch (Exception e) {
             throw new RuntimeException("Failed to update attributes", e);

@@ -43,7 +43,7 @@ public class AdventureService {
     @Transactional
     public Adventure createAdventure(UUID worldId, UUID userId, String name, String description,
                                       UUID locationId, UUID giverEntityId) {
-        verifyWorldAccess(worldId, userId);
+        worldAccess.requireDm(worldId, userId); // B8: Anlage ist DM-only
         var adv = new Adventure(worldId, name);
         if (description != null) adv.setDescription(description);
         if (locationId != null) adv.setLocationId(locationId);

@@ -583,6 +583,63 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
                 />
               </div>
+              <div>
+                <label className="block text-[10px] text-text-secondary mb-1">{t('sa_casting')}</label>
+                <div className="flex items-center gap-1">
+                  <select
+                    value={skill.casting?.resource ?? ''}
+                    onChange={(e) => {
+                      const s = [...data.skills];
+                      const res = e.target.value;
+                      s[i] = {
+                        ...s[i],
+                        casting: res === '' ? undefined : {
+                          resource: res as 'asp' | 'kap',
+                          cost: s[i].casting?.cost ?? 1,
+                          ...(s[i].casting?.requiresTrait ? { requiresTrait: s[i].casting!.requiresTrait } : {}),
+                        },
+                      };
+                      update('skills', s);
+                    }}
+                    className="w-16 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  >
+                    <option value="">—</option>
+                    <option value="asp">AsP</option>
+                    <option value="kap">KaP</option>
+                  </select>
+                  {skill.casting && (
+                    <input
+                      type="number" min={1}
+                      value={skill.casting.cost}
+                      aria-label={`${skill.name} ${t('sa_casting_cost')}`}
+                      onChange={(e) => {
+                        const s = [...data.skills];
+                        const cur = s[i].casting;
+                        if (!cur) return;
+                        s[i] = { ...s[i], casting: { ...cur, cost: Math.max(1, Number(e.target.value) || 1) } };
+                        update('skills', s);
+                      }}
+                      className="w-12 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    />
+                  )}
+                </div>
+                {skill.casting && (
+                  <input
+                    value={skill.casting.requiresTrait ?? ''}
+                    placeholder={t('sa_casting_trait')}
+                    aria-label={`${skill.name} ${t('sa_casting_trait')}`}
+                    onChange={(e) => {
+                      const s = [...data.skills];
+                      const cur = s[i].casting;
+                      if (!cur) return;
+                      const v = e.target.value.trim();
+                      s[i] = { ...s[i], casting: v === '' ? { resource: cur.resource, cost: cur.cost } : { ...cur, requiresTrait: v } };
+                      update('skills', s);
+                    }}
+                    className="mt-1 w-28 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                )}
+              </div>
               <button
                 onClick={() =>
                   update('skills', data.skills.filter((_, j) => j !== i))
@@ -1260,6 +1317,81 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
             className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
           >
             <Plus size={14} /> {t('s8_add')}
+          </button>
+
+          {/* Zustands-Katalog (Backend conditions[], B2) */}
+          <h4 className="font-heading text-text-primary pt-2">{t('s8_states_title')}</h4>
+          <p className="text-xs text-text-secondary">{t('s8_states_hint')}</p>
+
+          {(data.conditions ?? []).map((c, i) => (
+            <div key={i} className="space-y-2 rounded bg-bg-primary/50 p-2">
+              <div className="flex items-center gap-2">
+                <input
+                  value={c.name} onChange={(e) => {
+                    const a = [...(data.conditions ?? [])]; a[i] = { ...a[i], name: e.target.value }; update('conditions', a);
+                  }}
+                  className="w-32 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  placeholder={t('s8_states_name')}
+                />
+                <label className="flex items-center gap-1 text-xs text-text-secondary">
+                  {t('s8_states_rounds')}
+                  <input
+                    type="number" min={1} value={c.rounds ?? ''} onChange={(e) => {
+                      const a = [...(data.conditions ?? [])];
+                      a[i] = { ...a[i], rounds: e.target.value ? Number(e.target.value) : null };
+                      update('conditions', a);
+                    }}
+                    className="w-14 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                </label>
+                <button onClick={() => update('conditions', (data.conditions ?? []).filter((_, j) => j !== i))}
+                  className="ml-auto text-danger hover:text-danger/80"><X size={14} /></button>
+              </div>
+              {(c.effects ?? []).map((e, k) => (
+                <div key={k} className="flex items-center gap-2 pl-4">
+                  <input
+                    value={e.target} onChange={(ev) => {
+                      const a = [...(data.conditions ?? [])];
+                      const fx = [...(a[i].effects ?? [])]; fx[k] = { ...fx[k], target: ev.target.value };
+                      a[i] = { ...a[i], effects: fx }; update('conditions', a);
+                    }}
+                    className="w-24 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    placeholder="probe"
+                  />
+                  <span className="text-xs text-text-secondary">add</span>
+                  <input
+                    type="number" value={e.value} onChange={(ev) => {
+                      const a = [...(data.conditions ?? [])];
+                      const fx = [...(a[i].effects ?? [])]; fx[k] = { ...fx[k], value: Number(ev.target.value) };
+                      a[i] = { ...a[i], effects: fx }; update('conditions', a);
+                    }}
+                    className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                  <button onClick={() => {
+                    const a = [...(data.conditions ?? [])];
+                    a[i] = { ...a[i], effects: (a[i].effects ?? []).filter((_, j) => j !== k) };
+                    update('conditions', a);
+                  }}
+                    className="text-danger hover:text-danger/80"><X size={14} /></button>
+                </div>
+              ))}
+              <button onClick={() => {
+                const a = [...(data.conditions ?? [])];
+                a[i] = { ...a[i], effects: [...(a[i].effects ?? []), { target: 'probe', op: 'add', value: 0 }] };
+                update('conditions', a);
+              }}
+                className="flex items-center gap-1 pl-4 text-xs text-accent hover:text-accent/80"
+              >
+                <Plus size={14} /> {t('s8_states_add_effect')}
+              </button>
+            </div>
+          ))}
+
+          <button
+            onClick={() => update('conditions', [...(data.conditions ?? []), { name: '', rounds: null, effects: [] }])}
+            className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+          >
+            <Plus size={14} /> {t('s8_states_add')}
           </button>
         </div>
       )}

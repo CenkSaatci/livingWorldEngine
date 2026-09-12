@@ -17,6 +17,8 @@ export interface SkillDef {
   bonus: number;
   costColumn?: string;
   activationCost?: number;
+  /** B3: Zauber/Liturgie — Ressource + Kosten + nötiges Merkmal. */
+  casting?: { resource: 'asp' | 'kap'; cost: number; requiresTrait?: string };
 }
 
 export interface DiceCombat {
@@ -242,12 +244,15 @@ export interface CharacterBuild {
   attributes: Record<string, number>;
   /** Gewählte Traits; tier optional (z. B. "Hohe Lebenskraft" + "III"). */
   traits: { name: string; tier?: string }[];
+  /** Gekaufte Skill-FW (B1); fehlend = 0. */
+  skills?: Record<string, number>;
 }
 
 export interface BuildCostBreakdown {
   attributes: number;
   traits: number;
   packages: number;
+  skills: number;
   total: number;
   budget: number | null;
   over: boolean;
@@ -276,9 +281,25 @@ export function buildCost(data: WizardData, build: CharacterBuild): BuildCostBre
     if (def) traits += traitCost(def, sel.tier);
   }
   const packages = packageCost(data.packages ?? [], build.packageSelections);
-  const total = attributes + traits + packages;
+  let skills = 0;
+  for (const s of data.skills ?? []) {
+    skills += skillBuyCost(data, s.name, build.skills?.[s.name] ?? 0);
+  }
+  const total = attributes + traits + packages + skills;
   const budget = data.creationBudget?.ap ?? null;
-  return { attributes, traits, packages, total, budget, over: budget != null && total > budget };
+  return { attributes, traits, packages, skills, total, budget, over: budget != null && total > budget };
+}
+
+/** Kumulierte Skill-Kaufkosten 0 → to (B1, DSA: FW werden mit AP gekauft). */
+export function skillBuyCost(data: WizardData, skillName: string, to: number): number {
+  if (to <= 0) return 0;
+  const skill = (data.skills ?? []).find((s) => s.name === skillName);
+  if (!skill) return 0;
+  let sum = 0;
+  for (let v = 0; v < to; v++) {
+    sum += skillAdvanceCost(data.advancement, skill, v) ?? 0;
+  }
+  return sum;
 }
 
 /** Endwerte: gekaufter Wert + Paket-Mods. */
@@ -320,10 +341,17 @@ export function buildIssues(data: WizardData, build: CharacterBuild): string[] {
     }
   }
   if (budget?.maxAttrTotal != null
-    && finals.reduce((sum, a) => sum + a.value, 0) > budget.maxAttrTotal) {
-    issues.push('build_attr_total_cap');
+    && finals.reduce((sum, a) => sum + a.value, 0) > budget.maxAttrTotal) {    issues.push('build_attr_total_cap');
   }
   if (buildCost(data, build).over) issues.push('build_over_budget');
+
+  for (const s of data.skills ?? []) {
+    const v = build.skills?.[s.name] ?? 0;
+    if (v < 0) issues.push(`build_skill_range:${s.name}`);
+    if (budget?.maxSkillValue != null && v > budget.maxSkillValue) {
+      issues.push(`build_skill_cap:${s.name}`);
+    }
+  }
 
   const names = build.traits.map((tr) => tr.name);
   let advantageAp = 0;
@@ -412,9 +440,21 @@ export interface WizardData {
   packages?: PkgDef[];
   traits?: TraitDef[];
   advancement?: AdvancementDef;
-  /** Zustands-Katalog (Backend `conditions[]`) — im Wizard (noch) ohne Editor,
-   *  wird aber als opakes Feld über Import→Edit→Save erhalten (kein Datenverlust). */
-  conditions?: unknown[];
+  /** Zustands-Katalog (Backend `conditions[]`), im Wizard editierbar (B2). */
+  conditions?: ConditionDef[];
+}
+
+/** Zustands-Editor (B2): Backend evaluiert derzeit `add`-Effekte. */
+export interface ConditionEffectDef {
+  target: string;
+  op: string;
+  value: number;
+}
+
+export interface ConditionDef {
+  name: string;
+  rounds?: number | null;
+  effects: ConditionEffectDef[];
 }
 
 export const DEFAULT_FEATURES: SystemFeatures = {
@@ -616,6 +656,7 @@ export function wizardIssues(data: WizardData): string[] {
   const issues: string[] = [];
   if (data.attributes.some((a) => !a.name.trim())) issues.push('v_empty_attribute_name');
   if ((data.traits ?? []).some((tr) => !tr.name.trim())) issues.push('v_empty_trait_name');
+  if ((data.conditions ?? []).some((c) => !c.name.trim())) issues.push('v_empty_condition_name');
   (data.packages ?? []).forEach((p, i) => {
     if (!p.name.trim()) issues.push(`v_pkg_name:${i}`);
     if (p.cost !== undefined && !Number.isInteger(p.cost)) issues.push(`v_pkg_cost:${i}`);
@@ -651,7 +692,19 @@ export function toRulesJson(data: WizardData): string {
     ...(data.packages ? { packages: data.packages } : {}),
     ...(data.traits ? { traits: data.traits } : {}),
     ...(data.advancement ? { advancement: data.advancement } : {}),
-    ...(data.conditions ? { conditions: data.conditions } : {}),
+    ...(data.conditions
+      ? {
+          conditions: data.conditions.map((c) => ({
+            name: c.name,
+            ...(c.rounds != null ? { rounds: c.rounds } : {}),
+            effects: (c.effects ?? []).map((e) => ({
+              target: e.target,
+              op: e.op || 'add',
+              value: e.value ?? 0,
+            })),
+          })),
+        }
+      : {}),
     features: data.features,
     derived_values: data.derivedValues,
     abilities: data.abilities,
@@ -726,6 +779,7 @@ export function fromRulesJson(json: string): WizardData | null {
       bonus: (s.bonus as number) ?? 0,
       ...(s.costColumn !== undefined ? { costColumn: s.costColumn as string } : {}),
       ...(s.activationCost !== undefined ? { activationCost: s.activationCost as number } : {}),
+      ...(s.casting !== undefined ? { casting: s.casting as SkillDef['casting'] } : {}),
     }));
     const dice = (parsed.dice_mechanics ?? {}) as Record<string, unknown>;
     const combat = (dice.combat ?? {}) as Record<string, any>;
@@ -754,9 +808,19 @@ export function fromRulesJson(json: string): WizardData | null {
         : undefined,
       traits: parsed.traits as TraitDef[] | undefined,
       advancement: parsed.advancement as AdvancementDef | undefined,
-      // Zustands-Katalog opak übernehmen (kein Wizard-Editor, aber kein Verlust).
+      // Zustands-Katalog typisiert übernehmen (B2-Editor).
       conditions: Array.isArray(parsed.conditions)
-        ? (parsed.conditions as unknown[])
+        ? (parsed.conditions as Record<string, unknown>[]).map((c) => ({
+            name: (c.name as string) ?? '',
+            ...(c.rounds !== undefined ? { rounds: c.rounds as number } : {}),
+            effects: Array.isArray(c.effects)
+              ? (c.effects as Record<string, unknown>[]).map((e) => ({
+                  target: (e.target as string) ?? '',
+                  op: (e.op as string) ?? 'add',
+                  value: (e.value as number) ?? 0,
+                }))
+              : [],
+          }))
         : undefined,
       attributes: attrs,
       skills,

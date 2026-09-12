@@ -8,9 +8,23 @@
     "save": "Kaydet",
     "saving": "Saving…",
     "saved": "Saved",
-    "save_error": "Failed to save"
+    "save_error": "Failed to save",
+    "castCost": "Büyü başına {cost} {resource}",
+    "castNoResource": "Yetersiz AsP/KaP",
+    "castNoTrait": "Gerekli özellik yok",
+    "trade": "Takas"
   },
   "attribute": {
     "modifier": "Modifier"
+  },
+  "wizard": {
+    "stepSkills": "Yetenekler",
+    "skills": "Yetenekler",
+    "skillCost": "Yetenekler",
+    "finalSkills": "Nihai değerler",
+    "noSkills": "Sistemde yetenek yok",
+    "search": "Ara…",
+    "codeSkillCap": "Yetenek maksimumun üstünde ({a})",
+    "codeSkillRange": "Geçersiz değer ({a})"
   }
 }

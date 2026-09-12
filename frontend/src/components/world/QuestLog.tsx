@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollText, CheckCircle, XCircle, Clock, Bot, Star, Coins, Plus } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useApiGet } from '../../hooks/useApiGet';
@@ -48,6 +49,7 @@ function parseObjectives(raw: string): QuestObjective[] {
 }
 
 export function QuestLog({ worldId, onSelectQuest }: Props) {
+  const { t } = useTranslation('common');
   const { data: _quests, refetch } = useApiGet<Quest[]>(`/quests?worldId=${worldId}`, [worldId]);
   const quests = _quests ?? [];
   const [showCreate, setShowCreate] = useState(false);
@@ -89,11 +91,11 @@ export function QuestLog({ worldId, onSelectQuest }: Props) {
   return (
     <div className="space-y-2">
       <h3 className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary uppercase tracking-wide">
-        <ScrollText size={14} /> Quests ({quests.length})
+        <ScrollText size={14} /> {t('quest.title')} ({quests.length})
         <button
           onClick={() => setShowCreate((v) => !v)}
           className="ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 text-accent hover:bg-accent/10"
-          aria-label="Create quest"
+          aria-label={t('quest.create')}
         >
           <Plus size={14} />
         </button>
@@ -104,7 +106,7 @@ export function QuestLog({ worldId, onSelectQuest }: Props) {
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Quest title"
+            placeholder={t('quest.titlePlaceholder')}
             className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-sm text-text-primary outline-none focus:border-accent"
           />
           <div className="flex gap-2">
@@ -122,13 +124,13 @@ export function QuestLog({ worldId, onSelectQuest }: Props) {
               disabled={!title.trim() || saving}
               className="rounded bg-accent px-3 py-1 text-xs text-white hover:bg-accent/80 disabled:opacity-40"
             >
-              Create
+              {t('quest.create')}
             </button>
           </div>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Description (optional)"
+            placeholder={t('quest.descriptionPlaceholder')}
             rows={2}
             className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
           />
@@ -153,13 +155,13 @@ export function QuestLog({ worldId, onSelectQuest }: Props) {
                 onClick={() => updateStatus(q.id, 'active')}
                 className="flex items-center gap-1 rounded bg-accent/20 px-2 py-1 text-xs text-accent hover:bg-accent/40"
               >
-                <CheckCircle size={12} /> Approve
+                <CheckCircle size={12} /> {t('quest.approve')}
               </button>
               <button
                 onClick={() => updateStatus(q.id, 'cancelled')}
                 className="flex items-center gap-1 rounded bg-danger/20 px-2 py-1 text-xs text-danger hover:bg-danger/40"
               >
-                <XCircle size={12} /> Reject
+                <XCircle size={12} /> {t('quest.reject')}
               </button>
             </div>
           </div>
@@ -167,7 +169,7 @@ export function QuestLog({ worldId, onSelectQuest }: Props) {
 
       {/* Active Quests */}
       {active.length === 0 && pending.length === 0 && (
-        <p className="text-xs text-text-secondary">No quests</p>
+        <p className="text-xs text-text-secondary">{t('quest.noQuests')}</p>
       )}
       {active.map((q) => {
         const objs = parseObjectives(q.objectives);

@@ -150,5 +150,14 @@
   "msg_created": "System created",
   "msg_updated": "System updated",
   "msg_create_failed": "Failed to create",
-  "msg_update_failed": "Failed to update"
+  "msg_update_failed": "Failed to update",
+  "s8_states_title": "Durum Kataloğu",
+  "s8_states_hint": "Katalog durumları turlar boyunca etkilidir. Efektler add işlemi kullanır.",
+  "s8_states_name": "Ad",
+  "s8_states_rounds": "Tur",
+  "s8_states_add": "Durum ekle",
+  "s8_states_add_effect": "Efekt ekle",
+  "sa_casting": "Büyü (AsP/KaP)",
+  "sa_casting_cost": "AsP/KaP bedeli",
+  "sa_casting_trait": "Gerekli özellik"
 }

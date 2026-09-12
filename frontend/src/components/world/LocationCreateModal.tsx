@@ -128,7 +128,7 @@ export function LocationCreateModal({ regionId, regionName, onCreated, onClose }
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Map X</label>
+                <label className="block text-xs text-text-secondary mb-1">{t('location.mapX')}</label>
                 <input
                   type="number"
                   value={positionX}
@@ -137,7 +137,7 @@ export function LocationCreateModal({ regionId, regionName, onCreated, onClose }
                 />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Map Y</label>
+                <label className="block text-xs text-text-secondary mb-1">{t('location.mapY')}</label>
                 <input
                   type="number"
                   value={positionY}

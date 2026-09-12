@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, Globe, ScrollText } from 'lucide-react';
 import { apiClient } from '../api/client';
@@ -40,6 +41,7 @@ interface LocationSummary {
 }
 
 export default function RegionViewPage() {
+  const { t } = useTranslation('common');
   const { id, regionId } = useParams<{ id: string; regionId: string }>();
   const navigate = useNavigate();
   const worldId = id ?? '';
@@ -126,13 +128,13 @@ export default function RegionViewPage() {
         </span>
         <span className="text-xs text-text-secondary capitalize">{region.climate}</span>
         <button onClick={openEdit} className="text-xs text-accent hover:text-accent/60 ml-auto">
-          Edit
+          {t('actions.edit')}
         </button>
         <button
           onClick={() => setShowDelete(true)}
           className="text-xs text-danger hover:text-danger/60"
         >
-          Delete
+          {t('actions.delete')}
         </button>
       </header>
 
@@ -147,7 +149,7 @@ export default function RegionViewPage() {
           {region.history && (
             <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
               <h2 className="flex items-center gap-1.5 text-sm font-semibold text-text-primary mb-2">
-                <ScrollText size={16} /> History
+                <ScrollText size={16} /> {t('region.history')}
               </h2>
               <p className="text-sm text-text-secondary">{region.history}</p>
             </section>
@@ -158,7 +160,7 @@ export default function RegionViewPage() {
               <MapPin size={16} /> Locations ({(locations ?? []).length})
             </h2>
             {!locations || locations.length === 0 ? (
-              <p className="text-xs text-text-secondary">No locations in this region</p>
+              <p className="text-xs text-text-secondary">{t('region.noLocations')}</p>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
                 {locations.map((loc) => (
@@ -196,10 +198,10 @@ export default function RegionViewPage() {
             className="w-80 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-heading text-text-primary mb-4">Edit Region</h3>
+            <h3 className="font-heading text-text-primary mb-4">{t('region.editTitle')}</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Name</label>
+                <label className="block text-xs text-text-secondary mb-1">{t('entity.name')}</label>
                 <input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
@@ -207,7 +209,7 @@ export default function RegionViewPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Description</label>
+                <label className="block text-xs text-text-secondary mb-1">{t('region.description')}</label>
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
@@ -216,7 +218,7 @@ export default function RegionViewPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Climate</label>
+                <label className="block text-xs text-text-secondary mb-1">{t('region.climate')}</label>
                 <select
                   value={editClimate}
                   onChange={(e) => setEditClimate(e.target.value)}
@@ -231,7 +233,7 @@ export default function RegionViewPage() {
               </div>
               <div>
                 <label className="block text-xs text-text-secondary mb-1">
-                  Danger Level (1-10)
+                  {t('region.dangerLevel')}
                 </label>
                 <input
                   type="range"
@@ -244,7 +246,7 @@ export default function RegionViewPage() {
                 <span className="text-xs text-text-secondary">{editDangerLevel}/10</span>
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Population</label>
+                <label className="block text-xs text-text-secondary mb-1">{t('region.population')}</label>
                 <input
                   type="number"
                   min={0}
@@ -254,7 +256,7 @@ export default function RegionViewPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Resources (JSON)</label>
+                <label className="block text-xs text-text-secondary mb-1">{t('region.resourcesJson')}</label>
                 <textarea
                   value={editResources}
                   onChange={(e) => setEditResources(e.target.value)}
@@ -263,7 +265,7 @@ export default function RegionViewPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Factions (JSON)</label>
+                <label className="block text-xs text-text-secondary mb-1">{t('region.factionsJson')}</label>
                 <textarea
                   value={editFactionsJson}
                   onChange={(e) => setEditFactionsJson(e.target.value)}
@@ -276,14 +278,14 @@ export default function RegionViewPage() {
                   onClick={() => setEditing(false)}
                   className="flex-1 rounded border border-bg-elevated py-2 text-sm text-text-secondary hover:text-text-primary"
                 >
-                  Cancel
+                  {t('actions.cancel')}
                 </button>
                 <button
                   onClick={handleEdit}
                   disabled={saving || !editName.trim()}
                   className="flex-1 rounded bg-accent py-2 text-sm text-white hover:bg-accent/80 disabled:opacity-40"
                 >
-                  {saving ? 'Saving…' : 'Save'}
+                  {saving ? t('region.saving') : t('actions.save')}
                 </button>
               </div>
             </div>
@@ -301,16 +303,16 @@ export default function RegionViewPage() {
             className="w-72 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-heading text-text-primary mb-2">Delete Region?</h3>
+            <h3 className="font-heading text-text-primary mb-2">{t('region.deleteTitle')}</h3>
             <p className="text-sm text-text-secondary mb-4">
-              This will permanently delete &quot;{region.name}&quot; and all associated data.
+              {t('region.deleteConfirm', { name: region.name })}
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowDelete(false)}
                 className="flex-1 rounded border border-bg-elevated py-2 text-sm text-text-secondary hover:text-text-primary"
               >
-                Cancel
+                {t('actions.cancel')}
               </button>
               <button
                 onClick={handleDelete}

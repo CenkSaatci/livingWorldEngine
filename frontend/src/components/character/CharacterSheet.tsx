@@ -6,6 +6,7 @@ import { useSheet, type SheetData } from '../../hooks/useSheet';
 import { useToast } from '../../hooks/useToast';
 import { useCampaignStore } from '../../store/campaignStore';
 import { ProbeRoller } from './ProbeRoller';
+import { TradeModal } from './TradeModal';
 
 const VALUE_ICONS: Record<string, React.ReactNode> = {
   hp: <Heart size={16} className="text-danger" />,
@@ -14,7 +15,7 @@ const VALUE_ICONS: Record<string, React.ReactNode> = {
   sanity: <Sparkles size={16} className="text-purple-400" />,
 };
 
-function AttrInput({ name, value, min, max, entityId, allAttributes, onSaved }: { name: string; value: number; min: number; max: number; entityId: string; allAttributes: Record<string, number>; onSaved: () => void }) {
+function AttrInput({ name, value, min, max, entityId, campaignId, allAttributes, onSaved }: { name: string; value: number; min: number; max: number; entityId: string; campaignId: string | null; allAttributes: Record<string, number>; onSaved: () => void }) {
   const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [editVal, setEditVal] = useState(String(value));
@@ -30,7 +31,10 @@ function AttrInput({ name, value, min, max, entityId, allAttributes, onSaved }: 
       // Würde man nur {[name]: newVal} senden, gingen geerbte Defaults (die nur
       // in der Sheet-Anzeige, nicht in der DB stehen) beim ersten Speichern verloren
       // und abgeleitete Formeln würden mit „(Fehler)" fehlschlagen.
-      await apiClient.patch(`/entities/${entityId}/attributes`, { ...allAttributes, [name]: newVal });
+      await apiClient.patch(
+        `/entities/${entityId}/attributes${campaignId ? `?campaignId=${campaignId}` : ''}`,
+        { ...allAttributes, [name]: newVal },
+      );
       onSaved();
       setEditing(false);
     } catch { toast.error('Failed to save attribute'); setEditVal(String(value)); setEditing(false); }
@@ -108,6 +112,7 @@ export function CharacterSheet({ entityId }: Props) {
   const { t } = useTranslation('character');
   const { data, loading, error, refetch } = useSheet(entityId);
   const [skillFilter, setSkillFilter] = useState('');
+  const [showTrade, setShowTrade] = useState(false);
   const [skillOverrides, setSkillOverrides] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -141,7 +146,15 @@ export function CharacterSheet({ entityId }: Props) {
     <div className="space-y-4 p-4">
       {/* Entity Info */}
       <div className="rounded-lg border border-bg-elevated bg-bg-surface p-3">
-        <h2 className="font-heading text-lg text-text-primary">{data.entity.name}</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-heading text-lg text-text-primary">{data.entity.name}</h2>
+          <button
+            onClick={() => setShowTrade(true)}
+            className="flex items-center gap-1 rounded border border-accent/50 px-2 py-1 text-xs text-accent hover:bg-accent/10"
+          >
+            ⇄ {t('sheet.trade')}
+          </button>
+        </div>
         <p className="flex items-center gap-2 text-xs text-text-secondary">
           {data.entity.entityType}
           {(data.damageArmor ?? 0) > 0 && (
@@ -187,6 +200,7 @@ export function CharacterSheet({ entityId }: Props) {
             <div key={attr.name} className="rounded bg-bg-primary/50 p-2 text-center">
               <p className="text-[10px] text-text-secondary uppercase">{attr.name}</p>
               <AttrInput name={attr.name} value={attr.value} min={attr.min} max={attr.max} entityId={entityId}
+                campaignId={useCampaignStore.getState().activeCampaignId}
                 allAttributes={Object.fromEntries(data.attributes.map((a) => [a.name, a.value]))} onSaved={refetch} />
               {attr.modifier !== 0 && (
                 <p className="text-xs text-accent">
@@ -293,6 +307,10 @@ export function CharacterSheet({ entityId }: Props) {
           </div>
         )}
       </div>
+
+      {showTrade && (
+        <TradeModal entityId={entityId} entityName={data.entity.name} onClose={() => setShowTrade(false)} />
+      )}
     </div>
   );
 }
@@ -359,6 +377,7 @@ function SkillRow({ skill, entityId, skillOverrides, setSkillOverrides, onSaved,
           </button>
         )}
         <ProbeRoller entityId={entityId} skillName={skill.name} skillTotal={skill.total}
+          casting={skill.casting}
           fateAvailable={fateAvailable} onSpendFate={onSpendFate} />
       </div>
     </div>

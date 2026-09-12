@@ -8,9 +8,23 @@
     "save": "Guardar",
     "saving": "Saving…",
     "saved": "Saved",
-    "save_error": "Failed to save"
+    "save_error": "Failed to save",
+    "castCost": "{cost} {resource} por lanzamiento",
+    "castNoResource": "AsP/KaP insuficientes",
+    "castNoTrait": "Falta el rasgo requerido",
+    "trade": "Comerciar"
   },
   "attribute": {
     "modifier": "Modifier"
+  },
+  "wizard": {
+    "stepSkills": "Habilidades",
+    "skills": "Habilidades",
+    "skillCost": "Habilidades",
+    "finalSkills": "Valores finales",
+    "noSkills": "Sin habilidades",
+    "search": "Buscar…",
+    "codeSkillCap": "Habilidad sobre el máximo ({a})",
+    "codeSkillRange": "Valor inválido ({a})"
   }
 }

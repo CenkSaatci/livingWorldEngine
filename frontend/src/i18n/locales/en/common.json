@@ -142,7 +142,14 @@
   "faction": {
     "create": "Create Faction",
     "name": "Name",
-    "color": "Color"
+    "color": "Color",
+    "title": "Factions",
+    "new": "New",
+    "namePlaceholder": "Faction name",
+    "hasLeader": "Has leader",
+    "deleteTitle": "Delete Faction?",
+    "empty": "No factions yet. Create one to get started.",
+    "deleteConfirm": "This will permanently delete this faction."
   },
   "location": {
     "create": "Create Location",
@@ -150,7 +157,12 @@
     "type": "Type",
     "wealth": "Wealth (1-10)",
     "population": "Population",
-    "description": "Description"
+    "description": "Description",
+    "title": "Location",
+    "editTitle": "Edit Location",
+    "deleteTitle": "Delete Location?",
+    "mapX": "Map X",
+    "mapY": "Map Y"
   },
   "session": {
     "title": "Session",
@@ -302,6 +314,76 @@
     "dangerLevel": "Danger Level (1-10)",
     "create": "Create Region",
     "creating": "Creating…",
-    "saveFailed": "Region could not be saved"
+    "saveFailed": "Region could not be saved",
+    "selectRegion": "Select Region",
+    "noRegions": "No regions yet. Create one first.",
+    "editTitle": "Edit Region",
+    "description": "Description",
+    "population": "Population",
+    "resourcesJson": "Resources (JSON)",
+    "factionsJson": "Factions (JSON)",
+    "noLocations": "No locations in this region",
+    "history": "History",
+    "saving": "Saving…",
+    "deleteTitle": "Delete Region?",
+    "deleteConfirm": "This will permanently delete “{name}” and all associated data."
+  },
+  "quest": {
+    "title": "Quests",
+    "create": "Create",
+    "titlePlaceholder": "Quest title",
+    "descriptionPlaceholder": "Description (optional)",
+    "approve": "Approve",
+    "reject": "Reject",
+    "noQuests": "No quests"
+  },
+  "market": {
+    "title": "Market",
+    "noServices": "No services available at this location.",
+    "service": "Service",
+    "base": "Base",
+    "price": "Price",
+    "svc_sell_weapons": "⚔️ Weapons",
+    "svc_repair": "🔧 Repair",
+    "svc_buy_ore": "⛏️ Ore",
+    "svc_sell_potions": "🧪 Potions",
+    "svc_training": "🏋️ Training",
+    "svc_healing": "❤️‍🩹 Healing",
+    "svc_inn_stay": "🍺 Inn",
+    "svc_buy_food": "🍞 Food",
+    "svc_sell_scrolls": "📜 Scrolls",
+    "svc_identification": "🔍 Identification"
+  },
+  "adventure": {
+    "success": "✅ Success!",
+    "failed": "❌ Failed!",
+    "completed": "🏁 Completed",
+    "whatNext": "What do you do?",
+    "backToWorld": "Back to World",
+    "noCharacter": "No character found",
+    "startFailed": "Failed to start",
+    "noCharacterStarted": "No character started this adventure"
+  },
+  "map": {
+    "loadFailed": "Failed to load map",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "resetView": "Reset view"
+  },
+  "trade": {
+    "title": "Trade",
+    "partner": "Partner",
+    "youGive": "You give",
+    "youWant": "You want",
+    "empty": "Empty",
+    "sendOffer": "Send offer",
+    "sendCounter": "Send counter-offer",
+    "accept": "Accept",
+    "counter": "Counter",
+    "cancel": "Cancel",
+    "countering": "Counter-offer",
+    "gives": "Gives",
+    "wants": "Wants",
+    "failed": "Trade failed"
   }
 }

@@ -53,10 +53,52 @@ class EntityServiceTest {
 
         var result = service.create(worldId, userId, "PC", "Held",
             "{\"konstitution\":11,\"koerperkraft\":10}", null, null, null, null,
-            null, null, null, null, campaignId);
+            null, null, null, null, campaignId, null);
 
         assertThat(result.getHpMax()).isEqualTo(16);
         assertThat(result.getHpCurrent()).isEqualTo(16);
+    }
+
+    @Test
+    void createPersistsSkillsJson() {
+        var campaignId = UUID.randomUUID();
+        doNothing().when(worldAccess).requireAccess(worldId, userId);
+        when(rulesLoader.campaignBelongsToWorld(campaignId, worldId)).thenReturn(true);
+        when(rulesLoader.loadRules(campaignId, worldId)).thenReturn(Map.of());
+        when(derivedValueService.evaluate(any(), any(), any())).thenReturn(List.of());
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = service.create(worldId, userId, "PC", "Held",
+            "{\"mut\":14}", null, null, null, null,
+            null, null, null, null, campaignId, "{\"Sinnesschärfe\":4}");
+
+        assertThat(result.getSkillsJson()).contains("Sinnesschärfe");
+    }
+
+    @Test
+    void updateAttributesRecalculatesHpKeepingDamage() {
+        var campaignId = UUID.randomUUID();
+        var entityId = UUID.randomUUID();
+        var entity = new GameEntity(worldId, "PC", "Held");
+        entity.setAttributesJson("{\"konstitution\":11,\"koerperkraft\":10}");
+        entity.setHpMax(16);
+        entity.setHpCurrent(14);
+        try {
+            var f = GameEntity.class.getDeclaredField("id");
+            f.setAccessible(true);
+            f.set(entity, entityId);
+        } catch (Exception e) { throw new RuntimeException(e); }
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(rulesLoader.campaignBelongsToWorld(campaignId, worldId)).thenReturn(true);
+        when(rulesLoader.loadRules(campaignId, worldId)).thenReturn(Map.of());
+        when(derivedValueService.evaluate(any(), any(), any())).thenReturn(
+            List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("lep", 17.0, null)));
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = service.updateAttributes(entityId, userId, Map.of("konstitution", 13), campaignId);
+
+        assertThat(result.getHpMax()).isEqualTo(17);
+        assertThat(result.getHpCurrent()).isEqualTo(15);
     }
 
     @Test
@@ -66,7 +108,7 @@ class EntityServiceTest {
 
         var result = service.create(worldId, userId, "NPC", "Goblin",
             null, null, null, null, null,
-            null, null, null, null, null);
+            null, null, null, null, null, null);
 
         assertThat(result.getHpMax()).isEqualTo(10);
         verifyNoInteractions(derivedValueService);
@@ -80,7 +122,7 @@ class EntityServiceTest {
 
         assertThatThrownBy(() -> service.create(worldId, userId, "PC", "Held",
                 null, null, null, null, null,
-                null, null, null, null, campaignId))
+                null, null, null, null, campaignId, null))
             .isInstanceOf(EntityService.EntityException.class);
     }
 
@@ -97,7 +139,7 @@ class EntityServiceTest {
 
         var result = service.create(worldId, userId, "NPC", "Goblin",
             null, null, null, null, null,
-            null, null, null, null, null);
+            null, null, null, null, null, null);
 
         assertThat(result.getName()).isEqualTo("Goblin");
         assertThat(result.getEntityType()).isEqualTo("NPC");
@@ -111,7 +153,7 @@ class EntityServiceTest {
 
         var result = service.create(worldId, userId, "NPC", "Goblin",
             "{\"staerke\":10}", "", "", null, null,
-            null, null, null, null, null);
+            null, null, null, null, null, null);
 
         assertThat(result.getPositionJson()).isNull();
     }

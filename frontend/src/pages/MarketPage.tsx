@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ShoppingCart } from 'lucide-react';
 import { useApiGet } from '../hooks/useApiGet';
 import { PriceTag } from '../components/ui/PriceTag';
@@ -27,6 +28,7 @@ const SERVICE_LABELS: Record<string, string> = {
 };
 
 export default function MarketPage() {
+  const { t } = useTranslation('common');
   const { locationId } = useParams<{ locationId: string }>();
   const navigate = useNavigate();
 
@@ -46,7 +48,7 @@ export default function MarketPage() {
           <ArrowLeft size={20} />
         </button>
         <h1 className="flex items-center gap-2 text-lg font-heading text-text-primary">
-          <ShoppingCart size={20} className="text-accent" /> Market
+          <ShoppingCart size={20} className="text-accent" /> {t('market.title')}
         </h1>
       </header>
 
@@ -55,7 +57,7 @@ export default function MarketPage() {
           <LoadingSpinner size="md" text="Loading market…" />
         ) : Object.keys(grouped).length === 0 ? (
           <p className="py-12 text-center text-sm text-text-secondary">
-            No services available at this location.
+            {t('market.noServices')}
           </p>
         ) : (
           <div className="space-y-6">
@@ -65,16 +67,16 @@ export default function MarketPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-bg-elevated text-left text-xs text-text-secondary">
-                      <th className="pb-2 font-medium">Service</th>
-                      <th className="pb-2 font-medium">Base</th>
-                      <th className="pb-2 font-medium">Price</th>
+                      <th className="pb-2 font-medium">{t('market.service')}</th>
+                      <th className="pb-2 font-medium">{t('market.base')}</th>
+                      <th className="pb-2 font-medium">{t('market.price')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {npcItems.map((item, i) => (
                       <tr key={i} className="border-b border-bg-elevated/50">
                         <td className="py-2 text-text-primary">
-                          {SERVICE_LABELS[item.service] ?? item.service}
+                          {t(`market.svc_${item.service}`, { defaultValue: SERVICE_LABELS[item.service] ?? item.service })}
                         </td>
                         <td className="py-2 text-text-secondary">{item.base_price} G</td>
                         <td className="py-2">

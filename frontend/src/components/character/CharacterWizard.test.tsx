@@ -24,6 +24,8 @@ function rules(): WizardData {
     },
   ];
   d.traits = [{ name: 'Zauberer', kind: 'advantage', costs: [{ tier: 'I', cost: 25 }] }];
+  d.advancement = { columns: ['A', 'B'], table: [{ from: 0, to: 20, costs: { A: 1, B: 2 } }], maxRule: '' };
+  d.skills = [{ name: 'Klettern', attributes: ['mut'], bonus: 0, costColumn: 'B' }];
   return d;
 }
 
@@ -52,6 +54,9 @@ describe('CharacterWizard (P30)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Weiter' }));
     fireEvent.click(screen.getByRole('checkbox', { name: /Zauberer/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Weiter' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Klettern +' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Klettern +' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Weiter' }));
     fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'Elaria' } });
     fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
 
@@ -59,6 +64,7 @@ describe('CharacterWizard (P30)', () => {
       entityType: 'PC',
       name: 'Elaria',
       attributesJson: JSON.stringify({ mut: 10, klugheit: 7 }),
+      skillsJson: JSON.stringify({ Klettern: 2 }),
       metadataJson: JSON.stringify({
         traits: ['Zauberer', 'Nachtsicht'],
         package_selections: [{ name: 'Elf', choices: ['klugheit'] }],

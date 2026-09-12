@@ -8,9 +8,23 @@
     "save": "Enregistrer",
     "saving": "Saving…",
     "saved": "Saved",
-    "save_error": "Failed to save"
+    "save_error": "Failed to save",
+    "castCost": "{cost} {resource} par incantation",
+    "castNoResource": "Pas assez d’AsP/KaP",
+    "castNoTrait": "Trait requis manquant",
+    "trade": "Échanger"
   },
   "attribute": {
     "modifier": "Modifier"
+  },
+  "wizard": {
+    "stepSkills": "Compétences",
+    "skills": "Compétences",
+    "skillCost": "Compétences",
+    "finalSkills": "Valeurs finales",
+    "noSkills": "Aucune compétence",
+    "search": "Rechercher…",
+    "codeSkillCap": "Compétence au-dessus du max ({a})",
+    "codeSkillRange": "Valeur invalide ({a})"
   }
 }

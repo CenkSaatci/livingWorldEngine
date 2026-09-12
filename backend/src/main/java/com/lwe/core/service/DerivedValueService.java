@@ -62,7 +62,8 @@ public class DerivedValueService {
             }
             var formula = dv.get("formula") instanceof String s ? s : "0";
             var value = FormulaEvaluator.eval(formula, attributeValues, allowed);
-            return new SheetResponse.DerivedValueInfo(name, value, null);
+            // B9 (DSA 5): Brueche werden aufgerundet (Anzeige + HP konsistent).
+            return new SheetResponse.DerivedValueInfo(name, Math.ceil(value), null);
         } catch (FormulaEvaluator.EvaluationException e) {
             return new SheetResponse.DerivedValueInfo(name, 0, e.getMessage());
         }

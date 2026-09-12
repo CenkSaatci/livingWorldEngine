@@ -21,4 +21,7 @@ public interface GameEntityRepository extends JpaRepository<GameEntity, UUID> {
 
     @Query(value = "SELECT * FROM entities WHERE metadata_json @> CAST(:jsonFilter AS jsonb) AND active = true", nativeQuery = true)
     List<GameEntity> findByMetadataJsonFilter(@Param("jsonFilter") String jsonFilter);
+
+    @Query(value = "SELECT * FROM entities WHERE world_id = :worldId AND metadata_json @> CAST(:jsonFilter AS jsonb) AND active = true", nativeQuery = true)
+    List<GameEntity> findByWorldIdAndMetadataJsonFilter(@Param("worldId") UUID worldId, @Param("jsonFilter") String jsonFilter);
 }

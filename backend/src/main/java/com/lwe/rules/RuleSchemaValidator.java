@@ -108,7 +108,12 @@ public class RuleSchemaValidator {
                 "attributes": { "type": "array", "items": { "type": "string" }, "description": "Multi-attribute reference" },
                 "bonus":      { "type": "integer", "default": 0 },
                 "costColumn": { "type": "string" },
-                "activationCost": { "type": "integer", "minimum": 0 }
+                "activationCost": { "type": "integer", "minimum": 0 },
+                "casting": { "type": "object", "properties": {
+                  "resource": { "type": "string", "enum": ["asp", "kap"] },
+                  "cost":     { "type": "integer", "minimum": 1 },
+                  "requiresTrait": { "type": "string" }
+                } }
               }
             },
             "combat": {

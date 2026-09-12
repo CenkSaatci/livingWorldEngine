@@ -36,7 +36,7 @@ public class EntityController {
         var entity = entityService.create(worldId, user.getId(), req.entityType(),
             req.name(), req.attributesJson(), req.inventoryJson(),
             req.positionJson(), req.metadataJson(), req.factionId(),
-            req.backstory(), req.age(), req.experienceLevel(), req.socialStanding(), req.campaignId());
+            req.backstory(), req.age(), req.experienceLevel(), req.socialStanding(), req.campaignId(), req.skillsJson());
         return ResponseEntity.status(HttpStatus.CREATED).body(EntityResponse.from(entity));
     }
 
@@ -73,8 +73,9 @@ public class EntityController {
     public ResponseEntity<EntityResponse> updateAttributes(@PathVariable UUID worldId,
                                                           @PathVariable UUID entityId,
                                                           @RequestBody Map<String, Integer> attrs,
+                                                          @RequestParam(required = false) UUID campaignId,
                                                           @AuthenticationPrincipal User user) {
-        var entity = entityService.updateAttributes(entityId, user.getId(), attrs);
+        var entity = entityService.updateAttributes(entityId, user.getId(), attrs, campaignId);
         return ResponseEntity.ok(EntityResponse.from(entity));
     }
 
@@ -128,7 +129,7 @@ public class EntityController {
         var entity = entityService.create(worldId, user.getId(), req.entityType(),
             req.name(), req.attributesJson(), req.inventoryJson(),
             req.positionJson(), req.metadataJson(), req.factionId(),
-            req.backstory(), req.age(), req.experienceLevel(), req.socialStanding(), req.campaignId());
+            req.backstory(), req.age(), req.experienceLevel(), req.socialStanding(), req.campaignId(), req.skillsJson());
         return ResponseEntity.status(HttpStatus.CREATED).body(EntityResponse.from(entity));
     }
 
@@ -148,7 +149,8 @@ public class EntityController {
         Integer age,
         String experienceLevel,
         String socialStanding,
-        UUID campaignId
+        UUID campaignId,
+        String skillsJson
     ) {}
 
     public record UpdateRequest(

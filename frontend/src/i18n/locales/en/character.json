@@ -41,7 +41,11 @@
     "fate": "Fate points",
     "spendFate": "Spend fate point and re-roll",
     "spendFateFailed": "Could not spend fate point",
-    "armor": "Armor"
+    "armor": "Armor",
+    "castCost": "{cost} {resource} per cast",
+    "castNoResource": "Not enough AsP/KaP for this spell",
+    "castNoTrait": "Required trait missing",
+    "trade": "Trade"
   },
   "attribute": {
     "modifier": "Modifier"
@@ -90,6 +94,14 @@
     "codeDuplicateKind": "Multiple packages of the same kind: {{a}}",
     "codeRestricted": "{{a}} is restricted with {{b}}",
     "codeUnknown": "Unknown package: {{a}}",
-    "codeRecommended": "Recommended for {{a}}: {{b}}"
+    "codeRecommended": "Recommended for {{a}}: {{b}}",
+    "stepSkills": "Skills",
+    "skills": "Skills",
+    "skillCost": "Skills",
+    "finalSkills": "Final skill values",
+    "noSkills": "No skills in system",
+    "search": "Search…",
+    "codeSkillCap": "Skill above maximum ({a})",
+    "codeSkillRange": "Invalid skill value ({a})"
   }
 }

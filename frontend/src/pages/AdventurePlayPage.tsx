@@ -4,11 +4,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Play, CheckCircle, XCircle, Zap } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { useToast } from '../hooks/useToast';
+import { useTranslation } from 'react-i18next';
 
 export default function AdventurePlayPage() {
   const { worldId, adventureId } = useParams<{ worldId: string; adventureId: string }>();
   const navigate = useNavigate();
   const toast = useToast();
+  const { t } = useTranslation('common');
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
   const [nodeText, setNodeText] = useState('');
@@ -17,6 +19,7 @@ export default function AdventurePlayPage() {
   const [choices, setChoices] = useState<any[]>([]);
   const [advancing, setAdvancing] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [resultOk, setResultOk] = useState(true);
   const [entityId, setEntityId] = useState<string | null>(null);
 
   // Start or resume the adventure
@@ -32,7 +35,7 @@ export default function AdventurePlayPage() {
         const pc = entities.find((e: any) => e.entityType === 'PC');
         if (!pc) {
           if (!cancelled) {
-            toast.error('No character found');
+            toast.error(t('adventure.noCharacter'));
             setLoading(false);
           }
           return;
@@ -58,7 +61,7 @@ export default function AdventurePlayPage() {
         setLoading(false);
       } catch (err: any) {
         if (!cancelled) {
-          toast.error(err?.response?.data?.error?.message || 'Failed to start');
+          toast.error(err?.response?.data?.error?.message || t('adventure.startFailed'));
           setLoading(false);
         }
       }
@@ -81,7 +84,7 @@ export default function AdventurePlayPage() {
   const handleChoice = async (choiceId: string) => {
     if (!adventureId) return;
     if (!entityId) {
-      toast.error('No character started this adventure');
+      toast.error(t('adventure.noCharacterStarted'));
       return;
     }
     setAdvancing(true);
@@ -94,7 +97,8 @@ export default function AdventurePlayPage() {
       const data = res.data as any;
 
       if (data.skillCheckSuccess !== undefined) {
-        setResult(data.skillCheckSuccess ? '✅ Success!' : '❌ Failed!');
+        setResultOk(!!data.skillCheckSuccess);
+        setResult(data.skillCheckSuccess ? t('adventure.success') : t('adventure.failed'));
         setTimeout(() => setResult(null), 2000);
       }
 
@@ -135,7 +139,7 @@ export default function AdventurePlayPage() {
         <div className="flex-1" />
         {isEnd && (
           <span className="rounded bg-success/10 px-2 py-0.5 text-xs text-success">
-            🏁 Completed
+            {t('adventure.completed')}
           </span>
         )}
       </header>
@@ -159,10 +163,10 @@ export default function AdventurePlayPage() {
         {result && (
           <div
             className={`mb-4 flex items-center gap-2 rounded-lg px-4 py-3 text-sm ${
-              result.includes('Success') ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
+              resultOk ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
             }`}
           >
-            {result.includes('Success') ? <CheckCircle size={18} /> : <XCircle size={18} />}
+            {resultOk ? <CheckCircle size={18} /> : <XCircle size={18} />}
             {result}
           </div>
         )}
@@ -170,7 +174,7 @@ export default function AdventurePlayPage() {
         {/* Choices */}
         {choices.length > 0 && (
           <div className="space-y-3">
-            <h2 className="text-sm font-heading text-text-secondary">What do you do?</h2>
+            <h2 className="text-sm font-heading text-text-secondary">{t('adventure.whatNext')}</h2>
             {choices.map((c: any) => (
               <button
                 key={c.id}
@@ -197,7 +201,7 @@ export default function AdventurePlayPage() {
               onClick={() => navigate(`/worlds/${worldId}`)}
               className="rounded bg-accent px-6 py-2 text-sm text-white hover:bg-accent/80"
             >
-              <Play size={14} className="inline mr-1" /> Back to World
+              <Play size={14} className="inline mr-1" /> {t('adventure.backToWorld')}
             </button>
           </div>
         )}

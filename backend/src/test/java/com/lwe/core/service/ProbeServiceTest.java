@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -46,7 +47,8 @@ class ProbeServiceTest {
     @BeforeEach
     void setUp() {
         service = new ProbeService(entityRepo, worldRepo, worldAccess,
-            conditionEvaluator, modifierService, rulesLoader, objectMapper, conditionService);
+            conditionEvaluator, modifierService, rulesLoader, objectMapper, conditionService,
+            new DerivedValueService());
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
         lenient().when(conditionEvaluator.evaluate(any(), any())).thenReturn(java.util.List.of());
         lenient().when(modifierService.calculateModifiers(any(), any())).thenReturn(Map.of("staerke", 0.0));
@@ -60,6 +62,93 @@ class ProbeServiceTest {
         try { var f = GameEntity.class.getDeclaredField("id"); f.setAccessible(true); f.set(e, entityId); }
         catch (Exception ex) { throw new RuntimeException(ex); }
         return e;
+    }
+
+    private static final String DSA_RULES = """
+        {"version":1,"probeType":"d20_3attr",
+         "attributes":[{"name":"mut","type":"INT","min":1,"max":20,"default":8},
+                       {"name":"klugheit","type":"INT","min":1,"max":20,"default":8},
+                       {"name":"intuition","type":"INT","min":1,"max":20,"default":8}],
+         "skills":[{"name":"Odem","attributes":["klugheit","intuition","charisma"],"bonus":0,
+                    "casting":{"resource":"asp","cost":2,"requiresTrait":"Zauberer"}}],
+         "derived_values":[{"name":"asp","formula":"(mut+klugheit+intuition)/2"}],
+         "dice_mechanics":{"probe":"3d20"}}
+        """;
+
+    @Test
+    void castDeductsAsp() throws Exception {
+        var entity = entityWithAttrs("{\"mut\":14,\"klugheit\":14,\"intuition\":13}");
+        entity.setMetadataJson("{\"traits\":[\"Zauberer\"]}");
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        lenient().when(rulesLoader.loadRules(any(), eq(worldId))).thenAnswer(inv ->
+            objectMapper.readValue(DSA_RULES, Map.class));
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = service.cast(entityId, userId, "Odem", campaignId());
+
+        assertThat(result.cost()).isEqualTo(2);
+        assertThat(result.resourceRemaining()).isEqualTo(19);
+        var saved = objectMapper.readTree(entity.getMetadataJson());
+        assertThat(saved.path("asp_current").asInt()).isEqualTo(19);
+    }
+
+    @Test
+    void castRejectsMissingTrait() throws Exception {
+        var entity = entityWithAttrs("{\"mut\":14,\"klugheit\":14,\"intuition\":13}");
+        entity.setMetadataJson("{}");
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        lenient().when(rulesLoader.loadRules(any(), eq(worldId))).thenAnswer(inv ->
+            objectMapper.readValue(DSA_RULES, Map.class));
+
+        assertThatThrownBy(() -> service.cast(entityId, userId, "Odem", campaignId()))
+            .isInstanceOf(ProbeService.CastException.class)
+            .matches(e -> ((ProbeService.CastException) e).getErrorCode().equals("CAST_MISSING_TRAIT"));
+    }
+
+    @Test
+    void castRejectsInsufficientAsp() throws Exception {
+        var entity = entityWithAttrs("{\"mut\":14,\"klugheit\":14,\"intuition\":13}");
+        entity.setMetadataJson("{\"traits\":[\"Zauberer\"],\"asp_current\":1}");
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        lenient().when(rulesLoader.loadRules(any(), eq(worldId))).thenAnswer(inv ->
+            objectMapper.readValue(DSA_RULES, Map.class));
+
+        assertThatThrownBy(() -> service.cast(entityId, userId, "Odem", campaignId()))
+            .isInstanceOf(ProbeService.CastException.class)
+            .matches(e -> ((ProbeService.CastException) e).getErrorCode().equals("CAST_INSUFFICIENT_RESOURCE"));
+    }
+
+    @Test
+    void castRejectsNonCastingSkill() throws Exception {
+        var entity = entityWithAttrs("{\"staerke\":10}");
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        lenient().when(rulesLoader.loadRules(any(), eq(worldId))).thenAnswer(inv ->
+            objectMapper.readValue(D20_RULES, Map.class));
+
+        assertThatThrownBy(() -> service.cast(entityId, userId, "Athletik", campaignId()))
+            .isInstanceOf(ProbeService.CastException.class)
+            .matches(e -> ((ProbeService.CastException) e).getErrorCode().equals("CAST_NOT_CASTABLE"));
+    }
+
+    private UUID campaignId() {
+        return UUID.fromString("00000000-0000-0000-0000-000000000001");
+    }
+
+    private void setWorldId(World world) {
+        try { var f = World.class.getDeclaredField("id"); f.setAccessible(true); f.set(world, worldId); }
+        catch (Exception ex) { throw new RuntimeException(ex); }
     }
 
     @Test

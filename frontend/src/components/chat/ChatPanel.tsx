@@ -35,6 +35,29 @@ export function ChatPanel({ worldId }: { worldId: string }) {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const worldEvents = useWorldStore((s) => s.worldEvents);
 
+  // B5: Verlauf beim Betreten laden (neueste 50, chronologisch).
+  useEffect(() => {
+    if (!worldId) return;
+    let cancelled = false;
+    apiClient
+      .get(`/chat/${worldId}`)
+      .then((res) => {
+        if (cancelled || !Array.isArray(res.data)) return;
+        setMessages(
+          res.data.map((m: { sender: string; text: string; timestamp: string }, i: number) => ({
+            id: `history-${i}-${m.timestamp}`,
+            sender: m.sender,
+            text: m.text,
+            timestamp: m.timestamp,
+          })),
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [worldId]);
+
   // WS-Events als Chat-Nachrichten anzeigen — aber nur mit menschlichem Text.
   // Technische Events (COMBAT_ACTION_EXECUTED, PROBE_ROLLED, …) aktualisieren
   // Stores/UI direkt; als Roh-JSON im Chat wären sie nur Rauschen (Playtest #11).

@@ -283,5 +283,14 @@
   "spk_cost": "Kosten",
   "spk_ap": "AP",
   "spk_issue": "Problem",
-  "spk_warning": "Hinweis"
+  "spk_warning": "Hinweis",
+  "s8_states_title": "Zustands-Katalog",
+  "s8_states_hint": "Zustände aus dem Katalog wirken über Runden (z. B. Wunde: −4 auf Proben). Effekte nutzen add-Operation.",
+  "s8_states_name": "Name",
+  "s8_states_rounds": "Runden",
+  "s8_states_add": "Zustand hinzufügen",
+  "s8_states_add_effect": "Effekt hinzufügen",
+  "sa_casting": "Zauber (AsP/KaP)",
+  "sa_casting_cost": "AsP-/KaP-Kosten",
+  "sa_casting_trait": "Merkmal (z. B. Zauberer)"
 }

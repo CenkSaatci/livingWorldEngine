@@ -101,7 +101,14 @@
   "faction": {
     "create": "Create Faction",
     "name": "Ad",
-    "color": "Color"
+    "color": "Color",
+    "title": "Fraksiyonlar",
+    "new": "Yeni",
+    "namePlaceholder": "Fraksiyon adı",
+    "hasLeader": "Lideri var",
+    "deleteTitle": "Fraksiyon silinsin mi?",
+    "empty": "Henüz fraksiyon yok. Bir tane oluştur.",
+    "deleteConfirm": "Bu fraksiyon kalıcı olarak silinecek."
   },
   "location": {
     "create": "Konum oluştur",
@@ -109,7 +116,12 @@
     "type": "Tür",
     "wealth": "Zenginlik (1-10)",
     "population": "Nüfus",
-    "description": "Açıklama"
+    "description": "Açıklama",
+    "title": "Konum",
+    "editTitle": "Konumu düzenle",
+    "deleteTitle": "Konum silinsin mi?",
+    "mapX": "Harita X",
+    "mapY": "Harita Y"
   },
   "session": {
     "title": "Session",
@@ -201,6 +213,76 @@
     "dangerLevel": "Tehlike seviyesi (1-10)",
     "create": "Bölge oluştur",
     "creating": "Oluşturuluyor…",
-    "saveFailed": "Bölge kaydedilemedi"
+    "saveFailed": "Bölge kaydedilemedi",
+    "selectRegion": "Bölge seç",
+    "noRegions": "Henüz bölge yok. Önce bir tane oluştur.",
+    "editTitle": "Bölgeyi düzenle",
+    "description": "Açıklama",
+    "population": "Nüfus",
+    "resourcesJson": "Kaynaklar (JSON)",
+    "factionsJson": "Fraksiyonlar (JSON)",
+    "noLocations": "Bu bölgede konum yok",
+    "history": "Geçmiş",
+    "saving": "Kaydediliyor…",
+    "deleteTitle": "Bölge silinsin mi?",
+    "deleteConfirm": "“{name}” ve ilişkili tüm veriler kalıcı olarak silinecek."
+  },
+  "quest": {
+    "title": "Görevler",
+    "create": "Oluştur",
+    "titlePlaceholder": "Görev başlığı",
+    "descriptionPlaceholder": "Açıklama (isteğe bağlı)",
+    "approve": "Onayla",
+    "reject": "Reddet",
+    "noQuests": "Görev yok"
+  },
+  "market": {
+    "title": "Pazar",
+    "noServices": "Burada hizmet yok.",
+    "service": "Hizmet",
+    "base": "Taban",
+    "price": "Fiyat",
+    "svc_sell_weapons": "⚔️ Silahlar",
+    "svc_repair": "🔧 Onarım",
+    "svc_buy_ore": "⛏️ Cevher",
+    "svc_sell_potions": "🧪 İksirler",
+    "svc_training": "🏋️ Antrenman",
+    "svc_healing": "❤️‍🩹 İyileştirme",
+    "svc_inn_stay": "🍺 Han",
+    "svc_buy_food": "🍞 Yiyecek",
+    "svc_sell_scrolls": "📜 Parşömenler",
+    "svc_identification": "🔍 Teşhis"
+  },
+  "adventure": {
+    "success": "✅ Başarılı!",
+    "failed": "❌ Başarısız!",
+    "completed": "🏁 Tamamlandı",
+    "whatNext": "Ne yapıyorsunuz?",
+    "backToWorld": "Dünyaya dön",
+    "noCharacter": "Karakter bulunamadı",
+    "startFailed": "Başlatılamadı",
+    "noCharacterStarted": "Hiçbir karakter bu maceraya başlamadı"
+  },
+  "map": {
+    "loadFailed": "Harita yüklenemedi",
+    "zoomIn": "Yakınlaştır",
+    "zoomOut": "Uzaklaştır",
+    "resetView": "Görünümü sıfırla"
+  },
+  "trade": {
+    "title": "Takas",
+    "partner": "Ortak",
+    "youGive": "Veriyorsun",
+    "youWant": "İstiyorsun",
+    "empty": "Boş",
+    "sendOffer": "Teklif gönder",
+    "sendCounter": "Karşı teklif gönder",
+    "accept": "Kabul et",
+    "counter": "Karşı teklif",
+    "cancel": "İptal",
+    "countering": "Karşı teklif",
+    "gives": "Veriyor",
+    "wants": "İstiyor",
+    "failed": "Takas başarısız"
   }
 }

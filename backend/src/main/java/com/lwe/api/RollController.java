@@ -51,6 +51,14 @@ public class RollController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/cast")
+    public ResponseEntity<ProbeService.CastResult> cast(@Valid @RequestBody CastRequest req,
+                                                        @AuthenticationPrincipal User user) {
+        var result = probeService.cast(
+            req.entityId(), user.getId(), req.skillName(), req.campaignId());
+        return ResponseEntity.ok(result);
+    }
+
     @PostMapping
     public ResponseEntity<RollService.RollResult> roll(@Valid @RequestBody RollRequest req,
                                                        @AuthenticationPrincipal User user) {
@@ -65,6 +73,12 @@ public class RollController {
         @NotBlank String skillName,
         int target,
         boolean advantage,
+        UUID campaignId
+    ) {}
+
+    public record CastRequest(
+        @NotNull UUID entityId,
+        @NotBlank String skillName,
         UUID campaignId
     ) {}
 

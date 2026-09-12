@@ -583,7 +583,12 @@
         "fingerfertigkeit"
       ],
       "bonus": 0,
-      "costColumn": "C"
+      "costColumn": "C",
+      "casting": {
+        "resource": "asp",
+        "cost": 4,
+        "requiresTrait": "Zauberer"
+      }
     },
     {
       "name": "Balsam Salabunde",
@@ -593,7 +598,12 @@
         "charisma"
       ],
       "bonus": 0,
-      "costColumn": "C"
+      "costColumn": "C",
+      "casting": {
+        "resource": "asp",
+        "cost": 4,
+        "requiresTrait": "Zauberer"
+      }
     },
     {
       "name": "Blitz Dich Find",
@@ -603,7 +613,12 @@
         "gewandtheit"
       ],
       "bonus": 0,
-      "costColumn": "B"
+      "costColumn": "B",
+      "casting": {
+        "resource": "asp",
+        "cost": 4,
+        "requiresTrait": "Zauberer"
+      }
     },
     {
       "name": "Fulminictus",
@@ -613,7 +628,12 @@
         "konstitution"
       ],
       "bonus": 0,
-      "costColumn": "C"
+      "costColumn": "C",
+      "casting": {
+        "resource": "asp",
+        "cost": 8,
+        "requiresTrait": "Zauberer"
+      }
     },
     {
       "name": "Ignifaxius",
@@ -623,7 +643,12 @@
         "koerperkraft"
       ],
       "bonus": 0,
-      "costColumn": "C"
+      "costColumn": "C",
+      "casting": {
+        "resource": "asp",
+        "cost": 8,
+        "requiresTrait": "Zauberer"
+      }
     },
     {
       "name": "Odem Arcanum",
@@ -633,7 +658,12 @@
         "charisma"
       ],
       "bonus": 0,
-      "costColumn": "A"
+      "costColumn": "A",
+      "casting": {
+        "resource": "asp",
+        "cost": 2,
+        "requiresTrait": "Zauberer"
+      }
     },
     {
       "name": "Paralysis",
@@ -643,7 +673,12 @@
         "konstitution"
       ],
       "bonus": 0,
-      "costColumn": "C"
+      "costColumn": "C",
+      "casting": {
+        "resource": "asp",
+        "cost": 8,
+        "requiresTrait": "Zauberer"
+      }
     },
     {
       "name": "Somnigravis",
@@ -653,7 +688,12 @@
         "gewandtheit"
       ],
       "bonus": 0,
-      "costColumn": "B"
+      "costColumn": "B",
+      "casting": {
+        "resource": "asp",
+        "cost": 4,
+        "requiresTrait": "Zauberer"
+      }
     },
     {
       "name": "Visibili Vanitar",
@@ -663,7 +703,12 @@
         "gewandtheit"
       ],
       "bonus": 0,
-      "costColumn": "C"
+      "costColumn": "C",
+      "casting": {
+        "resource": "asp",
+        "cost": 8,
+        "requiresTrait": "Zauberer"
+      }
     },
     {
       "name": "Gardianum",
@@ -673,7 +718,12 @@
         "gewandtheit"
       ],
       "bonus": 0,
-      "costColumn": "C"
+      "costColumn": "C",
+      "casting": {
+        "resource": "asp",
+        "cost": 4,
+        "requiresTrait": "Zauberer"
+      }
     },
     {
       "name": "Märtyrersegen",
@@ -683,7 +733,12 @@
         "charisma"
       ],
       "bonus": 0,
-      "costColumn": "B"
+      "costColumn": "B",
+      "casting": {
+        "resource": "kap",
+        "cost": 4,
+        "requiresTrait": "Geweiht"
+      }
     },
     {
       "name": "Schutzsegen",
@@ -693,7 +748,12 @@
         "konstitution"
       ],
       "bonus": 0,
-      "costColumn": "B"
+      "costColumn": "B",
+      "casting": {
+        "resource": "kap",
+        "cost": 4,
+        "requiresTrait": "Geweiht"
+      }
     },
     {
       "name": "Heilsegen",
@@ -703,7 +763,12 @@
         "konstitution"
       ],
       "bonus": 0,
-      "costColumn": "B"
+      "costColumn": "B",
+      "casting": {
+        "resource": "kap",
+        "cost": 8,
+        "requiresTrait": "Geweiht"
+      }
     },
     {
       "name": "Exorzismus",
@@ -713,7 +778,12 @@
         "gewandtheit"
       ],
       "bonus": 0,
-      "costColumn": "C"
+      "costColumn": "C",
+      "casting": {
+        "resource": "kap",
+        "cost": 8,
+        "requiresTrait": "Geweiht"
+      }
     },
     {
       "name": "Objektsegen",
@@ -723,7 +793,12 @@
         "fingerfertigkeit"
       ],
       "bonus": 0,
-      "costColumn": "B"
+      "costColumn": "B",
+      "casting": {
+        "resource": "kap",
+        "cost": 4,
+        "requiresTrait": "Geweiht"
+      }
     },
     {
       "name": "Grabsegen",
@@ -733,7 +808,12 @@
         "gewandtheit"
       ],
       "bonus": 0,
-      "costColumn": "A"
+      "costColumn": "A",
+      "casting": {
+        "resource": "kap",
+        "cost": 4,
+        "requiresTrait": "Geweiht"
+      }
     }
   ],
   "traits": [

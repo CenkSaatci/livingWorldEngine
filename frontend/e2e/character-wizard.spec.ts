@@ -95,6 +95,9 @@ test.describe('Charakter-Wizard (P30-T04)', () => {
     await page.getByRole('checkbox', { name: /Zauberer/ }).check();
     await page.getByRole('button', { name: 'Weiter' }).click();
 
+    // B1: Fertigkeiten-Step (keine FW kaufen), dann Übersicht
+    await page.getByRole('button', { name: 'Weiter' }).click();
+
     await page.getByLabel(/Name/).fill('E2E Held');
     await page.getByRole('button', { name: 'Speichern' }).click();
 

@@ -19,13 +19,19 @@ public class EconomyService {
 
     private final LocationRepository locationRepo;
     private final GameEntityRepository entityRepo;
+    private final com.lwe.core.repository.RegionRepository regionRepo;
+    private final com.lwe.core.util.WorldAccess worldAccess;
     private final ObjectMapper objectMapper;
 
     public EconomyService(LocationRepository locationRepo, GameEntityRepository entityRepo,
+                        com.lwe.core.repository.RegionRepository regionRepo,
+                        com.lwe.core.util.WorldAccess worldAccess,
                         ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         this.locationRepo = locationRepo;
         this.entityRepo = entityRepo;
+        this.regionRepo = regionRepo;
+        this.worldAccess = worldAccess;
     }
 
     /**
@@ -35,10 +41,13 @@ public class EconomyService {
     public List<Map<String, Object>> getMarketPrices(UUID locationId, UUID userId) {
         var loc = locationRepo.findById(locationId)
             .orElseThrow(() -> new RuntimeException("LOCATION_NOT_FOUND"));
+        var worldId = regionRepo.findById(loc.getRegionId())
+            .orElseThrow(() -> new RuntimeException("REGION_NOT_FOUND")).getWorldId();
+        worldAccess.requireRead(worldId, userId);
         var wealthFactor = 1.0 + (loc.getWealth() - 5) * 0.1;
 
         var filter = "{\"location_id\":\"" + locationId + "\"}";
-        var npcs = entityRepo.findByMetadataJsonFilter(filter);
+        var npcs = entityRepo.findByWorldIdAndMetadataJsonFilter(worldId, filter);
 
         var market = new ArrayList<Map<String, Object>>();
         for (var npc : npcs) {

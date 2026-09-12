@@ -23,6 +23,15 @@ class DerivedValueServiceTest {
     }
 
     @Test
+    void fractionalFormulaRoundsUp() {
+        var defs = List.of(Map.<String, Object>of("name", "lep", "formula", "(konstitution+koerperkraft)/2+5"));
+
+        var result = service.evaluate(defs, Map.of("konstitution", 11, "koerperkraft", 10));
+
+        assertThat(result.getFirst().value()).isEqualTo(16.0);
+    }
+
+    @Test
     void returnsEmptyForNullInput() {
         assertThat(service.evaluate(null, Map.of())).isEmpty();
     }

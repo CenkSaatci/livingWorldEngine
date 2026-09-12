@@ -11,6 +11,7 @@ import {
   findPackage,
   isChoiceMod,
   packageSelectionWarnings,
+  skillAdvanceCost,
   type CharacterBuild,
   type PkgDef,
   type WizardData,
@@ -31,6 +32,7 @@ export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose
   const toast = useToast();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
+  const [skillSearch, setSkillSearch] = useState('');
   const [saving, setSaving] = useState(false);
   const [build, setBuild] = useState<CharacterBuild>({
     packageSelections: [],
@@ -83,6 +85,10 @@ export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose
     setBuild({ ...build, attributes: { ...build.attributes, [attrName]: value } });
   };
 
+  const purchaseSkill = (skillName: string, value: number) => {
+    setBuild({ ...build, skills: { ...(build.skills ?? {}), [skillName]: Math.max(0, value) } });
+  };
+
   const toggleTrait = (defName: string) => {
     const exists = build.traits.some((tr) => tr.name === defName);
     const def = (rules.traits ?? []).find((tr) => tr.name === defName);
@@ -116,11 +122,15 @@ export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose
           ? { fate_points: rules.creationBudget.fatePoints }
           : {}),
       });
+      const skillEntries = Object.entries(build.skills ?? {}).filter(([, v]) => v > 0);
       const res = await apiClient.post(`/worlds/${worldId}/entities`, {
         entityType: 'PC',
         name: name.trim(),
         attributesJson,
         metadataJson,
+        ...(skillEntries.length > 0
+          ? { skillsJson: JSON.stringify(Object.fromEntries(skillEntries)) }
+          : {}),
         ...(campaignId ? { campaignId } : {}),
       });
       onCreated(res.data.id);
@@ -140,6 +150,8 @@ export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose
     build_advantage_cap: 'codeAdvantageCap',
     build_trait_excludes: 'codeTraitExcludes',
     build_trait_requires: 'codeTraitRequires',
+    build_skill_cap: 'codeSkillCap',
+    build_skill_range: 'codeSkillRange',
     choice_count: 'codeChoiceCount',
     choice_invalid: 'codeChoiceInvalid',
     duplicate_kind: 'codeDuplicateKind',
@@ -186,7 +198,7 @@ export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose
 
         {/* Stepper */}
         <div className="mb-4 flex items-center gap-2 text-xs">
-          {[t('wizard.stepPackages'), t('wizard.stepAttributes'), t('wizard.stepTraits'), t('wizard.stepSummary')].map((label, i) => (
+          {[t('wizard.stepPackages'), t('wizard.stepAttributes'), t('wizard.stepTraits'), t('wizard.stepSkills'), t('wizard.stepSummary')].map((label, i) => (
             <span
               key={label}
               className={`rounded px-2 py-1 ${i === step ? 'bg-accent/15 text-accent' : 'text-text-secondary'}`}
@@ -363,6 +375,56 @@ export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose
         )}
 
         {step === 3 && (
+          <div className="space-y-2">
+            <input
+              value={skillSearch}
+              onChange={(e) => setSkillSearch(e.target.value)}
+              placeholder={t('wizard.search')}
+              className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1.5 text-sm text-text-primary outline-none focus:border-accent"
+            />
+            <div className="max-h-64 space-y-1 overflow-y-auto">
+              {(rules.skills ?? [])
+                .filter((s) => s.name.toLowerCase().includes(skillSearch.toLowerCase()))
+                .map((s) => {
+                  const fw = build.skills?.[s.name] ?? 0;
+                  const cap = rules.creationBudget?.maxSkillValue ?? 99;
+                  const next = skillAdvanceCost(rules.advancement, s, fw);
+                  return (
+                    <div key={s.name} className="flex items-center gap-2 text-sm">
+                      <span className="flex-1 truncate text-text-primary">{s.name}</span>
+                      <span className="text-[10px] text-text-secondary">
+                        {s.attributes.join('/')}
+                        {s.costColumn ? ` · ${s.costColumn}` : ''}
+                      </span>
+                      <button
+                        aria-label={`${s.name} -`}
+                        onClick={() => purchaseSkill(s.name, fw - 1)}
+                        className="rounded border border-bg-elevated px-2 text-text-secondary hover:text-accent"
+                      >
+                        −
+                      </button>
+                      <span className="w-8 text-center font-mono text-text-primary">{fw}</span>
+                      <button
+                        aria-label={`${s.name} +`}
+                        onClick={() => purchaseSkill(s.name, Math.min(cap, fw + 1))}
+                        className="rounded border border-bg-elevated px-2 text-text-secondary hover:text-accent"
+                      >
+                        +
+                      </button>
+                      <span className="w-20 text-right text-xs text-text-secondary">
+                        {next != null ? `+${next} AP` : '—'}
+                      </span>
+                    </div>
+                  );
+                })}
+            </div>
+            {(rules.skills ?? []).length === 0 && (
+              <p className="text-xs text-text-secondary">{t('wizard.noSkills')}</p>
+            )}
+          </div>
+        )}
+
+        {step === 4 && (
           <div className="space-y-3">
             <label className="block text-xs text-text-secondary">
               {t('wizard.name')}
@@ -382,10 +444,24 @@ export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose
                 ))}
               </div>
               <div className="rounded bg-bg-primary/50 p-2">
+                <p className="mb-1 font-medium text-text-primary">{t('wizard.finalSkills')}</p>
+                {Object.entries(build.skills ?? {})
+                  .filter(([, v]) => v > 0)
+                  .map(([n, v]) => (
+                    <p key={n} className="text-text-secondary">
+                      {n}: <span className="font-mono text-text-primary">{v}</span>
+                    </p>
+                  ))}
+                {Object.values(build.skills ?? {}).every((v) => v <= 0) && (
+                  <p className="text-text-secondary">—</p>
+                )}
+              </div>
+              <div className="rounded bg-bg-primary/50 p-2">
                 <p className="mb-1 font-medium text-text-primary">{t('wizard.costs')}</p>
                 <p className="text-text-secondary">{t('wizard.attrCost')}: {cost.attributes}</p>
                 <p className="text-text-secondary">{t('wizard.traitCost')}: {cost.traits}</p>
                 <p className="text-text-secondary">{t('wizard.packageCost')}: {cost.packages}</p>
+                <p className="text-text-secondary">{t('wizard.skillCost')}: {cost.skills}</p>
                 <p className={`font-medium ${cost.over ? 'text-danger' : 'text-text-primary'}`}>
                   {t('wizard.total')}: {cost.total} / {cost.budget ?? '∞'}
                 </p>
@@ -409,7 +485,7 @@ export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose
           >
             <ArrowLeft size={14} /> {step === 0 ? t('wizard.cancel') : t('wizard.back')}
           </button>
-          {step < 3 ? (
+          {step < 4 ? (
             <button
               onClick={() => setStep(step + 1)}
               className="flex items-center gap-1 rounded bg-accent px-3 py-1.5 text-sm text-white hover:bg-accent/80"

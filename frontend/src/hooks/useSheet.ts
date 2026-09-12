@@ -11,7 +11,7 @@ export interface SheetData {
   damageArmor?: number;
   attributes: { name: string; value: number; modifier: number; min: number; max: number }[];
   derivedValues: { name: string; value: number; error?: string | null }[];
-  skills: { name: string; total: number; perCharacterValue?: number | null; advanceCost?: number | null }[];
+  skills: { name: string; total: number; perCharacterValue?: number | null; advanceCost?: number | null; casting?: { resource: string; cost: number; requiresTrait?: string } | null }[];
   conditionals: { name: string; active: boolean; description: string }[];
   activeConditions: { name: string; rounds?: number | null }[];
   conditionCatalog: string[];

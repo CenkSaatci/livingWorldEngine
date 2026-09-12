@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { apiClient } from '../../api/client';
 
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function RegionPicker({ worldId, onSelect, onClose }: Props) {
+  const { t } = useTranslation('common');
   const [regions, setRegions] = useState<RegionItem[]>([]);
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export function RegionPicker({ worldId, onSelect, onClose }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-heading text-text-primary">Select Region</h3>
+          <h3 className="font-heading text-text-primary">{t('region.selectRegion')}</h3>
           <button onClick={onClose} className="text-text-secondary hover:text-text-primary">
             <X size={18} />
           </button>
@@ -52,7 +54,7 @@ export function RegionPicker({ worldId, onSelect, onClose }: Props) {
           ))}
           {regions.length === 0 && (
             <p className="text-xs text-text-secondary text-center py-4">
-              No regions yet. Create one first.
+              {t('region.noRegions')}
             </p>
           )}
         </div>

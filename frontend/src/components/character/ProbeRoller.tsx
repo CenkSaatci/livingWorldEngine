@@ -11,6 +11,15 @@ interface Props {
   skillTotal: number;
   fateAvailable?: boolean;
   onSpendFate?: () => Promise<void>;
+  casting?: { resource: string; cost: number; requiresTrait?: string } | null;
+}
+
+interface CastResult {
+  probe: ProbeResult;
+  resource: string;
+  cost: number;
+  resourceRemaining: number;
+  resourceMax: number;
 }
 
 interface ProbeResult {
@@ -23,7 +32,7 @@ interface ProbeResult {
   activeConditionals: { name: string; bonus: string; target: string }[];
 }
 
-export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate }: Props) {
+export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, casting }: Props) {
   const { t } = useTranslation('character');
   const toast = useToast();
   const [result, setResult] = useState<ProbeResult | null>(null);
@@ -31,6 +40,7 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate }:
   const [spending, setSpending] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [remaining, setRemaining] = useState<number | null>(null);
   const activeCampaignId = useCampaignStore((s) => s.activeCampaignId);
 
   const handleRoll = async () => {
@@ -38,20 +48,37 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate }:
     setShowDetails(false);
     setFailed(false);
     try {
-      const res = await apiClient.post<ProbeResult>('/rolls/probe', {
-        entityId,
-        skillName,
-        target: 10,
-        advantage: false,
-        campaignId: activeCampaignId ?? undefined,
-      });
-      setResult(res.data);
-    } catch {
+      if (casting) {
+        const res = await apiClient.post<CastResult>('/rolls/cast', {
+          entityId,
+          skillName,
+          campaignId: activeCampaignId ?? undefined,
+        });
+        setResult(res.data.probe);
+        setRemaining(res.data.resourceRemaining);
+      } else {
+        const res = await apiClient.post<ProbeResult>('/rolls/probe', {
+          entityId,
+          skillName,
+          target: 10,
+          advantage: false,
+          campaignId: activeCampaignId ?? undefined,
+        });
+        setResult(res.data);
+      }
+    } catch (e: any) {
       // Kein lokaler Fallback-Wurf: Ein fehlgeschlagener Server-Wurf darf nicht
       // wie ein echtes Ergebnis aussehen. Fehler anzeigen, nichts würfeln.
       setResult(null);
       setFailed(true);
-      toast.error(t('sheet.probeFailed')!);
+      const code = e?.response?.data?.error?.code;
+      toast.error(
+        code === 'CAST_INSUFFICIENT_RESOURCE'
+          ? t('sheet.castNoResource')!
+          : code === 'CAST_MISSING_TRAIT'
+            ? t('sheet.castNoTrait')!
+            : t('sheet.probeFailed')!,
+      );
     } finally {
       setRolling(false);
     }
@@ -59,6 +86,14 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate }:
 
   return (
     <div className="flex items-center gap-1">
+      {casting && (
+        <span
+          className="rounded bg-accent/10 px-1 text-[10px] text-accent"
+          title={t('sheet.castCost', { cost: casting.cost, resource: casting.resource.toUpperCase() })!}
+        >
+          {casting.cost} {casting.resource.toUpperCase()}
+        </span>
+      )}
       <button
         onClick={handleRoll}
         disabled={rolling}
@@ -105,6 +140,11 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate }:
             {result.dice.length > 1 && (
               <span className="text-text-secondary text-[10px] ml-1">
                 ({result.dice.join(', ')})
+              </span>
+            )}
+            {remaining !== null && (
+              <span className="text-text-secondary text-[10px] ml-1">
+                {casting?.resource.toUpperCase()} {remaining}
               </span>
             )}
           </button>

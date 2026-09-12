@@ -49,6 +49,18 @@ Pakete/Kampf). Politik: alles Gefundene sofort fixen, Bericht am Ende.
 | 18 | Karte 403 für Mitglieder (F5-Audit hatte nur Owner/PUBLIC) | `requireRead` in `WorldMapService.getMap`; 2 Tests; live 200/403 |
 | 19 | Mobile Header gequetscht (Titel-Umbruch, abgeschnittene Buttons) | responsive Kürzungen (Dashboard/GameView) + Screenshots |
 
+## Phase 35 — umgesetzt (2026-09-12, alle Entscheidungen)
+
+- **B9 Aufrunden:** `DerivedValueService` rundet auf (Anzeige + HP konsistent)
+- **B1 Talent-FW:** 5. Wizard-Step mit AP-Kosten, Cap maxSkillValue, `skillsJson`
+- **B7 Auto-HP:** Neuberechnung bei Attribut-Änderung (Schaden bleibt), mit campaignId
+- **B8:** `createAdventure` DM-only
+- **B6 i18n:** 9 Dateien (QuestLog, Market, AdventurePlay, Location-/RegionView, WorldMap, RegionPicker, FactionPage, Modals) + Markt-Leak (weltfremde NPC-Angebote) gleich mit gefixt
+- **B2 Conditions-Editor:** Zustands-Katalog in Wizard-Step 8 (Name/Runden/Effekte)
+- **B3 Zauber VOLL:** `POST /rolls/cast` (Probe + AsP/KaP-Abzug, Trait-Pflicht), Casting-Badges im Sheet, Kosten in `dsa5-playtest.json` (System v5)
+- **B5 Chat-Historie:** V103 `chat_messages`, letzte 50 beim Betreten
+- **B4 Handelsfenster:** Angebot/Gegenangebot/Annahme/Abbruch, atomarer Tausch, Item-Namen-Anreicherung
+
 ## Offenes Backlog (→ TASKS Phase 35)
 
 - **B1:** Charakter-Erstellung ohne Talent-FW (alle FW 0; Steigern pro Skill existiert)

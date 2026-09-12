@@ -109,8 +109,15 @@ class DatabaseMigrationTest {
     }
 
     @Test
-    void gameSystemSharesTableExists() throws SQLException {
+    void chatMessagesTableExists() throws SQLException {
         try (var conn = dataSource.getConnection()) {
+            var rs = conn.getMetaData().getTables(null, "public", "chat_messages", new String[]{"TABLE"});
+            assertThat(rs.next()).as("V103: chat_messages (B5)").isTrue();
+        }
+    }
+
+    @Test
+    void gameSystemSharesTableExists() throws SQLException {        try (var conn = dataSource.getConnection()) {
             var rs = conn.getMetaData().getTables(null, "public", "game_system_shares", new String[]{"TABLE"});
             assertThat(rs.next()).as("V102: game_system_shares (T33-05)").isTrue();
         }
