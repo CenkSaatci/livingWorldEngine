@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { apiClient } from '../../api/client';
@@ -57,6 +57,13 @@ export function TradeModal({ entityId, entityName, onClose }: Props) {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const loadErrorShown = useRef(false);
+  const showLoadError = () => {
+    if (loadErrorShown.current) return;
+    loadErrorShown.current = true;
+    toast.error(t('trade.loadFailed'));
+  };
 
   useEffect(() => {
     apiClient.get(`/entities/${entityId}`).then((res) => {
@@ -67,12 +74,12 @@ export function TradeModal({ entityId, entityName, onClose }: Props) {
           (r.data as (EntityRef & { entityType: string })[])
             .filter((e) => e.id !== entityId && e.entityType !== 'FACTION'),
         );
-      }).catch(() => {});
+      }).catch(() => toast.error(t('trade.loadFailed')));
       reloadTrades(wid);
-    }).catch(() => {});
+    }).catch(() => toast.error(t('trade.loadFailed')));
     apiClient.get(`/entities/${entityId}/inventory`).then((r) => {
       setMyInv(r.data.items ?? []);
-    }).catch(() => {});
+    }).catch(() => toast.error(t('trade.loadFailed')));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entityId]);
 
@@ -80,7 +87,7 @@ export function TradeModal({ entityId, entityName, onClose }: Props) {
     apiClient
       .get(`/trades?worldId=${wid}&entityId=${entityId}`)
       .then((r) => setTrades(r.data ?? []))
-      .catch(() => {});
+      .catch(() => showLoadError());
   };
 
   useEffect(() => {
@@ -90,7 +97,10 @@ export function TradeModal({ entityId, entityName, onClose }: Props) {
     }
     apiClient.get(`/entities/${partnerId}/inventory`).then((r) => {
       setPartnerInv(r.data.items ?? []);
-    }).catch(() => setPartnerInv([]));
+    }).catch(() => {
+      setPartnerInv([]);
+      showLoadError();
+    });
   }, [partnerId]);
 
   const setQty = (
@@ -111,6 +121,28 @@ export function TradeModal({ entityId, entityName, onClose }: Props) {
 
   const toList = (rec: Record<string, number>) =>
     Object.entries(rec).map(([itemId, quantity]) => ({ itemId, quantity }));
+
+  useEffect(() => {
+    dialogRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const setQtyExact = (
+    setter: React.Dispatch<React.SetStateAction<Record<string, number>>>,
+    id: string,
+    value: number,
+  ) => {
+    setter((prev) => {
+      const copy = { ...prev };
+      if (value <= 0) delete copy[id];
+      else copy[id] = value;
+      return copy;
+    });
+  };
 
   const submit = async () => {
     if (!partnerId || saving) return;
@@ -184,16 +216,22 @@ export function TradeModal({ entityId, entityName, onClose }: Props) {
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('trade.title')}
     >
       <div
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl"
+        ref={dialogRef}
+        tabIndex={-1}
+        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-heading text-text-primary">
             {t('trade.title')} — {entityName}
           </h3>
-          <button onClick={onClose} className="text-text-secondary hover:text-text-primary">
+          <button onClick={onClose} aria-label={t('actions.cancel')}
+            className="text-text-secondary hover:text-text-primary">
             <X size={18} />
           </button>
         </div>
@@ -253,9 +291,10 @@ export function TradeModal({ entityId, entityName, onClose }: Props) {
               {myInv.map((it) => (
                 <div key={it.itemId} className="flex items-center gap-1 py-0.5 text-xs">
                   <span className="flex-1 truncate text-text-primary">{it.name} ({it.quantity})</span>
-                  <button onClick={() => setQty(setOffer, it.itemId, it.quantity, -1, offer)} className="rounded border border-bg-elevated px-1.5 text-text-secondary hover:text-accent">−</button>
+                  <button aria-label={`${t('trade.youGive')} ${it.name} −`} onClick={() => setQty(setOffer, it.itemId, it.quantity, -1, offer)} className="rounded border border-bg-elevated px-1.5 text-text-secondary hover:text-accent">−</button>
                   <span className="w-5 text-center font-mono text-text-primary">{offer[it.itemId] ?? 0}</span>
-                  <button onClick={() => setQty(setOffer, it.itemId, it.quantity, 1, offer)} className="rounded border border-bg-elevated px-1.5 text-text-secondary hover:text-accent">+</button>
+                  <button aria-label={`${t('trade.youGive')} ${it.name} +`} onClick={() => setQty(setOffer, it.itemId, it.quantity, 1, offer)} className="rounded border border-bg-elevated px-1.5 text-text-secondary hover:text-accent">+</button>
+                  <button aria-label={`${t('trade.youGive')} ${it.name} ${t('trade.max')}`} onClick={() => setQtyExact(setOffer, it.itemId, it.quantity)} className="rounded border border-bg-elevated px-1 text-[10px] text-text-secondary hover:text-accent">{t('trade.max')}</button>
                 </div>
               ))}
               {myInv.length === 0 && <p className="text-xs text-text-secondary">{t('trade.empty')}</p>}
@@ -265,9 +304,10 @@ export function TradeModal({ entityId, entityName, onClose }: Props) {
               {partnerInv.map((it) => (
                 <div key={it.itemId} className="flex items-center gap-1 py-0.5 text-xs">
                   <span className="flex-1 truncate text-text-primary">{it.name} ({it.quantity})</span>
-                  <button onClick={() => setQty(setRequest, it.itemId, it.quantity, -1, request)} className="rounded border border-bg-elevated px-1.5 text-text-secondary hover:text-accent">−</button>
+                  <button aria-label={`${t('trade.youWant')} ${it.name} −`} onClick={() => setQty(setRequest, it.itemId, it.quantity, -1, request)} className="rounded border border-bg-elevated px-1.5 text-text-secondary hover:text-accent">−</button>
                   <span className="w-5 text-center font-mono text-text-primary">{request[it.itemId] ?? 0}</span>
-                  <button onClick={() => setQty(setRequest, it.itemId, it.quantity, 1, request)} className="rounded border border-bg-elevated px-1.5 text-text-secondary hover:text-accent">+</button>
+                  <button aria-label={`${t('trade.youWant')} ${it.name} +`} onClick={() => setQty(setRequest, it.itemId, it.quantity, 1, request)} className="rounded border border-bg-elevated px-1.5 text-text-secondary hover:text-accent">+</button>
+                  <button aria-label={`${t('trade.youWant')} ${it.name} ${t('trade.max')}`} onClick={() => setQtyExact(setRequest, it.itemId, it.quantity)} className="rounded border border-bg-elevated px-1 text-[10px] text-text-secondary hover:text-accent">{t('trade.max')}</button>
                 </div>
               ))}
               {partnerInv.length === 0 && <p className="text-xs text-text-secondary">{t('trade.empty')}</p>}
@@ -275,7 +315,13 @@ export function TradeModal({ entityId, entityName, onClose }: Props) {
           </div>
         )}
 
-        <div className="mt-4 flex justify-end">
+        <div className="mt-4 flex items-center justify-between gap-2">
+          <p className="text-xs text-text-secondary">
+            {t('trade.summary', {
+              give: Object.entries(offer).map(([id, q]) => `${q}× ${itemName(id)}`).join(', ') || '—',
+              want: Object.entries(request).map(([id, q]) => `${q}× ${itemName(id)}`).join(', ') || '—',
+            })}
+          </p>
           <button
             onClick={submit}
             disabled={!partnerId || saving || (Object.keys(offer).length === 0 && Object.keys(request).length === 0)}

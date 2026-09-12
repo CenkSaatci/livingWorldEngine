@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Send } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useWorldStore } from '../../store/worldStore';
+import { useToast } from '../../hooks/useToast';
 import { DiceRollModal } from '../ui/DiceRollModal';
 import { playChatMessage } from '../../utils/sound';
 
@@ -13,12 +14,22 @@ interface ChatMessage {
   timestamp: string;
 }
 
-const ChatMessageItem = memo(({ msg }: { msg: ChatMessage }) => (
-  <div className="rounded bg-bg-primary/50 px-2 py-1">
-    <span className="text-xs font-semibold text-accent">{msg.sender}</span>
-    <p className="text-sm text-text-primary">{msg.text}</p>
-  </div>
-));
+const ChatMessageItem = memo(({ msg }: { msg: ChatMessage }) => {
+  const time = (() => {
+    try {
+      return new Date(msg.timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return '';
+    }
+  })();
+  return (
+    <div className="rounded bg-bg-primary/50 px-2 py-1">
+      <span className="text-xs font-semibold text-accent">{msg.sender}</span>
+      {time && <span className="ml-2 text-[10px] text-text-secondary">{time}</span>}
+      <p className="text-sm text-text-primary">{msg.text}</p>
+    </div>
+  );
+});
 
 interface RollModalState {
   label: string;
@@ -29,6 +40,7 @@ interface RollModalState {
 
 export function ChatPanel({ worldId }: { worldId: string }) {
   const { t } = useTranslation('chat');
+  const toast = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [rollModal, setRollModal] = useState<RollModalState | null>(null);
@@ -58,29 +70,42 @@ export function ChatPanel({ worldId }: { worldId: string }) {
     };
   }, [worldId]);
 
-  // WS-Events als Chat-Nachrichten anzeigen — aber nur mit menschlichem Text.
-  // Technische Events (COMBAT_ACTION_EXECUTED, PROBE_ROLLED, …) aktualisieren
-  // Stores/UI direkt; als Roh-JSON im Chat wären sie nur Rauschen (Playtest #11).
+  // WS-Events als Chat-Nachrichten anzeigen — nur CHAT_MESSAGE mit Text.
+  // Audit R4: Timestamp kommt aus payload.timestamp (Broadcast sendet kein
+  // created_at); Dedupe gegen das lokale Echo verhindert Doppelzeilen.
   useEffect(() => {
     const last = worldEvents[worldEvents.length - 1];
-    if (last && last.event_type) {
-      const payload = last.payload as Record<string, unknown> ?? {};
-      const text = payload.text;
-      if (typeof text !== 'string' || !text.trim()) return;
-      const sender =
-        (payload.sender as string) ||
-        (last.event_type === 'CHAT_MESSAGE' ? 'System' : last.event_type);
-      setMessages((prev) => [
+    if (!last || last.event_type !== 'CHAT_MESSAGE') return;
+    const payload = (last.payload ?? {}) as Record<string, unknown>;
+    const text = payload.text;
+    if (typeof text !== 'string' || !text.trim()) return;
+    const sender = typeof payload.sender === 'string' && payload.sender ? payload.sender : 'System';
+    const ts = typeof payload.timestamp === 'string' ? payload.timestamp : last.created_at;
+    setMessages((prev) => {
+      const now = Date.now();
+      const isEcho = prev
+        .slice(-5)
+        .some((m) => m.sender === sender && m.text === text
+          && Math.abs(now - new Date(m.timestamp).getTime()) < 10_000);
+      if (isEcho) return prev;
+      return [
         ...prev.slice(-99),
         {
-          id: `${Date.now()}-${last.event_type}-${Math.random().toString(36).slice(2, 6)}`,
+          id: `${Date.now()}-chat-${Math.random().toString(36).slice(2, 6)}`,
           sender,
           text,
-          timestamp: last.created_at,
+          timestamp: ts,
         },
-      ]);
-    }
+      ];
+    });
   }, [worldEvents]);
+
+  const appendLocal = (sender: string, text: string) => {
+    setMessages((prev) => [
+      ...prev.slice(-99),
+      { id: `${Date.now()}-local-${Math.random().toString(36).slice(2, 6)}`, sender, text, timestamp: new Date().toISOString() },
+    ]);
+  };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -102,7 +127,7 @@ export function ChatPanel({ worldId }: { worldId: string }) {
           {
             id: Date.now().toString() + '-err',
             sender: '🎲 System',
-            text: `Invalid expression. Use /r <count>d<sides>[+mod], e.g. /r 2d6+3`,
+            text: t('invalidExpression'),
             timestamp: new Date().toISOString(),
           },
         ]);
@@ -120,31 +145,29 @@ export function ChatPanel({ worldId }: { worldId: string }) {
 
         setRollModal({ label: rawExpr, dice, modifier, total });
 
-        const sysMsg = {
-          sender: '🎲 System',
-          text: `🎲 ${rawExpr} = ${total}`,
-          timestamp: new Date().toISOString(),
-        };
-        await apiClient.post(`/chat/${worldId}`, sysMsg);
-        setMessages((prev) => [...prev, { ...sysMsg, id: Date.now().toString() + '-roll' }]);
+        const rollText = `🎲 ${rawExpr} = ${total}`;
+        try {
+          await apiClient.post(`/chat/${worldId}`, { sender: '🎲 System', text: rollText });
+        } catch {
+          // Audit R4: POST fehlgeschlagen → Zeile trotzdem lokal anzeigen.
+        }
+        appendLocal('🎲 System', rollText);
         playChatMessage();
       } catch {
-        // silent
+        toast.error(t('invalidExpression'));
       }
       return;
     }
 
-    // Normaler Chat via API (broadcastet an WS)
+    // Normaler Chat: POST + lokales Echo (WS-Echo wird dedupliziert; funktioniert
+    // damit auch bei totem WS — Audit R4).
     try {
       await apiClient.post(`/chat/${worldId}`, { sender: 'You', text });
       playChatMessage();
     } catch {
-      // offline fallback: lokale Nachricht
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now().toString(), sender: 'You', text, timestamp: new Date().toISOString() },
-      ]);
+      /* offline: lokales Echo unten reicht */
     }
+    appendLocal('You', text);
   };
 
   return (

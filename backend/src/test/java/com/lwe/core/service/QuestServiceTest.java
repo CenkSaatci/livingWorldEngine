@@ -72,6 +72,30 @@ class QuestServiceTest {
     }
 
     @Test
+    void updateStatusRejectsUnknownValue() {
+        var quest = new Quest(worldId, "Q", "fetch", "[]", "{}");
+        setId(quest, UUID.randomUUID());
+        when(repo.findById(quest.getId())).thenReturn(Optional.of(quest));
+
+        assertThatThrownBy(() -> service.updateStatus(quest.getId(), userId, "exploded"))
+            .isInstanceOf(QuestService.QuestException.class)
+            .matches(e -> ((QuestService.QuestException) e).getErrorCode().equals("QUEST_STATUS_INVALID"));
+        assertThatThrownBy(() -> service.updateStatus(quest.getId(), userId, null))
+            .isInstanceOf(QuestService.QuestException.class);
+    }
+
+    @Test
+    void updateStatusAcceptsWhitelistedValues() {
+        var quest = new Quest(worldId, "Q", "fetch", "[]", "{}");
+        setId(quest, UUID.randomUUID());
+        when(repo.findById(quest.getId())).thenReturn(Optional.of(quest));
+        when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThat(service.updateStatus(quest.getId(), userId, "completed").getStatus())
+            .isEqualTo("completed");
+    }
+
+    @Test
     void questAuthoringRequiresDm() {
         doThrow(new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
             .when(worldAccess).requireDm(worldId, userId);
@@ -137,9 +161,9 @@ class QuestServiceTest {
         when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(eventService.publish(any(), any(), any(), any(), any(), anyInt(), any())).thenReturn(null);
 
-        var result = service.updateStatus(quest.getId(), userId, "COMPLETED");
+        var result = service.updateStatus(quest.getId(), userId, "COMPLETED"); // wird normalisiert
 
-        assertThat(result.getStatus()).isEqualTo("COMPLETED");
+        assertThat(result.getStatus()).isEqualTo("completed");
         verify(eventService).publish(eq("quest"), eq(quest.getId()), eq("QUEST_COMPLETED"), any(), any(), anyInt(), any());
     }
 

@@ -410,6 +410,22 @@ describe('conditions roundtrip (Playtest-Befund #2)', () => {
   });
 });
 
+describe('casting roundtrip (R3)', () => {
+  it('erhält casting-Definitionen über from/toRulesJson', () => {
+    const raw = JSON.stringify({
+      version: 1,
+      attributes: [{ name: 'mut', type: 'INT', min: 1, max: 20, default: 8 }],
+      skills: [{ name: 'Odem', attributes: ['mut'], bonus: 0, casting: { resource: 'asp', cost: 2, requiresTrait: 'Zauberer' } }],
+      dice_mechanics: { probe: '3d20' },
+    });
+    const data = fromRulesJson(raw)!;
+    expect(data.skills[0].casting).toEqual({ resource: 'asp', cost: 2, requiresTrait: 'Zauberer' });
+
+    const out = JSON.parse(toRulesJson(data));
+    expect(out.skills[0].casting).toEqual({ resource: 'asp', cost: 2, requiresTrait: 'Zauberer' });
+  });
+});
+
 describe('conditions speichern (B2-Fix)', () => {
   it('toRulesJson streicht null-Runden (Backend-Schema)', () => {
     const data = defaultWizardData();

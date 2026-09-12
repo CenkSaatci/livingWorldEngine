@@ -2,5 +2,6 @@
   "placeholder": "Nachricht eingeben — /r 1d20+5 für Wurf, /me <Aktion> für Emotes",
   "send": "Senden",
   "roll_log": "Wurf-Log",
-  "roll_command_hint": "/r <Ausdruck> — würfelt und teilt das Ergebnis"
+  "roll_command_hint": "/r <Ausdruck> — würfelt und teilt das Ergebnis",
+  "invalidExpression": "Ungültiger Ausdruck. Nutze /r <Anzahl>d<Seiten>[+mod], z. B. /r 2d6+3"
 }

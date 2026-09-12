@@ -29,7 +29,10 @@
     "offline": "Verbindung getrennt",
     "toggleFog": "Nebel des Krieges umschalten",
     "pauseResume": "Zeit pausieren oder fortsetzen",
-    "advanceTime": "Zeit vorspulen"
+    "advanceTime": "Zeit vorspulen",
+    "loadFailed": "Daten konnten nicht geladen werden",
+    "createFailed": "Erstellen fehlgeschlagen",
+    "saveFailed": "Speichern fehlgeschlagen"
   },
   "gameView": {
     "title": "Game View",
@@ -96,7 +99,8 @@
     "remaining": "{{remaining}}/{{total}} verbleibend",
     "apCost": "AP: {{cost}}",
     "maneuverFailed": "Manöver fehlgeschlagen",
-    "noActiveCombat": "Kein aktiver Kampf — starte einen aus der Spielansicht."
+    "noActiveCombat": "Kein aktiver Kampf — starte einen aus der Spielansicht.",
+    "startFromWorld": "Kampf aus der Spielansicht starten"
   },
   "entityTimeline": {
     "today": "heute",
@@ -137,7 +141,11 @@
     "deleteConfirm": "Dies löscht „{{name}}“ und alle zugehörigen Daten endgültig.",
     "createCharacter": "Charakter-Wizard",
     "services": "Dienste (Markt)",
-    "priceModifier": "Preismodifikator (z. B. 1.0)"
+    "priceModifier": "Preismodifikator (z. B. 1.0)",
+    "info": "Info",
+    "diplomacy": "Diplomatie",
+    "relationships": "Beziehungen",
+    "servicesEmpty": "Keine Dienste — über „Bearbeiten“ hinzufügen."
   },
   "faction": {
     "create": "Fraktion erstellen",
@@ -335,7 +343,16 @@
     "descriptionPlaceholder": "Beschreibung (optional)",
     "approve": "Annehmen",
     "reject": "Ablehnen",
-    "noQuests": "Keine Quests"
+    "noQuests": "Keine Quests",
+    "type": "Quest-Typ",
+    "type_kill": "Töten",
+    "type_fetch": "Beschaffen",
+    "type_escort": "Begleiten",
+    "type_deliver": "Liefern",
+    "type_explore": "Erkunden",
+    "type_talk": "Reden",
+    "completedCount": "Abgeschlossen ({{count}})",
+    "xp": "EP"
   },
   "market": {
     "title": "Markt",
@@ -384,6 +401,9 @@
     "countering": "Gegenangebot",
     "gives": "Gibt",
     "wants": "Will",
-    "failed": "Handel fehlgeschlagen"
+    "failed": "Handel fehlgeschlagen",
+    "loadFailed": "Handelsdaten konnten nicht geladen werden",
+    "summary": "Du gibst {{give}} · Du willst {{want}}",
+    "max": "Max"
   }
 }

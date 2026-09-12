@@ -118,7 +118,7 @@ export default function NpcViewPage() {
       apiClient
         .get(`/adventures/by-giver/${npc.id}`)
         .then((r) => setNpcAdventures(r.data as any))
-        .catch(() => toastError('Failed to load adventures'));
+        .catch(() => toastError(t('status.loadFailed')));
     }
   }, [npc, toastError]);
 
@@ -127,7 +127,7 @@ export default function NpcViewPage() {
     apiClient
       .get(`/worlds/${worldId}/factions`)
       .then((r) => setFactions(r.data))
-      .catch(() => toastError('Failed to load factions'));
+      .catch(() => toastError(t('status.loadFailed')));
     apiClient
       .get(`/worlds/${worldId}/regions`)
       .then(async (regRes) => {
@@ -146,10 +146,10 @@ export default function NpcViewPage() {
             locationsFailed = true;
           }
         }
-        if (locationsFailed) toastError('Failed to load some locations');
+        if (locationsFailed) toastError(t('status.loadFailed'));
         setFactionLocations(allLocs);
       })
-      .catch(() => toastError('Failed to load regions'));
+      .catch(() => toastError(t('status.loadFailed')));
   }, [worldId, editing, toastError]);
 
   if (loading || !npc) return <LoadingSpinner size="lg" text="Loading NPC…" />;
@@ -254,7 +254,7 @@ export default function NpcViewPage() {
       toast.success(`${xpAmount} XP granted`);
       refetch();
     } catch {
-      toast.error('Failed to grant XP');
+      toast.error(t('status.saveFailed'));
     } finally {
       setGranting(false);
     }
@@ -311,27 +311,27 @@ export default function NpcViewPage() {
           )}
 
           <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
-            <h2 className="mb-3 font-heading text-text-primary">Info</h2>
+            <h2 className="mb-3 font-heading text-text-primary">{t('entity.info')}</h2>
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <dt className="text-text-secondary">Type</dt>
+                <dt className="text-text-secondary">{t('entity.type')}</dt>
                 <dd className="text-text-primary">{npc.entityType}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-text-secondary">Age</dt>
+                <dt className="text-text-secondary">{t('entity.age')}</dt>
                 <dd className="text-text-primary">{npc.age ?? '—'}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-text-secondary">Experience</dt>
+                <dt className="text-text-secondary">{t('entity.experience')}</dt>
                 <dd className="text-text-primary capitalize">{npc.experienceLevel ?? '—'}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-text-secondary">Standing</dt>
+                <dt className="text-text-secondary">{t('entity.standing')}</dt>
                 <dd className="text-text-primary capitalize">{npc.socialStanding ?? '—'}</dd>
               </div>
               {faction && (
                 <div className="flex justify-between">
-                  <dt className="text-text-secondary">Faction</dt>
+                  <dt className="text-text-secondary">{t('entity.faction')}</dt>
                   <dd className="flex items-center gap-1 text-text-primary">
                     <span
                       className="inline-block h-2 w-2 rounded-full"
@@ -345,7 +345,7 @@ export default function NpcViewPage() {
               {/* Faction Relations */}
               {faction && relations && relations.length > 0 && (
                 <div className="border-t border-bg-elevated pt-2 mt-2">
-                  <p className="text-xs font-semibold text-text-secondary mb-1">Diplomacy</p>
+                  <p className="text-xs font-semibold text-text-secondary mb-1">{t('entity.diplomacy')}</p>
                   {relations.map((rel) => {
                     const otherId =
                       rel.factionAId === faction.id ? rel.factionBId : rel.factionAId;
@@ -388,15 +388,15 @@ export default function NpcViewPage() {
           {/* Backstory */}
           {npc.backstory && (
             <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
-              <h2 className="mb-3 font-heading text-text-primary">Backstory</h2>
+              <h2 className="mb-3 font-heading text-text-primary">{t('entity.backstory')}</h2>
               <p className="text-sm text-text-secondary leading-relaxed">{npc.backstory}</p>
             </section>
           )}
 
-          {/* Services */}
-          {services.length > 0 && (
-            <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
-              <h2 className="mb-3 font-heading text-text-primary">Services</h2>
+          {/* Services (R4: immer sichtbar mit Empty-State) */}
+          <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
+            <h2 className="mb-3 font-heading text-text-primary">{t('entity.services')}</h2>
+            {services.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {services.map((s) => (
                   <span
@@ -407,8 +407,10 @@ export default function NpcViewPage() {
                   </span>
                 ))}
               </div>
-            </section>
-          )}
+            ) : (
+              <p className="text-xs text-text-secondary">{t('entity.servicesEmpty')}</p>
+            )}
+          </section>
         </div>
 
         {/* Right: Relationships + Timeline */}
@@ -416,7 +418,7 @@ export default function NpcViewPage() {
           {/* Relationships */}
           {Object.keys(relationships).length > 0 && (
             <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
-              <h2 className="mb-3 font-heading text-text-primary">Relationships</h2>
+              <h2 className="mb-3 font-heading text-text-primary">{t('entity.relationships')}</h2>
               <div className="space-y-2">
                 {Object.entries(relationships).map(([id, rel]) => (
                   <div key={id} className="flex items-center gap-2 text-sm">

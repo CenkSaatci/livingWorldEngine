@@ -42,8 +42,11 @@ export default function GameView() {
 
   useWorldSocket(worldId);
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [chatOpen, setChatOpen] = useState(true);
+  // R4: auf Mobil starten die Drawer geschlossen, auf Desktop offen.
+  const isMobileViewport = () => typeof window !== 'undefined'
+    && window.matchMedia('(max-width: 767px)').matches;
+  const [sidebarOpen, setSidebarOpen] = useState(() => !isMobileViewport());
+  const [chatOpen, setChatOpen] = useState(() => !isMobileViewport());
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [selectedNpc, setSelectedNpc] = useState<string | null>(null);
   const [showCreateMenu, setShowCreateMenu] = useState(false);
@@ -55,13 +58,18 @@ export default function GameView() {
   } | null>(null);
   const currentLocale = i18n.language;
   const isMobile = useMediaQuery('(max-width: 767px)');
-  const effectiveSidebarOpen = sidebarOpen && !isMobile;
-  const effectiveChatOpen = chatOpen && !isMobile;
+  // R4: Drawer-Verhalten — auf Mobil werden Sidebar/Chat als Overlay gezeigt.
+  const effectiveSidebarOpen = sidebarOpen;
+  const effectiveChatOpen = chatOpen;
 
   useKeyboardShortcuts({
     Escape: () => {
       setSelectedLocation(null);
       setSelectedNpc(null);
+      if (isMobile) {
+        setSidebarOpen(false);
+        setChatOpen(false);
+      }
     },
     b: () => {
       // Chat-Sende-Input fokussieren
@@ -125,16 +133,16 @@ export default function GameView() {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden">
         {/* Mobile Overlay */}
         {isMobile && sidebarOpen && (
-          <div className="fixed inset-0 z-30 bg-black/50" onClick={() => setSidebarOpen(false)} />
+          <div className="absolute inset-0 z-30 bg-black/50" onClick={() => setSidebarOpen(false)} />
         )}
 
         {/* Sidebar */}
         {effectiveSidebarOpen && (
           <aside
-            className={`${isMobile ? 'fixed left-0 top-14 z-40 h-[calc(100vh-3.5rem)]' : ''} flex w-64 shrink-0 flex-col overflow-y-auto border-r border-bg-elevated bg-bg-surface`}
+            className={`${isMobile ? 'absolute left-0 top-0 z-40 h-full' : ''} flex w-64 shrink-0 flex-col overflow-y-auto border-r border-bg-elevated bg-bg-surface`}
           >
             {/* Region/Orte-Baum */}
             <div className="flex-1 overflow-y-auto p-2">
@@ -170,6 +178,16 @@ export default function GameView() {
               </button>
             </div>
 
+            {/* Fraktionen (R4: tote Seite verlinkt) */}
+            <div className="border-t border-bg-elevated p-2">
+              <button
+                onClick={() => navigate(`/worlds/${worldId}/factions`)}
+                className="w-full rounded px-2 py-1.5 text-left text-xs text-text-secondary hover:text-accent hover:bg-bg-elevated"
+              >
+                {tc('faction.title')}
+              </button>
+            </div>
+
             {/* Quest-Log unten */}
             <div className="border-t border-bg-elevated p-2">
               <QuestLog
@@ -185,7 +203,10 @@ export default function GameView() {
           {/* Toolbar */}
           <div className="flex items-center gap-2 border-b border-bg-elevated bg-bg-surface/50 px-3 py-1.5">
             <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
+              onClick={() => {
+                setSidebarOpen(!sidebarOpen);
+                if (isMobile && !sidebarOpen) setChatOpen(false);
+              }}
               className="text-text-secondary hover:text-accent"
               aria-label={sidebarOpen ? tc('gameView.closeSidebar') : tc('gameView.openSidebar')}
             >
@@ -253,7 +274,10 @@ export default function GameView() {
 
             <div className="flex-1" />
             <button
-              onClick={() => setChatOpen(!chatOpen)}
+              onClick={() => {
+                setChatOpen(!chatOpen);
+                if (isMobile && !chatOpen) setSidebarOpen(false);
+              }}
               className="flex items-center gap-1 text-xs text-text-secondary hover:text-accent"
               aria-label={tc('gameView.chat')}
             >
@@ -278,12 +302,19 @@ export default function GameView() {
             </div>
 
             {effectiveChatOpen && (
-              <RightPanel
-                worldId={worldId}
-                selectedNpc={selectedNpc}
-                selectedLocation={selectedLocation}
-                onCloseNpc={() => setSelectedNpc(null)}
-              />
+              <>
+                {isMobile && (
+                  <div className="absolute inset-0 z-30 bg-black/50" onClick={() => setChatOpen(false)} />
+                )}
+                <div className={isMobile ? 'absolute right-0 top-0 z-40 flex h-full' : ''}>
+                  <RightPanel
+                    worldId={worldId}
+                    selectedNpc={selectedNpc}
+                    selectedLocation={selectedLocation}
+                    onCloseNpc={() => setSelectedNpc(null)}
+                  />
+                </div>
+              </>
             )}
           </div>
         </div>

@@ -290,6 +290,26 @@ export function buildCost(data: WizardData, build: CharacterBuild): BuildCostBre
   return { attributes, traits, packages, skills, total, budget, over: budget != null && total > budget };
 }
 
+/** R2: effektives Skill-Maximum — min(maxSkillValue, höchstes beteiligtes
+ *  Endattribut + 2 bei advancement.maxRule = highestAttributePlus2). */
+export function skillMaxFor(
+  data: WizardData,
+  skillName: string,
+  finalAttrs: { name: string; value: number }[],
+): number {
+  const budgetCap = data.creationBudget?.maxSkillValue ?? 99;
+  const skill = (data.skills ?? []).find((s) => s.name === skillName);
+  if (skill && data.advancement?.maxRule === 'highestAttributePlus2') {
+    const involved = skill.attributes ?? [];
+    const max = involved.reduce(
+      (acc, a) => Math.max(acc, finalAttrs.find((f) => f.name === a)?.value ?? -1),
+      -1,
+    );
+    if (max >= 0) return Math.min(budgetCap, max + 2);
+  }
+  return budgetCap;
+}
+
 /** Kumulierte Skill-Kaufkosten 0 → to (B1, DSA: FW werden mit AP gekauft). */
 export function skillBuyCost(data: WizardData, skillName: string, to: number): number {
   if (to <= 0) return 0;
@@ -348,9 +368,8 @@ export function buildIssues(data: WizardData, build: CharacterBuild): string[] {
   for (const s of data.skills ?? []) {
     const v = build.skills?.[s.name] ?? 0;
     if (v < 0) issues.push(`build_skill_range:${s.name}`);
-    if (budget?.maxSkillValue != null && v > budget.maxSkillValue) {
-      issues.push(`build_skill_cap:${s.name}`);
-    }
+    const cap = skillMaxFor(data, s.name, finals.map((f) => ({ name: f.name, value: f.value })));
+    if (v > cap) issues.push(`build_skill_cap:${s.name}`);
   }
 
   const names = build.traits.map((tr) => tr.name);

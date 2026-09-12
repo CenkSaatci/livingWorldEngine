@@ -32,6 +32,7 @@ interface Props {
   onSelectQuest?: (id: string) => void;
 }
 
+// (R4: Labels kommen aus i18n; parseRewards bleibt rein.)
 function parseRewards(raw: string): QuestRewards | null {
   try {
     return JSON.parse(raw) as QuestRewards;
@@ -109,24 +110,6 @@ export function QuestLog({ worldId, onSelectQuest }: Props) {
             placeholder={t('quest.titlePlaceholder')}
             className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-sm text-text-primary outline-none focus:border-accent"
           />
-          <div className="flex gap-2">
-            <select
-              value={qtype}
-              onChange={(e) => setQtype(e.target.value)}
-              className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-            >
-              {['kill', 'fetch', 'escort', 'deliver', 'explore', 'talk'].map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-            <button
-              onClick={createQuest}
-              disabled={!title.trim() || saving}
-              className="rounded bg-accent px-3 py-1 text-xs text-white hover:bg-accent/80 disabled:opacity-40"
-            >
-              {t('quest.create')}
-            </button>
-          </div>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -134,6 +117,25 @@ export function QuestLog({ worldId, onSelectQuest }: Props) {
             rows={2}
             className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
           />
+          <div className="flex gap-2">
+            <select
+              value={qtype}
+              onChange={(e) => setQtype(e.target.value)}
+              aria-label={t('quest.type')}
+              className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+            >
+              {['kill', 'fetch', 'escort', 'deliver', 'explore', 'talk'].map((type) => (
+                <option key={type} value={type}>{t(`quest.type_${type}`)}</option>
+              ))}
+            </select>
+            <button
+              onClick={createQuest}
+              disabled={!title.trim() || saving}
+              className="rounded bg-accent px-3 py-1 text-xs text-white hover:bg-accent/80 disabled:opacity-40"
+            >
+              {t('actions.create')}
+            </button>
+          </div>
         </div>
       )}
 
@@ -147,7 +149,7 @@ export function QuestLog({ worldId, onSelectQuest }: Props) {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-text-primary">{q.title}</p>
                 <p className="text-xs text-text-secondary mt-0.5 line-clamp-2">{q.description}</p>
-                {renderRewards(q.rewards)}
+                {renderRewards(q.rewards, t('quest.xp'))}
               </div>
             </div>
             <div className="mt-2 flex gap-2">
@@ -189,7 +191,7 @@ export function QuestLog({ worldId, onSelectQuest }: Props) {
               <p className="mt-0.5 text-xs text-text-secondary line-clamp-1">{q.description}</p>
             )}
             <div className="mt-1 flex items-center gap-2">
-              {renderRewards(q.rewards)}
+              {renderRewards(q.rewards, t('quest.xp'))}
               {locTag && <span className="text-[10px] text-text-secondary">📍 {locTag}</span>}
             </div>
           </button>
@@ -200,14 +202,14 @@ export function QuestLog({ worldId, onSelectQuest }: Props) {
       {completed.length > 0 && (
         <details className="text-xs text-text-secondary">
           <summary className="cursor-pointer hover:text-text-primary">
-            Completed ({completed.length})
+            {t('quest.completedCount', { count: completed.length })}
           </summary>
           <div className="mt-1 space-y-1 pl-1">
             {completed.map((q) => (
               <div key={q.id} className="flex items-center gap-2">
                 <CheckCircle size={12} className="text-success shrink-0" />
                 <span className="truncate">{q.title}</span>
-                {renderRewards(q.rewards)}
+                {renderRewards(q.rewards, t('quest.xp'))}
               </div>
             ))}
           </div>
@@ -217,14 +219,14 @@ export function QuestLog({ worldId, onSelectQuest }: Props) {
   );
 }
 
-function renderRewards(raw: string) {
+function renderRewards(raw: string, xpLabel: string) {
   const r = parseRewards(raw);
   if (!r) return null;
   return (
     <div className="flex items-center gap-1.5 mt-1">
       {r.xp && (
         <span className="flex items-center gap-0.5 text-[10px] text-accent">
-          <Star size={10} /> {r.xp} XP
+          <Star size={10} /> {r.xp} {xpLabel}
         </span>
       )}
       {r.gold && (

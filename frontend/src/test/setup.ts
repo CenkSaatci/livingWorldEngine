@@ -17,3 +17,20 @@ void i18n.use(initReactI18next).init({
   },
   interpolation: { escapeValue: false },
 });
+
+// R4: jsdom hat kein matchMedia (useMediaQuery in CombatPage/GameView).
+if (typeof window !== 'undefined' && !window.matchMedia) {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+}

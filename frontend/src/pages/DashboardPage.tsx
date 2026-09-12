@@ -69,7 +69,7 @@ export default function DashboardPage() {
       setShowCreate(false);
     } catch (err: unknown) {
       const axiosErr = err as AxiosError<{ error?: { message?: string } }>;
-      setError(axiosErr.response?.data?.error?.message ?? 'Failed to create world');
+      setError(axiosErr.response?.data?.error?.message ?? t('status.createFailed'));
     } finally {
       setLoading(false);
     }
@@ -132,7 +132,7 @@ export default function DashboardPage() {
       </header>
 
       {/* Email Verification Banner */}
-      {!user?.emailVerified && (
+      {user && user.emailVerified !== true && (
         <div className="bg-warning/10 border-b border-warning/20 px-6 py-2">
           <div className="mx-auto max-w-4xl flex items-center gap-2 text-sm text-warning">
             <ShieldAlert size={16} />
@@ -166,7 +166,7 @@ export default function DashboardPage() {
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-2 rounded bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent/80"
           >
-            <Plus size={18} /> {t('actions.create')}
+            <Plus size={18} /> {t('dashboard.createWorld')}
           </button>
         </div>
 

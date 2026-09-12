@@ -66,7 +66,15 @@ public class TradeController {
                                                      @RequestParam UUID entityId,
                                                      @AuthenticationPrincipal User user) {
         var trades = tradeService.list(worldId, user.getId(), entityId);
-        return ResponseEntity.ok(trades.stream().map(this::toResponse).toList());
+        // Audit R4: Item-Namen in EINER Query fuer alle Trades laden.
+        var ids = trades.stream()
+            .flatMap(t -> java.util.stream.Stream.of(t.getOfferJson(), t.getRequestJson()))
+            .flatMap(json -> itemIds(json).stream())
+            .distinct()
+            .toList();
+        var names = new java.util.HashMap<UUID, String>();
+        itemRepo.findAllById(ids).forEach(g -> names.put(g.getId(), g.getName()));
+        return ResponseEntity.ok(trades.stream().map(t -> toResponse(t, names)).toList());
     }
 
     public record ProposeRequest(
@@ -91,31 +99,44 @@ public class TradeController {
         String updatedAt,
         java.util.List<java.util.Map<String, Object>> offer,
         java.util.List<java.util.Map<String, Object>> request
-    ) {
-        static TradeResponse from(Trade t) {
-            return new TradeResponse(t.getId(), t.getWorldId(), t.getProposerEntityId(),
-                t.getPartnerEntityId(), t.getOfferJson(), t.getRequestJson(),
-                t.getStatus(), t.getLastEditorEntityId(), t.getUpdatedAt().toString(),
-                java.util.List.of(), java.util.List.of());
+    ) {}
+
+    private TradeResponse toResponse(Trade t) {
+        var names = new java.util.HashMap<UUID, String>();
+        var ids = java.util.stream.Stream.of(t.getOfferJson(), t.getRequestJson())
+            .flatMap(json -> itemIds(json).stream()).distinct().toList();
+        itemRepo.findAllById(ids).forEach(g -> names.put(g.getId(), g.getName()));
+        return toResponse(t, names);
+    }
+
+    private TradeResponse toResponse(Trade t, java.util.Map<UUID, String> names) {
+        return new TradeResponse(t.getId(), t.getWorldId(), t.getProposerEntityId(),
+            t.getPartnerEntityId(), t.getOfferJson(), t.getRequestJson(),
+            t.getStatus(), t.getLastEditorEntityId(), t.getUpdatedAt().toString(),
+            enrich(t.getOfferJson(), names), enrich(t.getRequestJson(), names));
+    }
+
+    private java.util.List<UUID> itemIds(String json) {
+        try {
+            java.util.List<java.util.Map<String, Object>> items =
+                objectMapper.readValue(json, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+            return items.stream()
+                .map(i -> UUID.fromString(String.valueOf(i.get("itemId"))))
+                .distinct().toList();
+        } catch (Exception e) {
+            return java.util.List.of();
         }
     }
 
-    private TradeResponse toResponse(Trade t) {
-        var base = TradeResponse.from(t);
-        return new TradeResponse(base.id(), base.worldId(), base.proposerEntityId(),
-            base.partnerEntityId(), base.offerJson(), base.requestJson(), base.status(),
-            base.lastEditorEntityId(), base.updatedAt(),
-            enrich(base.offerJson()), enrich(base.requestJson()));
-    }
-
-    private java.util.List<java.util.Map<String, Object>> enrich(String json) {
+    /** R3/R4: Item-Namen aus vorab geladener Map anreichern (kein N+1). */
+    private java.util.List<java.util.Map<String, Object>> enrich(
+            String json, java.util.Map<UUID, String> names) {
         try {
             java.util.List<java.util.Map<String, Object>> items =
                 objectMapper.readValue(json, new com.fasterxml.jackson.core.type.TypeReference<>() {});
             for (var item : items) {
-                var name = itemRepo.findById(UUID.fromString(String.valueOf(item.get("itemId"))))
-                    .map(g -> g.getName()).orElse(String.valueOf(item.get("itemId")));
-                item.put("name", name);
+                var id = UUID.fromString(String.valueOf(item.get("itemId")));
+                item.put("name", names.getOrDefault(id, id.toString()));
             }
             return items;
         } catch (Exception e) {

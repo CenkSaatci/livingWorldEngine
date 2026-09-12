@@ -12,6 +12,7 @@ import {
   isChoiceMod,
   packageSelectionWarnings,
   skillAdvanceCost,
+  skillMaxFor,
   type CharacterBuild,
   type PkgDef,
   type WizardData,
@@ -208,6 +209,18 @@ export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose
           ))}
         </div>
 
+        {/* R4: Fortschritt (1/5 …) */}
+        <div className="mb-3 flex flex-wrap items-center gap-1.5 text-xs">
+          {[t('wizard.stepPackages'), t('wizard.stepAttributes'), t('wizard.stepTraits'), t('wizard.stepSkills'), t('wizard.stepSummary')].map((label, i) => (
+            <span
+              key={label}
+              className={`rounded px-2 py-1 ${i === step ? 'bg-accent/15 text-accent' : i < step ? 'text-success' : 'text-text-secondary'}`}
+            >
+              {i + 1}. {label}
+            </span>
+          ))}
+        </div>
+
         {/* Budget */}
         <div className="mb-4">
           <div className="mb-1 flex items-center justify-between text-xs">
@@ -387,7 +400,7 @@ export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose
                 .filter((s) => s.name.toLowerCase().includes(skillSearch.toLowerCase()))
                 .map((s) => {
                   const fw = build.skills?.[s.name] ?? 0;
-                  const cap = rules.creationBudget?.maxSkillValue ?? 99;
+                  const cap = skillMaxFor(rules, s.name, finalAttrs);
                   const next = skillAdvanceCost(rules.advancement, s, fw);
                   return (
                     <div key={s.name} className="flex items-center gap-2 text-sm">
@@ -407,7 +420,9 @@ export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose
                       <button
                         aria-label={`${s.name} +`}
                         onClick={() => purchaseSkill(s.name, Math.min(cap, fw + 1))}
-                        className="rounded border border-bg-elevated px-2 text-text-secondary hover:text-accent"
+                        disabled={fw >= cap}
+                        title={`${t('wizard.skillCap')}: ${cap}`}
+                        className="rounded border border-bg-elevated px-2 text-text-secondary hover:text-accent disabled:opacity-30"
                       >
                         +
                       </button>

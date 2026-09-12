@@ -25,12 +25,14 @@ public class EntityService {
     private final ConditionService conditionService;
     private final DerivedValueService derivedValueService;
     private final EntityAccess entityAccess;
+    private final com.lwe.core.repository.CampaignRepository campaignRepo;
     private static final TypeReference<Map<String, Integer>> ATTR_MAP = new TypeReference<>() {};
 
     public EntityService(GameEntityRepository entityRepo, WorldAccess worldAccess,
                         ObjectMapper objectMapper, RulesLoader rulesLoader,
                         ConditionService conditionService, DerivedValueService derivedValueService,
-                        EntityAccess entityAccess) {
+                        EntityAccess entityAccess,
+                        com.lwe.core.repository.CampaignRepository campaignRepo) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldAccess = worldAccess;
@@ -38,6 +40,7 @@ public class EntityService {
         this.conditionService = conditionService;
         this.derivedValueService = derivedValueService;
         this.entityAccess = entityAccess;
+        this.campaignRepo = campaignRepo;
     }
 
     @Transactional
@@ -219,14 +222,27 @@ public class EntityService {
 
     @SuppressWarnings("unchecked")
     private void enforceSkillMax(GameEntity entity, Map<String, Integer> skills, UUID campaignId) {
-        if (campaignId == null || skills.isEmpty()) return;
+        if (skills.isEmpty()) return;
+        // Audit R4: ohne campaignId die Kampagne der (Fork-)Welt aufloesen, damit
+        // Caps nicht per PATCH ohne Query-Param umgangen werden.
+        if (campaignId == null) {
+            campaignId = campaignRepo.findByWorldId(entity.getWorldId()).stream()
+                .findFirst().map(c -> c.getId()).orElse(null);
+        }
+        if (campaignId == null) return;
         if (!rulesLoader.campaignBelongsToWorld(campaignId, entity.getWorldId())) {
             throw new EntityException("WORLD_ACCESS_DENIED", "Campaign does not belong to world");
         }
         var rules = rulesLoader.loadRules(campaignId, entity.getWorldId());
+        // maxSkillValue gilt unabhaengig von der advancement-Regel (Audit R4).
+        var maxSkillValue = Integer.MAX_VALUE;
+        if (rules.get("creationBudget") instanceof Map<?, ?> budget
+            && budget.get("maxSkillValue") instanceof Number msv) {
+            maxSkillValue = msv.intValue();
+        }
         var adv = rules.get("advancement");
-        if (!(adv instanceof Map<?, ?> advMap)
-            || !"highestAttributePlus2".equals(advMap.get("maxRule"))) return;
+        var highestPlus2 = adv instanceof Map<?, ?> advMap
+            && "highestAttributePlus2".equals(advMap.get("maxRule"));
         var skillDefs = (List<Map<String, Object>>) rules.getOrDefault("skills", List.of());
         var attrs = parseAttrs(entity);
         if (attrs.isEmpty()) {
@@ -242,6 +258,11 @@ public class EntityService {
             }
         }
         for (var e : skills.entrySet()) {
+            if (e.getValue() != null && e.getValue() > maxSkillValue) {
+                throw new EntityException("SKILL_MAX_EXCEEDED",
+                    "Skill " + e.getKey() + " exceeds system max " + maxSkillValue);
+            }
+            if (!highestPlus2) continue;
             var def = skillDefs.stream()
                 .filter(d -> e.getKey().equals(d.get("name")))
                 .findFirst().orElse(null);
@@ -345,7 +366,9 @@ public class EntityService {
                 }
             }
         }
-        conditionService.add(entity, new ConditionService.ConditionInstance(name, rounds));
+        // Audit R4: Dezimalwerte/0 defensiv auf >=1 normalisieren.
+        var safeRounds = rounds == null ? null : Math.max(1, rounds);
+        conditionService.add(entity, new ConditionService.ConditionInstance(name, safeRounds));
         return entityRepo.save(entity);
     }
 

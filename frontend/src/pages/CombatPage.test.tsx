@@ -55,7 +55,7 @@ describe('CombatPage', () => {
 
   it('renders combat title and children', () => {
     const { container } = renderPage();
-    expect(container.textContent).toContain('title');
+    expect(container.textContent).toContain('gameView.combat'); // R4: Kampf-Titel statt "Karte"
     expect(container.textContent).toContain('map-canvas');
     expect(container.textContent).toContain('initiative-list');
     expect(container.textContent).toContain('action-bar');

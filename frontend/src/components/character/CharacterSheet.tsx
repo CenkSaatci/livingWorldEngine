@@ -468,6 +468,7 @@ function ConditionsBar({ entityId, active, catalog, onChanged }: {
   const { t } = useTranslation('character');
   const toast = useToast();
   const [pick, setPick] = useState('');
+  const [rounds, setRounds] = useState('');
   const campaignId = useCampaignStore((s) => s.activeCampaignId);
 
   const apply = async () => {
@@ -475,9 +476,10 @@ function ConditionsBar({ entityId, active, catalog, onChanged }: {
     try {
       await apiClient.post(
         `/entities/${entityId}/conditions${campaignId ? `?campaignId=${campaignId}` : ''}`,
-        { name: pick },
+        { name: pick, ...(rounds.trim() !== '' ? { rounds: Math.max(1, Math.round(Number(rounds))) } : {}) },
       );
       setPick('');
+      setRounds('');
       onChanged();
     } catch {
       toast.error(t('sheet.conditionFailed'));
@@ -522,6 +524,15 @@ function ConditionsBar({ entityId, active, catalog, onChanged }: {
                 <option key={n} value={n}>{n}</option>
               ))}
             </select>
+            <input
+              type="number"
+              min={1}
+              value={rounds}
+              onChange={(e) => setRounds(e.target.value)}
+              placeholder={t('sheet.rounds')}
+              aria-label={t('sheet.rounds')}
+              className="w-16 rounded border border-bg-elevated bg-bg-primary px-1.5 py-0.5 text-xs text-text-primary outline-none focus:border-accent"
+            />
             <button onClick={apply} disabled={!pick}
               className="rounded bg-accent/20 px-2 py-0.5 text-xs text-accent hover:bg-accent/40 disabled:opacity-40">
               +
@@ -605,7 +616,8 @@ function FormulaOverrides({ entityId, onSaved }: { entityId: string; onSaved: ()
         <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
           {t('sheet.overrides')}
         </h3>
-        <button onClick={() => setIsAdding(true)} className="text-accent hover:text-accent/60">
+        <button onClick={() => setIsAdding(true)} aria-label={t('sheet.overrides')}
+          className="text-accent hover:text-accent/60">
           <Plus size={14} />
         </button>
       </div>
@@ -624,7 +636,8 @@ function FormulaOverrides({ entityId, onSaved }: { entityId: string; onSaved: ()
           {entries.map(([name, val]) => (
             <div key={name} className="flex items-center justify-between rounded bg-bg-primary/30 px-2 py-1 text-xs">
               <span className="text-text-primary">{name}: +{val}</span>
-              <button onClick={() => handleRemove(name)} className="text-danger hover:text-danger/60">
+              <button onClick={() => handleRemove(name)} aria-label={`${t('sheet.overrides')} ${name}`}
+                className="text-danger hover:text-danger/60">
                 <X size={12} />
               </button>
             </div>

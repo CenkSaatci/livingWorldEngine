@@ -1,5 +1,8 @@
 # ADR-013: Social Mechanics — generische Bausteine statt System-Hardcode
 
+> **Hinweis:** Task-Nummern als P35-SM-01…04 geführt (Kollision mit
+den Security-Tickets P34-T01…T03 vermieden, s. TASKS.md).
+
 - **Status:** Akzeptiert (Konzept, 2026-09-12)
 - **Kontext:** P22 war als Konzeptphase offen. Vorhanden sind: `RelationshipService` (Beziehungen zwischen Entities), `MemoryService` (Erinnerungen mit Sentiment), `NpcIntentService` (SPEAK/CHANGE_RELATION über LLM+Validator), Conditions (P29) und Skill-Proben mit FW-Ausgleich (P16/P19).
 
@@ -23,10 +26,10 @@ Soziale Interaktionen dürfen **keine** DSA-/D&D-spezifischen Talente im Engine-
 
 ## 3. Konkrete Folge-Tasks (P34-Vorschlag, nicht Teil von P33)
 
-- **P34-T01:** Beziehungs-Modifikator in `ProbeService` verdrahten (`social: true`-Flag + `relationshipModifier`), Tests mit RelationshipService-Stub.
-- **P34-T02:** `social_actions[]` im Schema (Skill-Referenz, Beziehungs-Gewicht, Erfolgs-/Fehlschlag-Conditions) + Wizard-Editor (kleiner Block im Specials-Step).
-- **P34-T03:** UI: Relationship-Badges im NPC-View + sozialer Proben-Button; E2E (Probe/Beziehung/Reaktion).
-- **P34-T04 (optional):** DM-Queue-Typ „SOCIAL_REACTION" für automatische NPC-Reaktionen auf soziale Aktionen.
+- **P35-SM-01:** Beziehungs-Modifikator in `ProbeService` verdrahten (`social: true`-Flag + `relationshipModifier`), Tests mit RelationshipService-Stub.
+- **P35-SM-02:** `social_actions[]` im Schema (Skill-Referenz, Beziehungs-Gewicht, Erfolgs-/Fehlschlag-Conditions) + Wizard-Editor (kleiner Block im Specials-Step).
+- **P35-SM-03:** UI: Relationship-Badges im NPC-View + sozialer Proben-Button; E2E (Probe/Beziehung/Reaktion).
+- **P35-SM-04 (optional):** DM-Queue-Typ „SOCIAL_REACTION" für automatische NPC-Reaktionen auf soziale Aktionen.
 
 ## 4. Alternativen (verworfen)
 

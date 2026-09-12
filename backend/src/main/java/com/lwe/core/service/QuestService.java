@@ -66,15 +66,24 @@ public class QuestService {
         return quest;
     }
 
+    /** R2: erlaubte Statuswerte (Runde 2). */
+    private static final java.util.Set<String> STATUSES =
+        java.util.Set.of("pending", "active", "completed", "cancelled");
+
     @Transactional
     public Quest updateStatus(UUID questId, UUID userId, String status) {
         var quest = getById(questId, userId);
         requireOwner(quest.getWorldId(), userId); // F1: Write-Guard
-        quest.setStatus(status);
+        var normalized = status == null ? null : status.trim().toLowerCase();
+        if (normalized == null || !STATUSES.contains(normalized)) {
+            throw new QuestException("QUEST_STATUS_INVALID",
+                "status must be one of " + STATUSES);
+        }
+        quest.setStatus(normalized);
         quest = repo.save(quest);
 
-        eventService.publish("quest", quest.getId(), "QUEST_" + status.toUpperCase(),
-            "Quest \"" + quest.getTitle() + "\": " + status, null, 2, userId);
+        eventService.publish("quest", quest.getId(), "QUEST_" + normalized.toUpperCase(),
+            "Quest \"" + quest.getTitle() + "\": " + normalized, null, 2, userId);
         return quest;
     }
 

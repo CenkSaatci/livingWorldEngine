@@ -217,6 +217,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `NPC_NOT_FOUND` | 404 | NPC existiert nicht |
 | `INTENT_WORLD_MISMATCH` | 422 | NPC/Kampagne gehören nicht zur angegebenen Welt |
 | `QUEST_TYPE_INVALID` | 400 | Quest-Typ nicht kill/fetch/escort/deliver/explore/talk |
+| `QUEST_STATUS_INVALID` | 400 | Status nicht pending/active/completed/cancelled (R2) |
 | `CAMPAIGN_NOT_FOUND` | 404 | Kampagne existiert nicht |
 
 | Code | HTTP | Bedeutung |

@@ -6,7 +6,7 @@
 
 - **P28 Engine-Bausteine** ✅ · **P29 Spielgefühl + Pakete** ✅ · **P23 Schadenstypen** ✅ (T05 optional) · **P30 Charakter-Wizard** ✅ · **P31 E2E-Ausbau** ✅
 - **P33 Backlog-Abbau & Härtung** ✅ (T33-01…11: E2E-Zustände/Schadensart, Welt-PUBLIC, Member-Quota, Fork inkl. Quests/Adventures/Choices, System-Shares, Bot-Runtime, DM-Queue Bulk+WS, Adventure-Inject, ADR-013; Final-Audit + Re-Audit ohne offene HIGH/MEDIUM)
-- **Tests:** Backend 467 (`mvn -B test`) · Frontend 180 (`npx vitest run`) · E2E 11 (`npm run test:e2e`) · ai-bot 50 · `tsc`/Build grün
+- **Tests:** Backend 476 (`mvn -B test`) · Frontend 185 (`npx vitest run`) · E2E 11 (`npm run test:e2e`) · ai-bot 50 · `tsc`/Build grün
 - **Audits:** P28, P23/P29, P30 und ein finales Gesamt-Audit — alle HIGH/MEDIUM-Findings gefixt, Rest bewusst zurückgestellt (siehe Notizen unten)
 - **P27-Status:** komplett ✅ (Shares/Welt-PUBLIC und Fork-Lücken via P33; Bot-Runtime via T33-06; Bulk/WS/E2E via T33-07/08)
 - **Offen (bewusst):** P34 ✅ abgeschlossen · P14-Rest (Editor-E2E; Inject-Choice ✅) · E2E-Backlog T32-T03 (Fork-Unabhängigkeit) · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
@@ -2566,7 +2566,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Design-Entscheid (fix):** Bulk-Methode nicht-transaktional; pro Eintrag eigene Tx via `TransactionTemplate` (REQUIRES_NEW). `approve`-/`reject`-/Executor-Semantik unverändert (Executor pro Eintrag in dessen Tx — wie heute beim Einzel-Approve). Folge: Teilerfolg möglich, logische wie DB-Fehler betreffen nur den Eintrag; Client wertet `BulkResult[]` aus.
 - **T34-03a:** Umbau + Kommentar aktualisieren. Tests: Teilerfolg (Eintrag 1 approved, Eintrag 2 `INTENT_NOT_PENDING` → Eintrag 1 bleibt approved); ungültige Action → pro-Eintrag-Fehler ohne Seiteneffekt. DM-Queue-E2E bleibt grün.
 - **Doku:** `API.md` Bulk-Semantik (Teilerfolg möglich).
-- **Status:** 📋
+- **Status:** ✅ (implementiert: Bulk nicht-transaktional, pro Eintrag `TransactionOperations`/`TxConfig`; Teilerfolg-Test)
 
 ---
 
@@ -2583,9 +2583,29 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **F6:** Trade-Row-Lock + Entity-Locks (ID-sortiert).
 - Live verifiziert: Owner/DM/Fremd-Matrix (403/200/200), Cross-Trade 403, Difficulty-Schwellen.
 
-> Runde 2 (Logik), Runde 3 (Qualität/i18n), Runde 4 (UX), Doku-Sync — offen.
+### Runde 2 — Logik (✅)
+- Quest-Status-Whitelist (`pending/active/completed/cancelled`, trim+lowercase normalisiert) + `QUEST_STATUS_INVALID`.
+- Chat `/r`-Doppelpost: lokales Echo + WS-Dedupe; Roll-Fehler nicht mehr stumm.
+- Wizard-Skill-Cap `min(maxSkillValue, höchstes Attribut+2)` (Client) + serverseitiges `maxSkillValue` ohne campaignId (Kampagne wird aus der Fork-Welt aufgelöst).
+- Conditions: optionales Runden-Feld (≥1, integer) im Sheet.
+
+### Runde 3 — Qualität & i18n (✅)
+- TradeModal: Ladefehler-Toasts (dedupliziert), Fehlercode-Mapping; `enrich` ohne N+1 (auch `list()` in einer Query); tote `TradeResponse.from()` entfernt; `SkillInfo.casting` als `CastingInfo` typisiert.
+- Neue Tests: V104-`trades`-Migration, TradeModal (2), ChatPanel-History/Event-Filter (2), Casting-Roundtrip, RollController (4), CombatController `/active` (2).
+- i18n: `character.json` + `common.json` vollständig für fr/es/it/tr (97/99/133→0 fehlende Keys; `systemWizard.json` bleibt dokumentierter Backlog, GM-Tool, DE-Fallback).
+
+### Runde 4 — UX (✅)
+- Fraktionen aus Game View verlinkt; Mobile: GameView-Drawer (Sidebar/Chat, Escape, gegenseitig exklusiv) + Kampf-Tabs (Karte/Initiative/Chat) + Empty-State-CTA; Kampf-Titel „Kampf".
+- TradeModal: Dialog-Semantik/Escape/Initialfokus, aria-Labels, Max-Schnellwahl, Summenzeile.
+- Dashboard: Verify-Banner nur bei unbestätigter Mail, „Welt erstellen", Kampagnen-Karten mit Welt/System-Namen.
+- Chat: Zeitstempel (payload.timestamp) + lokalisierte Fehlermeldung; Quest: Typ-Labels lokalisiert, Beschreibung vor Button; NPC-Seite: i18n statt EN, Services-Empty-State; Wizard: Step-Anzeige; Sheet: aria-Labels.
+- Audit R2–R4 (Subagent) + alle Findings gefixt (u. a. WS-Timestamp „Invalid Date", Drawer-Überlappung, Fehlercode-Dedupe, EN-Reste in Übersetzungen).
+
+> Offen: `systemWizard.json`-Übersetzungen (GM-Tool), ADR-013-Social-Tasks (s. u.).
 
 ## Phase 35: Backlog aus DSA-Spieltest (Details s. `docs/PLAYTEST-DSA.md`)
+
+> **ADR-013 Social Mechanics:** Die dort skizzierten Tasks heißen zur Vermeidung der Kollision mit den Security-Tickets **P35-SM-01…04** (Social-Proben, Furcht/Moral, CHANGE_RELATION-Gates, Folge-Content) — offen.
 
 - **B1:** Talent-FW per AP-Verteilung (5. Wizard-Step, skillsJson) — ✅ fertig
 - **B2:** Conditions-Editor (Zustands-Katalog in Step 8) — ✅ fertig

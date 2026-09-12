@@ -439,6 +439,10 @@ Merkmal-Pflicht via `requiresTrait`). Fehler: `CAST_NOT_CASTABLE` /
 ### `GET /api/v1/combat/active?worldId=` (Playtest #10)
 Aktive Kampf-Session einer Welt (Reload-/Deep-Link-Rehydrate), 204 wenn keine.
 
+### `PATCH /api/v1/quests/{id}/status` (R2)
+Erlaubte Werte: `pending|active|completed|cancelled` (case-insensitive, wird
+auf lowercase normalisiert). Sonst `QUEST_STATUS_INVALID` (400).
+
 ### Handel (`/api/v1/trades`, B4)
 `POST /` (Angebot), `POST /{id}/counter` (Gegenangebot, schreibt aus Editor-Sicht),
 `POST /{id}/accept` (nur Gegenüber des letzten Editors, atomarer Tausch),

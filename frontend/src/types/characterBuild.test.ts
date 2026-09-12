@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { defaultWizardData, buildCost, buildFinalAttributes, buildFinalTraits, buildIssues, type CharacterBuild } from './gameSystem';
+import { defaultWizardData, buildCost, buildFinalAttributes, buildFinalTraits, buildIssues, skillMaxFor, type CharacterBuild } from './gameSystem';
 
 describe('Charakter-Build (P30-T01)', () => {
   const base = () => {
@@ -144,6 +144,16 @@ describe('Skill-FW bei Erstellung (B1)', () => {
   it('meldet Skill-Cap-Verletzung', () => {
     const data = skillBase();
     const build: CharacterBuild = { packageSelections: [], attributes: {}, traits: [], skills: { Klettern: 13 } };
+    expect(buildIssues(data, build)).toContain('build_skill_cap:Klettern');
+  });
+
+  it('cappt bei highestAttributePlus2 auf höchstes Attribut +2 (R2)', () => {
+    const data = skillBase();
+    data.advancement = { columns: ['A', 'B'], table: [{ from: 0, to: 20, costs: { A: 1, B: 2 } }], maxRule: 'highestAttributePlus2' };
+    data.attributes = [{ name: 'mut', type: 'INT', min: 1, max: 20, default: 10 }];
+    const build: CharacterBuild = { packageSelections: [], attributes: {}, traits: [], skills: { Klettern: 13 } };
+    const finals = buildFinalAttributes(data, build).map((f) => ({ name: f.name, value: f.value }));
+    expect(skillMaxFor(data, 'Klettern', finals)).toBe(12); // min(99, 10+2)
     expect(buildIssues(data, build)).toContain('build_skill_cap:Klettern');
   });
 

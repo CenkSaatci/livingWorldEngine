@@ -61,7 +61,13 @@ Pakete/Kampf). Politik: alles Gefundene sofort fixen, Bericht am Ende.
 - **B5 Chat-Historie:** V103 `chat_messages`, letzte 50 beim Betreten
 - **B4 Handelsfenster:** Angebot/Gegenangebot/Annahme/Abbruch, atomarer Tausch, Item-Namen-Anreicherung
 
-## Offenes Backlog (→ TASKS Phase 35)
+## Backlog-Status (Stand Runde 4)
+
+B1–B9 sind umgesetzt (Phase 35); **B10 (Fraktionsverlinkung) in Runde 4 erledigt**.
+Offen bleibt nur `systemWizard.json`-Übersetzung (GM-Tool, DE-Fallback) sowie die
+ADR-013-Social-Tasks (P35-SM-01…04).
+
+## Ursprüngliches Backlog (→ TASKS Phase 35)
 
 - **B1:** Charakter-Erstellung ohne Talent-FW (alle FW 0; Steigern pro Skill existiert)
 - **B2:** Conditions-Editor im System-Wizard (aktuell nur Erhaltung, kein Edit)

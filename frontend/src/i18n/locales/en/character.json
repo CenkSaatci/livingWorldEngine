@@ -45,7 +45,8 @@
     "castCost": "{cost} {resource} per cast",
     "castNoResource": "Not enough AsP/KaP for this spell",
     "castNoTrait": "Required trait missing",
-    "trade": "Trade"
+    "trade": "Trade",
+    "rounds": "rounds"
   },
   "attribute": {
     "modifier": "Modifier"
@@ -102,6 +103,7 @@
     "noSkills": "No skills in system",
     "search": "Search…",
     "codeSkillCap": "Skill above maximum ({a})",
-    "codeSkillRange": "Invalid skill value ({a})"
+    "codeSkillRange": "Invalid skill value ({a})",
+    "skillCap": "maximum"
   }
 }

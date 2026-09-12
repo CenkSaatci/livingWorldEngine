@@ -46,6 +46,13 @@ export default function CampaignSection() {
       .catch(() => {});
   }, [loadCampaigns]);
 
+  // R4: Namen statt roher UUIDs auf den Karten.
+  const worldName = (id: string) => worlds.find((w) => w.id === id)?.name ?? id.slice(0, 8);
+  const systemName = (id: string) => {
+    const sys = systems.find((x) => x.id === id);
+    return sys ? `${sys.name} v${sys.version}` : id.slice(0, 8);
+  };
+
   const handleCreate = async () => {
     if (!name.trim() || !worldId || !systemId) return;
     setSaving(true);
@@ -193,7 +200,7 @@ export default function CampaignSection() {
                 <Globe size={16} className="text-accent" />
               </div>
               <p className="mt-1 text-xs text-text-secondary">
-                {c.worldId.slice(0, 8)} · {c.gameSystemId.slice(0, 8)}
+                {worldName(c.worldId)} · {systemName(c.gameSystemId)}
               </p>
             </div>
           ))}

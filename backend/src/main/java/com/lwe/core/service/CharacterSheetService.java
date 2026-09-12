@@ -147,9 +147,8 @@ public class CharacterSheetService {
                 var total = (int) Math.round(effectiveBonus + attrMod);
                 var perCharVal = perCharSkills.get(name);
                 var advanceCost = skillAdvanceCost(rules, s, effectiveBonus);
-                var casting = s.get("casting") instanceof java.util.Map _m
-                    ? (java.util.Map<String, Object>) _m : null;
-                return new SheetResponse.SkillInfo(name, total, perCharVal, advanceCost, casting);
+                return new SheetResponse.SkillInfo(name, total, perCharVal, advanceCost,
+                    castingInfo(s));
             })
             .collect(Collectors.toList());
 
@@ -365,6 +364,15 @@ public class CharacterSheetService {
         } catch (Exception e) {
             return Map.of();
         }
+    }
+
+    /** R3: casting aus rulesJson typisiert uebernehmen. */
+    private SheetResponse.CastingInfo castingInfo(Map<String, Object> skillDef) {
+        if (!(skillDef.get("casting") instanceof Map<?, ?> cm)) return null;
+        if (!(cm.get("resource") instanceof String resource)) return null;
+        var cost = cm.get("cost") instanceof Number n ? n.intValue() : 0;
+        var trait = cm.get("requiresTrait") instanceof String t ? t : null;
+        return new SheetResponse.CastingInfo(resource, cost, trait);
     }
 
     private Map<String, Integer> parseAttributes(GameEntity entity) {

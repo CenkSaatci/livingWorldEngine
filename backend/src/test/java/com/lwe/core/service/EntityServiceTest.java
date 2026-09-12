@@ -32,6 +32,8 @@ class EntityServiceTest {
     private ConditionService conditionService;
     @Mock
     private DerivedValueService derivedValueService;
+    @Mock
+    private com.lwe.core.repository.CampaignRepository campaignRepo;
     private EntityService service;
     private final UUID userId = UUID.randomUUID();
     private final UUID worldId = UUID.randomUUID();
@@ -39,7 +41,7 @@ class EntityServiceTest {
     @BeforeEach
     void setUp() {
         service = new EntityService(entityRepo, worldAccess, new ObjectMapper(), rulesLoader, conditionService,
-            derivedValueService, new com.lwe.core.util.EntityAccess(entityRepo, worldAccess));
+            derivedValueService, new com.lwe.core.util.EntityAccess(entityRepo, worldAccess), campaignRepo);
     }
 
     @Test

@@ -109,6 +109,14 @@ class DatabaseMigrationTest {
     }
 
     @Test
+    void tradesTableExists() throws SQLException {
+        try (var conn = dataSource.getConnection()) {
+            var rs = conn.getMetaData().getTables(null, "public", "trades", new String[]{"TABLE"});
+            assertThat(rs.next()).as("V104: trades (B4)").isTrue();
+        }
+    }
+
+    @Test
     void entitiesTableHasOwnerUserIdColumn() throws SQLException {
         try (var conn = dataSource.getConnection()) {
             var rs = conn.getMetaData().getColumns(null, "public", "entities", "owner_user_id");

@@ -2,5 +2,6 @@
   "placeholder": "Type a message — /r 1d20+5 to roll, /me <action> for emotes",
   "send": "Send",
   "roll_log": "Roll log",
-  "roll_command_hint": "/r <expression> — rolls dice and shares the result"
+  "roll_command_hint": "/r <expression> — rolls dice and shares the result",
+  "invalidExpression": "Expresión no válida. Usa /r <cantidad>d<caras>[+mod], p. ej. /r 2d6+3"
 }

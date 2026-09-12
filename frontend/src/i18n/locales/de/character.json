@@ -45,7 +45,8 @@
     "castCost": "{cost} {resource} pro Anwendung",
     "castNoResource": "Nicht genug AsP/KaP für diesen Zauber",
     "castNoTrait": "Erforderliches Merkmal fehlt",
-    "trade": "Handeln"
+    "trade": "Handeln",
+    "rounds": "Runden"
   },
   "attribute": {
     "modifier": "Modifikator"
@@ -102,6 +103,7 @@
     "noSkills": "Keine Fertigkeiten im System",
     "search": "Suchen …",
     "codeSkillCap": "FW über Maximum ({a})",
-    "codeSkillRange": "Ungültiger FW ({a})"
+    "codeSkillRange": "Ungültiger FW ({a})",
+    "skillCap": "Maximalwert"
   }
 }

@@ -29,7 +29,10 @@
     "offline": "Connection lost",
     "toggleFog": "Toggle fog of war",
     "pauseResume": "Pause or resume time",
-    "advanceTime": "Advance time"
+    "advanceTime": "Advance time",
+    "loadFailed": "Could not load data",
+    "createFailed": "Create failed",
+    "saveFailed": "Save failed"
   },
   "gameView": {
     "title": "Game View",
@@ -96,7 +99,8 @@
     "remaining": "{{remaining}}/{{total}} remaining",
     "apCost": "AP: {{cost}}",
     "maneuverFailed": "Maneuver failed",
-    "noActiveCombat": "No active combat — start one from the game view."
+    "noActiveCombat": "No active combat — start one from the game view.",
+    "startFromWorld": "Start combat from the game view"
   },
   "entityTimeline": {
     "today": "today",
@@ -137,7 +141,11 @@
     "deleteConfirm": "This will permanently delete \"{{name}}\" and all associated data.",
     "createCharacter": "Character wizard",
     "services": "Services (market)",
-    "priceModifier": "Price modifier (e.g. 1.0)"
+    "priceModifier": "Price modifier (e.g. 1.0)",
+    "info": "Info",
+    "diplomacy": "Diplomacy",
+    "relationships": "Relationships",
+    "servicesEmpty": "No services — add via “Edit”."
   },
   "faction": {
     "create": "Create Faction",
@@ -335,7 +343,16 @@
     "descriptionPlaceholder": "Description (optional)",
     "approve": "Approve",
     "reject": "Reject",
-    "noQuests": "No quests"
+    "noQuests": "No quests",
+    "type": "Quest type",
+    "type_kill": "Kill",
+    "type_fetch": "Fetch",
+    "type_escort": "Escort",
+    "type_deliver": "Deliver",
+    "type_explore": "Explore",
+    "type_talk": "Talk",
+    "completedCount": "Completed ({{count}})",
+    "xp": "XP"
   },
   "market": {
     "title": "Market",
@@ -384,6 +401,9 @@
     "countering": "Counter-offer",
     "gives": "Gives",
     "wants": "Wants",
-    "failed": "Trade failed"
+    "failed": "Trade failed",
+    "loadFailed": "Could not load trade data",
+    "summary": "You give {{give}} · you want {{want}}",
+    "max": "Max"
   }
 }
