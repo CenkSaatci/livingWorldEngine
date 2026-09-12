@@ -2,14 +2,15 @@
 
 > Master-Task-Liste. ID-Referenzen (z. B. `P2-T04`) können in Commits, PRs und Reviews verwendet werden.
 
-## Aktueller Projektstand (2026-09-11)
+## Aktueller Projektstand (2026-09-12)
 
-- **P28 Engine-Bausteine** ✅ (T01–T06) · **P29 Spielgefühl + Pakete** ✅ (T01–T06) · **P23 Schadenstypen** ✅ (T01–T04, T05 optional) · **P30 Charakter-Wizard** ✅ (T01–T04) · **P31 E2E-Ausbau** ✅ (T01–T03)
+- **P28 Engine-Bausteine** ✅ · **P29 Spielgefühl + Pakete** ✅ · **P23 Schadenstypen** ✅ (T05 optional) · **P30 Charakter-Wizard** ✅ · **P31 E2E-Ausbau** ✅
+- **P33 Backlog-Abbau & Härtung** ✅ (T33-01…11: E2E-Zustände/Schadensart, Welt-PUBLIC, Member-Quota, Fork inkl. Quests/Adventures/Choices, System-Shares, Bot-Runtime, DM-Queue Bulk+WS, Adventure-Inject, ADR-013; Final-Audit + Re-Audit ohne offene HIGH/MEDIUM)
 - **Tests:** Backend 416 (`mvn -B test`) · Frontend 169 (`npx vitest run`) · E2E 11 (`npm run test:e2e`) · ai-bot 50 · `tsc`/Build grün
 - **Audits:** P28, P23/P29, P30 und ein finales Gesamt-Audit — alle HIGH/MEDIUM-Findings gefixt, Rest bewusst zurückgestellt (siehe Notizen unten)
-- **P27-Status:** T01 ✅ Teilstand (Shares/Welt-PUBLIC offen) · T02 ✅ · T03 ✅ Teilstand (Quest/Adventure-Fork offen) · T04 🔄 Teilstand (Bot-Runtime-Polling) · T05 ✅ · T06 🔄 Teilstand (Bulk/WS/E2E)
-- **Offen (bewusst):** P14-Rest (Editor-E2E) · P34-Security-Tickets (unten) · E2E-Backlog T32-T03 · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
-- **Nächste Schritte:** Phase 33 „Backlog-Abbau & Härtung" (Detailplan unten) — E2E-Lücken, Welt-PUBLIC, Shares, Fork-Vervollständigung, Bot-Runtime, DM-Queue-Ausbau, P14/P22
+- **P27-Status:** komplett ✅ (Shares/Welt-PUBLIC und Fork-Lücken via P33; Bot-Runtime via T33-06; Bulk/WS/E2E via T33-07/08)
+- **Offen (bewusst):** P34-T01–T03 (Security/Orphans/Bulk-Tx) · P14-Rest (Editor-E2E; Inject-Choice ✅) · E2E-Backlog T32-T03 (Fork-Unabhängigkeit) · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
+- **Nächste Schritte:** Phase 34 (P34-T01–T03), danach P14-Editor-E2E und Inhalte nach Bedarf
 
 ## Verifikation Alt-Phasen (2026-09-12)
 

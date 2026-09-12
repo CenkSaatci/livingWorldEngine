@@ -1,6 +1,6 @@
 # Generischer System-Wizard — Detail-Plan (P28/P29)
 
-> Implementierungsplan zu [`ADR/012`](ADR/012-generic-wizard-engine.md). **Umsetzungsstand (2026-09-11):** P28, P29, P30 (Charakter-Wizard) und P31 (E2E) vollständig umgesetzt; Suiten 362/168/7; Audits abgearbeitet. Details/Teilstände siehe „Bemerkungen" und „Aktueller Projektstand" in [`TASKS.md`](TASKS.md).
+> Implementierungsplan zu [`ADR/012`](ADR/012-generic-wizard-engine.md). **Umsetzungsstand (2026-09-12):** P28–P31 und Phase 33 (Backlog-Abbau & Härtung) vollständig umgesetzt; Suiten 416/169/11 + ai-bot 50; Final-Audit/Re-Audit abgearbeitet. Details/Teilstände siehe „Bemerkungen" und „Aktueller Projektstand" in [`TASKS.md`](TASKS.md).
 > Konventionen: [UI-UX](UI-UX.md) (Dark-first, Keyboard-first, DE+EN), [TASKS](TASKS.md) (TDD, Tests grün), [TESTING](TESTING.md) (E2E-Abnahme).
 
 ---
