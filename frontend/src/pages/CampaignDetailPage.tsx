@@ -25,6 +25,7 @@ interface CampaignMember {
   id: string;
   campaignId: string;
   userId: string;
+  username?: string | null;
   role: string;
   joinedAt: string;
 }
@@ -333,7 +334,7 @@ export default function CampaignDetailPage() {
                     ) : (
                       <User size={16} className="text-text-secondary" />
                     )}
-                    <span className="text-sm text-text-primary">{m.userId.slice(0, 8)}</span>
+                    <span className="text-sm text-text-primary">{m.username ?? m.userId.slice(0, 8)}</span>
                     <span className="text-xs text-text-secondary">
                       {m.role === 'DM' ? t('campaign.dm') : t('campaign.player')}
                     </span>

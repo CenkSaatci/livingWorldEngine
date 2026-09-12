@@ -80,7 +80,7 @@ public class AdventureService {
 
     @Transactional
     public AdventureNode addNode(UUID adventureId, UUID userId, String text, String imageUrl, boolean isEnd) {
-        verifyAdventureAccess(adventureId, userId);
+        requireDmAdventure(adventureId, userId);
         var node = new AdventureNode(adventureId, text, isEnd);
         if (imageUrl != null) node.setImageUrl(imageUrl);
         return nodeRepo.save(node);
@@ -89,7 +89,7 @@ public class AdventureService {
     @Transactional
     public AdventureNode updateNode(UUID adventureId, UUID nodeId, UUID userId,
                                     String text, String imageUrl, boolean isEnd) {
-        verifyAdventureAccess(adventureId, userId);
+        requireDmAdventure(adventureId, userId);
         var node = nodeRepo.findById(nodeId)
             .orElseThrow(() -> new AdventureException("NODE_NOT_FOUND", "Node not found"));
         if (!node.getAdventureId().equals(adventureId))
@@ -102,7 +102,7 @@ public class AdventureService {
 
     @Transactional
     public void setStartNode(UUID adventureId, UUID userId, UUID nodeId) {
-        var adv = verifyAdventureAccess(adventureId, userId);
+        var adv = requireDmAdventure(adventureId, userId);
         adv.setStartNodeId(nodeId);
         adventureRepo.save(adv);
     }
@@ -110,7 +110,7 @@ public class AdventureService {
     @Transactional
     public NodeChoice addChoice(UUID adventureId, UUID nodeId, UUID userId, String label,
                                 UUID targetNodeId, String skillCheckJson, UUID onSuccess, UUID onFailure) {
-        verifyAdventureAccess(adventureId, userId); // F2: Zugriff + Node-Zugehoerigkeit
+        requireDmAdventure(adventureId, userId); // F2: Zugriff + Node-Zugehoerigkeit
         verifyNodeInAdventure(adventureId, nodeId);
         // Skill-Check-JSON validieren, falls vorhanden
         if (skillCheckJson != null && !skillCheckJson.isBlank()) {
@@ -250,7 +250,7 @@ public class AdventureService {
 
     @Transactional
     public void overrideNodeText(UUID adventureId, UUID userId, String newText) {
-        var adv = verifyAdventureAccess(adventureId, userId);
+        var adv = requireDmAdventure(adventureId, userId);
         if (newText == null || newText.isBlank()) return;
         eventService.publish(adv.getWorldId(), ADVENTURE_NODE_CHANGED, null, null, Map.of(
             "adventureId", adventureId.toString(), "text", newText));
@@ -258,7 +258,7 @@ public class AdventureService {
 
     @Transactional
     public void forceNode(UUID adventureId, UUID userId, UUID nodeId) {
-        verifyAdventureAccess(adventureId, userId);
+        requireDmAdventure(adventureId, userId);
         var node = verifyNodeInAdventure(adventureId, nodeId); // F2
         var progresses = progressRepo.findByAdventureIdAndStatus(adventureId, "ACTIVE");
         for (var p : progresses) {
@@ -274,7 +274,7 @@ public class AdventureService {
     @Transactional
     public NodeChoice injectChoice(UUID adventureId, UUID userId, UUID nodeId, String label,
                                     UUID targetNodeId, String skillCheckJson) {
-        verifyAdventureAccess(adventureId, userId);
+        requireDmAdventure(adventureId, userId);
         verifyNodeInAdventure(adventureId, nodeId); // F2
         var choice = new NodeChoice(nodeId, label, targetNodeId);
         if (skillCheckJson != null) choice.setSkillCheck(skillCheckJson);
@@ -317,6 +317,15 @@ public class AdventureService {
             throw new AdventureException("NODE_NOT_IN_ADVENTURE", "Node does not belong to this adventure");
         }
         return node;
+    }
+
+    /** Playtest-Befund #14: Struktur- und Live-DM-Eingriffe sind DM-only
+     *  (Spielerfortschritt start/advance/abandon bleibt member-level). */
+    private Adventure requireDmAdventure(UUID adventureId, UUID userId) {
+        var adv = adventureRepo.findById(adventureId)
+            .orElseThrow(() -> new AdventureException("ADVENTURE_NOT_FOUND", "Adventure not found"));
+        worldAccess.requireDm(adv.getWorldId(), userId);
+        return adv;
     }
 
     private Adventure verifyAdventureAccess(UUID adventureId, UUID userId) {

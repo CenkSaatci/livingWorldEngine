@@ -379,3 +379,17 @@ describe('DSA5-Referenz (P29-T06)', () => {
     expect(packageSelectionWarnings(data, noCulture)).toContain('recommended:Elf:Waldelf');
   });
 });
+
+describe('conditions roundtrip (Playtest-Befund #2)', () => {
+  it('fromRulesJson übernimmt den Zustands-Katalog opak', () => {
+    const data = fromRulesJson(JSON.stringify(dsa5json))!;
+    expect(data.conditions).toHaveLength(3);
+  });
+
+  it('toRulesJson schreibt conditions zurück (kein Verlust bei Edit→Save)', () => {
+    const data = fromRulesJson(JSON.stringify(dsa5json))!;
+    const rules = JSON.parse(toRulesJson(data));
+    expect(rules.conditions).toHaveLength(3);
+    expect(rules.conditions[0].name).toBe('Wunde');
+  });
+});

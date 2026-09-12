@@ -20,6 +20,7 @@ import { apiClient } from '../api/client';
 import { useToast } from '../hooks/useToast';
 import { SystemWizard, type SystemWizardHandle, type WizardData } from '../components/game/SystemWizard';
 import { fromRulesJson } from '../types/gameSystem';
+import { isBareRulesFormat, sanitizeRulesForImport } from '../utils/importRules';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useAuthStore } from '../store/authStore';
 
@@ -211,22 +212,11 @@ export default function GameSystemPage() {
       // Zwei Formate werden akzeptiert:
       // 1. Backend-Wire-Format {name, version, rulesJson} (Export-Format)
       // 2. Wizard-/Beispiel-Format {attributes, dice_mechanics, ...} (docs/examples/*.json)
-      const isBareRules =
-        data && typeof data === 'object' && !data.rulesJson && !data.rules_json &&
-        (data.attributes || data.dice_mechanics || data.progressionType);
-      // Beispiel-Dateien enthalten Doku-Felder (description, _comment, ...), die das
-      // Backend-Schema (additionalProperties: false) ablehnen würde — auf bekannte
-      // Top-Level-Keys reduzieren.
-      const RULES_KEYS = [
-        'version', 'probeType', 'progressionType', 'modifierFormula', 'features',
-        'derived_values', 'abilities', 'progression', 'magic', 'psionics',
-        'conditionals', 'attributes', 'skills', 'dice_mechanics',
-      ];
-      const sanitize = (obj: Record<string, unknown>) =>
-        Object.fromEntries(Object.entries(obj).filter(([k]) => RULES_KEYS.includes(k)));
-      const rules = isBareRules
-        ? JSON.stringify(sanitize(data))
-        : (data.rulesJson ?? data.rules_json ?? '{}');
+      // Nur Doku-Felder (description, _comment, ...) werden entfernt — alle
+      // backend-gültigen Keys bleiben erhalten (s. utils/importRules).
+      const rules = isBareRulesFormat(data)
+        ? sanitizeRulesForImport(data as Record<string, unknown>)
+        : ((data as Record<string, unknown>).rulesJson ?? (data as Record<string, unknown>).rules_json ?? '{}') as string;
       await apiClient.post('/game-systems', {
         name: data.name ?? file.name.replace(/\.json$/i, '') ?? 'Imported System',
         version: data.version ?? 1,

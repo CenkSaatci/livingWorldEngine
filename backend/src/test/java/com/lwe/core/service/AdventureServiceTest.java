@@ -114,6 +114,28 @@ class AdventureServiceTest {
     }
 
     @Test
+    void adventureWritesRequireDm() {
+        doThrow(new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireDm(worldId, userId);
+        when(adventureRepo.findById(adventure.getId())).thenReturn(java.util.Optional.of(adventure));
+
+        assertThatThrownBy(() -> service.addNode(adventure.getId(), userId, "x", null, false))
+            .isInstanceOf(WorldAccess.WorldAccessException.class);
+        assertThatThrownBy(() -> service.overrideNodeText(adventure.getId(), userId, "x"))
+            .isInstanceOf(WorldAccess.WorldAccessException.class);
+    }
+
+    @Test
+    void dmMayEditAdventure() {
+        when(adventureRepo.findById(adventure.getId())).thenReturn(java.util.Optional.of(adventure));
+        when(nodeRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var node = service.addNode(adventure.getId(), userId, "Hallo", null, false);
+        assertThat(node.getText()).isEqualTo("Hallo");
+        verify(worldAccess).requireDm(worldId, userId);
+    }
+
+    @Test
     void injectChoiceRejectsNodeFromOtherAdventure() {
         var otherNode = new AdventureNode(UUID.randomUUID(), "Fremd", false);
         setId(otherNode, UUID.randomUUID());

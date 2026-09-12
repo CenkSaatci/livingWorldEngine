@@ -2,7 +2,7 @@
   "app": {
     "title": "Living World Engine",
     "subtitle": "Modular tabletop RPG platform with living-world simulation",
-    "skeleton_note": "Frontend skeleton — login, dashboard, and map arrive in Phase 3 (P3-T03+). See docs/UI-UX.md."
+    "no_worlds": "No worlds yet — create your first world via “Create”!"
   },
   "nav": {
     "backToDashboard": "← Dashboard"
@@ -36,7 +36,14 @@
     "combat": "Combat",
     "location": "📍 Location",
     "explore": "🗺️ Explore",
-    "chat": "Chat"
+    "chat": "Chat",
+    "create": "Create",
+    "createNpc": "Create NPC",
+    "createRegion": "Create region",
+    "createLocation": "Create location",
+    "closeSidebar": "Close sidebar",
+    "openSidebar": "Open sidebar",
+    "closeLocation": "Close location"
   },
   "admin": {
     "accessDenied": "Access denied",
@@ -88,7 +95,8 @@
     "used": " (used)",
     "remaining": "{{remaining}}/{{total}} remaining",
     "apCost": "AP: {{cost}}",
-    "maneuverFailed": "Maneuver failed"
+    "maneuverFailed": "Maneuver failed",
+    "noActiveCombat": "No active combat — start one from the game view."
   },
   "entityTimeline": {
     "today": "today",
@@ -127,7 +135,9 @@
     "saving": "Saving…",
     "deleteTitle": "Delete NPC?",
     "deleteConfirm": "This will permanently delete \"{{name}}\" and all associated data.",
-    "createCharacter": "Character wizard"
+    "createCharacter": "Character wizard",
+    "services": "Services (market)",
+    "priceModifier": "Price modifier (e.g. 1.0)"
   },
   "faction": {
     "create": "Create Faction",
@@ -286,6 +296,12 @@
   },
   "region": {
     "collapse": "Collapse region",
-    "expand": "Expand region"
+    "expand": "Expand region",
+    "newRegion": "New Region",
+    "climate": "Climate",
+    "dangerLevel": "Danger Level (1-10)",
+    "create": "Create Region",
+    "creating": "Creating…",
+    "saveFailed": "Region could not be saved"
   }
 }

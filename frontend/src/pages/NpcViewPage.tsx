@@ -57,6 +57,19 @@ const RELATION_ICONS: Record<string, JSX.Element> = {
   WAR: <Swords size={14} className="text-danger" />,
 };
 
+const NPC_SERVICES = [
+  'sell_weapons',
+  'repair',
+  'buy_ore',
+  'sell_potions',
+  'training',
+  'healing',
+  'inn_stay',
+  'buy_food',
+  'sell_scrolls',
+  'identification',
+];
+
 export default function NpcViewPage() {
   const { t } = useTranslation('common');
   const { id, npcId } = useParams<{ id: string; npcId: string }>();
@@ -88,6 +101,8 @@ export default function NpcViewPage() {
   const [editPersonality, setEditPersonality] = useState('');
   const [editKnowledge, setEditKnowledge] = useState('');
   const [editGoals, setEditGoals] = useState('');
+  const [editServices, setEditServices] = useState<string[]>([]);
+  const [editPriceMod, setEditPriceMod] = useState('');
   const [saving, setSaving] = useState(false);
 
   const [factions, setFactions] = useState<FactionSummary[]>([]);
@@ -163,6 +178,8 @@ export default function NpcViewPage() {
     setEditPersonality((meta.personality as string) ?? '');
     setEditKnowledge(((meta.knowledge as string[]) ?? []).join(', '));
     setEditGoals(((meta.goals as string[]) ?? []).join(', '));
+    setEditServices(((meta.services_offered as string[]) ?? []).filter((s) => typeof s === 'string'));
+    setEditPriceMod(meta.price_modifier !== undefined ? String(meta.price_modifier) : '');
     setEditing(true);
   };
 
@@ -170,19 +187,33 @@ export default function NpcViewPage() {
     if (!editName.trim()) return;
     setSaving(true);
     try {
-      const metadata: Record<string, unknown> = {};
-      if (editPersonality) metadata.personality = editPersonality;
-      if (editKnowledge)
-        metadata.knowledge = editKnowledge
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean);
-      if (editGoals)
-        metadata.goals = editGoals
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean);
-      if (editLocationId) metadata.location_id = editLocationId;
+      // Playtest #15: bestehende Metadata mergen statt ersetzen — sonst gehen
+      // services_offered/price_modifier/occupation/greeting/relationships verloren.
+      let metadata: Record<string, unknown> = {};
+      try {
+        metadata = JSON.parse(npc.metadataJson) as Record<string, unknown>;
+      } catch {
+        /* */
+      }
+      const setOrDelete = (key: string, value: unknown) => {
+        if (value === undefined || value === null || value === '') delete metadata[key];
+        else metadata[key] = value;
+      };
+      setOrDelete('personality', editPersonality || undefined);
+      setOrDelete(
+        'knowledge',
+        editKnowledge ? editKnowledge.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
+      );
+      setOrDelete(
+        'goals',
+        editGoals ? editGoals.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
+      );
+      setOrDelete('location_id', editLocationId || undefined);
+      setOrDelete('services_offered', editServices.length > 0 ? editServices : undefined);
+      setOrDelete(
+        'price_modifier',
+        editPriceMod.trim() !== '' && !Number.isNaN(Number(editPriceMod)) ? Number(editPriceMod) : undefined,
+      );
 
       await apiClient.patch(`/worlds/${worldId}/entities/${npc.id}`, {
         name: editName.trim(),
@@ -324,7 +355,7 @@ export default function NpcViewPage() {
                         className="flex items-center gap-2 text-xs text-text-secondary py-0.5"
                       >
                         {RELATION_ICONS[rel.relationStatus] ?? <Minus size={14} />}
-                        <span>{otherId.slice(0, 8)}…</span>
+                        <span>{factions.find((f) => f.id === otherId)?.name ?? `${otherId.slice(0, 8)}…`}</span>
                         <span
                           className={
                             rel.relationStatus === 'WAR'
@@ -544,6 +575,42 @@ export default function NpcViewPage() {
                   onChange={(e) => setEditBackstory(e.target.value)}
                   rows={3}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">{t('entity.services')}</label>
+                <div className="flex flex-wrap gap-1">
+                  {NPC_SERVICES.map((s) => {
+                    const on = editServices.includes(s);
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() =>
+                          setEditServices((prev) =>
+                            prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s],
+                          )
+                        }
+                        className={`rounded px-2 py-0.5 text-xs ${
+                          on
+                            ? 'bg-accent text-white'
+                            : 'bg-bg-elevated text-text-secondary hover:text-text-primary'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">{t('entity.priceModifier')}</label>
+                <input
+                  value={editPriceMod}
+                  onChange={(e) => setEditPriceMod(e.target.value)}
+                  placeholder="1.0"
+                  inputMode="decimal"
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
                 />
               </div>
               <div className="flex gap-2 pt-2">

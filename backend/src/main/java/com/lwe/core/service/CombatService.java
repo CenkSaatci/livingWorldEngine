@@ -106,8 +106,12 @@ public class CombatService {
             var initiative = engine.executeProbe(req).total();
 
             var apMax = resolveApMax(world, engine, campaignId);
-            participants.add(new CombatParticipant(
-                session.getId(), entity.getId(), initiative, apMax, "A"));
+            var p = new CombatParticipant(
+                session.getId(), entity.getId(), initiative, apMax, "A");
+            // Playtest-Befund #8: Kampf-HP vom Entity (Startwert, z. B. LeP) statt Default 10.
+            p.setHpMax(entity.getHpMax());
+            p.setHpCurrent(Math.min(entity.getHpCurrent(), entity.getHpMax()));
+            participants.add(p);
         }
 
         participants = (ArrayList<CombatParticipant>) participantRepo.saveAll(participants);
@@ -139,6 +143,8 @@ public class CombatService {
         var session = validateSession(sessionId, userId, actorId);
         var participants = participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId);
         var actor = findActor(participants, actorId);
+        if (actor.getHpCurrent() <= 0)
+            throw new CombatException("COMBAT_ACTOR_DEFEATED", "Actor is defeated");
         requireAp(actor);
 
         if ("MOVE".equals(actionType)) {
@@ -158,6 +164,13 @@ public class CombatService {
         }
 
         checkRange(actionType, targetId, actorId);
+
+        // Playtest: keine Angriffe auf bereits Besiegte (Heilung via Ability bleibt erlaubt).
+        if (targetId != null) {
+            var target = findActor(participants, targetId);
+            if (target.getHpCurrent() <= 0)
+                throw new CombatException("COMBAT_TARGET_DEFEATED", "Target is already defeated");
+        }
 
         var damage = rollDamage(userId, session.getWorldId(), actorId, actionType, session.getCampaignId());
         var damageType = resolveWeaponDamageType(actorId, itemId);
@@ -191,6 +204,8 @@ public class CombatService {
         var session = validateSession(sessionId, userId, actorId);
         var participants = participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId);
         var actor = findActor(participants, actorId);
+        if (actor.getHpCurrent() <= 0)
+            throw new CombatException("COMBAT_ACTOR_DEFEATED", "Actor is defeated");
 
         var ability = abilityRepo.findById(abilityId)
             .orElseThrow(() -> new CombatException("ABILITY_NOT_FOUND", "Ability not found"));
@@ -217,6 +232,9 @@ public class CombatService {
             var target = participants.stream()
                 .filter(p -> p.getEntityId().equals(targetId)).findFirst().orElse(null);
             if (target != null) {
+                // Schadende Abilities treffen keine Besiegten (Heilung schon).
+                if (target.getHpCurrent() <= 0)
+                    throw new CombatException("COMBAT_TARGET_DEFEATED", "Target is already defeated");
                 damage = applyDamageModifiers(damage, targetId, effects.damageType());
                 target.setHpCurrent(Math.max(0, target.getHpCurrent() - damage));
                 participantRepo.save(target);
@@ -539,6 +557,12 @@ public class CombatService {
             .orElseThrow(() -> new CombatException("COMBAT_NOT_FOUND", "Combat session not found"));
         requireWorldAccess(session.getWorldId(), userId);
         return session;
+    }
+
+    /** Playtest-Befund #10: aktive Session je Welt (Reload-/Deep-Link-Rehydrate). */
+    public java.util.Optional<CombatSession> findActiveSession(UUID userId, UUID worldId) {
+        requireWorldAccess(worldId, userId);
+        return sessionRepo.findFirstByWorldIdAndStatusOrderByCreatedAtDesc(worldId, "ACTIVE");
     }
 
     public List<ParticipantResponse> getParticipants(UUID sessionId) {

@@ -55,6 +55,38 @@ class QuestServiceTest {
     }
 
     @Test
+    void createDefaultsObjectivesAndRewards() {
+        lenient().doNothing().when(worldAccess).requireAccess(worldId, userId);
+        when(repo.save(any())).thenAnswer(inv -> {
+            var q = inv.<Quest>getArgument(0);
+            setId(q, UUID.randomUUID());
+            return q;
+        });
+        when(eventService.publish(any(), any(), any(), any(), any(), anyInt(), any())).thenReturn(null);
+
+        var quest = service.create(worldId, userId, "Titel", null,
+            "fetch", null, null, null, null, false);
+
+        assertThat(quest.getObjectives()).isEqualTo("[]");
+        assertThat(quest.getRewards()).isEqualTo("{}");
+    }
+
+    @Test
+    void questAuthoringRequiresDm() {
+        doThrow(new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireDm(worldId, userId);
+
+        assertThatThrownBy(() -> service.create(worldId, userId, "T", null, "fetch",
+                null, null, null, null, false))
+            .isInstanceOf(WorldAccess.WorldAccessException.class);
+        var quest = new Quest(worldId, "Q", "fetch", "[]", "{}");
+        setId(quest, UUID.randomUUID());
+        when(repo.findById(quest.getId())).thenReturn(Optional.of(quest));
+        assertThatThrownBy(() -> service.delete(quest.getId(), userId))
+            .isInstanceOf(WorldAccess.WorldAccessException.class);
+    }
+
+    @Test
     void createRejectsUnknownType() {
         assertThatThrownBy(() -> service.create(worldId, userId, "T", null, "SIDE",
                 null, null, "[]", "{}", false))

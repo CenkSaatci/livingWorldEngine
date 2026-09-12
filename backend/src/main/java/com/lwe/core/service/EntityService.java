@@ -22,16 +22,18 @@ public class EntityService {
     private final ObjectMapper objectMapper;
     private final RulesLoader rulesLoader;
     private final ConditionService conditionService;
+    private final DerivedValueService derivedValueService;
     private static final TypeReference<Map<String, Integer>> ATTR_MAP = new TypeReference<>() {};
 
     public EntityService(GameEntityRepository entityRepo, WorldAccess worldAccess,
                         ObjectMapper objectMapper, RulesLoader rulesLoader,
-                        ConditionService conditionService) {
+                        ConditionService conditionService, DerivedValueService derivedValueService) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldAccess = worldAccess;
         this.rulesLoader = rulesLoader;
         this.conditionService = conditionService;
+        this.derivedValueService = derivedValueService;
     }
 
     @Transactional
@@ -39,7 +41,7 @@ public class EntityService {
                               String attributesJson, String inventoryJson, String positionJson,
                               String metadataJson, UUID factionId,
                               String backstory, Integer age, String experienceLevel,
-                              String socialStanding) {
+                              String socialStanding, UUID campaignId) {
         requireWorldAccess(worldId, userId);
 
         var entity = new GameEntity(worldId, entityType, name);
@@ -52,8 +54,56 @@ public class EntityService {
         if (age != null) entity.setAge(age);
         if (experienceLevel != null) entity.setExperienceLevel(experienceLevel);
         if (socialStanding != null) entity.setSocialStanding(socialStanding);
+        initHpFromDerived(entity, worldId, campaignId);
 
         return entityRepo.save(entity);
+    }
+
+    /** Playtest-Befund #8: Start-HP aus abgeleitetem `lep`/`hp` statt Default 10.
+     *  Ohne Kampagnen-Kontext (Template-Welten ohne System) bleibt der Default. */
+    private void initHpFromDerived(GameEntity entity, UUID worldId, UUID campaignId) {
+        if (campaignId == null) return;
+        if (!rulesLoader.campaignBelongsToWorld(campaignId, worldId))
+            throw new EntityException("WORLD_ACCESS_DENIED", "Campaign does not belong to world");
+        try {
+            var rules = rulesLoader.loadRules(campaignId, worldId);
+            var raw = (java.util.List<java.util.Map<String, Object>>)
+                rules.getOrDefault("derived_values", java.util.List.of());
+            var attrs = parseAttributeMap(entity.getAttributesJson());
+            var hp = derivedValueService.evaluate(raw, attrs, selectedTraits(entity)).stream()
+                .filter(dv -> dv.name().equalsIgnoreCase("lep") || dv.name().equalsIgnoreCase("hp"))
+                .map(dv -> (int) Math.round(dv.value()))
+                .filter(v -> v > 0)
+                .findFirst();
+            hp.ifPresent(v -> { entity.setHpMax(v); entity.setHpCurrent(v); });
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize HP", e);
+        }
+    }
+
+    private java.util.Map<String, Integer> parseAttributeMap(String json) {
+        if (json == null || json.isBlank()) return java.util.Map.of();
+        try {
+            return objectMapper.readValue(json, ATTR_MAP);
+        } catch (Exception e) {
+            return java.util.Map.of();
+        }
+    }
+
+    private java.util.List<String> selectedTraits(GameEntity entity) {
+        if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank())
+            return java.util.List.of();
+        try {
+            var node = objectMapper.readTree(entity.getMetadataJson()).path("traits");
+            if (!node.isArray()) return java.util.List.of();
+            var out = new java.util.ArrayList<String>();
+            node.forEach(n -> { if (n.isTextual()) out.add(n.asText()); });
+            return out;
+        } catch (Exception e) {
+            return java.util.List.of();
+        }
     }
 
     public List<GameEntity> list(UUID worldId, UUID userId, String entityType) {

@@ -64,6 +64,18 @@ public class CombatController {
         return ResponseEntity.ok(CombatSessionResponse.from(session));
     }
 
+    @GetMapping("/active")
+    public ResponseEntity<CombatSessionWithParticipants> getActiveSession(
+            @RequestParam UUID worldId,
+            @AuthenticationPrincipal User user) {
+        var opt = combatService.findActiveSession(user.getId(), worldId);
+        if (opt.isEmpty()) return ResponseEntity.noContent().build();
+        var session = opt.get();
+        var participants = combatService.getParticipants(session.getId());
+        return ResponseEntity.ok(new CombatSessionWithParticipants(
+            CombatSessionResponse.from(session), participants));
+    }
+
     @GetMapping("/{sessionId}")
     public ResponseEntity<CombatSessionWithParticipants> getSession(@PathVariable UUID sessionId,
                                                                      @AuthenticationPrincipal User user) {

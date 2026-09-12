@@ -36,7 +36,7 @@ public class EntityController {
         var entity = entityService.create(worldId, user.getId(), req.entityType(),
             req.name(), req.attributesJson(), req.inventoryJson(),
             req.positionJson(), req.metadataJson(), req.factionId(),
-            req.backstory(), req.age(), req.experienceLevel(), req.socialStanding());
+            req.backstory(), req.age(), req.experienceLevel(), req.socialStanding(), req.campaignId());
         return ResponseEntity.status(HttpStatus.CREATED).body(EntityResponse.from(entity));
     }
 
@@ -128,7 +128,7 @@ public class EntityController {
         var entity = entityService.create(worldId, user.getId(), req.entityType(),
             req.name(), req.attributesJson(), req.inventoryJson(),
             req.positionJson(), req.metadataJson(), req.factionId(),
-            req.backstory(), req.age(), req.experienceLevel(), req.socialStanding());
+            req.backstory(), req.age(), req.experienceLevel(), req.socialStanding(), req.campaignId());
         return ResponseEntity.status(HttpStatus.CREATED).body(EntityResponse.from(entity));
     }
 
@@ -147,7 +147,8 @@ public class EntityController {
         String backstory,
         Integer age,
         String experienceLevel,
-        String socialStanding
+        String socialStanding,
+        UUID campaignId
     ) {}
 
     public record UpdateRequest(

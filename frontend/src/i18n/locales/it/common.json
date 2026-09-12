@@ -2,7 +2,7 @@
   "app": {
     "title": "Living World Engine",
     "subtitle": "Modular tabletop RPG platform with living-world simulation",
-    "skeleton_note": "Frontend skeleton — login, dashboard, and map arrive in Phase 3 (P3-T03+). See docs/UI-UX.md."
+    "no_worlds": "Nessun mondo — crea il tuo primo mondo tramite «Crea»!"
   },
   "nav": {
     "backToDashboard": "← Dashboard"
@@ -33,7 +33,14 @@
     "combat": "Combat",
     "location": "📍 Location",
     "explore": "🗺️ Explore",
-    "chat": "Chat"
+    "chat": "Chat",
+    "create": "Crea",
+    "createNpc": "Crea PNG",
+    "createRegion": "Crea regione",
+    "createLocation": "Crea luogo",
+    "closeSidebar": "Chiudi barra laterale",
+    "openSidebar": "Apri barra laterale",
+    "closeLocation": "Chiudi luogo"
   },
   "admin": {
     "accessDenied": "Access denied",
@@ -57,7 +64,8 @@
     "initiative": "Iniziativa",
     "round": "Round",
     "noParticipants": "No participants",
-    "ap": "PA"
+    "ap": "PA",
+    "noActiveCombat": "Nessun combattimento attivo: avviane uno dalla vista di gioco."
   },
   "entityTimeline": {
     "today": "today",
@@ -86,7 +94,9 @@
     "knowledge": "Knowledge (tags)",
     "goals": "Goals",
     "backstory": "Backstory",
-    "backstory_placeholder": "e.g. orphaned by goblin raid…"
+    "backstory_placeholder": "e.g. orphaned by goblin raid…",
+    "services": "Servizi (mercato)",
+    "priceModifier": "Modificatore di prezzo (es. 1,0)"
   },
   "faction": {
     "create": "Create Faction",
@@ -184,5 +194,13 @@
     "passwordTooShort": "Password troppo corta",
     "fillBothFields": "Compila entrambi i campi",
     "failedChangePassword": "Impossibile cambiare"
+  },
+  "region": {
+    "newRegion": "Nuova regione",
+    "climate": "Clima",
+    "dangerLevel": "Livello di pericolo (1-10)",
+    "create": "Crea regione",
+    "creating": "Creazione…",
+    "saveFailed": "Impossibile salvare la regione"
   }
 }

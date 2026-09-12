@@ -170,6 +170,8 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `COMBAT_RANGE_INVALID` | 422 | Ziel außerhalb der Waffenreichweite |
 | `COMBAT_LINE_OF_SIGHT_BLOCKED` | 422 | Sichtlinie durch Fog of War / Wand blockiert |
 | `COMBAT_TARGET_INVALID` | 422 | Ziel-Entity existiert oder ist verbündet |
+| `COMBAT_TARGET_DEFEATED` | 422 | Ziel bereits besiegt (Heilung weiter erlaubt) |
+| `COMBAT_ACTOR_DEFEATED` | 422 | Actor besiegt — kann nicht handeln |
 | `COMBAT_ACTION_TYPE_INVALID` | 400 | `action_type` nicht bekannt |
 | `COMBAT_INSUFFICIENT_PARTICIPANTS` | 400 | Weniger als 2 Teilnehmer beim Kampfstart |
 | `COMBAT_MANEUVER_UNKNOWN` | 422 | Manöver nicht in `dice_mechanics.combat.maneuvers` konfiguriert |

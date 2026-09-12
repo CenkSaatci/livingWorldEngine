@@ -37,6 +37,7 @@ interface CombatState {
   clearCombat: () => void;
   setTargetEntityId: (id: string | null) => void;
   rehydrateCombat: () => Promise<void>;
+  loadActiveSession: (worldId: string) => Promise<void>;
 }
 
 export const useCombatStore = create<CombatState>((set, get) => ({
@@ -86,6 +87,18 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       get().setSession(res.data.session, res.data.participants);
     } catch {
       if (typeof localStorage !== 'undefined') localStorage.removeItem(COMBAT_ID_KEY);
+    }
+  },
+
+  loadActiveSession: async (worldId: string) => {
+    if (get().session) return;
+    try {
+      const res = await apiClient.get(`/combat/active?worldId=${worldId}`);
+      if (res.status === 200 && res.data?.session) {
+        get().setSession(res.data.session, res.data.participants ?? []);
+      }
+    } catch {
+      /* kein aktiver Kampf — Seite zeigt Hinweis */
     }
   },
 }));

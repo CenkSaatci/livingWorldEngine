@@ -76,13 +76,6 @@ export function MapCanvas({ cols = 20, rows = 15, tileSize = 48, worldId = '', m
     drawGrid(grid, cols, rows, tileSize);
     app.stage.addChild(grid);
 
-    // Debug: red square to verify rendering works
-    const debug = new PIXI.Graphics();
-    debug.beginFill(0xff0000);
-    debug.drawRect(50, 50, 200, 200);
-    debug.endFill();
-    app.stage.addChild(debug);
-
     console.log('MapCanvas: grid added, canvas size=', app.renderer.width, 'x', app.renderer.height);
 
     const tokens = new PIXI.Container();

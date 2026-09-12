@@ -2,7 +2,7 @@
   "app": {
     "title": "Living World Engine",
     "subtitle": "Modulare Pen-&-Paper-Plattform mit lebendiger Welt-Simulation",
-    "skeleton_note": "Frontend-Skelett — Login, Dashboard und Karten folgen in Phase 3 (P3-T03 ff). Siehe docs/UI-UX.md."
+    "no_worlds": "Noch keine Welten — erstelle deine erste Welt über „Erstellen“!"
   },
   "nav": {
     "backToDashboard": "← Dashboard"
@@ -36,7 +36,14 @@
     "combat": "Kampf",
     "location": "📍 Ort",
     "explore": "🗺️ Erkunden",
-    "chat": "Chat"
+    "chat": "Chat",
+    "create": "Erstellen",
+    "createNpc": "NSC erstellen",
+    "createRegion": "Region erstellen",
+    "createLocation": "Ort erstellen",
+    "closeSidebar": "Seitenleiste schließen",
+    "openSidebar": "Seitenleiste öffnen",
+    "closeLocation": "Ort schließen"
   },
   "admin": {
     "accessDenied": "Zugriff verweigert",
@@ -88,7 +95,8 @@
     "used": " (verbraucht)",
     "remaining": "{{remaining}}/{{total}} verbleibend",
     "apCost": "AP: {{cost}}",
-    "maneuverFailed": "Manöver fehlgeschlagen"
+    "maneuverFailed": "Manöver fehlgeschlagen",
+    "noActiveCombat": "Kein aktiver Kampf — starte einen aus der Spielansicht."
   },
   "entityTimeline": {
     "today": "heute",
@@ -127,7 +135,9 @@
     "saving": "Speichern…",
     "deleteTitle": "NPC löschen?",
     "deleteConfirm": "Dies löscht „{{name}}“ und alle zugehörigen Daten endgültig.",
-    "createCharacter": "Charakter-Wizard"
+    "createCharacter": "Charakter-Wizard",
+    "services": "Dienste (Markt)",
+    "priceModifier": "Preismodifikator (z. B. 1.0)"
   },
   "faction": {
     "create": "Fraktion erstellen",
@@ -286,6 +296,12 @@
   },
   "region": {
     "collapse": "Region einklappen",
-    "expand": "Region ausklappen"
+    "expand": "Region ausklappen",
+    "newRegion": "Neue Region",
+    "climate": "Klima",
+    "dangerLevel": "Gefahrenstufe (1–10)",
+    "create": "Region erstellen",
+    "creating": "Wird erstellt …",
+    "saveFailed": "Region konnte nicht gespeichert werden"
   }
 }

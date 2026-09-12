@@ -412,6 +412,9 @@ export interface WizardData {
   packages?: PkgDef[];
   traits?: TraitDef[];
   advancement?: AdvancementDef;
+  /** Zustands-Katalog (Backend `conditions[]`) — im Wizard (noch) ohne Editor,
+   *  wird aber als opakes Feld über Import→Edit→Save erhalten (kein Datenverlust). */
+  conditions?: unknown[];
 }
 
 export const DEFAULT_FEATURES: SystemFeatures = {
@@ -648,6 +651,7 @@ export function toRulesJson(data: WizardData): string {
     ...(data.packages ? { packages: data.packages } : {}),
     ...(data.traits ? { traits: data.traits } : {}),
     ...(data.advancement ? { advancement: data.advancement } : {}),
+    ...(data.conditions ? { conditions: data.conditions } : {}),
     features: data.features,
     derived_values: data.derivedValues,
     abilities: data.abilities,
@@ -750,6 +754,10 @@ export function fromRulesJson(json: string): WizardData | null {
         : undefined,
       traits: parsed.traits as TraitDef[] | undefined,
       advancement: parsed.advancement as AdvancementDef | undefined,
+      // Zustands-Katalog opak übernehmen (kein Wizard-Editor, aber kein Verlust).
+      conditions: Array.isArray(parsed.conditions)
+        ? (parsed.conditions as unknown[])
+        : undefined,
       attributes: attrs,
       skills,
       probe: (dice.probe as string) ?? '1d20+mod',

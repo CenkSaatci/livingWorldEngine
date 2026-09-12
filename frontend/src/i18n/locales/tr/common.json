@@ -2,7 +2,7 @@
   "app": {
     "title": "Living World Engine",
     "subtitle": "Modular tabletop RPG platform with living-world simulation",
-    "skeleton_note": "Frontend skeleton — login, dashboard, and map arrive in Phase 3 (P3-T03+). See docs/UI-UX.md."
+    "no_worlds": "Henüz dünya yok — “Oluştur” ile ilk dünyanı oluştur!"
   },
   "nav": {
     "backToDashboard": "← Dashboard"
@@ -33,7 +33,14 @@
     "combat": "Combat",
     "location": "📍 Location",
     "explore": "🗺️ Explore",
-    "chat": "Chat"
+    "chat": "Chat",
+    "create": "Oluştur",
+    "createNpc": "NPC oluştur",
+    "createRegion": "Bölge oluştur",
+    "createLocation": "Konum oluştur",
+    "closeSidebar": "Kenar çubuğunu kapat",
+    "openSidebar": "Kenar çubuğunu aç",
+    "closeLocation": "Konumu kapat"
   },
   "admin": {
     "accessDenied": "Access denied",
@@ -57,7 +64,8 @@
     "initiative": "İnisiyatif",
     "round": "Round",
     "noParticipants": "No participants",
-    "ap": "EP"
+    "ap": "EP",
+    "noActiveCombat": "Aktif savaş yok — oyun görünümünden başlatın."
   },
   "entityTimeline": {
     "today": "today",
@@ -86,7 +94,9 @@
     "knowledge": "Knowledge (tags)",
     "goals": "Goals",
     "backstory": "Backstory",
-    "backstory_placeholder": "e.g. orphaned by goblin raid…"
+    "backstory_placeholder": "e.g. orphaned by goblin raid…",
+    "services": "Hizmetler (pazar)",
+    "priceModifier": "Fiyat çarpanı (örn. 1,0)"
   },
   "faction": {
     "create": "Create Faction",
@@ -184,5 +194,13 @@
     "passwordTooShort": "Şifre çok kısa",
     "fillBothFields": "İki alanı da doldurun",
     "failedChangePassword": "Şifre değiştirilemedi"
+  },
+  "region": {
+    "newRegion": "Yeni bölge",
+    "climate": "İklim",
+    "dangerLevel": "Tehlike seviyesi (1-10)",
+    "create": "Bölge oluştur",
+    "creating": "Oluşturuluyor…",
+    "saveFailed": "Bölge kaydedilemedi"
   }
 }

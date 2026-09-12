@@ -1,4 +1,5 @@
-import { ScrollText, CheckCircle, XCircle, Clock, Bot, Star, Coins } from 'lucide-react';
+import { useState } from 'react';
+import { ScrollText, CheckCircle, XCircle, Clock, Bot, Star, Coins, Plus } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useApiGet } from '../../hooks/useApiGet';
 
@@ -49,6 +50,28 @@ function parseObjectives(raw: string): QuestObjective[] {
 export function QuestLog({ worldId, onSelectQuest }: Props) {
   const { data: _quests, refetch } = useApiGet<Quest[]>(`/quests?worldId=${worldId}`, [worldId]);
   const quests = _quests ?? [];
+  const [showCreate, setShowCreate] = useState(false);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [qtype, setQtype] = useState('fetch');
+  const [saving, setSaving] = useState(false);
+
+  const createQuest = async () => {
+    if (!title.trim() || saving) return;
+    setSaving(true);
+    try {
+      await apiClient.post('/quests', {
+        worldId, title: title.trim(), description: description.trim() || null,
+        type: qtype, aiGenerated: false,
+      });
+      setTitle('');
+      setDescription('');
+      setShowCreate(false);
+      refetch();
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const updateStatus = async (id: string, status: string) => {
     try {
@@ -67,7 +90,50 @@ export function QuestLog({ worldId, onSelectQuest }: Props) {
     <div className="space-y-2">
       <h3 className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary uppercase tracking-wide">
         <ScrollText size={14} /> Quests ({quests.length})
+        <button
+          onClick={() => setShowCreate((v) => !v)}
+          className="ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 text-accent hover:bg-accent/10"
+          aria-label="Create quest"
+        >
+          <Plus size={14} />
+        </button>
       </h3>
+
+      {showCreate && (
+        <div className="space-y-2 rounded border border-bg-elevated bg-bg-surface/50 p-3">
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Quest title"
+            className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-sm text-text-primary outline-none focus:border-accent"
+          />
+          <div className="flex gap-2">
+            <select
+              value={qtype}
+              onChange={(e) => setQtype(e.target.value)}
+              className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+            >
+              {['kill', 'fetch', 'escort', 'deliver', 'explore', 'talk'].map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            <button
+              onClick={createQuest}
+              disabled={!title.trim() || saving}
+              className="rounded bg-accent px-3 py-1 text-xs text-white hover:bg-accent/80 disabled:opacity-40"
+            >
+              Create
+            </button>
+          </div>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description (optional)"
+            rows={2}
+            className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+          />
+        </div>
+      )}
 
       {/* AI-Generated Pending */}
       {pending

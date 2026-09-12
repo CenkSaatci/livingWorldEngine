@@ -35,17 +35,18 @@ export function ChatPanel({ worldId }: { worldId: string }) {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const worldEvents = useWorldStore((s) => s.worldEvents);
 
-  // WS-Events als Chat-Nachrichten anzeigen
+  // WS-Events als Chat-Nachrichten anzeigen — aber nur mit menschlichem Text.
+  // Technische Events (COMBAT_ACTION_EXECUTED, PROBE_ROLLED, …) aktualisieren
+  // Stores/UI direkt; als Roh-JSON im Chat wären sie nur Rauschen (Playtest #11).
   useEffect(() => {
     const last = worldEvents[worldEvents.length - 1];
     if (last && last.event_type) {
       const payload = last.payload as Record<string, unknown> ?? {};
+      const text = payload.text;
+      if (typeof text !== 'string' || !text.trim()) return;
       const sender =
         (payload.sender as string) ||
         (last.event_type === 'CHAT_MESSAGE' ? 'System' : last.event_type);
-      const text =
-        (payload.text as string) ||
-        JSON.stringify(last.payload);
       setMessages((prev) => [
         ...prev.slice(-99),
         {

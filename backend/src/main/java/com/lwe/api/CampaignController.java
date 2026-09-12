@@ -23,10 +23,13 @@ public class CampaignController {
 
     private final CampaignService service;
     private final CampaignMemberService memberService;
+    private final com.lwe.core.repository.UserRepository userRepo;
 
-    public CampaignController(CampaignService service, CampaignMemberService memberService) {
+    public CampaignController(CampaignService service, CampaignMemberService memberService,
+                              com.lwe.core.repository.UserRepository userRepo) {
         this.service = service;
         this.memberService = memberService;
+        this.userRepo = userRepo;
     }
 
     @PostMapping
@@ -68,14 +71,14 @@ public class CampaignController {
                                                              @Valid @RequestBody MemberRequest req,
                                                              @AuthenticationPrincipal User user) {
         var member = memberService.addMember(id, user.getId(), req.userId(), req.role());
-        return ResponseEntity.status(HttpStatus.CREATED).body(CampaignMemberResponse.from(member));
+        return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(member));
     }
 
     @GetMapping("/{id}/members")
     public ResponseEntity<List<CampaignMemberResponse>> listMembers(@PathVariable UUID id,
                                                                      @AuthenticationPrincipal User user) {
         var members = memberService.listMembers(id, user.getId());
-        return ResponseEntity.ok(members.stream().map(CampaignMemberResponse::from).toList());
+        return ResponseEntity.ok(members.stream().map(this::toResponse).toList());
     }
 
     @PostMapping("/{id}/pull-system")
@@ -112,12 +115,19 @@ public class CampaignController {
 
     public record MemberRequest(@NotNull UUID userId, @NotBlank String role) {}
 
+    private CampaignMemberResponse toResponse(CampaignMember m) {
+        var username = userRepo.findById(m.getUserId()).map(User::getUsername).orElse(null);
+        var base = CampaignMemberResponse.from(m);
+        return new CampaignMemberResponse(
+            base.id(), base.campaignId(), base.userId(), username, base.role(), base.joinedAt());
+    }
+
     public record CampaignMemberResponse(
-        UUID id, UUID campaignId, UUID userId, String role, String joinedAt
+        UUID id, UUID campaignId, UUID userId, String username, String role, String joinedAt
     ) {
         static CampaignMemberResponse from(CampaignMember m) {
             return new CampaignMemberResponse(
-                m.getId(), m.getCampaignId(), m.getUserId(), m.getRole(), m.getJoinedAt().toString());
+                m.getId(), m.getCampaignId(), m.getUserId(), null, m.getRole(), m.getJoinedAt().toString());
         }
     }
 

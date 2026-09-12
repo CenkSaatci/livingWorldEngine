@@ -19,13 +19,14 @@ import {
 interface Props {
   worldId: string;
   rules: WizardData;
+  campaignId?: string;
   onCreated: (entityId: string) => void;
   onClose: () => void;
 }
 
 const KINDS = ['species', 'culture', 'profession'] as const;
 
-export function CharacterWizard({ worldId, rules, onCreated, onClose }: Props) {
+export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose }: Props) {
   const { t } = useTranslation('character');
   const toast = useToast();
   const [step, setStep] = useState(0);
@@ -120,6 +121,7 @@ export function CharacterWizard({ worldId, rules, onCreated, onClose }: Props) {
         name: name.trim(),
         attributesJson,
         metadataJson,
+        ...(campaignId ? { campaignId } : {}),
       });
       onCreated(res.data.id);
       onClose();

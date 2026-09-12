@@ -30,13 +30,58 @@ class EntityServiceTest {
     private RulesLoader rulesLoader;
     @Mock
     private ConditionService conditionService;
+    @Mock
+    private DerivedValueService derivedValueService;
     private EntityService service;
     private final UUID userId = UUID.randomUUID();
     private final UUID worldId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        service = new EntityService(entityRepo, worldAccess, new ObjectMapper(), rulesLoader, conditionService);
+        service = new EntityService(entityRepo, worldAccess, new ObjectMapper(), rulesLoader, conditionService, derivedValueService);
+    }
+
+    @Test
+    void createInitializesHpFromLep() {
+        var campaignId = UUID.randomUUID();
+        doNothing().when(worldAccess).requireAccess(worldId, userId);
+        when(rulesLoader.campaignBelongsToWorld(campaignId, worldId)).thenReturn(true);
+        when(rulesLoader.loadRules(campaignId, worldId)).thenReturn(Map.of("derived_values", List.of()));
+        when(derivedValueService.evaluate(any(), any(), any())).thenReturn(
+            List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("lep", 15.5, null)));
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = service.create(worldId, userId, "PC", "Held",
+            "{\"konstitution\":11,\"koerperkraft\":10}", null, null, null, null,
+            null, null, null, null, campaignId);
+
+        assertThat(result.getHpMax()).isEqualTo(16);
+        assertThat(result.getHpCurrent()).isEqualTo(16);
+    }
+
+    @Test
+    void createWithoutCampaignKeepsDefaultHp() {
+        doNothing().when(worldAccess).requireAccess(worldId, userId);
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = service.create(worldId, userId, "NPC", "Goblin",
+            null, null, null, null, null,
+            null, null, null, null, null);
+
+        assertThat(result.getHpMax()).isEqualTo(10);
+        verifyNoInteractions(derivedValueService);
+    }
+
+    @Test
+    void createRejectsForeignCampaign() {
+        var campaignId = UUID.randomUUID();
+        doNothing().when(worldAccess).requireAccess(worldId, userId);
+        when(rulesLoader.campaignBelongsToWorld(campaignId, worldId)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.create(worldId, userId, "PC", "Held",
+                null, null, null, null, null,
+                null, null, null, null, campaignId))
+            .isInstanceOf(EntityService.EntityException.class);
     }
 
     @Test
@@ -52,7 +97,7 @@ class EntityServiceTest {
 
         var result = service.create(worldId, userId, "NPC", "Goblin",
             null, null, null, null, null,
-            null, null, null, null);
+            null, null, null, null, null);
 
         assertThat(result.getName()).isEqualTo("Goblin");
         assertThat(result.getEntityType()).isEqualTo("NPC");
@@ -66,7 +111,7 @@ class EntityServiceTest {
 
         var result = service.create(worldId, userId, "NPC", "Goblin",
             "{\"staerke\":10}", "", "", null, null,
-            null, null, null, null);
+            null, null, null, null, null);
 
         assertThat(result.getPositionJson()).isNull();
     }

@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, MessageSquare, Swords } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MapCanvas } from '../components/map/MapCanvas';
 import { ChatPanel } from '../components/chat/ChatPanel';
 import { RollLog } from '../components/chat/RollLog';
@@ -19,8 +19,14 @@ export default function CombatPage() {
   const [showChat, setShowChat] = useState(true);
   const worldId = id ?? '';
   const mapId = useCombatStore((s) => s.session?.mapId);
+  const hasSession = useCombatStore((s) => s.session !== null);
 
   useWorldSocket(worldId);
+
+  // Playtest-Befund #10: Reload/Deep-Link lädt die aktive Session nach.
+  useEffect(() => {
+    useCombatStore.getState().loadActiveSession(worldId);
+  }, [worldId]);
 
   return (
     <div className="flex h-screen flex-col bg-bg-primary">
@@ -50,6 +56,11 @@ export default function CombatPage() {
         {/* Left: Combat Panel */}
         <aside className="flex w-64 flex-col border-r border-bg-elevated bg-bg-surface p-3">
           <InitiativeList />
+          {!hasSession && (
+            <p className="mt-4 rounded border border-dashed border-bg-elevated p-3 text-center text-xs text-text-secondary">
+              {tc('combat.noActiveCombat')}
+            </p>
+          )}
         </aside>
 
         {/* Center: Canvas with combat map */}

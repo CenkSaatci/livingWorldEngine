@@ -31,13 +31,15 @@ public class QuestService {
     public Quest create(UUID worldId, UUID userId, String title, String description,
                         String type, UUID giverId, UUID locationId,
                         String objectives, String rewards, boolean aiGenerated) {
-        requireOwner(worldId, userId);
+        requireDm(worldId, userId);
         if (type == null || !TYPES.contains(type)) {
             throw new QuestException("QUEST_TYPE_INVALID",
                 "type must be one of " + TYPES);
         }
 
-        var quest = new Quest(worldId, title, type, objectives, rewards);
+        var quest = new Quest(worldId, title, type,
+            objectives == null || objectives.isBlank() ? "[]" : objectives,
+            rewards == null || rewards.isBlank() ? "{}" : rewards);
         if (description != null) quest.setDescription(description);
         quest.setGiverId(giverId);
         quest.setLocationId(locationId);
@@ -79,8 +81,14 @@ public class QuestService {
     @Transactional
     public void delete(UUID questId, UUID userId) {
         var quest = getById(questId, userId);
-        requireOwner(quest.getWorldId(), userId); // F1: Write-Guard
+        requireDm(quest.getWorldId(), userId); // Playtest: Authoring ist DM-only
         repo.delete(quest);
+    }
+
+    /** Playtest: Quest-Authoring (create/delete) ist DM-only;
+     *  Statuswechsel bleiben member-level (Quest spielen). */
+    private void requireDm(UUID worldId, UUID userId) {
+        worldAccess.requireDm(worldId, userId);
     }
 
     private void requireOwner(UUID worldId, UUID userId) {

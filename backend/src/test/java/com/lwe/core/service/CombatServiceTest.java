@@ -255,6 +255,119 @@ class CombatServiceTest {
     }
 
     @Test
+    void startCombatUsesEntityHp() {
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+
+        var attacker = new GameEntity(worldId, "PC", "Held");
+        attacker.setAttributesJson("{\"geschicklichkeit\":14}");
+        attacker.setHpMax(16);
+        attacker.setHpCurrent(12);
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        defender.setAttributesJson("{\"geschicklichkeit\":8}");
+        setId(defender, defenderId);
+
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        when(entityRepo.findAllById(any())).thenReturn(List.of(attacker, defender));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(sessionRepo.save(any())).thenAnswer(inv -> {
+            var s = inv.<CombatSession>getArgument(0);
+            setId(s, UUID.randomUUID());
+            return s;
+        });
+        when(participantRepo.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        combatService.startCombat(userId, worldId, List.of(attackerId, defenderId));
+
+        var captor = org.mockito.ArgumentCaptor.forClass(java.util.List.class);
+        verify(participantRepo).saveAll(captor.capture());
+        var saved = (List<CombatParticipant>) captor.getValue();
+        var held = saved.stream().filter(p -> p.getEntityId().equals(attackerId)).findFirst().orElseThrow();
+        assertThat(held.getHpMax()).isEqualTo(16);
+        assertThat(held.getHpCurrent()).isEqualTo(12);
+    }
+
+    @Test
+    void findActiveSessionReturnsLatestActive() {
+        var session = new CombatSession(worldId, null);
+        setId(session, UUID.randomUUID());
+        when(sessionRepo.findFirstByWorldIdAndStatusOrderByCreatedAtDesc(worldId, "ACTIVE"))
+            .thenReturn(Optional.of(session));
+
+        var result = combatService.findActiveSession(userId, worldId);
+
+        assertThat(result).isPresent();
+        verify(worldAccess).requireAccess(worldId, userId);
+    }
+
+    @Test
+    void findActiveSessionEmptyWhenNone() {
+        when(sessionRepo.findFirstByWorldIdAndStatusOrderByCreatedAtDesc(worldId, "ACTIVE"))
+            .thenReturn(Optional.empty());
+
+        assertThat(combatService.findActiveSession(userId, worldId)).isEmpty();
+    }
+
+    @Test
+    void attackOnDefeatedTargetIsRejected() {
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+
+        var attacker = new GameEntity(worldId, "PC", "Held");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        setId(defender, defenderId);
+
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var participant = new CombatParticipant(sessionId, attackerId, 10, 2, "A");
+        var downTarget = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
+        downTarget.setHpCurrent(0);
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(participant, downTarget)));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+
+        assertThatThrownBy(() -> combatService.executeAction(userId, sessionId, attackerId, "ACTION", defenderId, null))
+            .isInstanceOf(CombatService.CombatException.class)
+            .matches(e -> ((CombatService.CombatException) e).getErrorCode().equals("COMBAT_TARGET_DEFEATED"));
+    }
+
+    @Test
+    void defeatedActorCannotAct() {
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+
+        var attacker = new GameEntity(worldId, "PC", "Held");
+        setId(attacker, attackerId);
+
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var downActor = new CombatParticipant(sessionId, attackerId, 10, 2, "A");
+        downActor.setHpCurrent(0);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        setId(defender, defenderId);
+        var defenderParticipant = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(downActor, defenderParticipant)));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+
+        assertThatThrownBy(() -> combatService.executeAction(userId, sessionId, attackerId, "ACTION", defenderId, null))
+            .isInstanceOf(CombatService.CombatException.class)
+            .matches(e -> ((CombatService.CombatException) e).getErrorCode().equals("COMBAT_ACTOR_DEFEATED"));
+    }
+
+    @Test
     void actionTypeMatchingIsCaseInsensitive() {
         // Wizard-Systeme speichern action_types kleingeschrieben (["action"]),
         // die UI sendet "ACTION" — das muss als schädigend gelten (TDD BUG-3).

@@ -33,6 +33,13 @@ export default function EntityListPage() {
     refetch,
   } = useApiGet<EntitySummary[]>(`/worlds/${worldId}/entities`, [worldId]);
 
+  const { data: factions } = useApiGet<{ id: string; name: string }[]>(
+    `/worlds/${worldId}/factions`,
+    [worldId],
+  );
+  const factionName = (fid: string) =>
+    factions?.find((f) => f.id === fid)?.name ?? fid.slice(0, 12);
+
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'PC' | 'NPC'>('ALL');
   const [showCreate, setShowCreate] = useState(false);
@@ -176,7 +183,7 @@ export default function EntityListPage() {
                   <td className="py-2 pr-4 text-text-secondary capitalize">{e.experienceLevel}</td>
                   <td className="py-2 pr-4 text-text-secondary capitalize">{e.socialStanding}</td>
                   <td className="py-2 pr-4 text-text-secondary">
-                    {e.factionId ? e.factionId.slice(0, 12) : '—'}
+                    {e.factionId ? factionName(e.factionId) : '—'}
                   </td>
                   <td className="py-2">
                     <button
@@ -208,6 +215,7 @@ export default function EntityListPage() {
         <CharacterWizard
           worldId={worldId}
           rules={charRules}
+          campaignId={activeCampaign?.worldId === worldId ? activeCampaign.id : undefined}
           onCreated={(id) => {
             setShowWizard(false);
             refetch();

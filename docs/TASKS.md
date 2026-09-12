@@ -6,11 +6,12 @@
 
 - **P28 Engine-Bausteine** ✅ · **P29 Spielgefühl + Pakete** ✅ · **P23 Schadenstypen** ✅ (T05 optional) · **P30 Charakter-Wizard** ✅ · **P31 E2E-Ausbau** ✅
 - **P33 Backlog-Abbau & Härtung** ✅ (T33-01…11: E2E-Zustände/Schadensart, Welt-PUBLIC, Member-Quota, Fork inkl. Quests/Adventures/Choices, System-Shares, Bot-Runtime, DM-Queue Bulk+WS, Adventure-Inject, ADR-013; Final-Audit + Re-Audit ohne offene HIGH/MEDIUM)
-- **Tests:** Backend 420 (`mvn -B test`) · Frontend 169 (`npx vitest run`) · E2E 11 (`npm run test:e2e`) · ai-bot 50 · `tsc`/Build grün
+- **Tests:** Backend 432 (`mvn -B test`) · Frontend 174 (`npx vitest run`) · E2E 11 (`npm run test:e2e`) · ai-bot 50 · `tsc`/Build grün
 - **Audits:** P28, P23/P29, P30 und ein finales Gesamt-Audit — alle HIGH/MEDIUM-Findings gefixt, Rest bewusst zurückgestellt (siehe Notizen unten)
 - **P27-Status:** komplett ✅ (Shares/Welt-PUBLIC und Fork-Lücken via P33; Bot-Runtime via T33-06; Bulk/WS/E2E via T33-07/08)
 - **Offen (bewusst):** P34 ✅ abgeschlossen · P14-Rest (Editor-E2E; Inject-Choice ✅) · E2E-Backlog T32-T03 (Fork-Unabhängigkeit) · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
-- **Nächste Schritte:** DSA-Spieltest (Welt+System+Kampagne, 2 Spieler, Interaktionen, UX-Report), danach P14-Editor-E2E
+- **Nächste Schritte:** Phase-35-Backlog aus DSA-Spieltest (unten), danach P14-Editor-E2E
+- **DSA-Spieltest** ✅ (2026-09-12, Bericht `docs/PLAYTEST-DSA.md`): Welt+System+Kampagne via Frontend, 2 Charaktere, Proben/Kampf/Abenteuer/Quest/Session/Chat verifiziert; 17 Befunde sofort gefixt (TDD + live)
 
 ## Verifikation Alt-Phasen (2026-09-12)
 
@@ -2566,3 +2567,18 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **T34-03a:** Umbau + Kommentar aktualisieren. Tests: Teilerfolg (Eintrag 1 approved, Eintrag 2 `INTENT_NOT_PENDING` → Eintrag 1 bleibt approved); ungültige Action → pro-Eintrag-Fehler ohne Seiteneffekt. DM-Queue-E2E bleibt grün.
 - **Doku:** `API.md` Bulk-Semantik (Teilerfolg möglich).
 - **Status:** 📋
+
+---
+
+## Phase 35: Backlog aus DSA-Spieltest (Details s. `docs/PLAYTEST-DSA.md`)
+
+- **B1:** Talent-FW bei Charakter-Erstellung (alle FW 0) — 📋
+- **B2:** Conditions-Editor im System-Wizard (nur Erhaltung) — 📋
+- **B3:** Zauber First-Class (AsP-Abzug, Slots, Schulen) — 📋
+- **B4:** Item-Transfer/Handel Spieler↔Spieler — 📋
+- **B5:** Chat-Historie (aktuell nur live) — 📋
+- **B6:** i18n-Retrofit Welt-Komponenten — 📋
+- **B7:** HP-Neuberechnung bei Steigerung/Level-Up — 📋
+- **B8:** `createAdventure` member-offen (Entscheidung: Spieler-Agency?) — 📋
+- **B9:** LeP-Rundungsregel (15.5-Anzeige) — 📋
+- **B10:** Factions-Verlinkung aus Game View prüfen — 📋
