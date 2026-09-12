@@ -24,6 +24,7 @@ class WorldMapServiceTest {
 
     @Mock private WorldMapRepository mapRepo;
     @Mock private WorldRepository worldRepo;
+    @Mock private WorldAccess worldAccess;
 
     private WorldMapService service;
     private final UUID worldId = UUID.randomUUID();
@@ -31,7 +32,33 @@ class WorldMapServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new WorldMapService(mapRepo, worldRepo);
+        service = new WorldMapService(mapRepo, worldRepo, worldAccess);
+    }
+
+    @Test
+    void memberMayReadMap() {
+        var world = new World("Test", UUID.randomUUID(), "{}");
+        setId(world, worldId);
+        var map = new WorldMap(worldId);
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(mapRepo.findByWorldId(worldId)).thenReturn(Optional.of(map));
+
+        var result = service.getMap(worldId, userId);
+
+        assertThat(result).isNotNull();
+        verify(worldAccess).requireRead(worldId, userId);
+    }
+
+    @Test
+    void strangerDeniedMap() {
+        doThrow(new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireRead(worldId, userId);
+        var world = new World("Test", UUID.randomUUID(), "{}");
+        setId(world, worldId);
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+
+        assertThatThrownBy(() -> service.getMap(worldId, userId))
+            .isInstanceOf(WorldAccess.WorldAccessException.class);
     }
 
     @Test

@@ -14,10 +14,12 @@ public class WorldMapService {
 
     private final WorldMapRepository mapRepo;
     private final WorldRepository worldRepo;
+    private final WorldAccess worldAccess;
 
-    public WorldMapService(WorldMapRepository mapRepo, WorldRepository worldRepo) {
+    public WorldMapService(WorldMapRepository mapRepo, WorldRepository worldRepo, WorldAccess worldAccess) {
         this.mapRepo = mapRepo;
         this.worldRepo = worldRepo;
+        this.worldAccess = worldAccess;
     }
 
     public WorldMap getOrCreate(UUID worldId, UUID userId) {
@@ -37,15 +39,12 @@ public class WorldMapService {
         return mapRepo.save(map);
     }
 
-    /** F5-Audit: reiner Read fuer Owner und PUBLIC-Welten (erzeugt keine Map). */
+    /** Read für Owner, Mitglieder (außer PRIVATE) und PUBLIC-Welten (erzeugt keine Map).
+     *  Playtest #18: F5-Audit hatte Mitglieder vergessen (nur Owner/PUBLIC). */
     public WorldMap getMap(UUID worldId, UUID userId) {
-        var world = worldRepo.findById(worldId)
+        worldRepo.findById(worldId)
             .orElseThrow(() -> new WorldAccess.WorldAccessException("WORLD_NOT_FOUND", "World not found"));
-        boolean canRead = world.getOwnerId().equals(userId)
-            || "PUBLIC".equals(world.getVisibility());
-        if (!canRead) {
-            throw new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "Access denied");
-        }
+        worldAccess.requireRead(worldId, userId);
         return mapRepo.findByWorldId(worldId).orElse(null);
     }
 

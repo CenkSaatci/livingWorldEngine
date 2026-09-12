@@ -46,6 +46,8 @@ Pakete/Kampf). Politik: alles Gefundene sofort fixen, Bericht am Ende.
 | 15 | NPC-Edit überschrieb metadata (Services/Preise gingen verloren) | Merge + Dienste-/Preis-Editor; live verifiziert |
 | 16 | Diplomatie zeigte Fraktions-IDs | Namensauflösung |
 | 17 | Quest create/delete für Mitglieder offen | DM-only (Status bleibt spielbar); live 403/201; Test |
+| 18 | Karte 403 für Mitglieder (F5-Audit hatte nur Owner/PUBLIC) | `requireRead` in `WorldMapService.getMap`; 2 Tests; live 200/403 |
+| 19 | Mobile Header gequetscht (Titel-Umbruch, abgeschnittene Buttons) | responsive Kürzungen (Dashboard/GameView) + Screenshots |
 
 ## Offenes Backlog (→ TASKS Phase 35)
 
@@ -60,8 +62,19 @@ Pakete/Kampf). Politik: alles Gefundene sofort fixen, Bericht am Ende.
 - **B9:** LeP-Anzeige bruchteilig (15.5 — Rundungsregel entscheiden)
 - **B10:** Factions-Seite nicht aus Game View verlinkt (prüfen)
 
+## Responsive (390px / 1920px geprüft)
+
+- Dashboard, Charakterbogen, Quest-/Abenteuer-Panels: mobil sauber gestapelt ✓
+- Game View mobil: Karte + Regions-Overlay ok, Sidebar/Chat per Toggle; Header war
+  gequetscht → responsive gekürzt (#19) ✓
+- Desktop 1920px: 3-Spalten-Layout (Sidebar/Karte/Chat) füllt die Breite ✓
+- UI-Bauweise: React + Tailwind (Dark-Theme-Tokens), PixiJS-Karte, zustand-Stores,
+  i18n (6 Locales), ReactFlow-Abenteuereditor
+
 ## Test-Artefakte (Dev-DB)
 
-Accounts `playtest-meister/-spieler1/-spieler2@test.de` (Test123!), Welt Aventurien +
+Accounts `playtest-meister/-spieler1/-spieler2@test.de` (Test123!) werden als
+Testdaten behalten (gehören Playtest-Usern, `e2e-cleanup.sh` greift nur eigene
+„E2E“-Artefakte an). Welt Aventurien +
 Fork, Kampagne Gareth-Kampagne. Aufräumen bei Bedarf: `scripts/e2e-cleanup.sh`
 (greift nur eigene Objekte des Login-Users).

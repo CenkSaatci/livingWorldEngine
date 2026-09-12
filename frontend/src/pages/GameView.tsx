@@ -77,23 +77,23 @@ export default function GameView() {
   return (
     <div className="flex h-screen flex-col bg-bg-primary">
       {/* Top Bar */}
-      <header className="flex items-center justify-between border-b border-bg-elevated bg-bg-surface px-4 py-2">
-        <div className="flex items-center gap-3">
+      <header className="flex items-center justify-between gap-2 border-b border-bg-elevated bg-bg-surface px-2 py-2 sm:px-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <button
             onClick={() => navigate('/dashboard')}
-            className="text-sm text-accent hover:text-accent/60"
+            className="shrink-0 text-sm text-accent hover:text-accent/60"
           >
             {tc('nav.backToDashboard')}
           </button>
-          <span className="text-text-secondary">|</span>
-          <h1 className="text-lg font-heading text-text-primary">{tc('gameView.title')}</h1>
+          <span className="hidden text-text-secondary sm:inline">|</span>
+          <h1 className="truncate text-base font-heading text-text-primary sm:text-lg">{tc('gameView.title')}</h1>
           {activeCampaign && (
-            <span className="rounded-full border border-accent/40 bg-accent/10 px-3 py-0.5 text-xs text-accent">
+            <span className="hidden truncate rounded-full border border-accent/40 bg-accent/10 px-3 py-0.5 text-xs text-accent md:inline">
               {activeCampaign.name}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <button
             onClick={() => {
               i18n.changeLanguage(currentLocale === 'de' ? 'en' : 'de');
@@ -111,7 +111,7 @@ export default function GameView() {
           >
             <Swords size={16} /> {tc('gameView.combat')}
           </button>
-          <span className="text-sm text-text-secondary">{user?.username}</span>
+          <span className="hidden text-sm text-text-secondary md:inline">{user?.username}</span>
           <button
             onClick={() => {
               logout();
@@ -120,7 +120,7 @@ export default function GameView() {
             className="flex items-center gap-1 text-sm text-danger hover:text-danger/60"
             aria-label={tc('actions.logout')}
           >
-            <LogOut size={16} /> {tc('actions.logout')}
+            <LogOut size={16} /> <span className="hidden sm:inline">{tc('actions.logout')}</span>
           </button>
         </div>
       </header>

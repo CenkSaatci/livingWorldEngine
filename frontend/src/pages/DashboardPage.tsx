@@ -85,9 +85,9 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-bg-primary">
       {/* Top Bar */}
-      <header className="flex items-center justify-between border-b border-bg-elevated bg-bg-surface px-6 py-3">
-        <h1 className="text-lg font-heading text-accent">{t('app.title')}</h1>
-        <div className="flex items-center gap-4">
+      <header className="flex items-center justify-between gap-2 border-b border-bg-elevated bg-bg-surface px-3 py-3 sm:px-6">
+        <h1 className="whitespace-nowrap text-base font-heading text-accent sm:text-lg">{t('app.title')}</h1>
+        <div className="flex shrink-0 items-center gap-2 sm:gap-4">
           {/* Language Switcher */}
           <button
             onClick={() => {
@@ -117,7 +117,7 @@ export default function DashboardPage() {
             <FileText size={16} />
           </button>
 
-          <span className="text-sm text-text-secondary">{user?.username}</span>
+          <span className="hidden text-sm text-text-secondary md:inline">{user?.username}</span>
           <button
             onClick={() => {
               logout();
@@ -126,7 +126,7 @@ export default function DashboardPage() {
             className="flex items-center gap-1 text-sm text-danger hover:text-danger/80"
             aria-label={t('actions.logout')}
           >
-            <LogOut size={16} /> {t('actions.logout')}
+            <LogOut size={16} /> <span className="hidden sm:inline">{t('actions.logout')}</span>
           </button>
         </div>
       </header>
