@@ -28,8 +28,17 @@
 | `packages` | array | Pakete (P29): `name`, `kind` (species/culture/profession), `cost`, `attributeMods[]` (fest oder Choice `["MU","KK"]`/`"*"`), `autoTraits[]`, `baseValues[]` (schema-only), `recommended[]`, `restricted[]` |
 | `conditions` | array | Zustands-Katalog (P29): `name`, optional `rounds`, `effects[]` (`target`/`op`/`value`) |
 | `dice_mechanics.combat.maneuvers` | array | Kampfmanöver (P29): `name`, `apCost` (≥1), optional `attackMalus`¹, `effects[]` |
+| `dice_mechanics.combat.attack` | object | **P1** optionales Angriffswurf-Gate: `attribute` (Angreifer), `target` (Name eines **abgeleiteten Werts** des Verteidigers), optional `dice` (Default `1d20`), optional `comparison` (`gte` = Wurf ≥ Ziel, Default; `lte` = Wurf ≤ Ziel für d100/CoC). Fehlt der Zielwert, greift das Gate nicht (Fallback: direkter Schaden). |
+| `dice_mechanics.difficulties` | array | **P1** benannte Schwierigkeitsgrade: `name`, optional `multiplier` (d100, z. B. 0.5) und/oder `delta` (Verschiebung; 3W20-Schwellen bzw. d20-Zielwert). Proben übergeben `difficultyKey`; `bonusDice`/`penaltyDice` gibt es als reine API-Option (d100-Zehnerwürfe). |
+| `skills[].casting` | object | **P1** generisch: `resource` (frei, `^[a-z][a-z0-9_]{0,30}$` — z. B. `asp`, `kap`, `mp`, `slot_1`), `cost` (≥1), optional `requiresTrait`, optional `restore` (`short`\|`long`, Default `long`). Das Maximum kommt aus dem **abgeleiteten Wert gleichen Namens**; Rasten füllt die Zähler (`{resource}_current` in `metadataJson`) gemäß Rest-Config auf. |
 
 ---
+
+## 1a. Generische Mechaniken (P1)
+
+- **Angriffswurf:** über `dice_mechanics.combat.attack` konfigurierbar (siehe Tabelle); Systeme ohne diesen Block behalten das direkte Schadensmodell. `comparison` deckt Roll-High (D&D) und Roll-Under (d100) ab — keine systemspezifische Sonderlogik im Code.
+- **Schwierigkeitsgrade:** über `dice_mechanics.difficulties`; das Charakterblatt liefert sie als `difficultyLevels`, der Probenroller bietet ein Dropdown (bei Zaubern ausgeblendet).
+- **Casting-Ressourcen:** frei wählbar; Maxima sind abgeleitete Werte (z. B. `asp`, `mp`, `slot_1`). Wiederherstellung beim Rasten steuert `casting.restore` zusammen mit `recover_resources`/`recover_all`.
 
 ## 2. Probe-Typen
 

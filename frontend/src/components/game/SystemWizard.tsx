@@ -586,27 +586,29 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
               <div>
                 <label className="block text-[10px] text-text-secondary mb-1">{t('sa_casting')}</label>
                 <div className="flex items-center gap-1">
-                  <select
+                  <input
                     value={skill.casting?.resource ?? ''}
+                    placeholder={t('sa_casting_resource')}
+                    aria-label={`${skill.name} ${t('sa_casting_resource')}`}
                     onChange={(e) => {
                       const s = [...data.skills];
-                      const res = e.target.value;
+                      const res = e.target.value.trim().toLowerCase();
+                      // Audit P1: Felder bleiben erhalten, auch wenn die Ressource
+                      // gerade geleert ist (Save filtert leere Castings raus).
+                      const prev = s[i].casting;
                       s[i] = {
                         ...s[i],
-                        casting: res === '' ? undefined : {
-                          resource: res as 'asp' | 'kap',
-                          cost: s[i].casting?.cost ?? 1,
-                          ...(s[i].casting?.requiresTrait ? { requiresTrait: s[i].casting!.requiresTrait } : {}),
+                        casting: {
+                          resource: res,
+                          cost: prev?.cost ?? 1,
+                          ...(prev?.requiresTrait ? { requiresTrait: prev.requiresTrait } : {}),
+                          ...(prev?.restore ? { restore: prev.restore } : {}),
                         },
                       };
                       update('skills', s);
                     }}
-                    className="w-16 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                  >
-                    <option value="">—</option>
-                    <option value="asp">AsP</option>
-                    <option value="kap">KaP</option>
-                  </select>
+                    className="w-20 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
                   {skill.casting && (
                     <input
                       type="number" min={1}
@@ -624,20 +626,37 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   )}
                 </div>
                 {skill.casting && (
-                  <input
-                    value={skill.casting.requiresTrait ?? ''}
-                    placeholder={t('sa_casting_trait')}
-                    aria-label={`${skill.name} ${t('sa_casting_trait')}`}
-                    onChange={(e) => {
-                      const s = [...data.skills];
-                      const cur = s[i].casting;
-                      if (!cur) return;
-                      const v = e.target.value.trim();
-                      s[i] = { ...s[i], casting: v === '' ? { resource: cur.resource, cost: cur.cost } : { ...cur, requiresTrait: v } };
-                      update('skills', s);
-                    }}
-                    className="mt-1 w-28 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                  />
+                  <div className="mt-1 flex items-center gap-1">
+                    <input
+                      value={skill.casting.requiresTrait ?? ''}
+                      placeholder={t('sa_casting_trait')}
+                      aria-label={`${skill.name} ${t('sa_casting_trait')}`}
+                      onChange={(e) => {
+                        const s = [...data.skills];
+                        const cur = s[i].casting;
+                        if (!cur) return;
+                        const v = e.target.value.trim();
+                        s[i] = { ...s[i], casting: v === '' ? { resource: cur.resource, cost: cur.cost, ...(cur.restore ? { restore: cur.restore } : {}) } : { ...cur, requiresTrait: v } };
+                        update('skills', s);
+                      }}
+                      className="w-28 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    />
+                    <select
+                      value={skill.casting.restore ?? 'long'}
+                      aria-label={`${skill.name} ${t('sa_casting_restore')}`}
+                      onChange={(e) => {
+                        const s = [...data.skills];
+                        const cur = s[i].casting;
+                        if (!cur) return;
+                        s[i] = { ...s[i], casting: { ...cur, restore: e.target.value as 'short' | 'long' } };
+                        update('skills', s);
+                      }}
+                      className="w-20 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    >
+                      <option value="long">{t('sa_restore_long')}</option>
+                      <option value="short">{t('sa_restore_short')}</option>
+                    </select>
+                  </div>
                 )}
               </div>
               <button
@@ -1442,6 +1461,57 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
               </button>
             </div>
           </div>
+          <div>
+            <p className="text-xs text-text-secondary">{t('s4_difficulties_title')}</p>
+            <p className="text-[10px] text-text-secondary mb-1">{t('s4_difficulties_hint')}</p>
+            <div className="space-y-1">
+              {(data.difficulties ?? []).map((lvl, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  <input
+                    value={lvl.name}
+                    aria-label={t('s4_difficulty_name')}
+                    onChange={(e) => {
+                      const a = [...(data.difficulties ?? [])]; a[i] = { ...a[i], name: e.target.value }; update('difficulties', a);
+                    }}
+                    className="w-28 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                  <span className="text-text-secondary">×</span>
+                  <input
+                    type="number" step="0.05" min={0.01}
+                    value={lvl.multiplier ?? ''}
+                    aria-label={t('s4_difficulty_multiplier')}
+                    onChange={(e) => {
+                      const a = [...(data.difficulties ?? [])];
+                      a[i] = { ...a[i], multiplier: e.target.value === '' ? undefined : Number(e.target.value) };
+                      update('difficulties', a);
+                    }}
+                    className="w-20 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                  <span className="text-text-secondary">Δ</span>
+                  <input
+                    type="number"
+                    value={lvl.delta ?? ''}
+                    aria-label={t('s4_difficulty_delta')}
+                    onChange={(e) => {
+                      const a = [...(data.difficulties ?? [])];
+                      a[i] = { ...a[i], delta: e.target.value === '' ? undefined : Number(e.target.value) };
+                      update('difficulties', a);
+                    }}
+                    className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                  <button onClick={() => update('difficulties', (data.difficulties ?? []).filter((_, j) => j !== i))}
+                    className="text-danger hover:text-danger/80"><X size={14} /></button>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => update('difficulties', [...(data.difficulties ?? []), { name: '', multiplier: 1 }])}
+              className="mt-1 flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+            >
+              <Plus size={14} /> {t('s4_difficulty_add')}
+            </button>
+          </div>
+
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -1456,6 +1526,60 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           </div>
           {data.enableCombat && (
             <div className="space-y-3 pl-4 border-l-2 border-accent/30">
+              <div>
+                <p className="text-xs text-text-secondary">{t('s4_attack_title')}</p>
+                <p className="text-[10px] text-text-secondary mb-1">{t('s4_attack_hint')}</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    aria-label={t('s4_attack_enable')}
+                    checked={!!data.combat.attack}
+                    onChange={(e) => update('combat', {
+                      ...data.combat,
+                      attack: e.target.checked
+                        ? { attribute: data.attributes[0]?.name ?? '', target: 'ac', dice: '1d20' }
+                        : undefined,
+                    })}
+                    className="accent-accent"
+                  />
+                  {data.combat.attack && (
+                    <>
+                      <select
+                        value={data.combat.attack.attribute}
+                        aria-label={t('s4_attack_attr')}
+                        onChange={(e) => update('combat', {
+                          ...data.combat,
+                          attack: { ...data.combat.attack!, attribute: e.target.value },
+                        })}
+                        className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                      >
+                        {data.attributes.map((a) => (
+                          <option key={a.name} value={a.name}>{a.name}</option>
+                        ))}
+                      </select>
+                      <span className="text-xs text-text-secondary">{t('s4_attack_vs')}</span>
+                      <input
+                        value={data.combat.attack.target}
+                        aria-label={t('s4_attack_target')}
+                        onChange={(e) => update('combat', {
+                          ...data.combat,
+                          attack: { ...data.combat.attack!, target: e.target.value },
+                        })}
+                        className="w-20 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                      />
+                      <input
+                        value={data.combat.attack.dice ?? '1d20'}
+                        aria-label={t('s4_attack_dice')}
+                        onChange={(e) => update('combat', {
+                          ...data.combat,
+                          attack: { ...data.combat.attack!, dice: e.target.value },
+                        })}
+                        className="w-20 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs font-mono text-text-primary outline-none focus:border-accent"
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
               <CombatExpressionRow
                 label={t('s4_initiative')}
                 value={data.combat.initiative}

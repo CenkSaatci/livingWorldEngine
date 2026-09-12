@@ -35,6 +35,7 @@ class CombatServiceTest {
     private final CampaignMemberService campaignMemberService = mock();
     private final ConditionService conditionService = mock();
     private final com.lwe.core.repository.GameItemRepository itemRepo = mock();
+    private final DerivedValueService derivedValueService = mock();
 
     private CombatService combatService;
     private final UUID userId = UUID.randomUUID();
@@ -45,7 +46,8 @@ class CombatServiceTest {
         combatService = new CombatService(sessionRepo, participantRepo, entityRepo,
             worldRepo, gameSystemRepo, eventService, rollService, abilityRepo, messaging, worldAccess,
             new com.lwe.core.util.EntityAccess(entityRepo, worldAccess), List.of(new D20RuleEngine()),
-            new ObjectMapper(), rulesLoader, campaignMemberService, conditionService, itemRepo);
+            new ObjectMapper(), rulesLoader, campaignMemberService, conditionService, itemRepo,
+            derivedValueService);
     }
 
     @Test
@@ -366,6 +368,133 @@ class CombatServiceTest {
         assertThatThrownBy(() -> combatService.executeAction(userId, sessionId, attackerId, "ACTION", defenderId, null))
             .isInstanceOf(CombatService.CombatException.class)
             .matches(e -> ((CombatService.CombatException) e).getErrorCode().equals("COMBAT_ACTOR_DEFEATED"));
+    }
+
+    private Map<String, Object> attackRules() {
+        return Map.of("dice_mechanics", Map.of("combat", Map.of(
+            "initiative", "1d20", "damage", "1d8",
+            "attack", Map.of("attribute", "geschick", "target", "ac", "dice", "1d20"))));
+    }
+
+    private Map<String, Object> attackRulesLte() {
+        return Map.of("dice_mechanics", Map.of("combat", Map.of(
+            "initiative", "1d20", "damage", "1d8",
+            "attack", Map.of("attribute", "geschick", "target", "ac", "dice", "1d20", "comparison", "lte"))));
+    }
+
+    private void stubDerivedAc(double ac) {
+        when(derivedValueService.evaluate(any(), any(), any())).thenReturn(
+            List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("ac", ac, null)));
+    }
+
+    @Test
+    void attackGateMissesWhenTargetNotReached() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Held");
+        attacker.setAttributesJson("{\"geschick\":10}");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        setId(defender, defenderId);
+
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        var pa = new CombatParticipant(sessionId, attackerId, 10, 2, "A");
+        var pd = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(pa, pd)));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(attackRules());
+        stubDerivedAc(99); // unerreichbar fuer 1d20
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        var result = combatService.executeAction(userId, sessionId, attackerId, "ACTION", defenderId, null);
+
+        assertThat(result.actionType()).isEqualTo("MISS");
+        assertThat(result.totalDamage()).isZero();
+        assertThat(pd.getHpCurrent()).isEqualTo(pd.getHpMax());
+        assertThat(pa.getApCurrent()).isEqualTo(1); // Audit P1: AP wird trotzdem verbraucht
+    }
+
+    @Test
+    void attackGateHitsAndDealsDamage() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Held");
+        attacker.setAttributesJson("{\"geschick\":10}");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        setId(defender, defenderId);
+
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        var pa = new CombatParticipant(sessionId, attackerId, 10, 2, "A");
+        var pd = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(pa, pd)));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(attackRules());
+        stubDerivedAc(1); // immer treffer
+        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt(), any()))
+            .thenReturn(new RollService.RollResult("damage", "1d8", new int[]{5}, 8, 0, true, null));
+        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt()))
+            .thenReturn(new RollService.RollResult("damage", "1d8", new int[]{5}, 8, 0, true, null));
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        var result = combatService.executeAction(userId, sessionId, attackerId, "ACTION", defenderId, null);
+
+        assertThat(result.totalDamage()).isGreaterThan(0);
+        assertThat(pd.getHpCurrent()).isLessThan(pd.getHpMax());
+    }
+
+    @Test
+    void attackGateRespectsComparisonLte() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Held");
+        attacker.setAttributesJson("{\"geschick\":10}");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Kultist");
+        setId(defender, defenderId);
+
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        var pa = new CombatParticipant(sessionId, attackerId, 10, 2, "A");
+        var pd = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(pa, pd)));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(attackRulesLte());
+        stubDerivedAc(0); // lte: total <= 0 ist mit 1d20 nie erfuellt -> MISS deterministisch
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        var result = combatService.executeAction(userId, sessionId, attackerId, "ACTION", defenderId, null);
+
+        assertThat(result.actionType()).isEqualTo("MISS");
     }
 
     @Test

@@ -15,6 +15,7 @@ export interface SheetData {
   conditionals: { name: string; active: boolean; description: string }[];
   activeConditions: { name: string; rounds?: number | null }[];
   conditionCatalog: string[];
+  difficultyLevels?: { name: string; multiplier?: number | null; delta?: number | null }[];
   abilities: { name: string; type: string; apCost: number; effect: string; diceExpression: string; damageType?: string | null }[];
 }
 

@@ -69,6 +69,18 @@
     {
       "name": "ac",
       "formula": "floor((geschick-10)/2)+armor_class"
+    },
+    {
+      "name": "slot_1",
+      "formula": "4"
+    },
+    {
+      "name": "slot_2",
+      "formula": "2"
+    },
+    {
+      "name": "slot_3",
+      "formula": "2"
     }
   ],
   "skills": [
@@ -197,6 +209,45 @@
         "charisma"
       ],
       "bonus": 0
+    },
+    {
+      "name": "Feuerball",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 0,
+      "casting": {
+        "resource": "slot_3",
+        "cost": 1,
+        "restore": "long",
+        "requiresTrait": "Zauberkundig"
+      }
+    },
+    {
+      "name": "Magisches Geschoss",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 0,
+      "casting": {
+        "resource": "slot_1",
+        "cost": 1,
+        "restore": "long",
+        "requiresTrait": "Zauberkundig"
+      }
+    },
+    {
+      "name": "Schild",
+      "attributes": [
+        "intelligenz"
+      ],
+      "bonus": 0,
+      "casting": {
+        "resource": "slot_1",
+        "cost": 1,
+        "restore": "long",
+        "requiresTrait": "Zauberkundig"
+      }
     }
   ],
   "abilities": [
@@ -422,8 +473,28 @@
           "full_heal": true,
           "recover_all": true
         }
+      },
+      "attack": {
+        "attribute": "geschick",
+        "target": "ac",
+        "dice": "1d20",
+        "comparison": "gte"
       }
-    }
+    },
+    "difficulties": [
+      {
+        "name": "leicht",
+        "delta": -2
+      },
+      {
+        "name": "normal",
+        "delta": 0
+      },
+      {
+        "name": "schwer",
+        "delta": 2
+      }
+    ]
   },
   "creationBudget": {
     "ap": 27,
@@ -453,6 +524,141 @@
           "value": 1
         }
       ]
+    }
+  ],
+  "packages": [
+    {
+      "name": "Mensch",
+      "kind": "species",
+      "cost": 0,
+      "attributeMods": [
+        {
+          "choice": [
+            "staerke",
+            "geschick",
+            "konstitution",
+            "intelligenz",
+            "weisheit",
+            "charisma"
+          ],
+          "value": 1
+        }
+      ],
+      "autoTraits": [],
+      "recommended": [],
+      "restricted": []
+    },
+    {
+      "name": "Elf",
+      "kind": "species",
+      "cost": 0,
+      "attributeMods": [
+        {
+          "attr": "geschick",
+          "value": 2
+        }
+      ],
+      "autoTraits": [
+        "Dunkelsicht"
+      ],
+      "recommended": [],
+      "restricted": []
+    },
+    {
+      "name": "Zwerg",
+      "kind": "species",
+      "cost": 0,
+      "attributeMods": [
+        {
+          "attr": "konstitution",
+          "value": 2
+        }
+      ],
+      "autoTraits": [
+        "Dunkelsicht",
+        "Zäh"
+      ],
+      "recommended": [],
+      "restricted": []
+    },
+    {
+      "name": "Kämpfer",
+      "kind": "profession",
+      "cost": 0,
+      "attributeMods": [
+        {
+          "attr": "staerke",
+          "value": 1
+        }
+      ],
+      "autoTraits": [],
+      "recommended": [],
+      "restricted": []
+    },
+    {
+      "name": "Magier",
+      "kind": "profession",
+      "cost": 0,
+      "attributeMods": [
+        {
+          "attr": "intelligenz",
+          "value": 1
+        }
+      ],
+      "autoTraits": [
+        "Zauberkundig"
+      ],
+      "recommended": [],
+      "restricted": []
+    },
+    {
+      "name": "Schurke",
+      "kind": "profession",
+      "cost": 0,
+      "attributeMods": [
+        {
+          "attr": "geschick",
+          "value": 1
+        }
+      ],
+      "autoTraits": [],
+      "recommended": [],
+      "restricted": []
+    }
+  ],
+  "traits": [
+    {
+      "name": "Dunkelsicht",
+      "kind": "advantage",
+      "costs": [
+        {
+          "tier": "I",
+          "cost": 0
+        }
+      ],
+      "effects": []
+    },
+    {
+      "name": "Zäh",
+      "kind": "advantage",
+      "costs": [
+        {
+          "tier": "I",
+          "cost": 0
+        }
+      ],
+      "effects": []
+    },
+    {
+      "name": "Zauberkundig",
+      "kind": "advantage",
+      "costs": [
+        {
+          "tier": "I",
+          "cost": 0
+        }
+      ],
+      "effects": []
     }
   ]
 }

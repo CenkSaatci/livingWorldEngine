@@ -17,8 +17,22 @@ export interface SkillDef {
   bonus: number;
   costColumn?: string;
   activationCost?: number;
-  /** B3: Zauber/Liturgie — Ressource + Kosten + nötiges Merkmal. */
-  casting?: { resource: 'asp' | 'kap'; cost: number; requiresTrait?: string };
+  /** B3/P1: Zauber — freie Ressource (asp/kap/mp/slot_1/…) + Kosten + Merkmal + Restore. */
+  casting?: { resource: string; cost: number; requiresTrait?: string; restore?: 'short' | 'long' };
+}
+
+export interface CombatAttackConfig {
+  attribute: string;
+  target: string;
+  dice?: string;
+  /** gte = Wurf >= Ziel (D&D/roll-high), lte = Wurf <= Ziel (d100/CoC). */
+  comparison?: 'gte' | 'lte';
+}
+
+export interface DifficultyLevel {
+  name: string;
+  multiplier?: number;
+  delta?: number;
 }
 
 export interface DiceCombat {
@@ -30,6 +44,8 @@ export interface DiceCombat {
   criticalHit?: { threshold: number; multiplier: number };
   savingThrows?: { baseDc: number; proficiencyBonus: string };
   resting?: { shortRest: { healPercent: number; recoverResources: boolean }; longRest: { fullHeal: boolean; recoverAll: boolean } };
+  /** P1: optionales Angriffswurf-Modell (generisch, default aus). */
+  attack?: CombatAttackConfig;
 }
 
 export interface SystemFeatures {
@@ -448,6 +464,8 @@ export interface WizardData {
   magic: MagicSystem;
   psionics: PsionicsSystem;
   conditionals: ConditionalDef[];
+  /** P1: benannte Difficulty-Level (multiplier/delta), generisch. */
+  difficulties?: DifficultyLevel[];
   attributes: AttributeDef[];
   skills: SkillDef[];
   probe: string;
@@ -506,6 +524,7 @@ export function defaultWizardData(): WizardData {
     magic: { manaFormula: '', spellSlots: '', schools: '' },
     psionics: { powerPoints: '', disciplines: '' },
     conditionals: [],
+    difficulties: [],
     attributes: [],
     skills: [],
     probe: '1d20+mod',
@@ -699,6 +718,7 @@ export function toRulesJson(data: WizardData): string {
         ? '1d100'
         : '3d20';
 
+  const difficultiesFiltered = (data.difficulties ?? []).filter((d) => d.name.trim() !== '');
   const rules: Record<string, unknown> = {
     version: data.version,
     probeType: data.probeType,
@@ -743,8 +763,17 @@ export function toRulesJson(data: WizardData): string {
     psionics: data.psionics,
     conditionals: data.conditionals,
     attributes: data.attributes,
-    skills: data.skills,
-    dice_mechanics: { probe: probeExpr },
+    skills: data.skills.map((sk) => {
+      if (!sk.casting || !sk.casting.resource?.trim()) {
+        const { casting: _omit, ...rest } = sk;
+        return rest;
+      }
+      return sk;
+    }),
+    dice_mechanics: {
+      probe: probeExpr,
+      ...(difficultiesFiltered.length > 0 ? { difficulties: difficultiesFiltered } : {}),
+    },
   };
   if (data.enableCombat) {
     const combat: Record<string, unknown> = {
@@ -754,6 +783,11 @@ export function toRulesJson(data: WizardData): string {
       action_types: data.combat.actionTypes,
       actions_per_turn: data.combat.actionsPerTurn,
     };
+    if (data.combat.attack
+      && data.combat.attack.attribute?.trim()
+      && data.combat.attack.target?.trim()) {
+      combat.attack = data.combat.attack;
+    }
     if (data.combat.criticalHit) combat.critical_hit = data.combat.criticalHit;
     if (data.combat.savingThrows) {
       combat.saving_throws = {
@@ -852,6 +886,14 @@ export function fromRulesJson(json: string): WizardData | null {
           standard: combat.action_points?.standard ?? 1,
           max: combat.action_points?.max ?? 2,
         },
+        ...(combat.attack != null
+          ? { attack: {
+              attribute: (combat.attack.attribute as string) ?? '',
+              target: (combat.attack.target as string) ?? '',
+              ...(combat.attack.dice != null ? { dice: combat.attack.dice as string } : {}),
+              ...(combat.attack.comparison != null ? { comparison: combat.attack.comparison as 'gte' | 'lte' } : {}),
+            } }
+          : {}),
         actionTypes: combat.action_types ?? ['action'],
         actionsPerTurn: combat.actions_per_turn ?? { action: 1 },
         criticalHit: {
@@ -873,6 +915,13 @@ export function fromRulesJson(json: string): WizardData | null {
           },
         },
       },
+      difficulties: Array.isArray(dice.difficulties)
+        ? (dice.difficulties as Record<string, unknown>[]).map((l) => ({
+            name: (l.name as string) ?? '',
+            ...(l.multiplier != null ? { multiplier: l.multiplier as number } : {}),
+            ...(l.delta != null ? { delta: l.delta as number } : {}),
+          }))
+        : [],
       progressionType: (parsed.progressionType as WizardData['progressionType']) ?? null,
       features: {
         magic: (parsed.features as any)?.magic ?? false,

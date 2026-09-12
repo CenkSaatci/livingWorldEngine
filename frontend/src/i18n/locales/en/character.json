@@ -46,7 +46,8 @@
     "castNoResource": "Not enough AsP/KaP for this spell",
     "castNoTrait": "Required trait missing",
     "trade": "Trade",
-    "rounds": "rounds"
+    "rounds": "rounds",
+    "difficulty": "Difficulty"
   },
   "attribute": {
     "modifier": "Modifier"

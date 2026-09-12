@@ -413,9 +413,11 @@ Führt eine Probe aus. Erzeugt `PROBE_ROLLED` Event + WS-Broadcast. Mit `campaig
 
 ### `POST /api/v1/rolls/probe`
 Charakter-Probe (Per-Character-Skills, Vor-/Nachteil). `campaignId` optional im Body.
-`difficulty` (optional, Runde 1): DSA-Probenmodifikator — positiv = erschwert,
-negativ = erleichtert (Schwelle = Attribut − difficulty; Details zeigen die
-angepassten Schwellen).
+`difficulty` (optional, Runde 1): Probenmodifikator — positiv = erschwert,
+negativ = erleichtert (3W20: Schwelle = Attribut − difficulty; d20: Zielwert + difficulty).
+**P1 generisch:** `difficultyKey` (Name aus `dice_mechanics.difficulties`; d100 nutzt
+`multiplier`, sonst `delta`), `bonusDice`/`penaltyDice` (d100-Zehnerwürfe, verrechnen
+sich 1:1). Das Charakterblatt liefert die Grade als `difficultyLevels`.
 
 **Response 200:**
 ```json
@@ -434,7 +436,9 @@ angepassten Schwellen).
 Zauber/Liturgie wirken: Probe + AsP-/KaP-Abzug (Kosten aus `skills[].casting`,
 Merkmal-Pflicht via `requiresTrait`). Fehler: `CAST_NOT_CASTABLE` /
 `CAST_MISSING_TRAIT` / `CAST_INSUFFICIENT_RESOURCE` (422).
-`target` (optional, d20-Systeme, Default 10) und `difficulty` (optional, DSA, Default 0, s. Probe).
+`target` (optional, d20-Systeme, Default 10) und `difficulty` (optional, Default 0, s. Probe).
+Die Ressource ist frei (asp/kap/mp/slot_1/…); ihr Maximum ist der abgeleitete Wert
+gleichen Namens. Rasten füllt Zähler gemäß `casting.restore` (short/long) auf.
 
 ### `GET /api/v1/combat/active?worldId=` (Playtest #10)
 Aktive Kampf-Session einer Welt (Reload-/Deep-Link-Rehydrate), 204 wenn keine.
@@ -442,6 +446,10 @@ Aktive Kampf-Session einer Welt (Reload-/Deep-Link-Rehydrate), 204 wenn keine.
 ### `PATCH /api/v1/quests/{id}/status` (R2)
 Erlaubte Werte: `pending|active|completed|cancelled` (case-insensitive, wird
 auf lowercase normalisiert). Sonst `QUEST_STATUS_INVALID` (400).
+
+### Kampf-Aktion (P1)
+`POST /combat/{id}/action` liefert additiv `result: {actionType, totalDamage, apCurrent}`
+— bei verfehltem Angriffswurf `actionType: "MISS"` (kein Schaden, AP verbraucht).
 
 ### Handel (`/api/v1/trades`, B4)
 `POST /` (Angebot), `POST /{id}/counter` (Gegenangebot, schreibt aus Editor-Sicht),

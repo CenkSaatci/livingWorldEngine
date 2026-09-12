@@ -28,6 +28,7 @@ public class CombatService {
     private final com.lwe.core.util.WorldAccess worldAccess;
     private final RulesLoader rulesLoader;
     private final com.lwe.core.util.EntityAccess entityAccess;
+    private final DerivedValueService derivedValueService;
     private final CampaignMemberService campaignMemberService;
     private final Map<DiceExpressionParser.DiceSystem, RuleEngine> engines;
     private final ObjectMapper objectMapper;
@@ -50,7 +51,8 @@ public class CombatService {
                          RulesLoader rulesLoader,
                          CampaignMemberService campaignMemberService,
                          ConditionService conditionService,
-                         GameItemRepository itemRepo) {
+                         GameItemRepository itemRepo,
+                         DerivedValueService derivedValueService) {
         this.objectMapper = objectMapper;
         this.conditionService = conditionService;
         this.itemRepo = itemRepo;
@@ -65,6 +67,7 @@ public class CombatService {
         this.messaging = messaging;
         this.worldAccess = worldAccess;
         this.entityAccess = entityAccess;
+        this.derivedValueService = derivedValueService;
         this.rulesLoader = rulesLoader;
         this.campaignMemberService = campaignMemberService;
         this.engines = new EnumMap<>(DiceExpressionParser.DiceSystem.class);
@@ -174,6 +177,25 @@ public class CombatService {
             var target = findActor(participants, targetId);
             if (target.getHpCurrent() <= 0)
                 throw new CombatException("COMBAT_TARGET_DEFEATED", "Target is already defeated");
+        }
+
+        // P1: generisches Angriffswurf-Modell — nur wenn das System es konfiguriert
+        // (dice_mechanics.combat.attack). Ohne Config bleibt das Verhalten wie bisher.
+        var attackWorld = worldRepo.findById(session.getWorldId()).orElse(null);
+        var attackCfg = isDamagingAction(attackWorld, session.getCampaignId(), actionType)
+            ? resolveAttackConfig(attackWorld, session.getCampaignId())
+            : null;
+        if (attackCfg != null && targetId != null) {
+            var hit = attackHits(userId, session, actorId, targetId, attackCfg);
+            if (Boolean.FALSE.equals(hit)) {
+                deductAp(actor);
+                sendCombatMessage(session.getWorldId(), "🎯 " + entityName(actorId)
+                    + " verfehlt " + entityName(targetId));
+                eventService.publish(session.getWorldId(), session.getCampaignId(),
+                    COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
+                        "actionType", "MISS", "damage", 0));
+                return new CombatActionResult("MISS", 0, actor.getApCurrent(), false, null);
+            }
         }
 
         var damage = rollDamage(userId, session.getWorldId(), actorId, actionType, session.getCampaignId());
@@ -640,6 +662,94 @@ public class CombatService {
 
     // Bewusst: Turn-Wechsel/Lesen/Ende braucht nur Welt-Mitgliedschaft (kein Owner),
     // Aktionen zusätzlich den aktuellen Turn (validateSession). Siehe Finding F-Combat-Auth.
+    /** P1: attack-Config aus dem Regelwerk (optional, generisch). */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> resolveAttackConfig(com.lwe.core.domain.World world, UUID campaignId) {
+        if (world == null) return null;
+        var rules = rulesLoader.loadRules(campaignId, world.getId());
+        if (!(rules.get("dice_mechanics") instanceof Map<?, ?> dm)) return null;
+        if (!(dm.get("combat") instanceof Map<?, ?> combat)) return null;
+        if (!(combat.get("attack") instanceof Map<?, ?> attack)) return null;
+        if (!(attack.get("attribute") instanceof String attr) || !(attack.get("target") instanceof String target)) {
+            return null;
+        }
+        var cfg = new java.util.HashMap<String, Object>();
+        cfg.put("attribute", attr);
+        cfg.put("target", target);
+        cfg.put("dice", attack.get("dice") instanceof String d ? d : "1d20");
+        cfg.put("comparison", attack.get("comparison") instanceof String c ? c : "gte");
+        return cfg;
+    }
+
+    /** null = kein Zielwert ableitbar (dann greift das Gate nicht). */
+    private Boolean attackHits(UUID userId, CombatSession session, UUID actorId, UUID targetId,
+                               Map<String, Object> cfg) {
+        var attacker = entityRepo.findById(actorId).orElse(null);
+        var defender = entityRepo.findById(targetId).orElse(null);
+        if (attacker == null || defender == null) return null;
+        var targetValue = derivedValue(defender, session, (String) cfg.get("target"));
+        if (targetValue == null) return null;
+        var attrName = (String) cfg.get("attribute");
+        var attrValue = AttributeUtils.extractAttribute(attacker, attrName).orElse(10);
+        var world = worldRepo.findById(session.getWorldId()).orElse(null);
+        var engine = resolveEngine(world, session.getCampaignId());
+        var probe = engine.executeProbe(new RuleEngine.ProbeRequest(
+            attrName, attrValue, 0, targetValue, (String) cfg.get("dice")));
+        // P1: Vergleichsrichtung kommt aus der Config (gte = D&D, lte = d100/CoC) —
+        // damit sind Engine-Eigenheiten (Tier-Systeme) irrelevant.
+        return "lte".equals(cfg.get("comparison"))
+            ? probe.total() <= targetValue
+            : probe.total() >= targetValue;
+    }
+
+    private Integer derivedValue(GameEntity entity, CombatSession session, String name) {
+        var world = worldRepo.findById(session.getWorldId()).orElse(null);
+        if (world == null) return null;
+        var rules = rulesLoader.loadRules(session.getCampaignId(), world.getId());
+        var raw = (java.util.List<java.util.Map<String, Object>>)
+            rules.getOrDefault("derived_values", java.util.List.of());
+        var attrs = parseAttributes(entity);
+        if (attrs.isEmpty()) {
+            attrs = new java.util.HashMap<>();
+            if (rules.get("attributes") instanceof List<?> defs) {
+                for (var def : defs) {
+                    if (def instanceof Map<?, ?> m && m.get("name") instanceof String n) {
+                        attrs.put(n, m.get("default") instanceof Number num ? num.intValue() : 10);
+                    }
+                }
+            }
+        }
+        var traits = selectedTraits(entity);
+        return derivedValueService.evaluate(raw, attrs, traits).stream()
+            .filter(dv -> dv.name().equalsIgnoreCase(name))
+            .filter(dv -> dv.error() == null) // Audit P1: kaputte Formel => Gate aus
+            .map(dv -> (int) Math.round(dv.value()))
+            .findFirst().orElse(null);
+    }
+
+    private java.util.List<String> selectedTraits(GameEntity entity) {
+        if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank()) return List.of();
+        try {
+            var node = objectMapper.readTree(entity.getMetadataJson()).path("traits");
+            if (!node.isArray()) return List.of();
+            var out = new java.util.ArrayList<String>();
+            node.forEach(n -> { if (n.isTextual()) out.add(n.asText()); });
+            return out;
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    private java.util.Map<String, Integer> parseAttributes(GameEntity entity) {
+        if (entity.getAttributesJson() == null || entity.getAttributesJson().isBlank()) return java.util.Map.of();
+        try {
+            return objectMapper.readValue(entity.getAttributesJson(),
+                new com.fasterxml.jackson.core.type.TypeReference<>() {});
+        } catch (Exception e) {
+            return java.util.Map.of();
+        }
+    }
+
     private void requireWorldAccess(UUID worldId, UUID userId) {
         worldAccess.requireAccess(worldId, userId);
     }

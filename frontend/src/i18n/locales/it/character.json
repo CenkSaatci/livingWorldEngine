@@ -46,7 +46,8 @@
     "fate": "Punti fato",
     "spendFate": "Spendi un punto fato e ritira",
     "spendFateFailed": "Impossibile spendere il punto fato",
-    "armor": "Armatura"
+    "armor": "Armatura",
+    "difficulty": "Difficoltà"
   },
   "attribute": {
     "modifier": "Modifier"

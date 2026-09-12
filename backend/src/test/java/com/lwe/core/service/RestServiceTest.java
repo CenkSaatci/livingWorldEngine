@@ -25,6 +25,7 @@ class RestServiceTest {
     @Mock private GameEntityRepository entityRepo;
     @Mock private WorldAccess worldAccess;
     @Mock private RulesLoader rulesLoader;
+    @Mock private DerivedValueService derivedValueService;
 
     private RestService service;
     private final UUID worldId = UUID.randomUUID();
@@ -34,7 +35,8 @@ class RestServiceTest {
     @BeforeEach
     void setUp() {
         service = new RestService(entityRepo, worldAccess,
-            new com.lwe.core.util.EntityAccess(entityRepo, worldAccess), rulesLoader, new ObjectMapper());
+            new com.lwe.core.util.EntityAccess(entityRepo, worldAccess), rulesLoader, new ObjectMapper(),
+            derivedValueService);
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
     }
 
@@ -52,6 +54,60 @@ class RestServiceTest {
         var gs = new GameSystem("D20", 1, rulesJson.startsWith("{") ? rulesJson : "{\"version\":1,\"attributes\":[]," + rulesJson + "}", "{}");
         setId(gs, gameSystemId);
         when(rulesLoader.loadSystem(any(UUID.class))).thenReturn(gs);
+    }
+
+    private static final String CAST_REST_RULES = """
+        {"version":1,
+         "attributes":[{"name":"mut","type":"INT","min":1,"max":20,"default":10}],
+         "skills":[{"name":"Odem","attributes":["mut"],"bonus":0,
+                    "casting":{"resource":"slp","cost":1,"restore":"long"}}],
+         "derived_values":[{"name":"slp","formula":"3"}],
+         "dice_mechanics":{"probe":"1d20","combat":{
+           "initiative":"1d20","damage":"1d8",
+           "resting":{"long_rest":{"full_heal":true,"recover_all":true}}}}}
+        """;
+
+    private static final String SHORT_CAST_RULES = """
+        {"version":1,
+         "attributes":[{"name":"mut","type":"INT","min":1,"max":20,"default":10}],
+         "skills":[{"name":"Fokus","attributes":["mut"],"bonus":0,
+                    "casting":{"resource":"fokus","cost":1,"restore":"short"}}],
+         "derived_values":[{"name":"fokus","formula":"2"}],
+         "dice_mechanics":{"probe":"1d20","combat":{
+           "initiative":"1d20","damage":"1d8",
+           "resting":{"short_rest":{"recover_resources":true}}}}}
+        """;
+
+    @Test
+    void shortRestRestoresShortResourcesOnly() {
+        var entity = entityWithHp(5, 10, 0, 2);
+        entity.setAttributesJson("{\"mut\":10}");
+        entity.setMetadataJson("{\"fokus_current\":0}");
+        stubSystem(SHORT_CAST_RULES);
+        when(derivedValueService.evaluate(any(), any(), any())).thenReturn(
+            List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("fokus", 2.0, null)));
+        when(entityRepo.findById(entity.getId())).thenReturn(Optional.of(entity));
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.shortRest(entity.getId(), userId);
+
+        assertThat(entity.getMetadataJson()).contains("\"fokus_current\":2");
+    }
+
+    @Test
+    void longRestRestoresCastResourcesGenerically() {
+        var entity = entityWithHp(5, 10, 0, 2);
+        entity.setAttributesJson("{\"mut\":10}");
+        entity.setMetadataJson("{\"slp_current\":0}");
+        stubSystem(CAST_REST_RULES);
+        when(derivedValueService.evaluate(any(), any(), any())).thenReturn(
+            List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("slp", 3.0, null)));
+        when(entityRepo.findById(entity.getId())).thenReturn(Optional.of(entity));
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.longRest(entity.getId(), userId);
+
+        assertThat(entity.getMetadataJson()).contains("\"slp_current\":3");
     }
 
     @Test

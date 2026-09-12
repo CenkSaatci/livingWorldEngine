@@ -46,7 +46,8 @@
     "fate": "Kader puanları",
     "spendFate": "Kader puanı harca ve yeniden at",
     "spendFateFailed": "Kader puanı harcanamadı",
-    "armor": "Zırh"
+    "armor": "Zırh",
+    "difficulty": "Zorluk"
   },
   "attribute": {
     "modifier": "Modifier"

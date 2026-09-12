@@ -64,6 +64,14 @@ class ProbeServiceTest {
         return e;
     }
 
+    private static final String D100_RULES = """
+        {"version":1,"probeType":"d100_threshold",
+         "attributes":[{"name":"staerke","type":"INT","min":1,"max":99,"default":50}],
+         "skills":[{"name":"Schiessen","attributes":["staerke"],"bonus":0}],
+         "dice_mechanics":{"probe":"1d100","difficulties":[
+           {"name":"hard","multiplier":0.001},{"name":"trivial","multiplier":1000}]}}
+        """;
+
     private static final String D20_CAST_RULES = """
         {"version":1,"probeType":"d20_target",
          "attributes":[{"name":"staerke","type":"INT","min":1,"max":20,"default":10}],
@@ -100,6 +108,77 @@ class ProbeServiceTest {
         // Schwellen: klugheit 14-2=12, intuition 13-2=11, charisma default 10-2=8
         assertThat(result.details()).extracting(com.lwe.api.dto.ProbeResponse.DieDetail::attrValue)
             .containsExactly(12, 11, 8);
+    }
+
+    @Test
+    void d100DifficultyMultiplierApplies() throws Exception {
+        var entity = entityWithAttrs("{\"staerke\":50}");
+        entity.setSkillsJson("{\"Schiessen\":50}");
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        lenient().when(rulesLoader.loadRules(any(), eq(worldId))).thenAnswer(inv ->
+            objectMapper.readValue(D100_RULES, Map.class));
+
+        var hard = service.executeProbe(entityId, userId, "Schiessen", 0, false, campaignId(),
+            new ProbeService.ProbeOptions(0, "hard", 0, 0));
+        var trivial = service.executeProbe(entityId, userId, "Schiessen", 0, false, campaignId(),
+            new ProbeService.ProbeOptions(0, "trivial", 0, 0));
+
+        assertThat(hard.success()).isFalse();
+        assertThat(trivial.success()).isTrue();
+    }
+
+    @Test
+    void d20DifficultyDeltaShiftsTarget() throws Exception {
+        var entity = entityWithAttrs("{\"staerke\":10}");
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        lenient().when(rulesLoader.loadRules(any(), eq(worldId))).thenAnswer(inv ->
+            objectMapper.readValue(D20_RULES, Map.class));
+
+        // target 0 + Delta +100 => 1d20+0 reicht nie; Delta -100 => reicht immer.
+        var impossible = service.executeProbe(entityId, userId, "Athletik", 0, false, campaignId(), 100);
+        var trivial = service.executeProbe(entityId, userId, "Athletik", 0, false, campaignId(), -100);
+
+        assertThat(impossible.success()).isFalse();
+        assertThat(trivial.success()).isTrue();
+    }
+
+    @Test
+    void d100BonusAndPenaltyCancelOut() throws Exception {
+        var entity = entityWithAttrs("{\"staerke\":50}");
+        entity.setSkillsJson("{\"Schiessen\":50}");
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        lenient().when(rulesLoader.loadRules(any(), eq(worldId))).thenAnswer(inv ->
+            objectMapper.readValue(D100_RULES, Map.class));
+
+        var result = service.executeProbe(entityId, userId, "Schiessen", 0, false, campaignId(),
+            new ProbeService.ProbeOptions(0, null, 1, 1));
+
+        assertThat(result.dice()).hasSize(2); // kein Netto-Extra => nur 1 Zehnerwurf
+    }
+
+    @Test
+    void d100BonusDiceRollExtraTens() throws Exception {
+        var entity = entityWithAttrs("{\"staerke\":50}");
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        lenient().when(rulesLoader.loadRules(any(), eq(worldId))).thenAnswer(inv ->
+            objectMapper.readValue(D100_RULES, Map.class));
+
+        var result = service.executeProbe(entityId, userId, "Schiessen", 0, false, campaignId(),
+            new ProbeService.ProbeOptions(0, null, 1, 0));
+
+        assertThat(result.dice()).hasSize(3); // 1 Einer + 2 Zehner (Grund + Bonus)
     }
 
     @Test

@@ -46,7 +46,8 @@
     "castNoResource": "Nicht genug AsP/KaP für diesen Zauber",
     "castNoTrait": "Erforderliches Merkmal fehlt",
     "trade": "Handeln",
-    "rounds": "Runden"
+    "rounds": "Runden",
+    "difficulty": "Schwierigkeit"
   },
   "attribute": {
     "modifier": "Modifikator"

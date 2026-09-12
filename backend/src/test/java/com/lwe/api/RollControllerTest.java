@@ -40,23 +40,27 @@ class RollControllerTest {
     @Test
     void probePassesDifficultyToService() {
         when(probeService.executeProbe(eq(entityId), eq(userId), eq("Klettern"), eq(10), eq(false),
-            eq(campaignId), eq(2))).thenReturn(response());
+            eq(campaignId), any(ProbeService.ProbeOptions.class))).thenReturn(response());
 
         var res = controller.probe(
-            new RollController.ProbeRequest(entityId, "Klettern", 10, false, campaignId, 2), user());
+            new RollController.ProbeRequest(entityId, "Klettern", 10, false, campaignId, 2, "hard", 1, 0), user());
 
         assertThat(res.getStatusCode().is2xxSuccessful()).isTrue();
-        verify(probeService).executeProbe(entityId, userId, "Klettern", 10, false, campaignId, 2);
+        verify(probeService).executeProbe(eq(entityId), eq(userId), eq("Klettern"), eq(10), eq(false),
+            eq(campaignId), argThat(o -> o.difficulty() == 2 && "hard".equals(o.difficultyKey())
+                && o.bonusDice() == 1 && o.penaltyDice() == 0));
     }
 
     @Test
     void probeDefaultsDifficultyToZero() {
-        when(probeService.executeProbe(any(), any(), any(), anyInt(), anyBoolean(), any(), eq(0)))
-            .thenReturn(response());
+        when(probeService.executeProbe(any(), any(), any(), anyInt(), anyBoolean(), any(),
+            any(ProbeService.ProbeOptions.class))).thenReturn(response());
 
-        controller.probe(new RollController.ProbeRequest(entityId, "Klettern", 10, false, campaignId, null), user());
+        controller.probe(new RollController.ProbeRequest(entityId, "Klettern", 10, false, campaignId, null, null, null, null), user());
 
-        verify(probeService).executeProbe(entityId, userId, "Klettern", 10, false, campaignId, 0);
+        verify(probeService).executeProbe(eq(entityId), eq(userId), eq("Klettern"), eq(10), eq(false),
+            eq(campaignId), argThat(o -> o.difficulty() == 0 && o.difficultyKey() == null
+                && o.bonusDice() == 0 && o.penaltyDice() == 0));
     }
 
     @Test

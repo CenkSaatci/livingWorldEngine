@@ -16,12 +16,14 @@ public record SheetResponse(
     List<ConditionalInfo> conditionals,
     List<AbilityInfo> abilities,
     List<ConditionInfo> activeConditions,
-    List<String> conditionCatalog
+    List<String> conditionCatalog,
+    List<DifficultyInfo> difficultyLevels
 ) {
     public record EntityInfo(String id, String name, String entityType) {}
     public record AttributeInfo(String name, int value, double modifier, int min, int max) {}
     public record DerivedValueInfo(String name, double value, String error) {}
     public record CastingInfo(String resource, int cost, String requiresTrait) {}
+    public record DifficultyInfo(String name, Double multiplier, Integer delta) {}
 
     public record SkillInfo(String name, int total, Integer perCharacterValue, Integer advanceCost,
                             CastingInfo casting) {}

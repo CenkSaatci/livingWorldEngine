@@ -46,7 +46,8 @@
     "fate": "Puntos de destino",
     "spendFate": "Gastar un punto de destino y repetir la tirada",
     "spendFateFailed": "No se pudo gastar el punto de destino",
-    "armor": "Armadura"
+    "armor": "Armadura",
+    "difficulty": "Dificultad"
   },
   "attribute": {
     "modifier": "Modifier"

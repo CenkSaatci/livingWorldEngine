@@ -48,7 +48,11 @@ public class RollController {
         var result = probeService.executeProbe(
             req.entityId(), user.getId(), req.skillName(),
             req.target(), req.advantage(), req.campaignId(),
-            req.difficulty() != null ? req.difficulty() : 0);
+            new ProbeService.ProbeOptions(
+                req.difficulty() != null ? req.difficulty() : 0,
+                req.difficultyKey(),
+                req.bonusDice() != null ? req.bonusDice() : 0,
+                req.penaltyDice() != null ? req.penaltyDice() : 0));
         return ResponseEntity.ok(result);
     }
 
@@ -76,7 +80,10 @@ public class RollController {
         int target,
         boolean advantage,
         UUID campaignId,
-        Integer difficulty
+        Integer difficulty,
+        String difficultyKey,
+        Integer bonusDice,
+        Integer penaltyDice
     ) {}
 
     public record CastRequest(

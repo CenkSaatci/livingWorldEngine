@@ -250,6 +250,7 @@ export function CharacterSheet({ entityId }: Props) {
             <SkillRow key={skill.name} skill={skill} entityId={entityId}
               skillOverrides={skillOverrides} setSkillOverrides={setSkillOverrides}
               onSaved={refetch}
+              difficultyLevels={data.difficultyLevels}
               fateAvailable={(data.fatePoints ?? 0) > 0}
               onSpendFate={async () => {
                 const campaignId = useCampaignStore.getState().activeCampaignId;
@@ -315,12 +316,13 @@ export function CharacterSheet({ entityId }: Props) {
   );
 }
 
-function SkillRow({ skill, entityId, skillOverrides, setSkillOverrides, onSaved, fateAvailable, onSpendFate }: {
+function SkillRow({ skill, entityId, skillOverrides, setSkillOverrides, onSaved, fateAvailable, onSpendFate, difficultyLevels }: {
   skill: SheetData['skills'][0]; entityId: string;
   skillOverrides: Record<string, number>; setSkillOverrides: (v: Record<string, number>) => void;
   onSaved: () => void;
   fateAvailable?: boolean;
   onSpendFate?: () => Promise<void>;
+  difficultyLevels?: SheetData['difficultyLevels'];
 }) {
   const toast = useToast();
   const { t } = useTranslation('character');
@@ -378,6 +380,7 @@ function SkillRow({ skill, entityId, skillOverrides, setSkillOverrides, onSaved,
         )}
         <ProbeRoller entityId={entityId} skillName={skill.name} skillTotal={skill.total}
           casting={skill.casting}
+          difficultyLevels={difficultyLevels}
           fateAvailable={fateAvailable} onSpendFate={onSpendFate} />
       </div>
     </div>

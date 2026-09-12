@@ -38,12 +38,12 @@ public class CombatController {
     public ResponseEntity<CombatSessionWithParticipants> action(@PathVariable UUID sessionId,
                                                                   @Valid @RequestBody ActionRequest req,
                                                                   @AuthenticationPrincipal User user) {
-        combatService.executeAction(user.getId(), sessionId,
+        var result = combatService.executeAction(user.getId(), sessionId,
             req.actorId(), req.actionType(), req.targetId(), req.itemId());
         var session = combatService.getSession(user.getId(), sessionId);
         var participants = combatService.getParticipants(sessionId);
         return ResponseEntity.ok(new CombatSessionWithParticipants(
-            CombatSessionResponse.from(session), participants));
+            CombatSessionResponse.from(session), participants, ActionResultResponse.from(result)));
     }
 
     @PostMapping("/{sessionId}/maneuver")
@@ -134,5 +134,18 @@ public class CombatController {
                                               int apRemaining, boolean success) {}
 
     public record CombatSessionWithParticipants(CombatSessionResponse session,
-                                                  List<ParticipantResponse> participants) {}
+                                                  List<ParticipantResponse> participants,
+                                                  ActionResultResponse result) {
+        public CombatSessionWithParticipants(CombatSessionResponse session,
+                                             List<ParticipantResponse> participants) {
+            this(session, participants, null);
+        }
+    }
+
+    /** P1: additiv — UI kann Treffer/Fehlschlag unterscheiden (MISS-Feedback). */
+    public record ActionResultResponse(String actionType, int totalDamage, int apCurrent) {
+        static ActionResultResponse from(CombatService.CombatActionResult r) {
+            return r == null ? null : new ActionResultResponse(r.actionType(), r.totalDamage(), r.apRemaining());
+        }
+    }
 }

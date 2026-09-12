@@ -83,6 +83,14 @@
     {
       "name": "move",
       "formula": "8"
+    },
+    {
+      "name": "mp",
+      "formula": "willenskraft/5"
+    },
+    {
+      "name": "verteidigung",
+      "formula": "50"
     }
   ],
   "skills": [
@@ -428,6 +436,30 @@
         "intelligenz"
       ],
       "bonus": 1
+    },
+    {
+      "name": "Zauber (Bann)",
+      "attributes": [
+        "willenskraft"
+      ],
+      "bonus": 0,
+      "casting": {
+        "resource": "mp",
+        "cost": 1,
+        "restore": "long"
+      }
+    },
+    {
+      "name": "Zauber (Kontakt)",
+      "attributes": [
+        "willenskraft"
+      ],
+      "bonus": 0,
+      "casting": {
+        "resource": "mp",
+        "cost": 1,
+        "restore": "long"
+      }
     }
   ],
   "abilities": [
@@ -512,8 +544,28 @@
       "action_points": {
         "standard": 1,
         "max": 1
+      },
+      "attack": {
+        "attribute": "geschick",
+        "target": "verteidigung",
+        "dice": "1d100",
+        "comparison": "lte"
       }
-    }
+    },
+    "difficulties": [
+      {
+        "name": "regular",
+        "multiplier": 1
+      },
+      {
+        "name": "hard",
+        "multiplier": 0.5
+      },
+      {
+        "name": "extreme",
+        "multiplier": 0.2
+      }
+    ]
   },
   "creationBudget": {
     "ap": 0,
@@ -531,6 +583,88 @@
           "value": -2
         }
       ]
+    }
+  ],
+  "packages": [
+    {
+      "name": "Detektiv",
+      "kind": "profession",
+      "cost": 0,
+      "attributeMods": [
+        {
+          "attr": "intelligenz",
+          "value": 1
+        }
+      ],
+      "autoTraits": [],
+      "recommended": [],
+      "restricted": []
+    },
+    {
+      "name": "Arzt",
+      "kind": "profession",
+      "cost": 0,
+      "attributeMods": [
+        {
+          "attr": "bildung",
+          "value": 1
+        }
+      ],
+      "autoTraits": [],
+      "recommended": [],
+      "restricted": []
+    },
+    {
+      "name": "Professor",
+      "kind": "profession",
+      "cost": 0,
+      "attributeMods": [
+        {
+          "attr": "bildung",
+          "value": 2
+        }
+      ],
+      "autoTraits": [],
+      "recommended": [],
+      "restricted": []
+    },
+    {
+      "name": "Journalist",
+      "kind": "profession",
+      "cost": 0,
+      "attributeMods": [
+        {
+          "attr": "aussehen",
+          "value": 1
+        }
+      ],
+      "autoTraits": [],
+      "recommended": [],
+      "restricted": []
+    }
+  ],
+  "traits": [
+    {
+      "name": "Eiserner Wille",
+      "kind": "advantage",
+      "costs": [
+        {
+          "tier": "I",
+          "cost": 0
+        }
+      ],
+      "effects": []
+    },
+    {
+      "name": "Nervenschwäche",
+      "kind": "disadvantage",
+      "costs": [
+        {
+          "tier": "I",
+          "cost": 0
+        }
+      ],
+      "effects": []
     }
   ]
 }

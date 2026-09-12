@@ -68,6 +68,22 @@ public class ProbeService {
     public ProbeResponse executeProbe(UUID entityId, UUID userId, String skillName,
                                        int target, boolean advantage, UUID campaignId,
                                        int difficulty) {
+        return executeProbe(entityId, userId, skillName, target, advantage, campaignId,
+            new ProbeOptions(difficulty, null, 0, 0));
+    }
+
+    /**
+     * Generische Proben-Optionen (P1): Difficulty-Level aus dem Regelwerk
+     * ({@code dice_mechanics.difficulties}) plus Bonus-/Penalty-Würfel (d100).
+     */
+    public record ProbeOptions(int difficulty, String difficultyKey, int bonusDice, int penaltyDice) {
+        public static ProbeOptions none() { return new ProbeOptions(0, null, 0, 0); }
+    }
+
+    public ProbeResponse executeProbe(UUID entityId, UUID userId, String skillName,
+                                       int target, boolean advantage, UUID campaignId,
+                                       ProbeOptions options) {
+        var opts = options == null ? ProbeOptions.none() : options;
         var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new RuntimeException("ENTITY_NOT_FOUND"));
         worldAccess.requireAccess(entity.getWorldId(), userId);
@@ -75,6 +91,8 @@ public class ProbeService {
         var world = worldRepo.findById(entity.getWorldId())
             .orElseThrow(() -> new RuntimeException("WORLD_NOT_FOUND"));
         var rules = rulesLoader.loadRules(campaignId, entity.getWorldId());
+        var diff = resolveDifficulty(rules, opts);
+        var difficulty = diff.delta();
         var probeType = resolveProbeType(rules);
         var attributes = parseAttributes(entity);
         var allowed = attributes.keySet();
@@ -116,12 +134,38 @@ public class ProbeService {
 
         switch (probeType) {
             case "d100_threshold": {
-                var die = rng.nextInt(1, 101);
-                dice = new int[]{die};
+                var baseSkill = skillBonus + conditionMalus + skillAttrs.stream()
+                    .mapToInt(a -> (int) Math.round(modifiers.getOrDefault(a, 0.0))).sum();
+                // P1: Difficulty-Multiplier (z.B. CoC hard 0.5) + Bonus-/Penalty-Würfel.
+                var effective = (int) Math.round(baseSkill * diff.multiplier()) + difficulty;
+                // Audit P1: Bonus/Penalty 1:1 verrechnen (Netto-Extras).
+                var net = Math.max(opts.bonusDice(), 0) - Math.max(opts.penaltyDice(), 0);
+                var extra = Math.min(2, Math.abs(net));
+                var tensCount = extra + 1;
+                var units = rng.nextInt(0, 10);
+                var tens = new int[tensCount];
+                for (int i = 0; i < tensCount; i++) {
+                    tens[i] = rng.nextInt(0, 10);
+                }
+                // Audit P1: Kandidaten als Gesamtwerte vergleichen (00+0 = 100),
+                // sonst kann ein Bonuswuerfel das Ergebnis verschlechtern.
+                var candidates = Arrays.stream(tens)
+                    .map(t -> { var v = t * 10 + units; return v == 0 ? 100 : v; })
+                    .toArray();
+                int die;
+                if (net > 0) {
+                    die = Arrays.stream(candidates).min().orElse(100); // Bonus: bester Wert
+                } else if (net < 0) {
+                    die = Arrays.stream(candidates).max().orElse(100); // Penalty: schlechtester
+                } else {
+                    die = candidates[0];
+                }
+                dice = new int[tensCount + 1];
+                dice[0] = units;
+                for (int i = 0; i < tensCount; i++) dice[i + 1] = tens[i];
                 total = die;
-                modifierTotal = 0;
-                success = die <= (skillBonus + conditionMalus + skillAttrs.stream()
-                    .mapToInt(a -> (int) Math.round(modifiers.getOrDefault(a, 0.0))).sum());
+                modifierTotal = effective - baseSkill;
+                success = die <= effective;
                 break;
             }
             case "d20_3attr": {
@@ -152,7 +196,8 @@ public class ProbeService {
                     .mapToDouble(a -> modifiers.getOrDefault(a, 0.0)).sum();
                 modifierTotal = (int) Math.round(attrMod) + skillBonus + conditionMalus;
                 total = die + modifierTotal;
-                success = total >= target;
+                // Audit P1: Difficulty-Delta verschiebt d20-Zielwerte (DC +/-), nicht doppelt.
+                success = total >= target + difficulty;
                 break;
             }
         }
@@ -162,6 +207,28 @@ public class ProbeService {
         activeConditionals = conditionEvaluator.evaluate(conditionals, attributes);
 
         return new ProbeResponse(probeType, dice, modifierTotal, total, success, details, activeConditionals);
+    }
+
+    /** Difficulty-Level generisch: multiplier (d100) + delta (alle Systeme). */
+    private record Difficulty(double multiplier, int delta) {}
+
+    @SuppressWarnings("unchecked")
+    private Difficulty resolveDifficulty(Map<String, Object> rules, ProbeOptions opts) {
+        double multiplier = 1.0;
+        int delta = opts.difficulty();
+        if (opts.difficultyKey() != null && !opts.difficultyKey().isBlank()) {
+            if (rules.get("dice_mechanics") instanceof Map<?, ?> dm
+                && dm.get("difficulties") instanceof List<?> levels) {
+                for (var lvl : levels) {
+                    if (lvl instanceof Map<?, ?> m && opts.difficultyKey().equals(m.get("name"))) {
+                        if (m.get("multiplier") instanceof Number n) multiplier = n.doubleValue();
+                        if (m.get("delta") instanceof Number n) delta += n.intValue();
+                        break;
+                    }
+                }
+            }
+        }
+        return new Difficulty(multiplier, delta);
     }
 
     private String resolveProbeType(Map<String, Object> rules) {
@@ -219,8 +286,10 @@ public class ProbeService {
         var casting = (Map<String, Object>) skill.get("casting");
         if (casting == null)
             throw new CastException("CAST_NOT_CASTABLE", "Skill is not castable");
+        // P1: Ressourcen sind generisch (asp/kap/mp/slot_1/…); max kommt aus
+        // dem abgeleiteten Wert gleichen Namens, sonst ist der Zauber nicht nutzbar.
         var resource = (String) casting.getOrDefault("resource", "asp");
-        if (!("asp".equals(resource) || "kap".equals(resource)))
+        if (resource == null || !resource.matches("[a-z][a-z0-9_]{0,30}"))
             throw new CastException("CAST_NOT_CASTABLE", "Unknown cast resource");
         var cost = ((Number) casting.getOrDefault("cost", 0)).intValue();
         if (cost < 1)

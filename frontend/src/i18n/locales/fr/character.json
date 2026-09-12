@@ -46,7 +46,8 @@
     "fate": "Points de destin",
     "spendFate": "Dépenser un point de destin et relancer",
     "spendFateFailed": "Impossible de dépenser le point de destin",
-    "armor": "Armure"
+    "armor": "Armure",
+    "difficulty": "Difficulté"
   },
   "attribute": {
     "modifier": "Modifier"

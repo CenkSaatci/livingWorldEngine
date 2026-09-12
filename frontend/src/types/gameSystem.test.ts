@@ -410,6 +410,32 @@ describe('conditions roundtrip (Playtest-Befund #2)', () => {
   });
 });
 
+describe('P1 generische Regel-Felder', () => {
+  it('attack, difficulties und casting.restore überleben den Roundtrip', () => {
+    const raw = JSON.stringify({
+      version: 1,
+      attributes: [{ name: 'geschick', type: 'INT', min: 1, max: 20, default: 10 }],
+      skills: [{ name: 'Feuerball', attributes: ['geschick'], bonus: 0, casting: { resource: 'slot_1', cost: 1, restore: 'long' } }],
+      derived_values: [{ name: 'ac', formula: '10+geschick' }, { name: 'slot_1', formula: '2' }],
+      probeType: 'd20_target',
+      dice_mechanics: {
+        probe: '1d20+mod',
+        difficulties: [{ name: 'hard', multiplier: 0.5 }, { name: 'erschwert', delta: 2 }],
+        combat: { initiative: '1d20+geschick', damage: '1d8', attack: { attribute: 'geschick', target: 'ac', dice: '1d20' } },
+      },
+    });
+    const data = fromRulesJson(raw)!;
+    expect(data.difficulties).toEqual([{ name: 'hard', multiplier: 0.5 }, { name: 'erschwert', delta: 2 }]);
+    expect(data.combat.attack).toEqual({ attribute: 'geschick', target: 'ac', dice: '1d20' });
+    expect(data.skills[0].casting).toEqual({ resource: 'slot_1', cost: 1, restore: 'long' });
+
+    const out = JSON.parse(toRulesJson(data));
+    expect(out.dice_mechanics.difficulties).toHaveLength(2);
+    expect(out.dice_mechanics.combat.attack).toEqual({ attribute: 'geschick', target: 'ac', dice: '1d20' });
+    expect(out.skills[0].casting.resource).toBe('slot_1');
+  });
+});
+
 describe('casting roundtrip (R3)', () => {
   it('erhält casting-Definitionen über from/toRulesJson', () => {
     const raw = JSON.stringify({

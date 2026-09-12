@@ -12,6 +12,7 @@ interface Props {
   fateAvailable?: boolean;
   onSpendFate?: () => Promise<void>;
   casting?: { resource: string; cost: number; requiresTrait?: string } | null;
+  difficultyLevels?: { name: string; multiplier?: number | null; delta?: number | null }[];
 }
 
 interface CastResult {
@@ -32,7 +33,7 @@ interface ProbeResult {
   activeConditionals: { name: string; bonus: string; target: string }[];
 }
 
-export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, casting }: Props) {
+export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, casting, difficultyLevels }: Props) {
   const { t } = useTranslation('character');
   const toast = useToast();
   const [result, setResult] = useState<ProbeResult | null>(null);
@@ -41,6 +42,7 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, c
   const [showDetails, setShowDetails] = useState(false);
   const [failed, setFailed] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [difficultyKey, setDifficultyKey] = useState('');
   const activeCampaignId = useCampaignStore((s) => s.activeCampaignId);
 
   const handleRoll = async () => {
@@ -63,6 +65,7 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, c
           target: 10,
           advantage: false,
           campaignId: activeCampaignId ?? undefined,
+          ...(difficultyKey ? { difficultyKey } : {}),
         });
         setResult(res.data);
       }
@@ -86,6 +89,20 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, c
 
   return (
     <div className="flex items-center gap-1">
+      {(difficultyLevels?.length ?? 0) > 0 && !casting && (
+        <select
+          value={difficultyKey}
+          onChange={(e) => setDifficultyKey(e.target.value)}
+          aria-label={t('sheet.difficulty')}
+          title={t('sheet.difficulty')!}
+          className="rounded border border-bg-elevated bg-bg-primary px-1 py-0.5 text-[10px] text-text-secondary outline-none focus:border-accent"
+        >
+          <option value="">{t('sheet.difficulty')}</option>
+          {difficultyLevels!.map((l) => (
+            <option key={l.name} value={l.name}>{l.name}</option>
+          ))}
+        </select>
+      )}
       {casting && (
         <span
           className="rounded bg-accent/10 px-1 text-[10px] text-accent"

@@ -189,7 +189,7 @@ public class CharacterSheetService {
             new SheetResponse.EntityInfo(entity.getId().toString(), entity.getName(), entity.getEntityType()),
             entity.getExperiencePoints(), level, fateCurrent, fateMax, damageArmor(entity),
             attributes, derivedValues, skills, conditionals, abilities,
-            activeConditions, conditionCatalog
+            activeConditions, conditionCatalog, difficultyLevels(rules)
         );
     }
 
@@ -364,6 +364,23 @@ public class CharacterSheetService {
         } catch (Exception e) {
             return Map.of();
         }
+    }
+
+    /** P1: benannte Difficulty-Level aus dem Regelwerk (generisch). */
+    @SuppressWarnings("unchecked")
+    private List<SheetResponse.DifficultyInfo> difficultyLevels(Map<String, Object> rules) {
+        if (!(rules.get("dice_mechanics") instanceof Map<?, ?> dm)) return List.of();
+        if (!(dm.get("difficulties") instanceof List<?> levels)) return List.of();
+        return levels.stream()
+            .filter(l -> l instanceof Map<?, ?> m && m.get("name") instanceof String)
+            .map(l -> {
+                var m = (Map<String, Object>) l;
+                var name = (String) m.get("name");
+                Double mult = m.get("multiplier") instanceof Number n ? n.doubleValue() : null;
+                Integer delta = m.get("delta") instanceof Number n ? n.intValue() : null;
+                return new SheetResponse.DifficultyInfo(name, mult, delta);
+            })
+            .toList();
     }
 
     /** R3: casting aus rulesJson typisiert uebernehmen. */

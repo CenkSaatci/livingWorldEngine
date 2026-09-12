@@ -6,7 +6,7 @@
 
 - **P28 Engine-Bausteine** ✅ · **P29 Spielgefühl + Pakete** ✅ · **P23 Schadenstypen** ✅ (T05 optional) · **P30 Charakter-Wizard** ✅ · **P31 E2E-Ausbau** ✅
 - **P33 Backlog-Abbau & Härtung** ✅ (T33-01…11: E2E-Zustände/Schadensart, Welt-PUBLIC, Member-Quota, Fork inkl. Quests/Adventures/Choices, System-Shares, Bot-Runtime, DM-Queue Bulk+WS, Adventure-Inject, ADR-013; Final-Audit + Re-Audit ohne offene HIGH/MEDIUM)
-- **Tests:** Backend 476 (`mvn -B test`) · Frontend 185 (`npx vitest run`) · E2E 11 (`npm run test:e2e`) · ai-bot 50 · `tsc`/Build grün
+- **Tests:** Backend 486 (`mvn -B test`) · Frontend 186 (`npx vitest run`) · E2E 11 (`npm run test:e2e`) · ai-bot 50 · `tsc`/Build grün
 - **Audits:** P28, P23/P29, P30 und ein finales Gesamt-Audit — alle HIGH/MEDIUM-Findings gefixt, Rest bewusst zurückgestellt (siehe Notizen unten)
 - **P27-Status:** komplett ✅ (Shares/Welt-PUBLIC und Fork-Lücken via P33; Bot-Runtime via T33-06; Bulk/WS/E2E via T33-07/08)
 - **Offen (bewusst):** P34 ✅ abgeschlossen · P14-Rest (Editor-E2E; Inject-Choice ✅) · E2E-Backlog T32-T03 (Fork-Unabhängigkeit) · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
@@ -2569,6 +2569,18 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Status:** ✅ (implementiert: Bulk nicht-transaktional, pro Eintrag `TransactionOperations`/`TxConfig`; Teilerfolg-Test)
 
 ---
+
+## Phase 37: P1 — Generische Engine-Erweiterungen (✅)
+
+> Ziel: Systeme bleiben reine Daten (DnD/CoC nur Nachweis der Generik). Alle Felder optional, alte Systeme unverändert.
+
+- **A1 Angriffswurf:** `dice_mechanics.combat.attack {attribute, target (abgeleiteter Wert), dice?, comparison? (gte/lte)}`; CombatService-Gate (MISS ohne Schaden, AP verbraucht), nur für schadende Aktionen; neue `ThrownRuleEngine` (d100 Roll-Under); Fehler in Zielwert-Formeln ⇒ Gate aus. Live verifiziert (AC 25 → MISS, AC -4 → Treffer).
+- **A2 Difficulty & Würfel:** `dice_mechanics.difficulties` (multiplier/delta) via `difficultyKey`; `bonusDice`/`penaltyDice` (d100, Netto, 00+0=100-Kandidatenvergleich); d20-Zielwert-Delta.
+- **A3 Casting generisch:** freie Ressourcen (`mp`, `slot_1`, …) mit Max aus abgeleitetem Wert; `casting.restore` + Rest-Config füllt `{resource}_current` auf (kurz/lang); Live: Slot 2→1→Rest→2.
+- **Frontend:** Wizard-Editoren (Attack-Vergleich, Difficulties-Liste, freie Ressource + Restore); Sheet liefert `difficultyLevels`, Probenroller-Dropdown (bei Cast ausgeblendet); `result` in Aktions-Response (MISS-Feedback).
+- **Beispieldaten:** `dnd5e.json` (Rassen/Klassen, Slots, Attack gte, DC-Grade), `coc7e.json` (Berufe, MP, Attack lte, regular/hard/extreme) — validieren gegen `DEFAULT_SCHEMA` (`ExamplesSchemaValidationTest`).
+- **A5 Level-Up:** generisch über `progression.levels` verifiziert (bestehende Tests decken d20-artige Levels ab).
+- **Audit P1:** 15 Findings, 14 gefixt (u. a. Thrown-Engine, Comparison, Bonus-100, d20-Delta, Error-Skips, Wizard-Feldverlust, leere Zeilen, Null-Guards); offen nur LOW „unbekannter difficultyKey wird still ignoriert".
 
 ## Phase 36: Audit-Nacharbeit (Runden)
 

@@ -78,6 +78,13 @@ public class RuleSchemaValidator {
               "required": ["probe"],
               "properties": {
                 "probe":        { "type": "string" },
+                "difficulties": { "type": "array", "items": {
+                  "type": "object", "required": ["name"], "properties": {
+                    "name":       { "type": "string", "minLength": 1 },
+                    "multiplier": { "type": "number", "exclusiveMinimum": 0 },
+                    "delta":      { "type": "integer" }
+                  }
+                } },
                 "combat":       { "$ref": "#/$defs/combat" }
               }
             }
@@ -110,9 +117,10 @@ public class RuleSchemaValidator {
                 "costColumn": { "type": "string" },
                 "activationCost": { "type": "integer", "minimum": 0 },
                 "casting": { "type": "object", "properties": {
-                  "resource": { "type": "string", "enum": ["asp", "kap"] },
+                  "resource": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,30}$" },
                   "cost":     { "type": "integer", "minimum": 1 },
-                  "requiresTrait": { "type": "string" }
+                  "requiresTrait": { "type": "string" },
+                  "restore":  { "type": "string", "enum": ["short", "long"] }
                 } }
               }
             },
@@ -133,6 +141,12 @@ public class RuleSchemaValidator {
                 "saving_throws":     { "type": "object", "properties": {
                   "base_dc": { "type": "integer" },
                   "proficiency_bonus": { "type": "string" }
+                } },
+                "attack":            { "type": "object", "required": ["attribute", "target"], "properties": {
+                  "attribute":  { "type": "string", "minLength": 1 },
+                  "target":     { "type": "string", "minLength": 1 },
+                  "dice":       { "type": "string" },
+                  "comparison": { "type": "string", "enum": ["gte", "lte"] }
                 } },
                 "resting":           { "type": "object", "properties": {
                   "short_rest": { "type": "object", "properties": {

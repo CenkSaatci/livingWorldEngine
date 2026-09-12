@@ -10,24 +10,31 @@ import com.lwe.core.util.EntityAccess;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
 public class RestService {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(RestService.class);
 
     private final GameEntityRepository entityRepo;
     private final WorldAccess worldAccess;
     private final EntityAccess entityAccess;
     private final RulesLoader rulesLoader;
     private final ObjectMapper mapper;
+    private final DerivedValueService derivedValueService;
 
     public RestService(GameEntityRepository entityRepo, WorldAccess worldAccess,
-                       EntityAccess entityAccess, RulesLoader rulesLoader, ObjectMapper mapper) {
+                       EntityAccess entityAccess, RulesLoader rulesLoader, ObjectMapper mapper,
+                       DerivedValueService derivedValueService) {
         this.mapper = mapper;
         this.entityRepo = entityRepo;
         this.worldAccess = worldAccess;
         this.entityAccess = entityAccess;
         this.rulesLoader = rulesLoader;
+        this.derivedValueService = derivedValueService;
     }
 
     @Transactional
@@ -42,6 +49,7 @@ public class RestService {
         if (config == null) return;
         applyHpRecovery(entity, config.hp);
         applyApRecovery(entity, config.ap);
+        if (config.recoverResources) restoreCastResources(entity, campaignId, "short");
         entityRepo.save(entity);
     }
 
@@ -57,7 +65,81 @@ public class RestService {
         if (config == null) return;
         applyHpRecovery(entity, config.hp);
         applyApRecovery(entity, config.ap);
+        if (config.recoverResources) restoreCastResources(entity, campaignId, "long");
         entityRepo.save(entity);
+    }
+
+    /**
+     * P1: Casting-Ressourcen generisch auffuellen — jede `skills[].casting.resource`
+     * (asp/kap/mp/slot_1/…) mit passendem `restore` (Default "long") wird auf den
+     * abgeleiteten Maximalwert gesetzt.
+     */
+    @SuppressWarnings("unchecked")
+    private void restoreCastResources(GameEntity entity, UUID campaignId, String restType) {
+        var gs = rulesLoader.loadSystemByCampaign(campaignId);
+        if (gs == null) gs = rulesLoader.loadSystem(entity.getWorldId());
+        if (gs == null) return;
+        try {
+            var rules = mapper.readValue(gs.getRulesJson(),
+                new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+            var skills = (List<Map<String, Object>>) rules.getOrDefault("skills", List.of());
+            var attrs = parseAttrs(entity);
+            var traits = selectedTraits(entity);
+            var derived = (List<Map<String, Object>>) rules.getOrDefault("derived_values", List.of());
+            for (var skill : skills) {
+                if (!(skill.get("casting") instanceof Map<?, ?> casting)) continue;
+                if (!(casting.get("resource") instanceof String resource)) continue;
+                var restore = casting.get("restore") instanceof String r ? r : "long";
+                if (!restore.equals(restType)) continue;
+                var max = derivedValueService.evaluate(derived, attrs, traits).stream()
+                    .filter(dv -> dv.name().equals(resource))
+                    .filter(dv -> dv.error() == null) // Audit P1: kaputte Formel => nicht ueberschreiben
+                    .map(dv -> (int) Math.round(dv.value()))
+                    .findFirst().orElse(null);
+                if (max == null) continue;
+                writeMetaCounter(entity, resource + "_current", max);
+            }
+        } catch (Exception e) {
+            // Rest darf nie an Regel-Metadaten scheitern — aber sichtbar loggen.
+            log.warn("Cast-Resource-Restore fehlgeschlagen: {}", e.getMessage(), e);
+        }
+    }
+
+    private void writeMetaCounter(GameEntity entity, String key, int value) {
+        try {
+            var meta = entity.getMetadataJson() == null || entity.getMetadataJson().isBlank()
+                ? mapper.createObjectNode()
+                : mapper.readTree(entity.getMetadataJson());
+            var obj = meta.isObject() ? (com.fasterxml.jackson.databind.node.ObjectNode) meta
+                : mapper.createObjectNode();
+            obj.put(key, value);
+            entity.setMetadataJson(mapper.writeValueAsString(obj));
+        } catch (Exception ignored) {
+            // ignore
+        }
+    }
+
+    private Map<String, Integer> parseAttrs(GameEntity entity) {
+        try {
+            if (entity.getAttributesJson() == null || entity.getAttributesJson().isBlank()) return Map.of();
+            return mapper.readValue(entity.getAttributesJson(),
+                new com.fasterxml.jackson.core.type.TypeReference<>() {});
+        } catch (Exception e) {
+            return Map.of();
+        }
+    }
+
+    private List<String> selectedTraits(GameEntity entity) {
+        try {
+            if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank()) return List.of();
+            var node = mapper.readTree(entity.getMetadataJson()).path("traits");
+            if (!node.isArray()) return List.of();
+            var out = new java.util.ArrayList<String>();
+            node.forEach(n -> { if (n.isTextual()) out.add(n.asText()); });
+            return out;
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 
     private GameEntity findEntity(UUID entityId, UUID userId) {
@@ -132,7 +214,9 @@ public class RestService {
                     "recover_resources", "recoverResources")) {
                 ap = "full";
             }
-            return new RestConfig(hp, ap);
+            boolean recoverResources = isTrue(resting, "recover_all", "recoverAll",
+                "recover_resources", "recoverResources");
+            return new RestConfig(hp, ap, recoverResources);
         } catch (Exception e) {
             return null;
         }
@@ -175,7 +259,7 @@ public class RestService {
         return Math.max(0, (int) Math.round(percent)) + "%";
     }
 
-    private record RestConfig(String hp, String ap) {}
+    private record RestConfig(String hp, String ap, boolean recoverResources) {}
 
     public static class RestException extends RuntimeException {
         private final String errorCode;
