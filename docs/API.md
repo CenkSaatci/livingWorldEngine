@@ -419,6 +419,12 @@ negativ = erleichtert (3W20: Schwelle = Attribut − difficulty; d20: Zielwert +
 `multiplier`, sonst `delta`), `bonusDice`/`penaltyDice` (d100-Zehnerwürfe, verrechnen
 sich 1:1). Das Charakterblatt liefert die Grade als `difficultyLevels`.
 
+**T4/T7 generisch:** `useFate` (gibt einen Schicksalspunkt für
+`fate.probeBonusPerPoint` aus), `socialAction` + `socialTargetId` (soziale Probe nach
+ADR-013: Skill-Probe mit Beziehungs-Modifikator aus `social.relationshipScores`,
+gedeckelt auf `social.maxModifier`; Erfolg/Fehlschlag wendet die Zustände aus
+`social_actions[].onSuccess/onFailure` auf das Ziel an).
+
 **Response 200:**
 ```json
 {

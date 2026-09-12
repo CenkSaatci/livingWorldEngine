@@ -45,6 +45,7 @@
     "conditionFailed": "Impossibile modificare gli stati",
     "fate": "Punti fato",
     "spendFate": "Spendi un punto fato e ritira",
+    "useFate": "Spendi un punto fato per un bonus su questa prova",
     "spendFateFailed": "Impossibile spendere il punto fato",
     "armor": "Armatura",
     "difficulty": "Difficoltà"
@@ -57,6 +58,7 @@
     "skills": "Abilità",
     "skillCost": "Abilità",
     "finalSkills": "Valori finali",
+    "baseValue": "Valore base",
     "noSkills": "Nessuna abilità",
     "search": "Cerca…",
     "codeSkillCap": "Abilità sopra il massimo ({a})",

@@ -23,7 +23,10 @@ class AdventureServiceTest {
     private final NodeChoiceRepository choiceRepo = mock();
     private final AdventureProgressRepository progressRepo = mock();
     private final WorldRepository worldRepo = mock();
+    private final CampaignRepository campaignRepo = mock();
     private final RollService rollService = mock();
+    private final ProbeService probeService = mock();
+    private final RulesLoader rulesLoader = mock();
     private final WorldEventService eventService = mock();
     private final WorldAccess worldAccess = mock();
     private final com.lwe.core.repository.GameEntityRepository entityRepo = mock();
@@ -43,8 +46,73 @@ class AdventureServiceTest {
     @BeforeEach
     void setUp() {
         service = new AdventureService(adventureRepo, nodeRepo, choiceRepo, progressRepo,
-            worldRepo, rollService, eventService, worldAccess,
+            worldRepo, campaignRepo, rollService, probeService, rulesLoader, eventService, worldAccess,
             new com.lwe.core.util.EntityAccess(entityRepo, worldAccess), new ObjectMapper());
+    }
+
+    @Test
+    void advanceRoutesThreeAttributeChecksThroughProbeService() {
+        var r = advanceFixture(3);
+        when(rulesLoader.loadRules(r.campaignId(), worldId))
+            .thenReturn(java.util.Map.of("dice_mechanics", java.util.Map.of("probe", "3d20")));
+        when(probeService.executeProbe(eq(r.entityId()), eq(userId), eq("Klettern"), eq(10),
+            eq(false), eq(r.campaignId()), any())).thenReturn(
+                new com.lwe.api.dto.ProbeResponse("d20_3attr", new int[]{1, 2, 3}, -1, 6, true,
+                    List.of(), List.of()));
+
+        var result = service.advance(adventure.getId(), r.entityId(), r.choiceId(), userId);
+
+        assertThat(result.skillCheckSuccess()).isTrue();
+        verify(probeService).executeProbe(eq(r.entityId()), eq(userId), eq("Klettern"), eq(10),
+            eq(false), eq(r.campaignId()), argThat(o -> o.difficulty() == 3));
+        verifyNoInteractions(rollService);
+    }
+
+    @Test
+    void advanceKeepsOtherSystemsOnRollServiceWithCampaignContext() {
+        var r = advanceFixture(2);
+        when(rulesLoader.loadRules(r.campaignId(), worldId))
+            .thenReturn(java.util.Map.of("dice_mechanics", java.util.Map.of("probe", "1d20+mod")));
+        when(rollService.executeRoll(userId, worldId, r.entityId(), "Klettern", 2, 10, r.campaignId()))
+            .thenReturn(new RollService.RollResult("Klettern", "1d20+2", new int[]{15}, 17, 10, true, null));
+
+        var result = service.advance(adventure.getId(), r.entityId(), r.choiceId(), userId);
+
+        assertThat(result.skillCheckSuccess()).isTrue();
+        verifyNoInteractions(probeService);
+    }
+
+    private record AdvanceFixture(UUID entityId, UUID choiceId, UUID campaignId) {}
+
+    /** Baut Adventure/Progress/Choice mit Skillcheck und World-/Campaign-Mocks auf. */
+    private AdvanceFixture advanceFixture(int modifier) {
+        var entityId = UUID.randomUUID();
+        var node2Id = UUID.randomUUID();
+        var node2 = new AdventureNode(adventure.getId(), "Weiter", false);
+        setId(node2, node2Id);
+        var choice = new NodeChoice(startNodeId, "Klettern", node2Id);
+        choice.setSkillCheck("{\"skill\":\"Klettern\",\"modifier\":" + modifier + ",\"target\":10}");
+        setId(choice, UUID.randomUUID());
+        var progress = new AdventureProgress(adventure.getId(), entityId, startNodeId);
+        setId(progress, UUID.randomUUID());
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+        var campaignId = UUID.randomUUID();
+        var campaign = mock(Campaign.class);
+        when(campaign.getId()).thenReturn(campaignId);
+
+        when(adventureRepo.findById(adventure.getId())).thenReturn(Optional.of(adventure));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity(entityId)));
+        when(progressRepo.findByAdventureIdAndEntityId(adventure.getId(), entityId))
+            .thenReturn(Optional.of(progress));
+        when(choiceRepo.findById(choice.getId())).thenReturn(Optional.of(choice));
+        when(nodeRepo.findById(node2Id)).thenReturn(Optional.of(node2));
+        when(progressRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any()))
+            .thenReturn(1L);
+        when(campaignRepo.findByWorldId(worldId)).thenReturn(List.of(campaign));
+        return new AdvanceFixture(entityId, choice.getId(), campaignId);
     }
 
     @Test

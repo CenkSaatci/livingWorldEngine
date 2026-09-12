@@ -145,6 +145,13 @@
     "info": "Bilgi",
     "diplomacy": "Diplomasi",
     "relationships": "İlişkiler",
+    "socialProbe": "Sosyal deneme",
+    "socialActor": "Karakter",
+    "socialAction": "Eylem",
+    "socialRoll": "Deneme at",
+    "socialSuccess": "{{name}} olumlu tepki verir.",
+    "socialFailure": "{{name}} reddedici tepki verir.",
+    "socialUnknown": "Bilinmeyen sosyal eylem",
     "servicesEmpty": "Hizmet yok — “Düzenle” ile ekle."
   },
   "faction": {

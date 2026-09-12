@@ -343,6 +343,52 @@ public class EntityService {
         }
     }
 
+    /** SM-02: Zustand als Engine-Effekt anwenden (z. B. soziale Aktion aufs Ziel).
+     *  Kein DM-/Kontrolleur-Check — der Aufrufer hat den Weltzugriff bereits geprueft.
+     *  Audit T7: Katalog-Validierung + Runden-Normalisierung wie {@link #addCondition}. */
+    @Transactional
+    public GameEntity applyCondition(UUID entityId, String name, Integer rounds,
+                                     java.util.Map<String, Object> rules) {
+        var entity = entityRepo.findByIdForUpdate(entityId)
+            .orElseThrow(() -> new EntityException("ENTITY_NOT_FOUND", "Entity not found"));
+        validateConditionName(name, rules);
+        Integer normalized = rounds == null ? null : Math.max(1, rounds);
+        conditionService.add(entity, new ConditionService.ConditionInstance(name, normalized));
+        return entityRepo.save(entity);
+    }
+
+    private void validateConditionName(String name, java.util.Map<String, Object> rules) {
+        if (rules == null) return;
+        if (rules.get("conditions") instanceof List<?> catalog && !catalog.isEmpty()) {
+            var match = catalog.stream()
+                .filter(c -> c instanceof Map<?, ?> m && name.equals(m.get("name")))
+                .findFirst();
+            if (match.isEmpty()) {
+                throw new EntityException("CONDITION_UNKNOWN", "Unknown condition: " + name);
+            }
+        }
+    }
+
+    /** T4/Audit: Schicksalspunkte nur ausgeben, wenn genug vorhanden sind — wirft nie,
+     *  damit aufrufende Transaktionen (Kampf) nicht rollback-only markiert werden. */
+    @Transactional
+    public boolean spendFatePointsIfAvailable(UUID entityId, UUID userId, UUID campaignId, int count) {
+        if (count <= 0) return false;
+        var entity = getLocked(entityId, userId);
+        int max = 0;
+        if (campaignId != null && rulesLoader.campaignBelongsToWorld(campaignId, entity.getWorldId())) {
+            var rules = rulesLoader.loadRules(campaignId, entity.getWorldId());
+            if (rules.get("creationBudget") instanceof Map<?, ?> b && b.get("fatePoints") instanceof Number n) {
+                max = n.intValue();
+            }
+        }
+        int current = fatePoints(entity, max);
+        if (current < count) return false;
+        writeFatePoints(entity, current - count);
+        entityRepo.save(entity);
+        return true;
+    }
+
     /** Zustand anwenden (P29-T01); Katalog prueft/freigibt die Namen. */
     @Transactional
     public GameEntity addCondition(UUID entityId, UUID userId, String name, Integer rounds, UUID campaignId) {

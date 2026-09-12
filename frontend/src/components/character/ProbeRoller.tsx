@@ -43,6 +43,7 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, c
   const [failed, setFailed] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [difficultyKey, setDifficultyKey] = useState('');
+  const [useFate, setUseFate] = useState(false);
   const activeCampaignId = useCampaignStore((s) => s.activeCampaignId);
 
   const handleRoll = async () => {
@@ -66,8 +67,10 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, c
           advantage: false,
           campaignId: activeCampaignId ?? undefined,
           ...(difficultyKey ? { difficultyKey } : {}),
+          ...(useFate ? { useFate: true } : {}),
         });
         setResult(res.data);
+        setUseFate(false); // Punkt ist ausgegeben
       }
     } catch (e: any) {
       // Kein lokaler Fallback-Wurf: Ein fehlgeschlagener Server-Wurf darf nicht
@@ -110,6 +113,20 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, c
         >
           {casting.cost} {casting.resource.toUpperCase()}
         </span>
+      )}
+      {fateAvailable && !casting && !result && (
+        <button
+          onClick={() => setUseFate((v) => !v)}
+          disabled={rolling}
+          aria-pressed={useFate}
+          className={`rounded px-1 text-xs disabled:opacity-40 ${
+            useFate ? 'text-warning' : 'text-text-secondary hover:text-warning'
+          }`}
+          title={t('sheet.useFate')!}
+          aria-label={t('sheet.useFate')!}
+        >
+          +★
+        </button>
       )}
       <button
         onClick={handleRoll}

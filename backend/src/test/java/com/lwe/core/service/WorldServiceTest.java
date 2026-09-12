@@ -55,6 +55,8 @@ class WorldServiceTest {
     @Mock private com.lwe.core.repository.AdventureRepository adventureRepo;
     @Mock private com.lwe.core.repository.AdventureNodeRepository adventureNodeRepo;
     @Mock private com.lwe.core.repository.NodeChoiceRepository nodeChoiceRepo;
+    @Mock private com.lwe.core.repository.AdventureProgressRepository progressRepo;
+    @Mock private com.lwe.core.repository.EntityRelationshipRepository relationshipRepo;
 
     private WorldService worldService;
     private final UUID ownerId = UUID.randomUUID();
@@ -65,7 +67,8 @@ class WorldServiceTest {
         worldService = new WorldService(worldRepo, memberRepo, quotaService,
             regionRepo, locationRepo, entityRepo, factionRepo, factionRelationRepo,
             worldMapRepo, regionWeatherRepo, entityAbilityRepo,
-            questRepo, adventureRepo, adventureNodeRepo, nodeChoiceRepo, worldAccess);
+            questRepo, relationshipRepo, adventureRepo, adventureNodeRepo, nodeChoiceRepo, progressRepo,
+            new com.fasterxml.jackson.databind.ObjectMapper(), worldAccess);
     }
 
     @Test
@@ -341,7 +344,9 @@ class WorldServiceTest {
         var giver = new GameEntity(original.getId(), "NPC", "Auftraggeber");
         setId(giver, UUID.randomUUID());
 
-        var quest = new Quest(original.getId(), "Banditen", "kill", "[]", "{}");
+        var quest = new Quest(original.getId(), "Banditen", "kill",
+            "[{\"targetEntityId\":\"" + giver.getId() + "\",\"targetLocationId\":\"" + loc.getId() + "\"}]",
+            "{}");
         setId(quest, UUID.randomUUID());
         quest.setGiverId(giver.getId());
         quest.setLocationId(loc.getId());
@@ -395,6 +400,11 @@ class WorldServiceTest {
             if (n2.getId() == null) setId(n2, UUID.randomUUID());
             return n2;
         });
+        var progress = new com.lwe.core.domain.AdventureProgress(adv.getId(), giver.getId(), node.getId());
+        setId(progress, UUID.randomUUID());
+        progress.setVisitedNodes("{" + node.getId() + "}");
+        when(progressRepo.findByAdventureId(adv.getId())).thenReturn(List.of(progress));
+        when(progressRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         worldService.cloneForCampaign(original.getId(), memberId);
 
@@ -404,6 +414,16 @@ class WorldServiceTest {
         assertThat(questCopy.getWorldId()).isNotEqualTo(original.getId());
         assertThat(questCopy.getGiverId()).isNotEqualTo(giver.getId());
         assertThat(questCopy.getLocationId()).isNotEqualTo(loc.getId());
+        assertThat(questCopy.getObjectives()).doesNotContain(giver.getId().toString());
+        assertThat(questCopy.getObjectives()).doesNotContain(loc.getId().toString());
+
+        var progressCaptor = org.mockito.ArgumentCaptor.forClass(com.lwe.core.domain.AdventureProgress.class);
+        verify(progressRepo).save(progressCaptor.capture());
+        var progressCopy = progressCaptor.getValue();
+        assertThat(progressCopy.getEntityId()).isNotEqualTo(giver.getId());
+        assertThat(progressCopy.getCurrentNodeId()).isNotEqualTo(node.getId());
+        assertThat(progressCopy.getVisitedNodes()).doesNotContain(node.getId().toString());
+        assertThat(progressCopy.getStatus()).isEqualTo("ACTIVE");
 
         verify(adventureNodeRepo).save(any());
         var choiceCaptor = org.mockito.ArgumentCaptor.forClass(com.lwe.core.domain.NodeChoice.class);

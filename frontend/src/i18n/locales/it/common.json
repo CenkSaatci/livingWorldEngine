@@ -145,6 +145,13 @@
     "info": "Info",
     "diplomacy": "Diplomazia",
     "relationships": "Relazioni",
+    "socialProbe": "Prova sociale",
+    "socialActor": "Personaggio",
+    "socialAction": "Azione",
+    "socialRoll": "Tira prova",
+    "socialSuccess": "{{name}} reagisce positivamente.",
+    "socialFailure": "{{name}} reagisce con rifiuto.",
+    "socialUnknown": "Azione sociale sconosciuta",
     "servicesEmpty": "Nessun servizio — aggiungi con «Modifica»."
   },
   "faction": {

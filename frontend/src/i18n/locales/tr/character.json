@@ -45,6 +45,7 @@
     "conditionFailed": "Durumlar değiştirilemedi",
     "fate": "Kader puanları",
     "spendFate": "Kader puanı harca ve yeniden at",
+    "useFate": "Bu deneme için bonus amacıyla kader puanı harca",
     "spendFateFailed": "Kader puanı harcanamadı",
     "armor": "Zırh",
     "difficulty": "Zorluk"
@@ -57,6 +58,7 @@
     "skills": "Yetenekler",
     "skillCost": "Yetenekler",
     "finalSkills": "Nihai değerler",
+    "baseValue": "Temel değer",
     "noSkills": "Sistemde yetenek yok",
     "search": "Ara…",
     "codeSkillCap": "Yetenek maksimumun üstünde ({a})",

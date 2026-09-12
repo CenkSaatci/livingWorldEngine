@@ -707,7 +707,7 @@ Gemeinsam durchzugehen mit DM + Spieler-Perspektive.
 
 ## 15. P28/P29 Wizard-Engine Checkpoints
 
-> Stand Phase 33 + Audits. Backend-Tests: `mvn -B test` (432); Frontend: `npx vitest run` (186); E2E: `cd frontend && npm run test:e2e` (Playwright, 10 Szenarien + Login-Setup — inkl. Adventure-Inject — Login-Setup, Wizard-Pakete, Charakter-Wizard, Sheet-DSA, Kampf-Manöver, Kampf-Zustände/Schadensart, DM-Queue, System-Pin, Save-Gate, Dashboard-Smoke). Voraussetzung: pm2 `lwe-frontend`/`lwe-backend` laufen, `npx playwright install chromium` einmalig; Zugang via `E2E_EMAIL`/`E2E_PASSWORD` (Default devbe).
+> Stand Phase 33 + Audits. Backend-Tests: `mvn -B test` (499); Frontend: `npx vitest run` (189); E2E: `cd frontend && npm run test:e2e` (Playwright, 10 Szenarien + Login-Setup — inkl. Adventure-Inject — Login-Setup, Wizard-Pakete, Charakter-Wizard, Sheet-DSA, Kampf-Manöver, Kampf-Zustände/Schadensart, DM-Queue, System-Pin, Save-Gate, Dashboard-Smoke). Voraussetzung: pm2 `lwe-frontend`/`lwe-backend` laufen, `npx playwright install chromium` einmalig; Zugang via `E2E_EMAIL`/`E2E_PASSWORD` (Default devbe).
 
 ### 15.1 Autorierung (SystemWizard)
 - [x] **Automatisiert (Playwright):** Paket-Step zeigt gespeicherte Pakete (Name/Kosten/Auto-Merkmale/Restriktionen), Live-Vorschau rechnet („Kosten: 18 AP · staerke +1 · Nachtsicht"), Save öffnet die Übersicht erfolgreich

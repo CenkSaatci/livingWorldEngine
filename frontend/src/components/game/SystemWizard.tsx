@@ -12,7 +12,9 @@ import {
   danglingTraitRefs,
   wizardIssues,
   type AttributeDef,
+  type CombatAttackConfig,
   type ConditionalDef,
+  type SocialActionDef,
   type PkgDef,
   type PackageSelection,
   type TraitDef,
@@ -1403,6 +1405,20 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
               >
                 <Plus size={14} /> {t('s8_states_add_effect')}
               </button>
+              <div className="flex items-center gap-2 pl-4">
+                <span className="text-xs text-text-secondary">{t('s8_states_blocks')}</span>
+                <input
+                  value={(c.blocks ?? []).join(',')}
+                  onChange={(e) => {
+                    const a = [...(data.conditions ?? [])];
+                    const blocks = e.target.value.split(',').map((s) => s.trim()).filter(Boolean);
+                    a[i] = { ...a[i], blocks };
+                    update('conditions', a);
+                  }}
+                  placeholder="ATTACK,MOVE"
+                  className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                />
+              </div>
             </div>
           ))}
 
@@ -1411,6 +1427,102 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
             className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
           >
             <Plus size={14} /> {t('s8_states_add')}
+          </button>
+
+          {/* SM-02: Soziale Aktionen (ADR-013) */}
+          <h4 className="font-heading text-text-primary pt-2">{t('s8_social_title')}</h4>
+          <p className="text-xs text-text-secondary">{t('s8_social_hint')}</p>
+          {(data.socialActions ?? []).map((a, i) => {
+            const setA = (next: Partial<SocialActionDef>) => {
+              const arr = [...(data.socialActions ?? [])];
+              arr[i] = { ...arr[i], ...next };
+              update('socialActions', arr);
+            };
+            const effectsEditor = (key: 'onSuccess' | 'onFailure') => (
+              <div className="space-y-1 pl-4">
+                <span className="text-[10px] uppercase text-text-secondary">
+                  {t(key === 'onSuccess' ? 's8_social_success' : 's8_social_failure')}
+                </span>
+                {(a[key] ?? []).map((e, k) => (
+                  <div key={k} className="flex items-center gap-2">
+                    <input
+                      value={e.condition}
+                      placeholder={t('s8_social_condition')}
+                      onChange={(ev) => {
+                        const fx = [...(a[key] ?? [])];
+                        fx[k] = { ...fx[k], condition: ev.target.value };
+                        setA({ [key]: fx });
+                      }}
+                      className="w-40 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    />
+                    <input
+                      type="number" min={1}
+                      value={e.rounds ?? ''}
+                      onChange={(ev) => {
+                        const fx = [...(a[key] ?? [])];
+                        fx[k] = { ...fx[k], rounds: ev.target.value ? Number(ev.target.value) : null };
+                        setA({ [key]: fx });
+                      }}
+                      placeholder="∞"
+                      className="w-14 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    />
+                    <button
+                      onClick={() => setA({ [key]: (a[key] ?? []).filter((_, j) => j !== k) })}
+                      className="text-danger hover:text-danger/80"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => setA({ [key]: [...(a[key] ?? []), { condition: '', rounds: null }] })}
+                  className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+                >
+                  <Plus size={14} /> {t('s8_social_add_effect')}
+                </button>
+              </div>
+            );
+            return (
+              <div key={i} className="space-y-2 rounded bg-bg-primary/50 p-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    value={a.name}
+                    placeholder={t('s8_social_name')}
+                    onChange={(e) => setA({ name: e.target.value })}
+                    className="w-32 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                  <input
+                    value={a.skill}
+                    placeholder={t('s8_social_skill')}
+                    onChange={(e) => setA({ skill: e.target.value })}
+                    className="w-32 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                  <label className="flex items-center gap-1 text-xs text-text-secondary">
+                    {t('s8_social_weight')}
+                    <input
+                      type="number" step="0.5"
+                      value={a.relationshipWeight ?? 1}
+                      onChange={(e) => setA({ relationshipWeight: Number(e.target.value) })}
+                      className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                    />
+                  </label>
+                  <button
+                    onClick={() => update('socialActions', (data.socialActions ?? []).filter((_, j) => j !== i))}
+                    className="ml-auto text-danger hover:text-danger/80"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+                {effectsEditor('onSuccess')}
+                {effectsEditor('onFailure')}
+              </div>
+            );
+          })}
+          <button
+            onClick={() => update('socialActions', [...(data.socialActions ?? []), { name: '', skill: '', onSuccess: [], onFailure: [] }])}
+            className="flex items-center gap-1 text-xs text-accent hover:text-accent/80"
+          >
+            <Plus size={14} /> {t('s8_social_add')}
           </button>
         </div>
       )}
@@ -1545,18 +1657,69 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   {data.combat.attack && (
                     <>
                       <select
-                        value={data.combat.attack.attribute}
-                        aria-label={t('s4_attack_attr')}
-                        onChange={(e) => update('combat', {
-                          ...data.combat,
-                          attack: { ...data.combat.attack!, attribute: e.target.value },
-                        })}
+                        value={data.combat.attack.attribute != null ? 'attribute'
+                          : data.combat.attack.value != null ? 'value' : 'skill'}
+                        aria-label={t('s4_attack_source')}
+                        onChange={(e) => {
+                          const kind = e.target.value;
+                          const next: CombatAttackConfig = {
+                            target: data.combat.attack!.target,
+                            ...(data.combat.attack!.dice != null ? { dice: data.combat.attack!.dice } : {}),
+                            ...(data.combat.attack!.comparison != null ? { comparison: data.combat.attack!.comparison } : {}),
+                            ...(kind === 'attribute'
+                              ? { attribute: data.attributes[0]?.name ?? '' }
+                              : kind === 'value'
+                                ? { value: data.derivedValues[0]?.name ?? '' }
+                                : { skill: '' }),
+                          };
+                          update('combat', { ...data.combat, attack: next });
+                        }}
                         className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
                       >
-                        {data.attributes.map((a) => (
-                          <option key={a.name} value={a.name}>{a.name}</option>
-                        ))}
+                        <option value="attribute">{t('s4_attack_source_attr')}</option>
+                        <option value="value">{t('s4_attack_source_value')}</option>
+                        <option value="skill">{t('s4_attack_source_skill')}</option>
                       </select>
+                      {data.combat.attack.attribute != null ? (
+                        <select
+                          value={data.combat.attack.attribute}
+                          aria-label={t('s4_attack_attr')}
+                          onChange={(e) => update('combat', {
+                            ...data.combat,
+                            attack: { ...data.combat.attack!, attribute: e.target.value },
+                          })}
+                          className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                        >
+                          {data.attributes.map((a) => (
+                            <option key={a.name} value={a.name}>{a.name}</option>
+                          ))}
+                        </select>
+                      ) : data.combat.attack.value != null ? (
+                        <select
+                          value={data.combat.attack.value}
+                          aria-label={t('s4_attack_attr')}
+                          onChange={(e) => update('combat', {
+                            ...data.combat,
+                            attack: { ...data.combat.attack!, value: e.target.value },
+                          })}
+                          className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                        >
+                          {data.derivedValues.map((dv) => (
+                            <option key={dv.name} value={dv.name}>{dv.name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          value={data.combat.attack.skill}
+                          aria-label={t('s4_attack_attr')}
+                          placeholder={t('s4_attack_skill_ph')}
+                          onChange={(e) => update('combat', {
+                            ...data.combat,
+                            attack: { ...data.combat.attack!, skill: e.target.value },
+                          })}
+                          className="w-28 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                        />
+                      )}
                       <span className="text-xs text-text-secondary">{t('s4_attack_vs')}</span>
                       <input
                         value={data.combat.attack.target}
@@ -1835,6 +1998,38 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 />
               </div>
             ))}
+          </div>
+
+          {/* T4: Schicksalspunkt-Regeln */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-text-secondary mb-1">{t('sb_fateProbeBonus')}</label>
+              <input
+                type="number"
+                min={0}
+                value={data.fate?.probeBonusPerPoint ?? ''}
+                placeholder="—"
+                onChange={(e) => update('fate', {
+                  ...(data.fate ?? {}),
+                  probeBonusPerPoint: e.target.value === '' ? undefined : Number(e.target.value),
+                })}
+                className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1.5 text-xs text-text-primary outline-none focus:border-accent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-text-secondary mb-1">{t('sb_fateAvoidDeath')}</label>
+              <input
+                type="number"
+                min={0}
+                value={data.fate?.avoidDeathCost ?? ''}
+                placeholder="—"
+                onChange={(e) => update('fate', {
+                  ...(data.fate ?? {}),
+                  avoidDeathCost: e.target.value === '' ? undefined : Number(e.target.value),
+                })}
+                className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1.5 text-xs text-text-primary outline-none focus:border-accent"
+              />
+            </div>
           </div>
 
           {/* Globale Standard-Kostenkurve */}

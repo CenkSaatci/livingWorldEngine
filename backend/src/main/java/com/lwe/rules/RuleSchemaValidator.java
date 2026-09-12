@@ -44,6 +44,15 @@ public class RuleSchemaValidator {
             "attributeCosts":   { "type": "object", "properties": {
               "default": { "type": "array", "items": { "$ref": "#/$defs/costTier" } }
             } },
+            "fate":             { "type": "object", "properties": {
+              "probeBonusPerPoint": { "type": "integer", "minimum": 0 },
+              "avoidDeathCost":     { "type": "integer", "minimum": 0 }
+            } },
+            "social":           { "type": "object", "properties": {
+              "relationshipScores": { "type": "object", "additionalProperties": { "type": "number" } },
+              "maxModifier":        { "type": "integer", "minimum": 0 }
+            } },
+            "social_actions":   { "type": "array", "items": { "$ref": "#/$defs/socialAction" } },
             "packages":         { "type": "array", "items": { "$ref": "#/$defs/package" } },
             "traits":           { "type": "array", "items": { "$ref": "#/$defs/trait" } },
             "advancement":      { "type": "object", "properties": {
@@ -142,10 +151,16 @@ public class RuleSchemaValidator {
                   "base_dc": { "type": "integer" },
                   "proficiency_bonus": { "type": "string" }
                 } },
-                "attack":            { "type": "object", "required": ["attribute", "target"], "properties": {
+                "attack":            { "type": "object", "anyOf": [
+                    { "required": ["attribute"] },
+                    { "required": ["value"] },
+                    { "required": ["skill"] }
+                  ], "properties": {
                   "attribute":  { "type": "string", "minLength": 1 },
+                  "value":      { "type": "string", "minLength": 1 },
+                  "skill":      { "type": "string", "minLength": 1 },
                   "target":     { "type": "string", "minLength": 1 },
-                  "dice":       { "type": "string" },
+                  "dice":       { "type": "string", "pattern": "^[0-9]+d[0-9]+$" },
                   "comparison": { "type": "string", "enum": ["gte", "lte"] }
                 } },
                 "resting":           { "type": "object", "properties": {
@@ -253,7 +268,27 @@ public class RuleSchemaValidator {
               "properties": {
                 "name":    { "type": "string", "minLength": 1 },
                 "rounds":  { "type": "integer", "minimum": 1 },
-                "effects": { "type": "array", "items": { "$ref": "#/$defs/traitEffect" } }
+                "effects": { "type": "array", "items": { "$ref": "#/$defs/traitEffect" } },
+                "blocks":  { "type": "array", "items": { "type": "string", "minLength": 1 } }
+              }
+            },
+            "socialAction": {
+              "type": "object",
+              "required": ["name", "skill"],
+              "properties": {
+                "name":               { "type": "string", "minLength": 1 },
+                "skill":              { "type": "string", "minLength": 1 },
+                "relationshipWeight": { "type": "number" },
+                "onSuccess":          { "type": "array", "items": { "$ref": "#/$defs/socialEffect" } },
+                "onFailure":          { "type": "array", "items": { "$ref": "#/$defs/socialEffect" } }
+              }
+            },
+            "socialEffect": {
+              "type": "object",
+              "required": ["condition"],
+              "properties": {
+                "condition": { "type": "string", "minLength": 1 },
+                "rounds":    { "type": "integer", "minimum": 1 }
               }
             },
             "advancementRow": {

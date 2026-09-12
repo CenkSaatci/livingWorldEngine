@@ -6,6 +6,7 @@ import com.lwe.core.domain.GameEntity;
 import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.repository.GameSystemRepository;
 import com.lwe.core.repository.WorldRepository;
+import com.lwe.core.util.WorldAccess;
 import com.lwe.rules.DiceExpressionParser;
 import com.lwe.rules.RuleEngine;
 import static com.lwe.core.service.WorldEventService.EventType.*;
@@ -23,6 +24,7 @@ public class RollService {
     private final WorldRepository worldRepo;
     private final GameSystemRepository gameSystemRepo;
     private final WorldEventService eventService;
+    private final WorldAccess worldAccess;
     private final RulesLoader rulesLoader;
     private final Map<DiceExpressionParser.DiceSystem, RuleEngine> engines;
     private final ObjectMapper objectMapper;
@@ -31,12 +33,14 @@ public class RollService {
                        GameSystemRepository gameSystemRepo, WorldEventService eventService,
                        java.util.List<RuleEngine> engineList,
                        RulesLoader rulesLoader,
-                       ObjectMapper objectMapper) {
+                       ObjectMapper objectMapper,
+                       WorldAccess worldAccess) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldRepo = worldRepo;
         this.gameSystemRepo = gameSystemRepo;
         this.eventService = eventService;
+        this.worldAccess = worldAccess;
         this.rulesLoader = rulesLoader;
         this.engines = new EnumMap<>(DiceExpressionParser.DiceSystem.class);
         for (var engine : engineList) {
@@ -56,9 +60,9 @@ public class RollService {
 
         var world = worldRepo.findById(worldId).orElse(null);
         if (world == null) return error(skillId, target, "WORLD_NOT_FOUND");
-        if (!world.getOwnerId().equals(userId)) {
-            return error(skillId, target, "Access denied");
-        }
+        worldAccess.requireAccess(worldId, userId);
+        // Audit T7: Entity muss zur angefragten Welt gehoeren (kein Fremd-Attribut-Leak).
+        if (!entity.getWorldId().equals(worldId)) return error(skillId, target, "ENTITY_NOT_FOUND");
 
         // 3. Attributswert extrahieren
         var attrValue = AttributeUtils.extractAttribute(entity, skillId).orElse(10);

@@ -524,6 +524,28 @@
           "value": 1
         }
       ]
+    },
+    {
+      "name": "Charmed",
+      "rounds": 3,
+      "effects": [
+        {
+          "target": "probe",
+          "op": "add",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "name": "Hostile",
+      "rounds": 3,
+      "effects": [
+        {
+          "target": "probe",
+          "op": "add",
+          "value": -2
+        }
+      ]
     }
   ],
   "packages": [
@@ -659,6 +681,33 @@
         }
       ],
       "effects": []
+    }
+  ],
+  "social": {
+    "relationshipScores": {
+      "friendly": 2,
+      "neutral": 0,
+      "hostile": -2
+    },
+    "maxModifier": 3
+  },
+  "social_actions": [
+    {
+      "name": "Überzeugen",
+      "skill": "Überzeugen",
+      "relationshipWeight": 1,
+      "onSuccess": [
+        {
+          "condition": "Charmed",
+          "rounds": 3
+        }
+      ],
+      "onFailure": [
+        {
+          "condition": "Hostile",
+          "rounds": 3
+        }
+      ]
     }
   ]
 }

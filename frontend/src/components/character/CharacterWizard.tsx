@@ -6,7 +6,9 @@ import { useToast } from '../../hooks/useToast';
 import {
   buildCost,
   buildFinalAttributes,
+  buildFinalSkills,
   buildFinalTraits,
+  packageBaseFloors,
   buildIssues,
   findPackage,
   isChoiceMod,
@@ -56,6 +58,7 @@ export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose
   const issues = buildIssues(rules, build);
   const warnings = packageSelectionWarnings(rules, build.packageSelections);
   const finalAttrs = buildFinalAttributes(rules, build);
+  const skillFloors = packageBaseFloors(rules.packages ?? [], build.packageSelections);
   const finalTraits = buildFinalTraits(rules, build);
 
   const setSelection = (kind: string, pkgName: string) => {
@@ -123,7 +126,7 @@ export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose
           ? { fate_points: rules.creationBudget.fatePoints }
           : {}),
       });
-      const skillEntries = Object.entries(build.skills ?? {}).filter(([, v]) => v > 0);
+      const skillEntries = Object.entries(buildFinalSkills(rules, build));
       const res = await apiClient.post(`/worlds/${worldId}/entities`, {
         entityType: 'PC',
         name: name.trim(),
@@ -400,6 +403,7 @@ export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose
                 .filter((s) => s.name.toLowerCase().includes(skillSearch.toLowerCase()))
                 .map((s) => {
                   const fw = build.skills?.[s.name] ?? 0;
+                  const floor = skillFloors.get(s.name) ?? 0;
                   const cap = skillMaxFor(rules, s.name, finalAttrs);
                   const next = skillAdvanceCost(rules.advancement, s, fw);
                   return (
@@ -409,14 +413,18 @@ export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose
                         {s.attributes.join('/')}
                         {s.costColumn ? ` · ${s.costColumn}` : ''}
                       </span>
+                      {floor > 0 && (
+                        <span className="text-[10px] text-accent" title={t('wizard.baseValue')}>≥{floor}</span>
+                      )}
                       <button
                         aria-label={`${s.name} -`}
                         onClick={() => purchaseSkill(s.name, fw - 1)}
-                        className="rounded border border-bg-elevated px-2 text-text-secondary hover:text-accent"
+                        disabled={fw <= 0}
+                        className="rounded border border-bg-elevated px-2 text-text-secondary hover:text-accent disabled:opacity-30"
                       >
                         −
                       </button>
-                      <span className="w-8 text-center font-mono text-text-primary">{fw}</span>
+                      <span className="w-8 text-center font-mono text-text-primary">{Math.max(fw, floor)}</span>
                       <button
                         aria-label={`${s.name} +`}
                         onClick={() => purchaseSkill(s.name, Math.min(cap, fw + 1))}
@@ -460,14 +468,13 @@ export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose
               </div>
               <div className="rounded bg-bg-primary/50 p-2">
                 <p className="mb-1 font-medium text-text-primary">{t('wizard.finalSkills')}</p>
-                {Object.entries(build.skills ?? {})
-                  .filter(([, v]) => v > 0)
+                {Object.entries(buildFinalSkills(rules, build))
                   .map(([n, v]) => (
                     <p key={n} className="text-text-secondary">
                       {n}: <span className="font-mono text-text-primary">{v}</span>
                     </p>
                   ))}
-                {Object.values(build.skills ?? {}).every((v) => v <= 0) && (
+                {Object.keys(buildFinalSkills(rules, build)).length === 0 && (
                   <p className="text-text-secondary">—</p>
                 )}
               </div>

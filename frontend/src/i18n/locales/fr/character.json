@@ -45,6 +45,7 @@
     "conditionFailed": "Impossible de modifier les états",
     "fate": "Points de destin",
     "spendFate": "Dépenser un point de destin et relancer",
+    "useFate": "Dépenser un point de destin pour un bonus sur ce jet",
     "spendFateFailed": "Impossible de dépenser le point de destin",
     "armor": "Armure",
     "difficulty": "Difficulté"
@@ -57,6 +58,7 @@
     "skills": "Compétences",
     "skillCost": "Compétences",
     "finalSkills": "Valeurs finales",
+    "baseValue": "Valeur de base",
     "noSkills": "Aucune compétence",
     "search": "Rechercher…",
     "codeSkillCap": "Compétence au-dessus du max ({a})",

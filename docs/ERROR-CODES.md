@@ -175,8 +175,11 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `COMBAT_ACTION_TYPE_INVALID` | 400 | `action_type` nicht bekannt |
 | `COMBAT_INSUFFICIENT_PARTICIPANTS` | 400 | Weniger als 2 Teilnehmer beim Kampfstart |
 | `COMBAT_MANEUVER_UNKNOWN` | 422 | Manöver nicht in `dice_mechanics.combat.maneuvers` konfiguriert |
+| `COMBAT_ACTION_BLOCKED` | 422 | Aktion durch aktiven Zustand gesperrt (`conditions[].blocks`, T3) |
 | `COMBAT_TARGET_DEFEATED` | 422 | Ziel bereits besiegt (Heilung weiter erlaubt) |
 | `COMBAT_ACTOR_DEFEATED` | 422 | Actor besiegt — kann nicht handeln |
+
+| `SOCIAL_ACTION_UNKNOWN` | 422 | `socialAction` nicht in `social_actions[]` konfiguriert (T7) |
 
 ### 3.8a Zauber (`CAST_*`)
 

@@ -62,6 +62,19 @@ class ConditionServiceTest {
     }
 
     @Test
+    void blockedActionsCollectsFromActiveConditionsCaseInsensitive() {
+        var rules = Map.<String, Object>of("conditions", List.of(
+            Map.of("name", "Betaeubt", "blocks", List.of("attack", "MOVE")),
+            Map.of("name", "Wunde")));
+        var e = entityWithMetadata("{\"conditions\":[\"Betaeubt\",\"Wunde\"]}");
+
+        var blocked = service.blockedActions(e, rules);
+
+        assertThat(blocked).containsExactly("ATTACK", "MOVE");
+        assertThat(service.blockedActions(entityWithMetadata("{\"conditions\":[\"Wunde\"]}"), rules)).isEmpty();
+    }
+
+    @Test
     void tickDecrementsAndExpires() {
         var e = entityWithMetadata("{\"conditions\":[\"Wunde\",{\"name\":\"Betaeubt\",\"rounds\":2}]}");
 

@@ -42,9 +42,22 @@ class GameSystemServiceTest {
     }
 
     @Test
+    void updateValidatesAgainstCurrentDefaultSchemaNotStaleCopy() {
+        var gs = new com.lwe.core.domain.GameSystem("D20Lite", 1, validRules, schema);
+        setId(gs, UUID.randomUUID());
+        when(repo.findById(gs.getId())).thenReturn(Optional.of(gs));
+        when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.update(gs.getId(), null, null, validRules + " ", UUID.randomUUID(), true);
+
+        verify(validator).validateOrThrow(any(),
+            org.mockito.ArgumentMatchers.eq(com.lwe.rules.RuleSchemaValidator.DEFAULT_SCHEMA));
+    }
+
+    @Test
     void shouldCreateValidGameSystem() {
         when(repo.existsByName("D20Lite")).thenReturn(false);
-        doNothing().when(validator).validateOrThrow(validRules, schema);
+        doNothing().when(validator).validateOrThrow(validRules, com.lwe.rules.RuleSchemaValidator.DEFAULT_SCHEMA);
         when(repo.save(any())).thenAnswer(inv -> {
             var gs = inv.<GameSystem>getArgument(0);
             var f = GameSystem.class.getDeclaredField("id");
@@ -58,7 +71,7 @@ class GameSystemServiceTest {
         assertThat(result.getName()).isEqualTo("D20Lite");
         assertThat(result.getVersion()).isEqualTo(1);
         assertThat(result.getId()).isNotNull();
-        verify(validator).validateOrThrow(validRules, schema);
+        verify(validator).validateOrThrow(validRules, com.lwe.rules.RuleSchemaValidator.DEFAULT_SCHEMA);
     }
 
     @Test
@@ -80,7 +93,7 @@ class GameSystemServiceTest {
     @Test
     void createWithOwnerIsPrivateAndOwned() {
         when(repo.existsByName("D20Lite")).thenReturn(false);
-        doNothing().when(validator).validateOrThrow(validRules, schema);
+        doNothing().when(validator).validateOrThrow(validRules, com.lwe.rules.RuleSchemaValidator.DEFAULT_SCHEMA);
         when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         var owner = UUID.randomUUID();
 
@@ -145,7 +158,7 @@ class GameSystemServiceTest {
     void ownerlessCreateIsPublic() {
         // Audit P27: Seeds/Legacy ohne Owner muessen global sichtbar sein.
         when(repo.existsByName("D20Lite")).thenReturn(false);
-        doNothing().when(validator).validateOrThrow(validRules, schema);
+        doNothing().when(validator).validateOrThrow(validRules, com.lwe.rules.RuleSchemaValidator.DEFAULT_SCHEMA);
         when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var seeded = service.create("D20Lite", 1, validRules, schema);

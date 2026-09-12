@@ -96,3 +96,10 @@ Testdaten behalten (gehören Playtest-Usern, `e2e-cleanup.sh` greift nur eigene
 „E2E“-Artefakte an). Welt Aventurien +
 Fork, Kampagne Gareth-Kampagne. Aufräumen bei Bedarf: `scripts/e2e-cleanup.sh`
 (greift nur eigene Objekte des Login-Users).
+
+## Betriebshinweis (Phase 38)
+
+Kampagnen pinnen das Regelwerk als Snapshot (`rulesJsonSnapshot`). Nach Engine-/Content-
+Aenderungen am System (T2–T7: `attack` at/pa, `blocks`, `fate`, `social`, `social_actions`)
+muss der DM in der Kampagne **„System nachziehen"** (`POST /campaigns/{id}/pull-system`)
+ausfuehren — sonst spielt die Kampagne weiter mit den alten Regeln.

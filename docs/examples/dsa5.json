@@ -142,6 +142,14 @@
     {
       "name": "ini",
       "formula": "(mut+gewandtheit)/2"
+    },
+    {
+      "name": "at",
+      "formula": "(mut+gewandtheit+koerperkraft)/3+4"
+    },
+    {
+      "name": "pa",
+      "formula": "(mut+intuition+gewandtheit)/3+4"
     }
   ],
   "skills": [
@@ -756,6 +764,14 @@
           "op": "add",
           "value": -2
         }
+      ],
+      "blocks": [
+        "ATTACK",
+        "ACTION",
+        "MOVE",
+        "DEFEND",
+        "MANEUVER",
+        "ABILITY"
       ]
     },
     {
@@ -766,6 +782,42 @@
           "target": "damage",
           "op": "add",
           "value": 2
+        }
+      ],
+      "blocks": [
+        "DEFEND"
+      ]
+    },
+    {
+      "name": "Beeindruckt",
+      "rounds": 3,
+      "effects": [
+        {
+          "target": "probe",
+          "op": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "name": "Verärgert",
+      "rounds": 3,
+      "effects": [
+        {
+          "target": "probe",
+          "op": "add",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "name": "Verängstigt",
+      "rounds": 3,
+      "effects": [
+        {
+          "target": "probe",
+          "op": "add",
+          "value": -2
         }
       ]
     }
@@ -902,7 +954,63 @@
             }
           ]
         }
+      ],
+      "attack": {
+        "value": "at",
+        "target": "pa",
+        "dice": "1d20",
+        "comparison": "lte"
+      }
+    }
+  },
+  "fate": {
+    "probeBonusPerPoint": 1,
+    "avoidDeathCost": 1
+  },
+  "social": {
+    "relationshipScores": {
+      "freundlich": 2,
+      "freundschaftlich": 3,
+      "neutral": 0,
+      "ablehnend": -2,
+      "feindselig": -3
+    },
+    "maxModifier": 3
+  },
+  "social_actions": [
+    {
+      "name": "Freundlich bitten",
+      "skill": "Überreden",
+      "relationshipWeight": 1,
+      "onSuccess": [
+        {
+          "condition": "Beeindruckt",
+          "rounds": 3
+        }
+      ],
+      "onFailure": [
+        {
+          "condition": "Verärgert",
+          "rounds": 3
+        }
+      ]
+    },
+    {
+      "name": "Einschüchtern",
+      "skill": "Einschüchtern",
+      "relationshipWeight": 1,
+      "onSuccess": [
+        {
+          "condition": "Verängstigt",
+          "rounds": 3
+        }
+      ],
+      "onFailure": [
+        {
+          "condition": "Verärgert",
+          "rounds": 3
+        }
       ]
     }
-  }
+  ]
 }

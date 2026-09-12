@@ -29,6 +29,7 @@ public class CombatService {
     private final RulesLoader rulesLoader;
     private final com.lwe.core.util.EntityAccess entityAccess;
     private final DerivedValueService derivedValueService;
+    private final EntityService entityService;
     private final CampaignMemberService campaignMemberService;
     private final Map<DiceExpressionParser.DiceSystem, RuleEngine> engines;
     private final ObjectMapper objectMapper;
@@ -52,7 +53,8 @@ public class CombatService {
                          CampaignMemberService campaignMemberService,
                          ConditionService conditionService,
                          GameItemRepository itemRepo,
-                         DerivedValueService derivedValueService) {
+                         DerivedValueService derivedValueService,
+                         EntityService entityService) {
         this.objectMapper = objectMapper;
         this.conditionService = conditionService;
         this.itemRepo = itemRepo;
@@ -68,6 +70,7 @@ public class CombatService {
         this.worldAccess = worldAccess;
         this.entityAccess = entityAccess;
         this.derivedValueService = derivedValueService;
+        this.entityService = entityService;
         this.rulesLoader = rulesLoader;
         this.campaignMemberService = campaignMemberService;
         this.engines = new EnumMap<>(DiceExpressionParser.DiceSystem.class);
@@ -153,6 +156,7 @@ public class CombatService {
         if (actor.getHpCurrent() <= 0)
             throw new CombatException("COMBAT_ACTOR_DEFEATED", "Actor is defeated");
         requireAp(actor);
+        requireActionAllowed(session, actorId, actionType); // T3
 
         if ("MOVE".equals(actionType)) {
             deductAp(actor);
@@ -186,7 +190,7 @@ public class CombatService {
             ? resolveAttackConfig(attackWorld, session.getCampaignId())
             : null;
         if (attackCfg != null && targetId != null) {
-            var hit = attackHits(userId, session, actorId, targetId, attackCfg);
+            var hit = attackHits(userId, session, actorId, targetId, attackCfg, 0);
             if (Boolean.FALSE.equals(hit)) {
                 deductAp(actor);
                 sendCombatMessage(session.getWorldId(), "🎯 " + entityName(actorId)
@@ -209,7 +213,7 @@ public class CombatService {
             target.setHpCurrent(target.getHpCurrent() - damage);
             participantRepo.save(target);
 
-            if (target.getHpCurrent() <= 0) {
+            if (target.getHpCurrent() <= 0 && !tryAvoidDeath(userId, session, targetId, target)) {
                 sendCombatMessage(session.getWorldId(), "💀 " + entityName(targetId) + " wurde besiegt!");
                 eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED,
                     target.getEntityId(), null, Map.of("actionType", "DEFEATED"));
@@ -238,6 +242,7 @@ public class CombatService {
             .orElseThrow(() -> new CombatException("ABILITY_NOT_FOUND", "Ability not found"));
         if (ability.getType() != Ability.AbilityType.ACTIVE)
             throw new CombatException("ABILITY_NOT_ACTIVE", "Ability is not an active ability");
+        requireActionAllowed(session, actorId, "ABILITY"); // T3
         if (actor.getApCurrent() < ability.getApCost())
             throw new CombatException("COMBAT_AP_INSUFFICIENT", "Not enough AP");
 
@@ -265,7 +270,7 @@ public class CombatService {
                 damage = applyDamageModifiers(damage, targetId, effects.damageType());
                 target.setHpCurrent(Math.max(0, target.getHpCurrent() - damage));
                 participantRepo.save(target);
-                if (target.getHpCurrent() <= 0) {
+                if (target.getHpCurrent() <= 0 && !tryAvoidDeath(userId, session, targetId, target)) {
                     eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED,
                         target.getEntityId(), null, Map.of("actionType", "DEFEATED"));
                 }
@@ -468,7 +473,27 @@ public class CombatService {
         int apCost = def.get("apCost") instanceof Number n ? Math.max(1, n.intValue()) : 1;
         if (actor.getApCurrent() < apCost)
             throw new CombatException("COMBAT_AP_INSUFFICIENT", "Not enough AP");
+        requireActionAllowed(session, actorId, "MANEUVER", "ACTION"); // T3
         checkRange("ACTION", targetId, actorId);
+
+        // T2: angriffsbasierte Manöver (attackMalus) laufen durch dasselbe Gate wie Angriffe.
+        var attackCfg = isDamagingAction(world, session.getCampaignId(), "ACTION")
+            ? resolveAttackConfig(world, session.getCampaignId())
+            : null;
+        if (attackCfg != null && targetId != null) {
+            int malus = def.get("attackMalus") instanceof Number n ? n.intValue() : 0;
+            var hit = attackHits(userId, session, actorId, targetId, attackCfg, malus);
+            if (Boolean.FALSE.equals(hit)) {
+                actor.setApCurrent(actor.getApCurrent() - apCost);
+                participantRepo.save(actor);
+                sendCombatMessage(session.getWorldId(), "\u2694\ufe0f " + entityName(actorId) + " \u2013 "
+                    + maneuverName + ": verfehlt " + entityName(targetId));
+                eventService.publish(session.getWorldId(), session.getCampaignId(),
+                    COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
+                        "actionType", "MISS", "maneuver", maneuverName, "damage", 0));
+                return new CombatActionResult("MISS", 0, actor.getApCurrent(), false, null);
+            }
+        }
 
         var base = rollDamage(userId, session.getWorldId(), actorId, "ACTION", session.getCampaignId());
         int bonus = 0;
@@ -490,7 +515,7 @@ public class CombatService {
             var target = findActor(participants, targetId);
             target.setHpCurrent(target.getHpCurrent() - damage);
             participantRepo.save(target);
-            if (target.getHpCurrent() <= 0) {
+            if (target.getHpCurrent() <= 0 && !tryAvoidDeath(userId, session, targetId, target)) {
                 eventService.publish(session.getWorldId(), session.getCampaignId(),
                     COMBAT_ACTION_EXECUTED, target.getEntityId(), null, Map.of("actionType", "DEFEATED"));
             }
@@ -662,7 +687,11 @@ public class CombatService {
 
     // Bewusst: Turn-Wechsel/Lesen/Ende braucht nur Welt-Mitgliedschaft (kein Owner),
     // Aktionen zusätzlich den aktuellen Turn (validateSession). Siehe Finding F-Combat-Auth.
-    /** P1: attack-Config aus dem Regelwerk (optional, generisch). */
+    // T4/Audit: Tod abwenden gibt Schicksalspunkte des ZIELS aus (auch durch den Angreifer
+    // getriggert) — bewusste Regel-Entscheidung, explizite Reaktion bleibt SM-04.
+    /** P1: attack-Config aus dem Regelwerk (optional, generisch).
+     *  T2: Quelle ist genau eine von attribute (Engine-Modifikator), value
+     *  (abgeleiteter Wert des Angreifers) oder skill (Per-Charakter-Fertigkeitswert). */
     @SuppressWarnings("unchecked")
     private Map<String, Object> resolveAttackConfig(com.lwe.core.domain.World world, UUID campaignId) {
         if (world == null) return null;
@@ -670,36 +699,95 @@ public class CombatService {
         if (!(rules.get("dice_mechanics") instanceof Map<?, ?> dm)) return null;
         if (!(dm.get("combat") instanceof Map<?, ?> combat)) return null;
         if (!(combat.get("attack") instanceof Map<?, ?> attack)) return null;
-        if (!(attack.get("attribute") instanceof String attr) || !(attack.get("target") instanceof String target)) {
-            return null;
-        }
+        String source, sourceName;
+        if (attack.get("attribute") instanceof String a) { source = "attribute"; sourceName = a; }
+        else if (attack.get("value") instanceof String v) { source = "value"; sourceName = v; }
+        else if (attack.get("skill") instanceof String s) { source = "skill"; sourceName = s; }
+        else return null;
         var cfg = new java.util.HashMap<String, Object>();
-        cfg.put("attribute", attr);
-        cfg.put("target", target);
+        cfg.put("source", source);
+        cfg.put("sourceName", sourceName);
+        if (attack.get("target") instanceof String target) cfg.put("target", target);
         cfg.put("dice", attack.get("dice") instanceof String d ? d : "1d20");
         cfg.put("comparison", attack.get("comparison") instanceof String c ? c : "gte");
         return cfg;
     }
 
-    /** null = kein Zielwert ableitbar (dann greift das Gate nicht). */
+    /** null = kein Zielwert ableitbar (dann greift das Gate nicht).
+     *  malus: positive Zahl erschwert den Angriff (Wuchtschlag etc.). */
     private Boolean attackHits(UUID userId, CombatSession session, UUID actorId, UUID targetId,
-                               Map<String, Object> cfg) {
+                               Map<String, Object> cfg, int malus) {
         var attacker = entityRepo.findById(actorId).orElse(null);
         var defender = entityRepo.findById(targetId).orElse(null);
         if (attacker == null || defender == null) return null;
-        var targetValue = derivedValue(defender, session, (String) cfg.get("target"));
-        if (targetValue == null) return null;
-        var attrName = (String) cfg.get("attribute");
-        var attrValue = AttributeUtils.extractAttribute(attacker, attrName).orElse(10);
+        var targetName = (String) cfg.get("target");
+        Integer targetValue = targetName == null ? null : derivedValue(defender, session, targetName);
+        var comparison = (String) cfg.get("comparison");
+        var dice = (String) cfg.get("dice");
+        var source = (String) cfg.getOrDefault("source", "attribute");
+        var sourceName = (String) cfg.get("sourceName");
+
+        if ("attribute".equals(source)) {
+            if (targetValue == null) return null;
+            var attrValue = AttributeUtils.extractAttribute(attacker, sourceName).orElse(10);
+            var world = worldRepo.findById(session.getWorldId()).orElse(null);
+            var engine = resolveEngine(world, session.getCampaignId());
+            var probe = engine.executeProbe(new RuleEngine.ProbeRequest(
+                sourceName, attrValue, 0, targetValue, dice));
+            // P1: Vergleichsrichtung kommt aus der Config (gte = D&D, lte = d100/CoC) —
+            // damit sind Engine-Eigenheiten (Tier-Systeme) irrelevant.
+            return "lte".equals(comparison)
+                ? probe.total() + malus <= targetValue
+                : probe.total() - malus >= targetValue;
+        }
+
+        // T2: value/skill sind bereits finale Werte — reiner Wurf, kein Engine-Modifikator.
+        // lte = Wurf auf den eigenen Wert (DSA AT, CoC Fighting); target ist dann nur Doku.
+        Integer base = "value".equals(source)
+            ? derivedValue(attacker, session, sourceName)
+            : skillValue(attacker, session, sourceName);
+        if (base == null) return null;
+        var roll = rollDice(dice);
+        if ("lte".equals(comparison)) {
+            return roll + malus <= base;
+        }
+        return targetValue != null && roll + base - malus >= targetValue;
+    }
+
+    private int rollDice(String expression) {
+        var m = java.util.regex.Pattern.compile("(\\d+)d(\\d+)").matcher(expression == null ? "" : expression);
+        if (!m.find()) return 0;
+        int count = Integer.parseInt(m.group(1));
+        int sides = Integer.parseInt(m.group(2));
+        int total = 0;
+        var rng = java.util.concurrent.ThreadLocalRandom.current();
+        for (int i = 0; i < count; i++) total += rng.nextInt(1, sides + 1);
+        return total;
+    }
+
+    /** Per-Charakter-Fertigkeitswert (skillsJson), sonst Regel-Bonus; null = nicht vorhanden. */
+    private Integer skillValue(GameEntity entity, CombatSession session, String name) {
+        if (entity.getSkillsJson() != null && !entity.getSkillsJson().isBlank()) {
+            try {
+                var map = objectMapper.readValue(entity.getSkillsJson(),
+                    new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Integer>>() {});
+                if (map.containsKey(name)) return map.get(name);
+            } catch (Exception e) {
+                // fall through to rules
+            }
+        }
         var world = worldRepo.findById(session.getWorldId()).orElse(null);
-        var engine = resolveEngine(world, session.getCampaignId());
-        var probe = engine.executeProbe(new RuleEngine.ProbeRequest(
-            attrName, attrValue, 0, targetValue, (String) cfg.get("dice")));
-        // P1: Vergleichsrichtung kommt aus der Config (gte = D&D, lte = d100/CoC) —
-        // damit sind Engine-Eigenheiten (Tier-Systeme) irrelevant.
-        return "lte".equals(cfg.get("comparison"))
-            ? probe.total() <= targetValue
-            : probe.total() >= targetValue;
+        if (world == null) return null;
+        var rules = rulesLoader.loadRules(session.getCampaignId(), world.getId());
+        if (rules.get("skills") instanceof List<?> skills) {
+            for (var s : skills) {
+                if (s instanceof Map<?, ?> m && name.equals(m.get("name"))
+                    && m.get("bonus") instanceof Number n) {
+                    return n.intValue();
+                }
+            }
+        }
+        return null;
     }
 
     private Integer derivedValue(GameEntity entity, CombatSession session, String name) {
@@ -752,6 +840,41 @@ public class CombatService {
 
     private void requireWorldAccess(UUID worldId, UUID userId) {
         worldAccess.requireAccess(worldId, userId);
+    }
+
+    /** T4: Tod abwenden — kostet fate.avoidDeathCost Schicksalspunkte, Ziel bleibt mit 1 HP. */
+    private boolean tryAvoidDeath(UUID userId, CombatSession session, UUID targetId, CombatParticipant target) {
+        var world = worldRepo.findById(session.getWorldId()).orElse(null);
+        if (world == null) return false;
+        var rules = rulesLoader.loadRules(session.getCampaignId(), world.getId());
+        int cost = rules.get("fate") instanceof Map<?, ?> f && f.get("avoidDeathCost") instanceof Number n
+            ? n.intValue() : 0;
+        if (cost <= 0) return false;
+        // Audit T7: atomar + wirft nie (sonst rollback-only trotz gefangenem Fehler).
+        if (!entityService.spendFatePointsIfAvailable(targetId, userId, session.getCampaignId(), cost)) {
+            return false;
+        }
+        target.setHpCurrent(1);
+        participantRepo.save(target);
+        sendCombatMessage(session.getWorldId(), "★ " + entityName(targetId) + " wendet den Tod ab!");
+        eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED,
+            targetId, null, Map.of("actionType", "FATE_AVOIDED_DEATH"));
+        return true;
+    }
+
+    /** T3: aktive Zustände (rules.conditions[].blocks) können Aktionstypen sperren. */
+    private void requireActionAllowed(CombatSession session, UUID actorId, String... actionTypes) {
+        var entity = entityRepo.findById(actorId).orElse(null);
+        if (entity == null) return;
+        var rules = rulesLoader.loadRules(session.getCampaignId(), session.getWorldId());
+        var blocked = conditionService.blockedActions(entity, rules);
+        if (blocked.isEmpty()) return;
+        for (var t : actionTypes) {
+            if (t != null && blocked.contains(t.toUpperCase(java.util.Locale.ROOT))) {
+                throw new CombatException("COMBAT_ACTION_BLOCKED",
+                    "Action is blocked by an active condition");
+            }
+        }
     }
 
     private String entityName(UUID entityId) {

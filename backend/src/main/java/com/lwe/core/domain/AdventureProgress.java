@@ -51,6 +51,7 @@ public class AdventureProgress {
     public UUID getCurrentNodeId() { return currentNodeId; }
     public void setCurrentNodeId(UUID v) { this.currentNodeId = v; }
     public String getVisitedNodes() { return visitedNodes; }
+    public void setVisitedNodes(String v) { this.visitedNodes = v; }
     public void addVisitedNode(UUID nodeId) { this.visitedNodes = this.visitedNodes + "," + nodeId; }
     public String getStatus() { return status; }
     public void setStatus(String v) { this.status = v; }

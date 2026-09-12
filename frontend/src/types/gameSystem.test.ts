@@ -107,6 +107,39 @@ describe('gameSystem roundtrip', () => {
       { name: 'sk', input: 'mut+klugheit', table: [{ min: 24, max: 26, value: 4 }], requiresTrait: 'Zauberer' },
     ]);
   });
+
+  it('roundtrip preserves T3/T4/T5 blocks (fate, condition blocks, package baseValues)', () => {
+    const data = defaultWizardData();
+    data.fate = { probeBonusPerPoint: 1, avoidDeathCost: 2 };
+    data.conditions = [{
+      name: 'Betäubt', rounds: 2,
+      effects: [{ target: 'probe', op: 'add', value: -4 }],
+      blocks: ['ATTACK', 'MOVE'],
+    }];
+    data.packages = [{ name: 'Waldelf', kind: 'species', baseValues: [{ name: 'Klettern', value: 4 }] }];
+
+    const restored = fromRulesJson(toRulesJson(data));
+
+    expect(restored!.fate).toEqual({ probeBonusPerPoint: 1, avoidDeathCost: 2 });
+    expect(restored!.conditions![0].blocks).toEqual(['ATTACK', 'MOVE']);
+    expect(restored!.packages![0].baseValues).toEqual([{ name: 'Klettern', value: 4 }]);
+  });
+
+  it('roundtrip preserves SM social config and actions', () => {
+    const data = defaultWizardData();
+    data.social = { relationshipScores: { freundlich: 2, feindselig: -3 }, maxModifier: 3 };
+    data.socialActions = [{
+      name: 'Freundlich bitten', skill: 'Überreden', relationshipWeight: 1,
+      onSuccess: [{ condition: 'Beeindruckt', rounds: 3 }],
+      onFailure: [{ condition: 'Verärgert' }],
+    }];
+
+    const restored = fromRulesJson(toRulesJson(data));
+
+    expect(restored!.social).toEqual({ relationshipScores: { freundlich: 2, feindselig: -3 }, maxModifier: 3 });
+    expect(restored!.socialActions![0].onSuccess).toEqual([{ condition: 'Beeindruckt', rounds: 3 }]);
+    expect(restored!.socialActions![0].onFailure).toEqual([{ condition: 'Verärgert' }]);
+  });
 });
 
 describe('budget (P28-T02)', () => {
@@ -339,7 +372,8 @@ describe('Beispiel-Content P23/P28 (T32)', () => {
     const dnd = fromRulesJson(JSON.stringify(dnd5ejson))!;
     expect(dnd.creationBudget?.ap).toBe(27);
     expect(dnd.abilities?.some((a) => a.damageType === 'slashing')).toBe(true);
-    expect((dnd5ejson as { conditions?: { name: string }[] }).conditions).toHaveLength(2);
+    expect((dnd5ejson as { conditions?: { name: string }[] }).conditions?.map((c) => c.name))
+      .toEqual(expect.arrayContaining(['Charmed', 'Hostile']));
 
     const coc = fromRulesJson(JSON.stringify(coc7ejson))!;
     expect(coc.abilities?.some((a) => a.damageType === 'piercing')).toBe(true);
@@ -399,13 +433,14 @@ describe('conditions editor (B2)', () => {
 describe('conditions roundtrip (Playtest-Befund #2)', () => {
   it('fromRulesJson übernimmt den Zustands-Katalog opak', () => {
     const data = fromRulesJson(JSON.stringify(dsa5json))!;
-    expect(data.conditions).toHaveLength(3);
+    expect(data.conditions?.map((c) => c.name))
+      .toEqual(expect.arrayContaining(['Wunde', 'Betäubt', 'Beeindruckt']));
   });
 
   it('toRulesJson schreibt conditions zurück (kein Verlust bei Edit→Save)', () => {
     const data = fromRulesJson(JSON.stringify(dsa5json))!;
     const rules = JSON.parse(toRulesJson(data));
-    expect(rules.conditions).toHaveLength(3);
+    expect(rules.conditions.length).toBe(data.conditions!.length);
     expect(rules.conditions[0].name).toBe('Wunde');
   });
 });

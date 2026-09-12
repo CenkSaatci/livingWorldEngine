@@ -36,12 +36,15 @@ public class ProbeService {
     private final ObjectMapper objectMapper;
     private final ConditionService conditionService;
     private final DerivedValueService derivedValueService;
+    private final EntityService entityService;
+    private final RelationshipService relationshipService;
 
     public ProbeService(GameEntityRepository entityRepo, WorldRepository worldRepo,
                         WorldAccess worldAccess,
                         ConditionEvaluator conditionEvaluator, ModifierService modifierService,
                         RulesLoader rulesLoader, ObjectMapper objectMapper,
-                        ConditionService conditionService, DerivedValueService derivedValueService) {
+                        ConditionService conditionService, DerivedValueService derivedValueService,
+                        EntityService entityService, RelationshipService relationshipService) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldRepo = worldRepo;
@@ -51,6 +54,8 @@ public class ProbeService {
         this.rulesLoader = rulesLoader;
         this.conditionService = conditionService;
         this.derivedValueService = derivedValueService;
+        this.entityService = entityService;
+        this.relationshipService = relationshipService;
     }
 
     public ProbeResponse executeProbe(UUID entityId, UUID userId, String skillName,
@@ -75,14 +80,28 @@ public class ProbeService {
     /**
      * Generische Proben-Optionen (P1): Difficulty-Level aus dem Regelwerk
      * ({@code dice_mechanics.difficulties}) plus Bonus-/Penalty-Würfel (d100).
+     * T4: useFate = Schicksalspunkt für Bonus aus {@code fate.probeBonusPerPoint} ausgeben.
      */
-    public record ProbeOptions(int difficulty, String difficultyKey, int bonusDice, int penaltyDice) {
-        public static ProbeOptions none() { return new ProbeOptions(0, null, 0, 0); }
+    public record ProbeOptions(int difficulty, String difficultyKey, int bonusDice, int penaltyDice,
+                               boolean useFate) {
+        public ProbeOptions(int difficulty, String difficultyKey, int bonusDice, int penaltyDice) {
+            this(difficulty, difficultyKey, bonusDice, penaltyDice, false);
+        }
+        public static ProbeOptions none() { return new ProbeOptions(0, null, 0, 0, false); }
     }
 
     public ProbeResponse executeProbe(UUID entityId, UUID userId, String skillName,
                                        int target, boolean advantage, UUID campaignId,
                                        ProbeOptions options) {
+        return executeProbe(entityId, userId, skillName, target, advantage, campaignId,
+            options, null, null);
+    }
+
+    /** SM-01 (ADR-013): Soziale Probe = Skill-Probe mit Beziehungs-Modifikator
+     *  (socialAction aus {@code social_actions[]}, Ziel = socialTargetId). */
+    public ProbeResponse executeProbe(UUID entityId, UUID userId, String skillName,
+                                       int target, boolean advantage, UUID campaignId,
+                                       ProbeOptions options, String socialAction, UUID socialTargetId) {
         var opts = options == null ? ProbeOptions.none() : options;
         var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new RuntimeException("ENTITY_NOT_FOUND"));
@@ -124,6 +143,40 @@ public class ProbeService {
         // Aktive Zustaende (P29-T01): Probe-Malus
         var conditionMalus = conditionService.modifier(entity, rules, "probe");
 
+        // SM-01: Beziehungs-Modifikator fuer soziale Aktionen (Cap aus social.maxModifier).
+        // Audit T7: Erst validieren (Aktion, Skill, Ziel-Welt), dann Ressourcen ausgeben.
+        int socialBonus = 0;
+        Map<String, Object> socialDef = null;
+        if (socialAction != null && !socialAction.isBlank()) {
+            socialDef = findSocialAction(rules, socialAction);
+            if (socialDef == null) {
+                throw new SocialException("SOCIAL_ACTION_UNKNOWN",
+                    "Unknown social action: " + socialAction);
+            }
+            if (!skillName.equals(socialDef.get("skill"))) {
+                throw new SocialException("SOCIAL_SKILL_MISMATCH",
+                    "Social action requires skill: " + socialDef.get("skill"));
+            }
+            var socialTargetEntity = socialTargetId == null ? null
+                : entityRepo.findById(socialTargetId).orElse(null);
+            if (socialTargetEntity == null || !socialTargetEntity.getWorldId().equals(entity.getWorldId())) {
+                throw new SocialException("SOCIAL_TARGET_INVALID", "Social target not found");
+            }
+            int weight = socialDef.get("relationshipWeight") instanceof Number n ? (int) Math.round(n.doubleValue()) : 1;
+            var score = relationshipScore(entityId, socialTargetId, rules);
+            int cap = Math.abs(rules.get("social") instanceof Map<?, ?> sc
+                && sc.get("maxModifier") instanceof Number n ? n.intValue() : 3);
+            socialBonus = Math.max(-cap, Math.min(cap, weight * score));
+        }
+
+        // T4: Schicksalspunkt für Probe-Bonus ausgeben (nur wenn Regelwerk fate kennt).
+        int fateBonus = 0;
+        if (opts.useFate() && rules.get("fate") instanceof Map<?, ?> fateCfg
+            && fateCfg.get("probeBonusPerPoint") instanceof Number n && n.intValue() > 0) {
+            entityService.spendFatePoint(entityId, userId, campaignId);
+            fateBonus = n.intValue();
+        }
+
         var rng = ThreadLocalRandom.current();
         List<ProbeResponse.ConditionalResult> activeConditionals;
         int total;
@@ -137,7 +190,8 @@ public class ProbeService {
                 var baseSkill = skillBonus + conditionMalus + skillAttrs.stream()
                     .mapToInt(a -> (int) Math.round(modifiers.getOrDefault(a, 0.0))).sum();
                 // P1: Difficulty-Multiplier (z.B. CoC hard 0.5) + Bonus-/Penalty-Würfel.
-                var effective = (int) Math.round(baseSkill * diff.multiplier()) + difficulty;
+                var effective = (int) Math.round(baseSkill * diff.multiplier()) + difficulty
+                    + fateBonus + socialBonus;
                 // Audit P1: Bonus/Penalty 1:1 verrechnen (Netto-Extras).
                 var net = Math.max(opts.bonusDice(), 0) - Math.max(opts.penaltyDice(), 0);
                 var extra = Math.min(2, Math.abs(net));
@@ -184,7 +238,7 @@ public class ProbeService {
                 dice = rolls;
                 total = Arrays.stream(rolls).sum();
                 modifierTotal = -fails;
-                success = fails <= (skillBonus + conditionMalus);
+                success = fails <= (skillBonus + conditionMalus + fateBonus + socialBonus);
                 break;
             }
             default: { // d20_target
@@ -194,7 +248,8 @@ public class ProbeService {
                 dice = advantage ? new int[]{die1, die2} : new int[]{die};
                 var attrMod = skillAttrs.stream()
                     .mapToDouble(a -> modifiers.getOrDefault(a, 0.0)).sum();
-                modifierTotal = (int) Math.round(attrMod) + skillBonus + conditionMalus;
+                modifierTotal = (int) Math.round(attrMod) + skillBonus + conditionMalus
+                    + fateBonus + socialBonus;
                 total = die + modifierTotal;
                 // Audit P1: Difficulty-Delta verschiebt d20-Zielwerte (DC +/-), nicht doppelt.
                 success = total >= target + difficulty;
@@ -205,6 +260,11 @@ public class ProbeService {
         // Conditionals auswerten
         var conditionals = (List<Map<String, Object>>) rules.getOrDefault("conditionals", List.of());
         activeConditionals = conditionEvaluator.evaluate(conditionals, attributes);
+
+        // SM-02: Erfolgs-/Fehlschlag-Zustaende der sozialen Aktion auf das Ziel anwenden.
+        if (socialDef != null && socialTargetId != null) {
+            applySocialEffects(socialDef, success ? "onSuccess" : "onFailure", socialTargetId, rules);
+        }
 
         return new ProbeResponse(probeType, dice, modifierTotal, total, success, details, activeConditionals);
     }
@@ -231,7 +291,7 @@ public class ProbeService {
         return new Difficulty(multiplier, delta);
     }
 
-    private String resolveProbeType(Map<String, Object> rules) {
+    static String resolveProbeType(Map<String, Object> rules) {
         var explicit = (String) rules.get("probeType");
         if (explicit != null) return explicit;
         var diceMechanics = (Map<String, Object>) rules.get("dice_mechanics");
@@ -243,6 +303,47 @@ public class ProbeService {
             }
         }
         return "d20_target";
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> findSocialAction(Map<String, Object> rules, String name) {
+        if (!(rules.get("social_actions") instanceof List<?> actions)) return null;
+        for (var a : actions) {
+            if (a instanceof Map<?, ?> m && name.equals(m.get("name"))) {
+                return (Map<String, Object>) m;
+            }
+        }
+        return null;
+    }
+
+    /** Beziehungswert des Ziels aus RelationshipService, gemappt ueber social.relationshipScores. */
+    private int relationshipScore(UUID actorId, UUID targetId, Map<String, Object> rules) {
+        if (targetId == null) return 0;
+        String relation = null;
+        for (var rel : relationshipService.getRelationships(actorId)) {
+            var other = rel.getEntityAId().equals(actorId) ? rel.getEntityBId() : rel.getEntityAId();
+            if (!other.equals(targetId)) continue;
+            relation = rel.getRelationship();
+            break;
+        }
+        if (relation == null) return 0;
+        if (rules.get("social") instanceof Map<?, ?> sc
+            && sc.get("relationshipScores") instanceof Map<?, ?> scores
+            && scores.get(relation) instanceof Number n) {
+            return (int) Math.round(n.doubleValue());
+        }
+        return 0;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void applySocialEffects(Map<String, Object> socialDef, String key, UUID targetId,
+                                    Map<String, Object> rules) {
+        if (!(socialDef.get(key) instanceof List<?> effects)) return;
+        for (var e : effects) {
+            if (!(e instanceof Map<?, ?> m) || !(m.get("condition") instanceof String condition)) continue;
+            Integer rounds = m.get("rounds") instanceof Number n ? n.intValue() : null;
+            entityService.applyCondition(targetId, condition, rounds, rules);
+        }
     }
 
     private Map<String, Integer> parsePerCharacterSkills(GameEntity entity) {
@@ -325,6 +426,16 @@ public class ProbeService {
 
     public record CastResult(ProbeResponse probe, String resource, int cost,
                              int resourceRemaining, int resourceMax) {}
+
+    /** SM-01: unbekannte soziale Aktion o. ae. */
+    public static class SocialException extends RuntimeException {
+        private final String errorCode;
+        public SocialException(String errorCode, String message) {
+            super(message);
+            this.errorCode = errorCode;
+        }
+        public String getErrorCode() { return errorCode; }
+    }
 
     public static class CastException extends RuntimeException {
         private final String errorCode;

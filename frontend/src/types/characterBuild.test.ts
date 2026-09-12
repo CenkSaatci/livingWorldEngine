@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { defaultWizardData, buildCost, buildFinalAttributes, buildFinalTraits, buildIssues, skillMaxFor, type CharacterBuild } from './gameSystem';
+import { defaultWizardData, buildCost, buildFinalAttributes, buildFinalSkills, buildFinalTraits, buildIssues, skillMaxFor, type CharacterBuild } from './gameSystem';
 
 describe('Charakter-Build (P30-T01)', () => {
   const base = () => {
@@ -139,6 +139,27 @@ describe('Skill-FW bei Erstellung (B1)', () => {
     const data = skillBase();
     const build: CharacterBuild = { packageSelections: [], attributes: {}, traits: [], skills: { Klettern: 3 } };
     expect(buildCost(data, build).skills).toBe(6);
+  });
+
+  it('T5: Paket-Basiswerte sind gratis und nur der Mehrkauf kostet', () => {
+    const data = skillBase();
+    data.packages = [{
+      name: 'Waldelf', kind: 'species', cost: 0,
+      baseValues: [{ name: 'Klettern', value: 4 }],
+    }];
+    // Kauf unter dem Basiswert: kostenlos, End-FW = Basiswert
+    const low: CharacterBuild = { packageSelections: [{ name: 'Waldelf' }], attributes: {}, traits: [], skills: { Klettern: 2 } };
+    expect(buildCost(data, low).skills).toBe(0);
+    expect(buildFinalSkills(data, low)).toEqual({ Klettern: 4 });
+
+    // Kauf über dem Basiswert: nur die 2 Punkte darüber kosten (2 AP je Punkt)
+    const high: CharacterBuild = { ...low, skills: { Klettern: 6 } };
+    expect(buildCost(data, high).skills).toBe(4);
+    expect(buildFinalSkills(data, high)).toEqual({ Klettern: 6 });
+
+    // Ohne Kauf: End-FW kommt allein aus dem Basiswert
+    const none: CharacterBuild = { ...low, skills: {} };
+    expect(buildFinalSkills(data, none)).toEqual({ Klettern: 4 });
   });
 
   it('meldet Skill-Cap-Verletzung', () => {

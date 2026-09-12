@@ -52,7 +52,9 @@ public class RollController {
                 req.difficulty() != null ? req.difficulty() : 0,
                 req.difficultyKey(),
                 req.bonusDice() != null ? req.bonusDice() : 0,
-                req.penaltyDice() != null ? req.penaltyDice() : 0));
+                req.penaltyDice() != null ? req.penaltyDice() : 0,
+                req.useFate()),
+            req.socialAction(), req.socialTargetId());
         return ResponseEntity.ok(result);
     }
 
@@ -83,7 +85,10 @@ public class RollController {
         Integer difficulty,
         String difficultyKey,
         Integer bonusDice,
-        Integer penaltyDice
+        Integer penaltyDice,
+        boolean useFate,
+        String socialAction,
+        UUID socialTargetId
     ) {}
 
     public record CastRequest(

@@ -145,6 +145,13 @@
     "info": "Info",
     "diplomacy": "Diplomacy",
     "relationships": "Relationships",
+    "socialProbe": "Social probe",
+    "socialActor": "Character",
+    "socialAction": "Action",
+    "socialRoll": "Roll probe",
+    "socialSuccess": "{{name}} reacts positively.",
+    "socialFailure": "{{name}} reacts dismissively.",
+    "socialUnknown": "Unknown social action",
     "servicesEmpty": "No services — add via “Edit”."
   },
   "faction": {

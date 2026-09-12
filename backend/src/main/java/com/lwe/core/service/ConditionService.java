@@ -74,6 +74,28 @@ public class ConditionService {
         return sum;
     }
 
+    /** T3: Aktions-Typen, die durch aktive Zustände gesperrt sind (case-insensitive). */
+    public List<String> blockedActions(GameEntity entity, Map<String, Object> rules) {
+        var active = active(entity);
+        if (active.isEmpty()) return List.of();
+        var catalog = conditions(rules);
+        var out = new java.util.LinkedHashSet<String>();
+        for (var inst : active) {
+            var def = catalog.stream()
+                .filter(c -> inst.name().equals(c.get("name")))
+                .findFirst().orElse(null);
+            if (def == null) continue;
+            if (def.get("blocks") instanceof List<?> blocks) {
+                for (var b : blocks) {
+                    if (b instanceof String s && !s.isBlank()) {
+                        out.add(s.toUpperCase(java.util.Locale.ROOT));
+                    }
+                }
+            }
+        }
+        return List.copyOf(out);
+    }
+
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> conditions(Map<String, Object> rules) {
         var raw = rules.get("conditions");

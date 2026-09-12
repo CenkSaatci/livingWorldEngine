@@ -25,9 +25,12 @@ public class WorldService {
     private final RegionWeatherRepository regionWeatherRepo;
     private final EntityAbilityRepository entityAbilityRepo;
     private final QuestRepository questRepo;
+    private final com.lwe.core.repository.EntityRelationshipRepository relationshipRepo;
     private final AdventureRepository adventureRepo;
     private final AdventureNodeRepository adventureNodeRepo;
     private final NodeChoiceRepository nodeChoiceRepo;
+    private final AdventureProgressRepository progressRepo;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
     private final com.lwe.core.util.WorldAccess worldAccess;
 
     public WorldService(WorldRepository worldRepo, WorldMemberRepository memberRepo,
@@ -39,9 +42,12 @@ public class WorldService {
                         RegionWeatherRepository regionWeatherRepo,
                         EntityAbilityRepository entityAbilityRepo,
                         QuestRepository questRepo,
+                        com.lwe.core.repository.EntityRelationshipRepository relationshipRepo,
                         AdventureRepository adventureRepo,
                         AdventureNodeRepository adventureNodeRepo,
                         NodeChoiceRepository nodeChoiceRepo,
+                        AdventureProgressRepository progressRepo,
+                        com.fasterxml.jackson.databind.ObjectMapper objectMapper,
                         com.lwe.core.util.WorldAccess worldAccess) {
         this.worldRepo = worldRepo;
         this.memberRepo = memberRepo;
@@ -55,9 +61,12 @@ public class WorldService {
         this.regionWeatherRepo = regionWeatherRepo;
         this.entityAbilityRepo = entityAbilityRepo;
         this.questRepo = questRepo;
+        this.relationshipRepo = relationshipRepo;
         this.adventureRepo = adventureRepo;
         this.adventureNodeRepo = adventureNodeRepo;
         this.nodeChoiceRepo = nodeChoiceRepo;
+        this.progressRepo = progressRepo;
+        this.objectMapper = objectMapper;
         this.worldAccess = worldAccess;
     }
 
@@ -258,6 +267,31 @@ public class WorldService {
             entityIdMap.put(e.getId(), saved.getId());
         }
 
+        // Audit T7: Metadaten-JSON der Kopien remappen (Legacy-relationships-Map
+        // enthaelt Entity-IDs der Quellwelt) — zweiter Pass, da alle IDs bekannt sein muessen.
+        for (var entry : entityIdMap.entrySet()) {
+            var orig = entityRepo.findById(entry.getKey()).orElse(null);
+            if (orig == null || orig.getMetadataJson() == null) continue;
+            var remapped = remapReferences(orig.getMetadataJson(), entityIdMap, locationIdMap);
+            if (!remapped.equals(orig.getMetadataJson())) {
+                entityRepo.findById(entry.getValue()).ifPresent(copy -> {
+                    copy.setMetadataJson(remapped);
+                    entityRepo.save(copy);
+                });
+            }
+        }
+
+        // Audit T7: Beziehungen (EntityRelationship) mit remappten IDs klonen.
+        for (var entry : entityIdMap.entrySet()) {
+            for (var rel : relationshipRepo.findByEntityAIdOrEntityBId(entry.getKey(), entry.getKey())) {
+                var newA = entityIdMap.get(rel.getEntityAId());
+                var newB = entityIdMap.get(rel.getEntityBId());
+                if (newA != null && newB != null) {
+                    relationshipRepo.save(new com.lwe.core.domain.EntityRelationship(newA, newB, rel.getRelationship()));
+                }
+            }
+        }
+
         // Entity-Abilities (join table) mitkopieren
         for (var entry : entityIdMap.entrySet()) {
             for (var ea : entityAbilityRepo.findByEntityId(entry.getKey())) {
@@ -305,7 +339,7 @@ public class WorldService {
         // Quests (T33-04): Referenzen auf Entities/Locations remappen
         for (var q : questRepo.findByWorldIdOrderByCreatedAtDesc(worldId)) {
             var copy = new Quest(clone.getId(), q.getTitle(), q.getType(),
-                q.getObjectives(), q.getRewards());
+                remapReferences(q.getObjectives(), entityIdMap, locationIdMap), q.getRewards());
             copy.setDescription(q.getDescription());
             copy.setStatus(q.getStatus());
             copy.setAiGenerated(q.isAiGenerated());
@@ -315,7 +349,7 @@ public class WorldService {
         }
 
         // Adventures + Nodes (T33-04): Node-IDs und Startknoten remappen.
-        // AdventureProgress wird bewusst NICHT kopiert — Forks starten Spieldurchlaeufe frisch.
+        // T6: AdventureProgress wird mitkopiert (Entity-/Node-IDs remapped).
         for (var a : adventureRepo.findByWorldId(worldId)) {
             var nodeIdMap = new HashMap<UUID, UUID>();
             var advCopy = new Adventure(clone.getId(), a.getName());
@@ -348,9 +382,84 @@ public class WorldService {
                 savedAdv.setStartNodeId(nodeIdMap.get(a.getStartNodeId()));
                 adventureRepo.save(savedAdv);
             }
+            // T6: Spieldurchlaeufe in den Fork uebernehmen (Entity-/Node-IDs remappen).
+            for (var p : progressRepo.findByAdventureId(a.getId())) {
+                var newEntityId = entityIdMap.get(p.getEntityId());
+                if (newEntityId == null) continue;
+                var newCurrent = nodeIdMap.get(p.getCurrentNodeId());
+                if (newCurrent == null) continue;
+                var progressCopy = new AdventureProgress(savedAdv.getId(), newEntityId, newCurrent);
+                progressCopy.setStatus(p.getStatus());
+                var visited = parseVisitedNodes(p.getVisitedNodes()).stream()
+                    .map(nodeIdMap::get).filter(Objects::nonNull)
+                    .map(UUID::toString).toList();
+                if (!visited.isEmpty()) {
+                    progressCopy.setVisitedNodes("{" + String.join(",", visited) + "}");
+                }
+                progressRepo.save(progressCopy);
+            }
         }
 
         return clone;
+    }
+
+    /** T6: Ersetzt Entity-/Location-UUIDs rekursiv in einem JSON-String. */
+    private String remapReferences(String json, Map<UUID, UUID> entityMap, Map<UUID, UUID> locationMap) {
+        if (json == null || json.isBlank()) return json;
+        try {
+            return objectMapper.writeValueAsString(
+                remapRefs(objectMapper.readTree(json), entityMap, locationMap));
+        } catch (Exception e) {
+            return json; // kaputtes JSON unveraendert uebernehmen (Altbestand)
+        }
+    }
+
+    private com.fasterxml.jackson.databind.JsonNode remapRefs(
+            com.fasterxml.jackson.databind.JsonNode node,
+            Map<UUID, UUID> entityMap, Map<UUID, UUID> locationMap) {
+        if (node.isObject()) {
+            var obj = (com.fasterxml.jackson.databind.node.ObjectNode) node;
+            var it = obj.fields();
+            while (it.hasNext()) {
+                var e = it.next();
+                obj.set(e.getKey(), remapRefs(e.getValue(), entityMap, locationMap));
+            }
+            return obj;
+        }
+        if (node.isArray()) {
+            var arr = (com.fasterxml.jackson.databind.node.ArrayNode) node;
+            for (int i = 0; i < arr.size(); i++) {
+                arr.set(i, remapRefs(arr.get(i), entityMap, locationMap));
+            }
+            return arr;
+        }
+        if (node.isTextual()) {
+            try {
+                var id = UUID.fromString(node.asText());
+                var mapped = entityMap.get(id);
+                if (mapped == null) mapped = locationMap.get(id);
+                if (mapped != null) {
+                    return com.fasterxml.jackson.databind.node.TextNode.valueOf(mapped.toString());
+                }
+            } catch (IllegalArgumentException ignored) {
+                // kein UUID-Text
+            }
+        }
+        return node;
+    }
+
+    private List<UUID> parseVisitedNodes(String visitedNodes) {
+        if (visitedNodes == null || visitedNodes.isBlank()) return List.of();
+        var out = new ArrayList<UUID>();
+        for (var part : visitedNodes.replace("{", "").replace("}", "").split(",")) {
+            if (part.isBlank()) continue;
+            try {
+                out.add(UUID.fromString(part.trim()));
+            } catch (IllegalArgumentException ignored) {
+                // defekter Eintrag wird uebersprungen
+            }
+        }
+        return out;
     }
 
     @Transactional

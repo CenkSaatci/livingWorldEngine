@@ -9,7 +9,7 @@
 - **Tests:** Backend 486 (`mvn -B test`) · Frontend 186 (`npx vitest run`) · E2E 11 (`npm run test:e2e`) · ai-bot 50 · `tsc`/Build grün
 - **Audits:** P28, P23/P29, P30 und ein finales Gesamt-Audit — alle HIGH/MEDIUM-Findings gefixt, Rest bewusst zurückgestellt (siehe Notizen unten)
 - **P27-Status:** komplett ✅ (Shares/Welt-PUBLIC und Fork-Lücken via P33; Bot-Runtime via T33-06; Bulk/WS/E2E via T33-07/08)
-- **Offen (bewusst):** P34 ✅ abgeschlossen · P14-Rest (Editor-E2E; Inject-Choice ✅) · E2E-Backlog T32-T03 (Fork-Unabhängigkeit) · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
+- **Offen (bewusst, Testphase):** P14-Rest (Editor-E2E; Inject-Choice ✅) · E2E-Backlog T32-T03 (Fork-Unabhängigkeit) · ADR-013 SM-04 (DM-Queue SOCIAL_REACTION) — T0–T7 in Phase 38 ✅
 - **Nächste Schritte:** Phase-35-Backlog aus DSA-Spieltest (unten), danach P14-Editor-E2E
 - **DSA-Spieltest** ✅ (2026-09-12, Bericht `docs/PLAYTEST-DSA.md`): Welt+System+Kampagne via Frontend, 2 Charaktere, Proben/Kampf/Abenteuer/Quest/Session/Chat verifiziert; 17 Befunde sofort gefixt (TDD + live)
 
@@ -2581,6 +2581,21 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Beispieldaten:** `dnd5e.json` (Rassen/Klassen, Slots, Attack gte, DC-Grade), `coc7e.json` (Berufe, MP, Attack lte, regular/hard/extreme) — validieren gegen `DEFAULT_SCHEMA` (`ExamplesSchemaValidationTest`).
 - **A5 Level-Up:** generisch über `progression.levels` verifiziert (bestehende Tests decken d20-artige Levels ab).
 - **Audit P1:** 15 Findings, 14 gefixt (u. a. Thrown-Engine, Comparison, Bonus-100, d20-Delta, Error-Skips, Wizard-Feldverlust, leere Zeilen, Null-Guards); offen nur LOW „unbekannter difficultyKey wird still ignoriert".
+
+## Phase 38: Backlog T0–T7 — Spielbarkeit aller drei Systeme (✅)
+
+> Ziel: DSA zuerst spielbar machen, DnD/CoC als Generik-Nachweis; weiterhin keine Systemlogik im Code.
+
+- **T0 (kritisch, live verifiziert):** `RollService` verlangte Welt-Owner — Spieler-Rolls (Kampfschaden, Abenteuerproben) wurden mit „Access denied" blockiert. Fix: `WorldAccess.requireAccess` (Owner/Mitglied, soft-deleted gesperrt).
+- **T1:** Adventure-`skillCheck` routet bei `probeType: d20_3attr` über den ProbeService (3W20, `modifier` = Difficulty); andere Systeme nutzen den RollService jetzt mit Kampagnen-Kontext (vorher ohne `campaignId` → falsche Engine).
+- **T2:** Angriffswurf-Gate um `value`/`skill`-Quellen erweitert (finale Werte, reiner Wurf) + `attackMalus` auf Manöver angewandt; DSA-Content `at`/`pa` + `attack {value:"at", target:"pa", comparison:"lte"}`; CoC auf `skill: "Kampf (Raufen)"` umgestellt.
+- **T3:** `conditions[].blocks` (Aktionstyp-Sperren) + `COMBAT_ACTION_BLOCKED`; DSA: Betäubt sperrt alle Aktionen, Blutrausch sperrt Verteidigung.
+- **T4:** Fate vollständig: `fate.probeBonusPerPoint` (Probe-Option `useFate`, Probenroller ★-Toggle) und `fate.avoidDeathCost` (Combat: Tod abwenden, Ziel bleibt bei 1 HP).
+- **T5:** `packages[].baseValues` als gratis Untergrenze (Attribut/Skill), AP nur für Kauf darueber; Wizard zeigt Basiswert-Chip.
+- **T6:** Fork kopiert Quest-`objectives` mit remappten Entity-/Location-UUIDs und übernimmt `AdventureProgress` (Entity-/Node-Referenzen remapped).
+- **T7 (ADR-013 SM-01…03):** Soziale Proben (`socialAction`/`socialTargetId`, Beziehungs-Score × Gewicht, Cap `social.maxModifier`) mit Erfolgs-/Fehlschlag-Zustaenden aufs Ziel; Wizard-Editor `social_actions[]`; NPC-View: Score-Badges + Panel „Soziale Probe" (PC, Aktion) — live verifiziert (Überreden fehlschlagen → „Verärgert" am NPC).
+- **Live-Funde:** (a) `GameSystemService.update` validierte gegen eingefrorenes Alt-Schema → validiert jetzt immer gegen `DEFAULT_SCHEMA`; (b) `ExamplesSchemaValidationTest` filterte Keys → validiert jetzt komplett; (c) Engine-Zustandseffekte (sozial) liefen über DM-gated `addCondition` → neues `EntityService.applyCondition` für Engine-Effekte.
+- **Verschoben in die manuelle Testphase:** T8 (SM-04 DM-Queue SOCIAL_REACTION), T9 (P14 Editor-E2E), T10 (T32-T03 Fork-E2E).
 
 ## Phase 36: Audit-Nacharbeit (Runden)
 

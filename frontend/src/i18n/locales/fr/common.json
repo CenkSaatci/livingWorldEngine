@@ -145,6 +145,13 @@
     "info": "Infos",
     "diplomacy": "Diplomatie",
     "relationships": "Relations",
+    "socialProbe": "Jet social",
+    "socialActor": "Personnage",
+    "socialAction": "Action",
+    "socialRoll": "Lancer le jet",
+    "socialSuccess": "{{name}} réagit positivement.",
+    "socialFailure": "{{name}} réagit avec rejet.",
+    "socialUnknown": "Action sociale inconnue",
     "servicesEmpty": "Aucun service — ajouter via « Modifier »."
   },
   "faction": {

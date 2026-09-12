@@ -19,7 +19,10 @@ public class AdventureService {
     private final NodeChoiceRepository choiceRepo;
     private final AdventureProgressRepository progressRepo;
     private final WorldRepository worldRepo;
+    private final CampaignRepository campaignRepo;
     private final RollService rollService;
+    private final ProbeService probeService;
+    private final RulesLoader rulesLoader;
     private final WorldEventService eventService;
     private final com.lwe.core.util.WorldAccess worldAccess;
     private final com.lwe.core.util.EntityAccess entityAccess;
@@ -27,7 +30,8 @@ public class AdventureService {
 
     public AdventureService(AdventureRepository adventureRepo, AdventureNodeRepository nodeRepo,
                             NodeChoiceRepository choiceRepo, AdventureProgressRepository progressRepo,
-                            WorldRepository worldRepo, RollService rollService,
+                            WorldRepository worldRepo, CampaignRepository campaignRepo,
+                            RollService rollService, ProbeService probeService, RulesLoader rulesLoader,
                             WorldEventService eventService, com.lwe.core.util.WorldAccess worldAccess,
                         com.lwe.core.util.EntityAccess entityAccess, ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
@@ -36,7 +40,10 @@ public class AdventureService {
         this.choiceRepo = choiceRepo;
         this.progressRepo = progressRepo;
         this.worldRepo = worldRepo;
+        this.campaignRepo = campaignRepo;
         this.rollService = rollService;
+        this.probeService = probeService;
+        this.rulesLoader = rulesLoader;
         this.eventService = eventService;
         this.worldAccess = worldAccess;
         this.entityAccess = entityAccess;
@@ -195,12 +202,24 @@ public class AdventureService {
                 var modifier = tree.path("modifier").asInt(0);
                 var target = tree.path("target").asInt(10);
 
-                // Use RollService to evaluate
-                var rollResult = rollService.executeRoll(userId,
-                    adventureRepo.findById(adventureId).orElseThrow().getWorldId(),
-                    entityId, skill, modifier, target);
+                var worldId = adv.getWorldId();
+                // Audit T7: deterministisch die zuletzt angelegte Kampagne der Fork-Welt
+                // (Fork-Welten gehoeren 1:1 zu genau einer Kampagne).
+                var campaignId = campaignRepo.findByWorldId(worldId).stream()
+                    .max(java.util.Comparator.comparing(Campaign::getCreatedAt))
+                    .map(Campaign::getId).orElse(null);
+                var rules = rulesLoader.loadRules(campaignId, worldId);
 
-                skillCheckSuccess = rollResult != null && rollResult.success();
+                if ("d20_3attr".equals(ProbeService.resolveProbeType(rules))) {
+                    // T1: DSA-Proben (3W20) laufen über den ProbeService; modifier = Difficulty.
+                    var probe = probeService.executeProbe(entityId, userId, skill, target, false,
+                        campaignId, new ProbeService.ProbeOptions(modifier, null, 0, 0));
+                    skillCheckSuccess = probe != null && probe.success();
+                } else {
+                    var rollResult = rollService.executeRoll(userId, worldId, entityId,
+                        skill, modifier, target, campaignId);
+                    skillCheckSuccess = rollResult != null && rollResult.success();
+                }
             } catch (Exception e) {
                 skillCheckSuccess = false;
             }

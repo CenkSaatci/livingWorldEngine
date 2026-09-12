@@ -546,7 +546,7 @@
         "max": 1
       },
       "attack": {
-        "attribute": "geschick",
+        "skill": "Kampf (Raufen)",
         "target": "verteidigung",
         "dice": "1d100",
         "comparison": "lte"

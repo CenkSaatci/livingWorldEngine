@@ -145,6 +145,13 @@
     "info": "Info",
     "diplomacy": "Diplomatie",
     "relationships": "Beziehungen",
+    "socialProbe": "Soziale Probe",
+    "socialActor": "Charakter",
+    "socialAction": "Aktion",
+    "socialRoll": "Probe würfeln",
+    "socialSuccess": "{{name}} reagiert positiv.",
+    "socialFailure": "{{name}} reagiert ablehnend.",
+    "socialUnknown": "Unbekannte soziale Aktion",
     "servicesEmpty": "Keine Dienste — über „Bearbeiten“ hinzufügen."
   },
   "faction": {

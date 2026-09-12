@@ -45,6 +45,7 @@
     "conditionFailed": "No se pudieron cambiar los estados",
     "fate": "Puntos de destino",
     "spendFate": "Gastar un punto de destino y repetir la tirada",
+    "useFate": "Gastar punto de destino para un bono en esta tirada",
     "spendFateFailed": "No se pudo gastar el punto de destino",
     "armor": "Armadura",
     "difficulty": "Dificultad"
@@ -57,6 +58,7 @@
     "skills": "Habilidades",
     "skillCost": "Habilidades",
     "finalSkills": "Valores finales",
+    "baseValue": "Valor base",
     "noSkills": "Sin habilidades",
     "search": "Buscar…",
     "codeSkillCap": "Habilidad sobre el máximo ({a})",

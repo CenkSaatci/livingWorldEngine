@@ -110,6 +110,7 @@ public class GlobalExceptionHandler {
             case NpcIntentService.IntentException e -> e.getErrorCode();
             case InventoryService.InventoryException e -> e.getErrorCode();
             case ProbeService.CastException e -> e.getErrorCode();
+            case ProbeService.SocialException e -> e.getErrorCode();
             case TradeService.TradeException e -> e.getErrorCode();            case EntityService.EntityException e -> e.getErrorCode();
             case AbilityService.AbilityException e -> e.getErrorCode();
             case EntityAbilityService.EntityAbilityException e -> e.getErrorCode();
@@ -142,6 +143,7 @@ public class GlobalExceptionHandler {
                 case "CAST_ENTITY_NOT_FOUND", "CAST_SKILL_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 default -> HttpStatus.UNPROCESSABLE_ENTITY;
             };
+            case ProbeService.SocialException e -> HttpStatus.UNPROCESSABLE_ENTITY;
             case TradeService.TradeException e -> switch (e.getErrorCode()) {
                 case "TRADE_NOT_FOUND", "TRADE_ENTITY_NOT_FOUND", "TRADE_ENTITY_GONE",
                      "TRADE_ITEM_NOT_FOUND" -> HttpStatus.NOT_FOUND;
@@ -153,7 +155,7 @@ public class GlobalExceptionHandler {
                 case "COMBAT_NOT_ACTIVE", "COMBAT_NOT_YOUR_TURN", "COMBAT_AP_INSUFFICIENT",
                      "COMBAT_RANGE_INVALID", "COMBAT_TARGET_INVALID",
                      "COMBAT_TARGET_DEFEATED", "COMBAT_ACTOR_DEFEATED",
-                     "COMBAT_MANEUVER_UNKNOWN" -> HttpStatus.UNPROCESSABLE_ENTITY;
+                     "COMBAT_MANEUVER_UNKNOWN", "COMBAT_ACTION_BLOCKED" -> HttpStatus.UNPROCESSABLE_ENTITY;
                 case "COMBAT_INSUFFICIENT_PARTICIPANTS" -> HttpStatus.BAD_REQUEST;
                 default -> HttpStatus.BAD_REQUEST;
             };

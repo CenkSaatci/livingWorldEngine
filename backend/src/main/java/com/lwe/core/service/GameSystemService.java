@@ -75,8 +75,9 @@ public class GameSystemService {
             throw new GameSystemException("GAME_SYSTEM_VERSION_CONFLICT",
                 "A game system with name '" + name + "' already exists");
         }
-        var schema = "{}".equals(schemaJson) || schemaJson == null
-            ? RuleSchemaValidator.DEFAULT_SCHEMA : schemaJson;
+        // Audit T7: Custom-Schemas sind nicht Produkt-Scope (update/revalidate nutzen
+        // ohnehin das Default-Schema) — immer ggue. dem aktuellen Default validieren.
+        var schema = RuleSchemaValidator.DEFAULT_SCHEMA;
         validator.validateOrThrow(rulesJson, schema);
         var gs = new GameSystem(name, version, rulesJson, schema, ownerId);
         // Seeds/Legacy (kein Owner) bleiben global sichtbar (Audit P27).
@@ -211,7 +212,7 @@ public class GameSystemService {
      */
     public List<RuleSchemaValidator.ValidationError> revalidate(UUID id) {
         var gs = getById(id);
-        return validator.validate(gs.getRulesJson(), gs.getSchemaJson());
+        return validator.validate(gs.getRulesJson(), RuleSchemaValidator.DEFAULT_SCHEMA);
     }
 
     @Transactional
@@ -222,7 +223,10 @@ public class GameSystemService {
         if (name != null) gs.setName(name);
         if (version != null) gs.setVersion(version);
         if (rulesJson != null && !rulesJson.equals(gs.getRulesJson())) {
-            validator.validateOrThrow(rulesJson, gs.getSchemaJson());
+            // Live-Fund T7: gespeicherte schemaJson ist eine Kopie des Defaults zur
+            // Erstellungszeit und damit veraltet — immer gegen das aktuelle Default-Schema
+            // validieren (Custom-Schemas sind im Produkt nicht vorgesehen).
+            validator.validateOrThrow(rulesJson, RuleSchemaValidator.DEFAULT_SCHEMA);
             gs.setRulesJson(rulesJson);
             // Audit P27: Regel-Aenderung erhoeht die Version automatisch (monoton).
             gs.setVersion(gs.getVersion() + 1);

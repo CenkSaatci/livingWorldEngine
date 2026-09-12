@@ -36,6 +36,7 @@ class CombatServiceTest {
     private final ConditionService conditionService = mock();
     private final com.lwe.core.repository.GameItemRepository itemRepo = mock();
     private final DerivedValueService derivedValueService = mock();
+    private final EntityService entityService = mock();
 
     private CombatService combatService;
     private final UUID userId = UUID.randomUUID();
@@ -47,7 +48,7 @@ class CombatServiceTest {
             worldRepo, gameSystemRepo, eventService, rollService, abilityRepo, messaging, worldAccess,
             new com.lwe.core.util.EntityAccess(entityRepo, worldAccess), List.of(new D20RuleEngine()),
             new ObjectMapper(), rulesLoader, campaignMemberService, conditionService, itemRepo,
-            derivedValueService);
+            derivedValueService, entityService);
     }
 
     @Test
@@ -498,6 +499,87 @@ class CombatServiceTest {
     }
 
     @Test
+    void fatePointAvoidsDeathAndLeavesTargetAtOneHp() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Held");
+        attacker.setAttributesJson("{\"geschick\":10}");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        defender.setMetadataJson("{\"fate_points\":1}");
+        setId(defender, defenderId);
+
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        var pa = new CombatParticipant(sessionId, attackerId, 10, 2, "A");
+        var pd = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
+        pd.setHpCurrent(5);
+        pd.setHpMax(5);
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(pa, pd)));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of("dice_mechanics", Map.of("combat", Map.of(
+            "initiative", "1d20", "damage", "1d8",
+            "attack", Map.of("attribute", "geschick", "target", "ac", "dice", "1d20"))),
+            "fate", Map.of("avoidDeathCost", 1)));
+        stubDerivedAc(1); // immer Treffer
+        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt(), any()))
+            .thenReturn(new RollService.RollResult("damage", "1d8", new int[]{8}, 8, 0, true, null));
+        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt()))
+            .thenReturn(new RollService.RollResult("damage", "1d8", new int[]{8}, 8, 0, true, null));
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+        when(entityService.spendFatePointsIfAvailable(eq(defenderId), eq(userId), any(), eq(1)))
+            .thenReturn(true);
+
+        combatService.executeAction(userId, sessionId, attackerId, "ACTION", defenderId, null);
+
+        assertThat(pd.getHpCurrent()).isEqualTo(1); // statt 0 (Tod abgewendet)
+        verify(entityService).spendFatePointsIfAvailable(eq(defenderId), eq(userId), any(), eq(1));
+    }
+
+    @Test
+    void blockedConditionPreventsAttackAction() {        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Held");
+        attacker.setMetadataJson("{\"conditions\":[\"Betaeubt\"]}");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        setId(defender, defenderId);
+
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        var pa = new CombatParticipant(sessionId, attackerId, 10, 2, "A");
+        var pd = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(pa, pd)));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of(
+            "conditions", List.of(Map.of("name", "Betaeubt", "blocks", List.of("ATTACK")))));
+        when(conditionService.blockedActions(any(), any())).thenReturn(List.of("ATTACK"));
+
+        assertThatThrownBy(() -> combatService.executeAction(
+            userId, sessionId, attackerId, "ATTACK", defenderId, null))
+            .isInstanceOf(CombatService.CombatException.class)
+            .satisfies(e -> assertThat(((CombatService.CombatException) e).getErrorCode())
+                .isEqualTo("COMBAT_ACTION_BLOCKED"));
+    }
+
+    @Test
     void actionTypeMatchingIsCaseInsensitive() {
         // Wizard-Systeme speichern action_types kleingeschrieben (["action"]),
         // die UI sendet "ACTION" — das muss als schädigend gelten (TDD BUG-3).
@@ -666,6 +748,104 @@ class CombatServiceTest {
         assertThat(result.totalDamage()).isEqualTo(8); // 5 + 3
         assertThat(result.apRemaining()).isZero();     // 2 AP - 2
         assertThat(defenderParticipant.getHpCurrent()).isEqualTo(2);
+    }
+
+    @Test
+    void attackWithValueSourceRollsUnderOwnDerivedValue() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Held");
+        attacker.setAttributesJson("{\"at\":30}");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        defender.setAttributesJson("{\"pa\":10}");
+        setId(defender, defenderId);
+
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        var pa = new CombatParticipant(sessionId, attackerId, 10, 2, "A");
+        var pd = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(pa, pd)));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of("dice_mechanics", Map.of("combat", Map.of(
+            "initiative", "1d20", "damage", "1d8",
+            "attack", Map.of("value", "at", "target", "pa", "dice", "1d20", "comparison", "lte")))));
+        when(derivedValueService.evaluate(any(), any(), any())).thenAnswer(inv -> {
+            java.util.Map<String, Integer> attrs = inv.getArgument(1);
+            return attrs.containsKey("at")
+                ? List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("at", 30, null))
+                : List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("pa", 10, null));
+        });
+        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt(), any()))
+            .thenReturn(new RollService.RollResult("damage", "1d8", new int[]{5}, 5, 0, true, null));
+        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt()))
+            .thenReturn(new RollService.RollResult("damage", "1d8", new int[]{5}, 5, 0, true, null));
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        var result = combatService.executeAction(userId, sessionId, attackerId, "ACTION", defenderId, null);
+
+        // 1d20 <= 30 ist immer erfuellt -> deterministischer Treffer
+        assertThat(result.totalDamage()).isGreaterThan(0);
+    }
+
+    @Test
+    void maneuverWithAttackMalusCanMiss() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Held");
+        attacker.setAttributesJson("{\"at\":20}");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        defender.setAttributesJson("{\"pa\":10}");
+        setId(defender, defenderId);
+
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        var pa = new CombatParticipant(sessionId, attackerId, 10, 2, "A");
+        var pd = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
+        pd.setHpCurrent(10);
+        pd.setHpMax(10);
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(pa, pd)));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of("dice_mechanics", Map.of("combat", Map.of(
+            "initiative", "1d20", "damage", "1d8",
+            "attack", Map.of("value", "at", "target", "pa", "dice", "1d20", "comparison", "lte"),
+            "maneuvers", List.of(Map.of(
+                "name", "Wuchtschlag", "apCost", 2, "attackMalus", 21,
+                "effects", List.of(Map.of("target", "damage", "op", "add", "value", 3))))))));
+        when(derivedValueService.evaluate(any(), any(), any())).thenAnswer(inv -> {
+            java.util.Map<String, Integer> attrs = inv.getArgument(1);
+            return attrs.containsKey("at")
+                ? List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("at", 20, null))
+                : List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("pa", 10, null));
+        });
+        when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        var result = combatService.executeManeuver(userId, sessionId, attackerId, defenderId, "Wuchtschlag");
+
+        // Wurf + 21 > 20 ist immer erfuellt -> deterministischer Miss, AP trotzdem weg.
+        assertThat(result.actionType()).isEqualTo("MISS");
+        assertThat(result.totalDamage()).isZero();
+        assertThat(pd.getHpCurrent()).isEqualTo(10);
+        assertThat(pa.getApCurrent()).isZero();
     }
 
 

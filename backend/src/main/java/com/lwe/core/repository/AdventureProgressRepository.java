@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface AdventureProgressRepository extends JpaRepository<AdventureProgress, UUID> {
     Optional<AdventureProgress> findByAdventureIdAndEntityId(UUID adventureId, UUID entityId);
     java.util.List<AdventureProgress> findByAdventureIdAndStatus(UUID adventureId, String status);
+
+    java.util.List<AdventureProgress> findByAdventureId(UUID adventureId);
 }

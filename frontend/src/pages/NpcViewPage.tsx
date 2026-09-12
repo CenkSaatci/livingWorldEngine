@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Briefcase, Heart, HeartOff, Swords, Handshake, Minus } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { useApiGet } from '../hooks/useApiGet';
+import { useActiveCampaign } from '../store/campaignStore';
+import { fromRulesJson, type WizardData } from '../types/gameSystem';
 import { useLazyApiGet } from '../hooks/useLazyApiGet';
 import { EntityTimeline } from '../components/world/EntityTimeline';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -86,6 +88,13 @@ export default function NpcViewPage() {
     [npc?.factionId],
   );
   const { data: relations, fetch: fetchRelations } = useLazyApiGet<FactionRelation[]>();
+  const activeCampaign = useActiveCampaign();
+  const { data: worldEntities, refetch: refetchEntities } = useApiGet<{ id: string; name: string; entityType: string }[]>(
+    `/worlds/${worldId}/entities`, [worldId]);
+  const [socialRules, setSocialRules] = useState<WizardData | null>(null);
+  const [socialActorId, setSocialActorId] = useState('');
+  const [socialActionName, setSocialActionName] = useState('');
+  const [socialRolling, setSocialRolling] = useState(false);
 
   const [editing, setEditing] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -166,6 +175,48 @@ export default function NpcViewPage() {
   const priceMod = meta.price_modifier as number | undefined;
   const relationships = (meta.relationships ?? {}) as Record<string, string>;
   const services = (meta.services_offered ?? []) as string[];
+
+  // SM-03: Regelwerk der aktiven Kampagne laden (nur wenn sie zu dieser Welt gehoert).
+  useEffect(() => {
+    setSocialRules(null);
+    if (!activeCampaign || activeCampaign.worldId !== worldId) return;
+    let cancelled = false;
+    apiClient.get(`/game-systems/${activeCampaign.gameSystemId}`).then((res) => {
+      if (!cancelled) setSocialRules(fromRulesJson((res.data.rulesJson as string) ?? '') ?? null);
+    }).catch(() => { if (!cancelled) setSocialRules(null); });
+    return () => { cancelled = true; };
+  }, [activeCampaign, worldId]);
+
+  const socialActions = socialRules?.socialActions ?? [];
+  const relationshipScores = socialRules?.social?.relationshipScores ?? {};
+  const pcs = (worldEntities ?? []).filter((e) => e.entityType === 'PC');
+
+  const rollSocial = async () => {
+    const action = socialActions.find((a) => a.name === socialActionName);
+    if (!action || !socialActorId || !activeCampaign) return;
+    setSocialRolling(true);
+    try {
+      const res = await apiClient.post('/rolls/probe', {
+        entityId: socialActorId,
+        skillName: action.skill,
+        target: 10,
+        advantage: false,
+        campaignId: activeCampaign.id,
+        socialAction: action.name,
+        socialTargetId: npcId,
+      });
+      if (res.data.success) toast.success(t('entity.socialSuccess', { name: npc.name }));
+      else toast.error(t('entity.socialFailure', { name: npc.name }));
+      refetch();
+      refetchEntities();
+    } catch (e: any) {
+      const code = e?.response?.data?.error?.code;
+      toast.error(code === 'SOCIAL_ACTION_UNKNOWN'
+        ? t('entity.socialUnknown') : t('entity.socialFailure', { name: npc.name }));
+    } finally {
+      setSocialRolling(false);
+    }
+  };
 
   const openEdit = () => {
     setEditName(npc.name);
@@ -415,6 +466,40 @@ export default function NpcViewPage() {
 
         {/* Right: Relationships + Timeline */}
         <div className="space-y-6">
+          {/* SM-03: Soziale Probe (ADR-013) */}
+          {socialActions.length > 0 && pcs.length > 0 && (
+            <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
+              <h2 className="mb-3 font-heading text-text-primary">{t('entity.socialProbe')}</h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={socialActorId}
+                  onChange={(e) => setSocialActorId(e.target.value)}
+                  aria-label={t('entity.socialActor')}
+                  className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                >
+                  <option value="">{t('entity.socialActor')}</option>
+                  {pcs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+                <select
+                  value={socialActionName}
+                  onChange={(e) => setSocialActionName(e.target.value)}
+                  aria-label={t('entity.socialAction')}
+                  className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                >
+                  <option value="">{t('entity.socialAction')}</option>
+                  {socialActions.map((a) => <option key={a.name} value={a.name}>{a.name}</option>)}
+                </select>
+                <button
+                  onClick={rollSocial}
+                  disabled={socialRolling || !socialActorId || !socialActionName}
+                  className="rounded border border-accent/40 bg-accent/10 px-3 py-1 text-xs text-accent hover:bg-accent/20 disabled:opacity-40"
+                >
+                  {socialRolling ? '…' : t('entity.socialRoll')}
+                </button>
+              </div>
+            </section>
+          )}
+
           {/* Relationships */}
           {Object.keys(relationships).length > 0 && (
             <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
@@ -429,6 +514,14 @@ export default function NpcViewPage() {
                     )}
                     <span className="text-text-primary">{id.slice(0, 12)}…</span>
                     <span className="text-text-secondary">{rel}</span>
+                    {relationshipScores[rel] != null && (
+                      <span className={`rounded px-1 text-[10px] font-mono ${
+                        relationshipScores[rel] > 0 ? 'bg-success/10 text-success'
+                          : relationshipScores[rel] < 0 ? 'bg-danger/10 text-danger'
+                            : 'bg-bg-elevated text-text-secondary'}`}>
+                        {relationshipScores[rel] > 0 ? '+' : ''}{relationshipScores[rel]}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>

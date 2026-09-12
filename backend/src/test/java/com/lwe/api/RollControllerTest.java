@@ -40,27 +40,27 @@ class RollControllerTest {
     @Test
     void probePassesDifficultyToService() {
         when(probeService.executeProbe(eq(entityId), eq(userId), eq("Klettern"), eq(10), eq(false),
-            eq(campaignId), any(ProbeService.ProbeOptions.class))).thenReturn(response());
+            eq(campaignId), any(ProbeService.ProbeOptions.class), eq(null), eq(null))).thenReturn(response());
 
         var res = controller.probe(
-            new RollController.ProbeRequest(entityId, "Klettern", 10, false, campaignId, 2, "hard", 1, 0), user());
+            new RollController.ProbeRequest(entityId, "Klettern", 10, false, campaignId, 2, "hard", 1, 0, false, null, null), user());
 
         assertThat(res.getStatusCode().is2xxSuccessful()).isTrue();
         verify(probeService).executeProbe(eq(entityId), eq(userId), eq("Klettern"), eq(10), eq(false),
             eq(campaignId), argThat(o -> o.difficulty() == 2 && "hard".equals(o.difficultyKey())
-                && o.bonusDice() == 1 && o.penaltyDice() == 0));
+                && o.bonusDice() == 1 && o.penaltyDice() == 0), eq(null), eq(null));
     }
 
     @Test
     void probeDefaultsDifficultyToZero() {
         when(probeService.executeProbe(any(), any(), any(), anyInt(), anyBoolean(), any(),
-            any(ProbeService.ProbeOptions.class))).thenReturn(response());
+            any(ProbeService.ProbeOptions.class), any(), any())).thenReturn(response());
 
-        controller.probe(new RollController.ProbeRequest(entityId, "Klettern", 10, false, campaignId, null, null, null, null), user());
+        controller.probe(new RollController.ProbeRequest(entityId, "Klettern", 10, false, campaignId, null, null, null, null, false, null, null), user());
 
         verify(probeService).executeProbe(eq(entityId), eq(userId), eq("Klettern"), eq(10), eq(false),
             eq(campaignId), argThat(o -> o.difficulty() == 0 && o.difficultyKey() == null
-                && o.bonusDice() == 0 && o.penaltyDice() == 0));
+                && o.bonusDice() == 0 && o.penaltyDice() == 0), eq(null), eq(null));
     }
 
     @Test

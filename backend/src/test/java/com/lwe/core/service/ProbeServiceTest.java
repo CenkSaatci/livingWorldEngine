@@ -29,6 +29,8 @@ class ProbeServiceTest {
     private final RulesLoader rulesLoader = mock();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final ConditionService conditionService = new ConditionService(objectMapper);
+    private final EntityService entityService = mock();
+    private final RelationshipService relationshipService = mock();
 
     private ProbeService service;
 
@@ -48,7 +50,7 @@ class ProbeServiceTest {
     void setUp() {
         service = new ProbeService(entityRepo, worldRepo, worldAccess,
             conditionEvaluator, modifierService, rulesLoader, objectMapper, conditionService,
-            new DerivedValueService());
+            new DerivedValueService(), entityService, relationshipService);
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
         lenient().when(conditionEvaluator.evaluate(any(), any())).thenReturn(java.util.List.of());
         lenient().when(modifierService.calculateModifiers(any(), any())).thenReturn(Map.of("staerke", 0.0));
@@ -366,8 +368,162 @@ class ProbeServiceTest {
     }
 
     @Test
-    void conditionMalusAppliesToProbe() {
+    void useFateSpendsPointAndAddsBonus() throws Exception {
         var entity = entityWithAttrs("{\"staerke\":10}");
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(rulesLoader.loadRules(any(), any())).thenAnswer(inv -> objectMapper.readValue("""
+            {"version":1,"probeType":"d20_target",
+             "attributes":[{"name":"staerke","type":"INT","default":10}],
+             "skills":[{"name":"Athletik","attributes":[],"bonus":0}],
+             "fate":{"probeBonusPerPoint":2,"avoidDeathCost":1},
+             "dice_mechanics":{"probe":"1d20+mod"}}
+            """, Map.class));
+
+        var result = service.executeProbe(entityId, userId, "Athletik", 0, false, campaignId(),
+            new ProbeService.ProbeOptions(0, null, 0, 0, true));
+
+        assertThat(result.modifier()).isEqualTo(2); // nur Fate-Bonus
+        verify(entityService).spendFatePoint(entityId, userId, campaignId());
+    }
+
+    @Test
+    void useFateWithoutFateConfigDoesNotSpend() {
+        var entity = entityWithAttrs("{\"staerke\":10}");
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+
+        service.executeProbe(entityId, userId, "Athletik", 0, false, campaignId(),
+            new ProbeService.ProbeOptions(0, null, 0, 0, true));
+
+        verifyNoInteractions(entityService);
+    }
+
+    @Test
+    void socialProbeAddsRelationshipModifierAndAppliesSuccessCondition() throws Exception {
+        var entity = entityWithAttrs("{\"staerke\":10}");
+        var targetId = UUID.randomUUID();
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(rulesLoader.loadRules(any(), any())).thenAnswer(inv -> objectMapper.readValue("""
+            {"version":1,"probeType":"d20_target",
+             "attributes":[{"name":"staerke","type":"INT","default":10}],
+             "skills":[{"name":"Überreden","attributes":[],"bonus":0}],
+             "social":{"relationshipScores":{"friendly":2,"hostile":-2},"maxModifier":3},
+             "social_actions":[{"name":"Freundlich bitten","skill":"Überreden","relationshipWeight":1,
+                "onSuccess":[{"condition":"Beeindruckt","rounds":3}],
+                "onFailure":[{"condition":"Verärgert"}]}],
+             "dice_mechanics":{"probe":"1d20+mod"}}
+            """, Map.class));
+        when(relationshipService.getRelationships(entityId)).thenReturn(java.util.List.of(
+            new com.lwe.core.domain.EntityRelationship(entityId, targetId, "friendly")));
+        var target = new GameEntity(worldId, "NPC", "Alrik");
+        setId(target, targetId);
+        when(entityRepo.findById(targetId)).thenReturn(Optional.of(target));
+
+        // difficulty -100 => Erfolg immer
+        var result = service.executeProbe(entityId, userId, "Überreden", 0, false, campaignId(),
+            new ProbeService.ProbeOptions(-100, null, 0, 0), "Freundlich bitten", targetId);
+
+        assertThat(result.success()).isTrue();
+        assertThat(result.modifier()).isEqualTo(2); // Beziehung +2
+        verify(entityService).applyCondition(eq(targetId), eq("Beeindruckt"), eq(3), any());
+    }
+
+    @Test
+    void socialProbeCapsModifierAndAppliesFailureCondition() throws Exception {
+        var entity = entityWithAttrs("{\"staerke\":10}");
+        var targetId = UUID.randomUUID();
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(rulesLoader.loadRules(any(), any())).thenAnswer(inv -> objectMapper.readValue("""
+            {"version":1,"probeType":"d20_target",
+             "attributes":[{"name":"staerke","type":"INT","default":10}],
+             "skills":[{"name":"Einschüchtern","attributes":[],"bonus":0}],
+             "social":{"relationshipScores":{"hostile":-2},"maxModifier":3},
+             "social_actions":[{"name":"Drohen","skill":"Einschüchtern","relationshipWeight":2,
+                "onFailure":[{"condition":"Verängstigt"}]}],
+             "dice_mechanics":{"probe":"1d20+mod"}}
+            """, Map.class));
+        when(relationshipService.getRelationships(entityId)).thenReturn(java.util.List.of(
+            new com.lwe.core.domain.EntityRelationship(targetId, entityId, "hostile")));
+        var target = new GameEntity(worldId, "NPC", "Alrik");
+        setId(target, targetId);
+        when(entityRepo.findById(targetId)).thenReturn(Optional.of(target));
+
+        // difficulty +1000 => Fehlschlag immer; -2 * 2 = -4 wird auf -3 gedeckelt
+        var result = service.executeProbe(entityId, userId, "Einschüchtern", 0, false, campaignId(),
+            new ProbeService.ProbeOptions(1000, null, 0, 0), "Drohen", targetId);
+
+        assertThat(result.success()).isFalse();
+        assertThat(result.modifier()).isEqualTo(-3);
+        verify(entityService).applyCondition(eq(targetId), eq("Verängstigt"), eq(null), any());
+    }
+
+    @Test
+    void socialProbeRejectsUnknownAction() throws Exception {
+        var entity = entityWithAttrs("{\"staerke\":10}");
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(rulesLoader.loadRules(any(), any())).thenAnswer(inv ->
+            objectMapper.readValue(D20_RULES, Map.class));
+
+        assertThatThrownBy(() -> service.executeProbe(entityId, userId, "Athletik", 0, false,
+            campaignId(), new ProbeService.ProbeOptions(0, null, 0, 0), "Nix", null))
+            .isInstanceOf(ProbeService.SocialException.class)
+            .matches(e -> ((ProbeService.SocialException) e).getErrorCode().equals("SOCIAL_ACTION_UNKNOWN"));
+    }
+
+    @Test
+    void socialProbeRejectsForeignWorldTargetAndWrongSkill() throws Exception {
+        var entity = entityWithAttrs("{\"staerke\":10}");
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(rulesLoader.loadRules(any(), any())).thenAnswer(inv -> objectMapper.readValue("""
+            {"version":1,"probeType":"d20_target",
+             "attributes":[{"name":"staerke","type":"INT","default":10}],
+             "skills":[{"name":"Überreden","attributes":[],"bonus":0}],
+             "social_actions":[{"name":"Freundlich bitten","skill":"Überreden"}]}
+            """, Map.class));
+
+        // falscher Skill -> SOCIAL_SKILL_MISMATCH
+        assertThatThrownBy(() -> service.executeProbe(entityId, userId, "Athletik", 0, false,
+            campaignId(), new ProbeService.ProbeOptions(0, null, 0, 0), "Freundlich bitten", UUID.randomUUID()))
+            .isInstanceOf(ProbeService.SocialException.class)
+            .matches(e -> ((ProbeService.SocialException) e).getErrorCode().equals("SOCIAL_SKILL_MISMATCH"));
+
+        // Ziel nicht in dieser Welt/findet nichts -> SOCIAL_TARGET_INVALID
+        var foreignTarget = new GameEntity(UUID.randomUUID(), "NPC", "Fremd");
+        setId(foreignTarget, UUID.randomUUID());
+        when(entityRepo.findById(foreignTarget.getId())).thenReturn(Optional.of(foreignTarget));
+        assertThatThrownBy(() -> service.executeProbe(entityId, userId, "Überreden", 0, false,
+            campaignId(), new ProbeService.ProbeOptions(0, null, 0, 0), "Freundlich bitten", foreignTarget.getId()))
+            .isInstanceOf(ProbeService.SocialException.class)
+            .matches(e -> ((ProbeService.SocialException) e).getErrorCode().equals("SOCIAL_TARGET_INVALID"));
+    }
+
+    private void setId(Object obj, java.util.UUID id) {
+        try {
+            var f = obj.getClass().getDeclaredField("id");
+            f.setAccessible(true);
+            f.set(obj, id);
+        } catch (Exception e) { throw new RuntimeException(e); }
+    }
+
+    @Test
+    void conditionMalusAppliesToProbe() {        var entity = entityWithAttrs("{\"staerke\":10}");
         entity.setMetadataJson("{\"conditions\":[{\"name\":\"Wunde\",\"rounds\":2}]}");
         var world = new World("W", userId, "{}");
         try { var f = World.class.getDeclaredField("id"); f.setAccessible(true); f.set(world, worldId); }

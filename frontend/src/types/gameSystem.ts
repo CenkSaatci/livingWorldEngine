@@ -21,11 +21,39 @@ export interface SkillDef {
   casting?: { resource: string; cost: number; requiresTrait?: string; restore?: 'short' | 'long' };
 }
 
+/** SM-01/02: Soziale Aktionen (Beziehungs-Modifikator + Erfolgs-/Fehlschlag-Zustaende). */
+export interface SocialEffectDef {
+  condition: string;
+  rounds?: number | null;
+}
+
+export interface SocialActionDef {
+  name: string;
+  skill: string;
+  relationshipWeight?: number;
+  onSuccess?: SocialEffectDef[];
+  onFailure?: SocialEffectDef[];
+}
+
+export interface SocialConfig {
+  relationshipScores?: Record<string, number>;
+  maxModifier?: number;
+}
+
+/** T4: Schicksalspunkt-Konfiguration (Backend `fate`). */
+export interface FateConfig {
+  probeBonusPerPoint?: number;
+  avoidDeathCost?: number;
+}
+
 export interface CombatAttackConfig {
-  attribute: string;
+  /** Quelle (genau eine): Attribut, abgeleiteter Wert oder Fertigkeitswert. */
+  attribute?: string;
+  value?: string;
+  skill?: string;
   target: string;
   dice?: string;
-  /** gte = Wurf >= Ziel (D&D/roll-high), lte = Wurf <= Ziel (d100/CoC). */
+  /** gte = Wurf >= Ziel (D&D/roll-high), lte = Wurf <= Ziel (d100/CoC/DSA). */
   comparison?: 'gte' | 'lte';
 }
 
@@ -209,6 +237,28 @@ export function packageAutoTraits(defs: PkgDef[], selections: PackageSelection[]
   return out;
 }
 
+/** T5: Basiswerte gewählter Pakete als Untergrenze (Maximum über alle Pakete). */
+export function packageBaseFloors(defs: PkgDef[], selections: PackageSelection[]): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const sel of selections) {
+    for (const bv of findPackage(defs, sel.name)?.baseValues ?? []) {
+      out.set(bv.name, Math.max(out.get(bv.name) ?? 0, bv.value));
+    }
+  }
+  return out;
+}
+
+/** T5: End-FW inkl. Paket-Floors (Basiswerte sind gratis, nur Mehrkauf kostet). */
+export function buildFinalSkills(data: WizardData, build: CharacterBuild): Record<string, number> {
+  const floors = packageBaseFloors(data.packages ?? [], build.packageSelections);
+  const out: Record<string, number> = {};
+  for (const s of data.skills ?? []) {
+    const effective = Math.max(build.skills?.[s.name] ?? 0, floors.get(s.name) ?? 0);
+    if (effective > 0) out[s.name] = effective;
+  }
+  return out;
+}
+
 /** Strukturelle Fehler der Paket-Auswahl (Codes für i18n). */
 export function packageSelectionIssues(data: WizardData, selections: PackageSelection[]): string[] {
   const defs = data.packages ?? [];
@@ -286,10 +336,15 @@ function purchasedValue(data: WizardData, build: CharacterBuild, name: string): 
 
 /** AP-Aufschlüsselung: Attributkauf + Traits + Pakete gegen creationBudget. */
 export function buildCost(data: WizardData, build: CharacterBuild): BuildCostBreakdown {
+  const floors = packageBaseFloors(data.packages ?? [], build.packageSelections);
   let attributes = 0;
   for (const a of data.attributes) {
     const from = data.creationBudget?.attrBase ?? a.min;
-    attributes += attrPointCost(from, purchasedValue(data, build, a.name), attrTiers(data, a.name));
+    const purchased = purchasedValue(data, build, a.name);
+    // T5/Audit: Paket-Basiswert ist auch fuer Attribute gratis (Diskont bis zum Floor).
+    const floor = floors.get(a.name) ?? 0;
+    attributes += Math.max(0, attrPointCost(from, purchased, attrTiers(data, a.name))
+      - attrPointCost(from, floor, attrTiers(data, a.name)));
   }
   let traits = 0;
   for (const sel of build.traits) {
@@ -299,7 +354,10 @@ export function buildCost(data: WizardData, build: CharacterBuild): BuildCostBre
   const packages = packageCost(data.packages ?? [], build.packageSelections);
   let skills = 0;
   for (const s of data.skills ?? []) {
-    skills += skillBuyCost(data, s.name, build.skills?.[s.name] ?? 0);
+    const purchased = build.skills?.[s.name] ?? 0;
+    const floor = floors.get(s.name) ?? 0;
+    // T5: nur der Kauf über dem Paket-Basiswert kostet AP.
+    skills += Math.max(0, skillBuyCost(data, s.name, purchased) - skillBuyCost(data, s.name, floor));
   }
   const total = attributes + traits + packages + skills;
   const budget = data.creationBudget?.ap ?? null;
@@ -338,16 +396,17 @@ export function skillBuyCost(data: WizardData, skillName: string, to: number): n
   return sum;
 }
 
-/** Endwerte: gekaufter Wert + Paket-Mods. */
+/** Endwerte: gekaufter Wert + Paket-Mods, mindestens Paket-Basiswert (T5). */
 export function buildFinalAttributes(
   data: WizardData,
   build: CharacterBuild,
 ): { name: string; purchased: number; mod: number; value: number }[] {
   const mods = resolvePackageMods(data.packages ?? [], build.packageSelections);
+  const floors = packageBaseFloors(data.packages ?? [], build.packageSelections);
   return data.attributes.map((a) => {
     const purchased = purchasedValue(data, build, a.name);
     const mod = mods.get(a.name) ?? 0;
-    return { name: a.name, purchased, mod, value: purchased + mod };
+    return { name: a.name, purchased, mod, value: Math.max(purchased + mod, floors.get(a.name) ?? 0) };
   });
 }
 
@@ -381,11 +440,13 @@ export function buildIssues(data: WizardData, build: CharacterBuild): string[] {
   }
   if (buildCost(data, build).over) issues.push('build_over_budget');
 
+  const skillFloors = packageBaseFloors(data.packages ?? [], build.packageSelections);
   for (const s of data.skills ?? []) {
     const v = build.skills?.[s.name] ?? 0;
     if (v < 0) issues.push(`build_skill_range:${s.name}`);
     const cap = skillMaxFor(data, s.name, finals.map((f) => ({ name: f.name, value: f.value })));
-    if (v > cap) issues.push(`build_skill_cap:${s.name}`);
+    // Audit T7: effektiver Wert (inkl. Basiswert) muss den Cap einhalten.
+    if (Math.max(v, skillFloors.get(s.name) ?? 0) > cap) issues.push(`build_skill_cap:${s.name}`);
   }
 
   const names = build.traits.map((tr) => tr.name);
@@ -473,6 +534,12 @@ export interface WizardData {
   combat: DiceCombat;
   // P28-Blöcke, alle optional (alte Systeme und defaultWizardData bleiben gültig).
   creationBudget?: CreationBudget;
+  /** T4: Schicksalspunkt-Regeln (optional). */
+  fate?: FateConfig;
+  /** SM-01: Beziehungs-Scores/Cap (optional). */
+  social?: SocialConfig;
+  /** SM-02: Soziale Aktionen (optional). */
+  socialActions?: SocialActionDef[];
   attributeCosts?: { default: AttributeCostTier[] };
   packages?: PkgDef[];
   traits?: TraitDef[];
@@ -492,6 +559,8 @@ export interface ConditionDef {
   name: string;
   rounds?: number | null;
   effects: ConditionEffectDef[];
+  /** T3: gesperrte Aktionstypen (ATTACK, MOVE, ...). */
+  blocks?: string[];
 }
 
 export const DEFAULT_FEATURES: SystemFeatures = {
@@ -728,6 +797,25 @@ export function toRulesJson(data: WizardData): string {
     // P28-Blöcke: nur setzen, wenn vorhanden (abwärtskompatibel).
     ...(data.creationBudget ? { creationBudget: data.creationBudget } : {}),
     ...(data.attributeCosts ? { attributeCosts: data.attributeCosts } : {}),
+    ...(data.fate ? { fate: data.fate } : {}),
+    ...(data.social ? { social: data.social } : {}),
+    ...(data.socialActions && data.socialActions.length > 0
+      ? {
+          social_actions: data.socialActions
+            .filter((a) => a.name.trim() !== '' && a.skill.trim() !== '')
+            .map((a) => ({
+              name: a.name,
+              skill: a.skill,
+              ...(a.relationshipWeight != null ? { relationshipWeight: a.relationshipWeight } : {}),
+              ...(a.onSuccess && a.onSuccess.length > 0
+                ? { onSuccess: a.onSuccess.map((e) => ({ condition: e.condition, ...(e.rounds != null ? { rounds: e.rounds } : {}) })) }
+                : {}),
+              ...(a.onFailure && a.onFailure.length > 0
+                ? { onFailure: a.onFailure.map((e) => ({ condition: e.condition, ...(e.rounds != null ? { rounds: e.rounds } : {}) })) }
+                : {}),
+            })),
+        }
+      : {}),
     ...(data.packages ? { packages: data.packages } : {}),
     ...(data.traits ? { traits: data.traits } : {}),
     ...(data.advancement ? { advancement: data.advancement } : {}),
@@ -741,6 +829,7 @@ export function toRulesJson(data: WizardData): string {
               op: e.op || 'add',
               value: e.value ?? 0,
             })),
+            ...(c.blocks && c.blocks.length > 0 ? { blocks: c.blocks } : {}),
           })),
         }
       : {}),
@@ -784,7 +873,8 @@ export function toRulesJson(data: WizardData): string {
       actions_per_turn: data.combat.actionsPerTurn,
     };
     if (data.combat.attack
-      && data.combat.attack.attribute?.trim()
+      && (data.combat.attack.attribute?.trim() || data.combat.attack.value?.trim()
+        || data.combat.attack.skill?.trim())
       && data.combat.attack.target?.trim()) {
       combat.attack = data.combat.attack;
     }
@@ -844,6 +934,27 @@ export function fromRulesJson(json: string): WizardData | null {
       probeType: (parsed.probeType as WizardData['probeType']) ?? 'd20_target',
       // P28-Blöcke: fehlen → undefined (alte JSONs bleiben unverändert lesbar).
       creationBudget: parsed.creationBudget as CreationBudget | undefined,
+      fate: parsed.fate as FateConfig | undefined,
+      social: parsed.social as SocialConfig | undefined,
+      socialActions: Array.isArray(parsed.social_actions)
+        ? (parsed.social_actions as Record<string, unknown>[]).map((a) => ({
+            name: (a.name as string) ?? '',
+            skill: (a.skill as string) ?? '',
+            ...(a.relationshipWeight != null ? { relationshipWeight: a.relationshipWeight as number } : {}),
+            ...(Array.isArray(a.onSuccess)
+              ? { onSuccess: (a.onSuccess as Record<string, unknown>[]).map((e) => ({
+                  condition: (e.condition as string) ?? '',
+                  ...(e.rounds != null ? { rounds: e.rounds as number } : {}),
+                })) }
+              : {}),
+            ...(Array.isArray(a.onFailure)
+              ? { onFailure: (a.onFailure as Record<string, unknown>[]).map((e) => ({
+                  condition: (e.condition as string) ?? '',
+                  ...(e.rounds != null ? { rounds: e.rounds as number } : {}),
+                })) }
+              : {}),
+          }))
+        : undefined,
       attributeCosts: parsed.attributeCosts as { default: AttributeCostTier[] } | undefined,
       packages: Array.isArray(parsed.packages)
         ? (parsed.packages as Record<string, unknown>[]).map((pk) => {
@@ -873,6 +984,9 @@ export function fromRulesJson(json: string): WizardData | null {
                   value: (e.value as number) ?? 0,
                 }))
               : [],
+            ...(Array.isArray(c.blocks)
+              ? { blocks: (c.blocks as unknown[]).filter((b): b is string => typeof b === 'string') }
+              : {}),
           }))
         : undefined,
       attributes: attrs,
@@ -888,7 +1002,9 @@ export function fromRulesJson(json: string): WizardData | null {
         },
         ...(combat.attack != null
           ? { attack: {
-              attribute: (combat.attack.attribute as string) ?? '',
+              ...(combat.attack.attribute != null ? { attribute: combat.attack.attribute as string } : {}),
+              ...(combat.attack.value != null ? { value: combat.attack.value as string } : {}),
+              ...(combat.attack.skill != null ? { skill: combat.attack.skill as string } : {}),
               target: (combat.attack.target as string) ?? '',
               ...(combat.attack.dice != null ? { dice: combat.attack.dice as string } : {}),
               ...(combat.attack.comparison != null ? { comparison: combat.attack.comparison as 'gte' | 'lte' } : {}),
