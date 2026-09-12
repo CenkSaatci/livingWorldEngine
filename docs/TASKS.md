@@ -2544,13 +2544,25 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 
 ## Phase 34: Security-Tickets aus dem Phase-33-Audit (nicht blockierend, aber zeitnah)
 
-> Aus dem Final-Audit: nicht-Regressionen, aber HIGH-Risiko in der bestehenden Fläche.
+> Aus dem Final-Audit: keine Regressionen, aber HIGH-Risiko in bestehender Fläche. Alle drei Tickets unabhängig — beliebige Reihenfolge. Abschluss-Gate: ein Mini-Audit nach allen drei + Suiten grün (Backend/Frontend/E2E/ai-bot).
 
 ### P34-T01: Adventure-Discovery `by-location`/`by-giver` absichern
-- **Status:** 📋 — beide Endpunkte liefern Adventures ohne Welt-Zugriffsprüfung (`AdventureService.listByLocation/listByGiver`); Fix analog `listByWorld` (Welt aus Location/Entity ableiten, `requireRead`). Tests.
+- **Evidenz:** `AdventureController.java:45-55` ohne `@AuthenticationPrincipal`; `AdventureService.java:59-65` ohne userId/`requireRead` (`listByWorld` hat `requireRead`, P1-Audit). `Adventure` trägt `worldId` → kein neues Repository nötig.
+- **Fix (TDD):** `listByLocation(locationId, userId)`, `listByGiver(giverEntityId, userId)`; pro Adventure `worldAccess.requireRead(worldId, userId)`, bei `WorldAccessException` Eintrag überspringen. Unbekannte ID und fehlender Zugriff → beide leere Liste (kein Existenz-Orakel). Controller reicht `user.getId()` durch.
+- **Tests:** `AdventureServiceTest` — Fremder → leer; Member → Treffer; Adventures aus zwei Welten (eine fremd) → nur eigene; unbekannte ID → leer. Live-Probe devbe (fremde Location → `[]`).
+- **Doku:** Verhalten in `API.md` vermerken (kein neuer Error-Code).
+- **Status:** 📋
 
-### P34-T02: Dev-DB-Orphans aus E2E dokumentieren/bereinigen
-- **Status:** 📋 — E2E laesst soft-deleted Fork-Welten samt geklonten Inhalten, inaktive Systeme/Items und NPC-Intents zurueck; TESTING-Notiz + optionales Cleanup-Skript.
+### P34-T02: E2E-Hygiene (Orphans + Cleanup)
+- **Evidenz:** 8/9 Specs haben `afterAll` (Entities/Campaigns/Systeme), nur `wizard-save-gate.spec.ts` keins; keine Spec löscht Welten direkt — `CampaignService.delete:130-142` deaktiviert die Fork-Welt mit, Template bleibt. Übrig bleiben: inaktive Systeme/Items, NPC-Intents ohne Kampagne, Test-Artefakte des E2E-Users. `TESTING.md:703` dokumentiert die Altlasten bereits.
+- **T34-02a:** `wizard-save-gate.spec.ts` `afterAll`-Cleanup nachrüsten (Campaign/System, Muster `system-pin.spec.ts:23-25`).
+- **T34-02b:** `scripts/e2e-cleanup.sh` — mit E2E-User-Token nur eigene Artefakte aufräumen (inaktive Systeme, verwaiste Welten/Intents auflisten + löschen/deaktivieren); `TESTING.md`-Anleitung ergänzen (vor DB-Reset/Release laufen lassen).
+- **Akzeptanz:** Voller E2E-Lauf hinterlässt keine *aktiven* Artefakte des E2E-Users (Nachweis via `GET /worlds`, `/game-systems`); Skript einmal trocken gegen Dev-DB laufen lassen.
+- **Status:** 📋
 
-### P34-T03: Bulk-Tx-Garantie praezisieren
-- **Status:** 📋 — `NpcIntentService.bulk` laeuft in EINER Transaktion (logische Fehler pro Eintrag, DB-Fehler brechen alles ab); bei Bedarf je Eintrag eigene Transaktion via Self-Proxy/TransactionTemplate.
+### P34-T03: Bulk-Tx-Garantie präzisieren
+- **Evidenz:** `NpcIntentService.bulk:131-153` eine `@Transactional`; `approve`/`reject` per Selbstaufruf (Proxy umgangen); `IntentExecutor.execute` (DB-Side-Effects + Events) läuft innerhalb der Tx — ein DB-Fehler rollt alles zurück, inkl. bereits als erfolgreich gemeldeter Einträge.
+- **Design-Entscheid (fix):** Bulk-Methode nicht-transaktional; pro Eintrag eigene Tx via `TransactionTemplate` (REQUIRES_NEW). `approve`-/`reject`-/Executor-Semantik unverändert (Executor pro Eintrag in dessen Tx — wie heute beim Einzel-Approve). Folge: Teilerfolg möglich, logische wie DB-Fehler betreffen nur den Eintrag; Client wertet `BulkResult[]` aus.
+- **T34-03a:** Umbau + Kommentar aktualisieren. Tests: Teilerfolg (Eintrag 1 approved, Eintrag 2 `INTENT_NOT_PENDING` → Eintrag 1 bleibt approved); ungültige Action → pro-Eintrag-Fehler ohne Seiteneffekt. DM-Queue-E2E bleibt grün.
+- **Doku:** `API.md` Bulk-Semantik (Teilerfolg möglich).
+- **Status:** 📋
