@@ -109,6 +109,116 @@
 
 ---
 
+## Block GP — Golden Path: Mehrbenutzer-Kampagne von Null bis Spiel (★ zuerst!)
+
+> **Der von dir beschriebene Komplettumfang als durchgehendes Szenario:** mehrere Nutzer,
+> Charaktere selbst anlegen, Einladung in Kampagne, System/Welt als Template nutzen (Welt wird
+> beim Kampagnen-Start automatisch geforkt), dann gemeinsam spielen/interagieren.
+> Rollen: **DM** = playtest-meister, **P1** = spieler1, **P2** = spieler2 (3 Browser/Profile).
+> Detailfälle sind referenziert — hier zählt der Fluss, nicht die Tiefe.
+
+#### GP-01 ★ DM nutzt vorhandenes System-Template
+- **Ziel:** Kein System-Neubau nötig — vorhandenes (öffentliches/geklontes) System nutzen.
+- **Schritte:** 1) Systemliste öffnen. 2) `DSA5 Playtest` (v6) als Template wählen; optional Klon „GP-DSA5" anlegen.
+- **Erwartet:** Auswahl im Kampagnen-Dialog möglich; Klon vollständig (Detail: SYS-11).
+- **Fund:**
+
+#### GP-02 ★ DM legt Basiswelt an (Template-Welt)
+- **Ziel:** Welt als Vorlage, minimal ausgestattet (kein Städte-Ausbau nötig).
+- **Schritte:** 1) Welt „GP-Aventurien" erstellen ODER bestehende QA-Welt kopieren (Welt kopieren). 2) Einen Startort + einen NSC (Wirt) + Kampf-NSC (Räuber) anlegen. 3) Karte optional.
+- **Erwartet:** Welt spielbar; Kopie zeigt keine dangling Referenzen (Detail: KRG-08).
+- **Fund:**
+
+#### GP-03 ★ DM lädt Spieler in die Welt ein
+- **Ziel:** Einladungsfluss Weltmitgliedschaft.
+- **Schritte:** 1) Welt-Mitglieder → P1+P2 einladen (Rolle Spieler). 2) P1/P2 öffnen Einladungslink (JoinPage).
+- **Erwartet:** Beitritt ohne Hilfe; Welt erscheint im Dashboard beider (Detail: KRG-13).
+- **Fund:**
+
+#### GP-04 ★ DM erstellt Kampagne → Welt wird geforkt
+- **Ziel:** „Template nutzen" = Kampagne startet auf Kopie; Original bleibt unberührt.
+- **Schritte:** 1) Kampagne „GP-Runde" in GP-Aventurien mit System DSA5 Playtest (GP-01/02). 2) Kampagnen-Welt-ID mit Basiswelt vergleichen (API/Ansicht). 3) P1/P2: Dashboard/Kampagne sichtbar?
+- **Erwartet:** Automatischer Fork (neue Welt-ID), System gepinnt (Snapshot); Spieler sehen die Kampagne, Original unverändert (Detail: KRG-01, KRG-08/11).
+- **Fund:**
+
+#### GP-05 ★ P1 legt eigenen Charakter an (Wizard)
+- **Ziel:** Jeder Spieler erstellt SEINEN Charakter selbst; Ersteller = Owner.
+- **Schritte:** 1) P1 öffnet Kampagnen-Welt → Entities → „Charakter erstellen". 2) Wizard: Paket, Attribute, Skills, Speichern („GP-Mira"). 3) Karte/Liste prüfen.
+- **Erwartet:** PC erscheint, Wizard-Daten konsistent (Detail: CHR-01…04); P1 ist Owner.
+- **Fund:**
+
+#### GP-06 ★ P2 legt parallel eigenen Charakter an
+- **Ziel:** Mehrbenutzer-Gleichzeitigkeit beim Anlegen.
+- **Schritte:** 1) P2 erstellt „GP-Torben" möglichst gleichzeitig mit P1 (GP-05 wiederholen).
+- **Erwartet:** Kein Datenverlust/Kollision; beide PCs in der Liste; Budgets korrekt getrennt (Detail: QX-07).
+- **Fund:**
+
+#### GP-07 ★ Ownership & Sichtbarkeit der PCs
+- **Ziel:** Eigener PC editierbar, fremder nicht; DM sieht alles.
+- **Schritte:** 1) P1 öffnet GP-Mira (Bearbeiten/Rest/Inventar) und GP-Torben (nur lesen? denied?). 2) P2 umgekehrt. 3) DM prüft beide.
+- **Erwartet:** Konsistent zur Rechte-Matrix (KRG-03/04); keine stillen Fehlschläge.
+- **Fund:**
+
+#### GP-08 ★ Chat zu dritt (Interaktion Basis)
+- **Ziel:** Live-Kommunikation über 3 Clients.
+- **Schritte:** 1) P1, P2, DM senden abwechselnd Nachrichten. 2) Reload bei P2. 3) Historie/Zeitstempel prüfen.
+- **Erwartet:** Alle sehen alle (WS live), Historie persistent, keine Duplikate (Detail: SOC-07/08/10).
+- **Fund:**
+
+#### GP-09 Proben der Spieler + Loggergebnis
+- **Ziel:** Spieler würfeln ohne DM; Ergebnis sichtbar.
+- **Schritte:** 1) P1+P2 je eine Probe (3W20) inkl. Difficulty. 2) Chat/Log + Sheet prüfen.
+- **Erwartet:** Proben klappen (T0!), Details nachvollziehbar (Detail: CHR-07/08/25).
+- **Fund:**
+
+#### GP-10 Interaktion Handel: P1 ↔ P2
+- **Ziel:** Item-Tausch zwischen Spielern.
+- **Schritte:** 1) DM/P1 legt je 1 Item an (Inventar/Markt). 2) P1 startet Trade, P2 bestätigt. 3) Inventare prüfen.
+- **Erwartet:** Atomarer Tausch, keine Duplikate (Detail: CHR-21/22; SOC-11).
+- **Fund:**
+
+#### GP-11 ★ Kampf zu dritt
+- **Ziel:** Spieler kämpfen gemeinsam gegen NSC; Live-Sync.
+- **Schritte:** 1) DM startet Kampf (GP-Mira, GP-Torben, Räuber). 2) 2 Runden spielen, je 1 Angriff; MISS/Manöver probieren. 3) DM beendet.
+- **Erwartet:** Reihenfolge/AP/HP korrekt in allen Clients; Werte nach Ende im Sheet (Detail: FGT-01…06, FGT-11/16).
+- **Fund:**
+
+#### GP-12 ★ Abenteuer: DM baut, P1 spielt, P2 parallel
+- **Ziel:** Individuelle Fortschritte, DM live-Tools.
+- **Schritte:** 1) DM erstellt Mini-Abenteuer (2 Knoten, 1 Skillcheck). 2) P1 startet+spielt inkl. Fehlversuch. 3) P2 startet dasselbe Abenteuer parallel. 4) DM injiziert live eine Choice.
+- **Erwartet:** Getrennte Fortschritte; Routing korrekt (3W20); Inject sichtbar/spielbar (Detail: AQ-01…07).
+- **Fund:**
+
+#### GP-13 Sozial: Beziehung + soziale Probe gegen NSC
+- **Ziel:** Spieler interagiert sozial, Ergebnis wirkt am NSC.
+- **Schritte:** 1) DM/P1 setzt Beziehung P1→Wirt. 2) Soziale Probe im NPC-Panel. 3) Erfolg/Misserfolg-Zustand am NSC prüfen.
+- **Erwartet:** Score-Modifier + Zustand (Detail: CHR-23/24, SOC-01/06).
+- **Fund:**
+
+#### GP-14 Session-Robustheit: Reload überall
+- **Ziel:** Langer Abend übersteht Reloads/Neustart.
+- **Schritte:** 1) Alle 3 Clients F5. 2) `pm2 restart lwe-backend`. 3) Aktion (Probe/Chat) erneut.
+- **Erwartet:** Zustand konsistent (Kampf/Chat/Sheet), Reconnect funktioniert (Detail: FGT-12, SOC-10, QX-08).
+- **Fund:**
+
+#### GP-15 System-Nachziehen in laufender Runde
+- **Ziel:** DM kann Regel-Update nachziehen, Spieler spüren es.
+- **Schritte:** 1) Systemwert ändern (z. B. Difficulty-Stufe). 2) „System nachziehen". 3) Probe in Kampagne wiederholen.
+- **Erwartet:** Vorher/Nachher-Verhalten wie SYS-12.
+- **Fund:**
+
+#### GP-16 Nachzügler: dritter Spieler + Charakter
+- **Ziel:** Späterer Beitritt ohne Friktion (optional P3-Account).
+- **Schritte:** 1) Weiteren Account einladen. 2) Charakter anlegen. 3) Am laufenden Kampf/Abenteuer teilnehmen.
+- **Erwartet:** Self-Service klappt; keine DM-Handarbeit nötig außer Einladung.
+- **Fund:**
+
+#### GP-17 Golden-Path-Abschlussfrage
+- **Ziel:** Selbsteinschätzung: Konnte jeder Spieler ohne Entwickler-Hilfe spielen?
+- **Schritte:** Notiere alle Stellen, an denen du/Spieler Hilfe brauchten (Klickpfad, Begriff, Meldung).
+- **Erwartet:** Liste der Top-Reibungspunkte → wird bevorzugt verbessert.
+- **Fund:**
+
 ## Block A — Auth, Profil, Admin
 
 #### A-01 Rate-Limit Login
@@ -275,9 +385,12 @@
 
 ---
 
-## Block C — Welt, Karte, Fraktionen, Regionen, Zeit
+## Block C — Welt, Karte, Regionen, Zeit (Fraktionen/Städte nur Smoke)
 
-> Daten: QA-Welt neu anlegen (Meister). Bestandsvergleich Gareth optional.
+> **Testphasen-Beschluss:** Regionen/Städte/Fraktionen sind rudimentär — **optional**.
+> Kern dieses Blocks: WLT-01/02/06/07/11/12 (Welt anlegen, Zeit/Settings, Karte bedienen,
+> Fog, Sichtbarkeit, Rollen). WLT-03/04/05/08/09/13/14 sind Smoke/überspringbar.
+> Daten: Basiswelt für den Golden Path (Block GP). Bestandsvergleich Gareth optional.
 
 #### WLT-01 ★ Welt erstellen (leer + aus Vorlage)
 - **Ziel:** Erstellung inkl. Sichtbarkeit/Quota.
@@ -1140,6 +1253,7 @@ E2E_EMAIL=devbe@test.de E2E_PASSWORD='Test123!' ./scripts/e2e-cleanup.sh --dry-r
 
 ## Anhang C — Abnahmekriterien
 
+- [ ] **Block GP (Golden Path) vollständig bestanden** — mehrere Nutzer können ohne Entwickler-Hilfe gemeinsam spielen.
 - [ ] Alle ★-Fälle bestanden (kritischer Pfad DSA).
 - [ ] Kein offener BLOCKER/HIGH ohne Ticket.
 - [ ] Fundliste in Phase 39 überführt + priorisiert.
