@@ -7,6 +7,7 @@ import com.lwe.core.domain.Trade;
 import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.repository.GameItemRepository;
 import com.lwe.core.repository.TradeRepository;
+import com.lwe.core.util.EntityAccess;
 import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,23 +29,25 @@ public class TradeService {
     private final GameItemRepository itemRepo;
     private final InventoryService inventoryService;
     private final WorldAccess worldAccess;
+    private final EntityAccess entityAccess;
     private final ObjectMapper objectMapper;
 
     public TradeService(TradeRepository tradeRepo, GameEntityRepository entityRepo,
                         GameItemRepository itemRepo, InventoryService inventoryService,
-                        WorldAccess worldAccess, ObjectMapper objectMapper) {
+                        WorldAccess worldAccess, EntityAccess entityAccess, ObjectMapper objectMapper) {
         this.tradeRepo = tradeRepo;
         this.entityRepo = entityRepo;
         this.itemRepo = itemRepo;
         this.inventoryService = inventoryService;
         this.worldAccess = worldAccess;
+        this.entityAccess = entityAccess;
         this.objectMapper = objectMapper;
     }
 
     @Transactional
     public Trade propose(UUID worldId, UUID userId, UUID proposerEntityId, UUID partnerEntityId,
                          List<Map<String, Object>> offer, List<Map<String, Object>> request) {
-        var proposer = entityOf(proposerEntityId, userId, worldId);
+        var proposer = entityAccess.requireControl(proposerEntityId, userId, worldId); // Runde 1: F1
         var partner = entityOf(partnerEntityId, userId, worldId);
         if (proposer.getId().equals(partner.getId()))
             throw new TradeException("TRADE_SELF", "Cannot trade with yourself");
@@ -58,7 +61,7 @@ public class TradeService {
     public Trade counter(UUID tradeId, UUID userId, UUID editorEntityId,
                          List<Map<String, Object>> offer, List<Map<String, Object>> request) {
         var trade = getProposed(tradeId, userId);
-        var editor = entityOf(editorEntityId, userId, trade.getWorldId());
+        var editor = entityAccess.requireControl(editorEntityId, userId, trade.getWorldId()); // Runde 1: F1
         requireParticipant(trade, editor.getId());
         // Angebot gehört dem Editor, Wunsch dem Gegenüber.
         var other = entityOf(otherSide(trade, editor.getId()), userId, trade.getWorldId());
@@ -72,14 +75,15 @@ public class TradeService {
     @Transactional
     public Trade accept(UUID tradeId, UUID userId, UUID acceptorEntityId) {
         var trade = getProposed(tradeId, userId);
-        var acceptor = entityOf(acceptorEntityId, userId, trade.getWorldId());
+        var acceptor = entityAccess.requireControl(acceptorEntityId, userId, trade.getWorldId()); // Runde 1: F1
         requireParticipant(trade, acceptor.getId());
         if (trade.getLastEditorEntityId().equals(acceptor.getId()))
             throw new TradeException("TRADE_SELF_ACCEPT", "Cannot accept your own offer");
-        var proposer = entityRepo.findById(trade.getProposerEntityId())
-            .orElseThrow(() -> new TradeException("TRADE_ENTITY_GONE", "Proposer no longer exists"));
-        var partner = entityRepo.findById(trade.getPartnerEntityId())
-            .orElseThrow(() -> new TradeException("TRADE_ENTITY_GONE", "Partner no longer exists"));
+        // F6: beide Entities in ID-sortierter Reihenfolge sperren (kein Deadlock, kein Doppel-Tausch).
+        var ids = new java.util.ArrayList<>(List.of(trade.getProposerEntityId(), trade.getPartnerEntityId()));
+        ids.sort(java.util.Comparator.naturalOrder());
+        var proposer = lockedEntity(ids.get(0));
+        var partner = lockedEntity(ids.get(1));
         // offer/request gehören immer dem letzten Editor (Counter schreibt aus Editor-Sicht).
         var from = trade.getLastEditorEntityId().equals(proposer.getId()) ? proposer : partner;
         var to = trade.getLastEditorEntityId().equals(proposer.getId()) ? partner : proposer;
@@ -116,8 +120,9 @@ public class TradeService {
         }
     }
 
+    /** F6: Trade mit Row-Lock laden (Doppel-Accept/-Counter ausgeschlossen). */
     private Trade getProposed(UUID tradeId, UUID userId) {
-        var trade = tradeRepo.findById(tradeId)
+        var trade = tradeRepo.findByIdForUpdate(tradeId)
             .orElseThrow(() -> new TradeException("TRADE_NOT_FOUND", "Trade not found"));
         worldAccess.requireAccess(trade.getWorldId(), userId);
         if (!"proposed".equals(trade.getStatus()))
@@ -134,6 +139,11 @@ public class TradeService {
     private UUID otherSide(Trade trade, UUID entityId) {
         return trade.getProposerEntityId().equals(entityId)
             ? trade.getPartnerEntityId() : trade.getProposerEntityId();
+    }
+
+    private GameEntity lockedEntity(UUID entityId) {
+        return entityRepo.findByIdForUpdate(entityId)
+            .orElseThrow(() -> new TradeException("TRADE_ENTITY_GONE", "Entity no longer exists"));
     }
 
     private GameEntity entityOf(UUID entityId, UUID userId, UUID worldId) {

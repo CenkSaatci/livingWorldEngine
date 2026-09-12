@@ -33,7 +33,8 @@ class RestServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new RestService(entityRepo, worldAccess, rulesLoader, new ObjectMapper());
+        service = new RestService(entityRepo, worldAccess,
+            new com.lwe.core.util.EntityAccess(entityRepo, worldAccess), rulesLoader, new ObjectMapper());
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
     }
 

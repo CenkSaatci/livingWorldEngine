@@ -194,7 +194,7 @@ public class GlobalExceptionHandler {
             };
             case WorldAccess.WorldAccessException e -> switch (e.getErrorCode()) {
                 case "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
-                case "WORLD_NOT_FOUND", "MAP_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                case "WORLD_NOT_FOUND", "MAP_NOT_FOUND", "ENTITY_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 default -> HttpStatus.BAD_REQUEST;
             };
             case LevelUpService.LevelException e -> switch (e.getErrorCode()) {
@@ -205,7 +205,7 @@ public class GlobalExceptionHandler {
             case AdventureService.AdventureException e -> switch (e.getErrorCode()) {
                 case "ADVENTURE_NOT_FOUND", "ADVENTURE_NODE_NOT_FOUND",
                      "ADVENTURE_PROGRESS_NOT_FOUND", "ADVENTURE_CHOICE_NOT_FOUND" -> HttpStatus.NOT_FOUND;
-                case "NODE_NOT_IN_ADVENTURE" -> HttpStatus.UNPROCESSABLE_ENTITY;
+                case "NODE_NOT_IN_ADVENTURE", "ADVENTURE_CHOICE_INVALID" -> HttpStatus.UNPROCESSABLE_ENTITY;
                 default -> HttpStatus.BAD_REQUEST;
             };
             case QuestService.QuestException e -> switch (e.getErrorCode()) {

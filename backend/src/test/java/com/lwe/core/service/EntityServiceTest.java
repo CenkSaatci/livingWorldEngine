@@ -38,7 +38,8 @@ class EntityServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new EntityService(entityRepo, worldAccess, new ObjectMapper(), rulesLoader, conditionService, derivedValueService);
+        service = new EntityService(entityRepo, worldAccess, new ObjectMapper(), rulesLoader, conditionService,
+            derivedValueService, new com.lwe.core.util.EntityAccess(entityRepo, worldAccess));
     }
 
     @Test

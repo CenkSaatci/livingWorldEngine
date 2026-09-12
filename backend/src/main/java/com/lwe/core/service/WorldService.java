@@ -249,6 +249,7 @@ public class WorldService {
             copy.setApCurrent(e.getApCurrent());
             copy.setApMax(e.getApMax());
             copy.setFactionId(newFactionId);
+            copy.setOwnerUserId(e.getOwnerUserId());
             copy.setBackstory(e.getBackstory());
             copy.setAge(e.getAge());
             copy.setExperienceLevel(e.getExperienceLevel());

@@ -43,7 +43,8 @@ class CombatServiceTest {
     @BeforeEach
     void setUp() {
         combatService = new CombatService(sessionRepo, participantRepo, entityRepo,
-            worldRepo, gameSystemRepo, eventService, rollService, abilityRepo, messaging, worldAccess, List.of(new D20RuleEngine()),
+            worldRepo, gameSystemRepo, eventService, rollService, abilityRepo, messaging, worldAccess,
+            new com.lwe.core.util.EntityAccess(entityRepo, worldAccess), List.of(new D20RuleEngine()),
             new ObjectMapper(), rulesLoader, campaignMemberService, conditionService, itemRepo);
     }
 
@@ -465,6 +466,9 @@ class CombatServiceTest {
         var pa = new CombatParticipant(session.getId(), a, 20, 2, "A");
         var pb = new CombatParticipant(session.getId(), b, 10, 2, "A");
 
+        var entityA = new GameEntity(worldId, "PC", "A");
+        setId(entityA, a);
+
         var entityB = new GameEntity(worldId, "PC", "B");
         setId(entityB, b);
         entityB.setMetadataJson("{\"conditions\":[{\"name\":\"Wunde\",\"rounds\":2}]}");
@@ -477,6 +481,7 @@ class CombatServiceTest {
         when(worldRepo.findById(worldId)).thenReturn(java.util.Optional.of(world));
         when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
             .thenReturn(new java.util.ArrayList<>(java.util.List.of(pa, pb)));
+        when(entityRepo.findById(a)).thenReturn(java.util.Optional.of(entityA));
         when(entityRepo.findById(b)).thenReturn(java.util.Optional.of(entityB));
         when(conditionService.active(entityB))
             .thenReturn(java.util.List.of(new ConditionService.ConditionInstance("Wunde", 2)));
@@ -671,6 +676,7 @@ class CombatServiceTest {
         when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
             .thenReturn(new java.util.ArrayList<>(java.util.List.of(
                 new CombatParticipant(session.getId(), attackerId, 15, 1, "A"))));
+        when(entityRepo.findById(attackerId)).thenReturn(java.util.Optional.of(attacker));
         when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of(
             "dice_mechanics", Map.of("combat", Map.of(
                 "maneuvers", java.util.List.of(Map.of("name", "Wuchtschlag", "apCost", 2))))));
@@ -728,6 +734,7 @@ class CombatServiceTest {
         when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
             .thenReturn(new java.util.ArrayList<>(java.util.List.of(
                 new CombatParticipant(session.getId(), attackerId, 15, 2, "A"))));
+        when(entityRepo.findById(attackerId)).thenReturn(java.util.Optional.of(attacker));
         when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of());
 
         assertThatThrownBy(() -> combatService.executeManeuver(userId, session.getId(), attackerId, null, "Nix"))

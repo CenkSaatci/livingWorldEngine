@@ -46,6 +46,7 @@ class CharacterSheetServiceTest {
         modifierService = new ModifierService();
         derivedValueService = new DerivedValueService();
         service = new CharacterSheetService(entityRepo, worldRepo, worldAccess,
+            new com.lwe.core.util.EntityAccess(entityRepo, worldAccess),
             modifierService, derivedValueService, levelUpService, rulesLoader, objectMapper,
             new ConditionService(objectMapper));
         doNothing().when(worldAccess).requireAccess(any(), any());

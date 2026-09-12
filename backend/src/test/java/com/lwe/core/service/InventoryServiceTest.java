@@ -32,7 +32,8 @@ class InventoryServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new InventoryService(entityRepo, itemRepo, worldAccess, new ObjectMapper());
+        service = new InventoryService(entityRepo, itemRepo, worldAccess,
+            new com.lwe.core.util.EntityAccess(entityRepo, worldAccess), new ObjectMapper());
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
     }
 

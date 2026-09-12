@@ -26,6 +26,7 @@ class AdventureServiceTest {
     private final RollService rollService = mock();
     private final WorldEventService eventService = mock();
     private final WorldAccess worldAccess = mock();
+    private final com.lwe.core.repository.GameEntityRepository entityRepo = mock();
 
     private AdventureService service;
     private final UUID userId = UUID.randomUUID();
@@ -42,7 +43,8 @@ class AdventureServiceTest {
     @BeforeEach
     void setUp() {
         service = new AdventureService(adventureRepo, nodeRepo, choiceRepo, progressRepo,
-            worldRepo, rollService, eventService, worldAccess, new ObjectMapper());
+            worldRepo, rollService, eventService, worldAccess,
+            new com.lwe.core.util.EntityAccess(entityRepo, worldAccess), new ObjectMapper());
     }
 
     @Test
@@ -185,6 +187,7 @@ class AdventureServiceTest {
 
         when(adventureRepo.findById(adventure.getId())).thenReturn(Optional.of(adventure));
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity(entityId)));
         when(progressRepo.findByAdventureIdAndEntityId(adventure.getId(), entityId)).thenReturn(Optional.empty());
         when(progressRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
@@ -210,6 +213,7 @@ class AdventureServiceTest {
 
         when(adventureRepo.findById(adventure.getId())).thenReturn(Optional.of(adventure));
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity(entityId)));
         when(progressRepo.findByAdventureIdAndEntityId(adventure.getId(), entityId)).thenReturn(Optional.of(progress));
         when(choiceRepo.findById(choice.getId())).thenReturn(Optional.of(choice));
         when(nodeRepo.findById(node2Id)).thenReturn(Optional.of(node2));
@@ -219,6 +223,45 @@ class AdventureServiceTest {
         var result = service.advance(adventure.getId(), entityId, choice.getId(), userId);
         assertThat(result.completed()).isFalse();
         assertThat(result.nextNode().getId()).isEqualTo(node2Id);
+    }
+
+    @Test
+    void advanceRejectsChoiceFromOtherNode() {
+        var entityId = UUID.randomUUID();
+        var foreignNode = UUID.randomUUID();
+        var choice = new NodeChoice(foreignNode, "Fremd", startNodeId); // haengt an anderem Node
+        setId(choice, UUID.randomUUID());
+        var progress = new AdventureProgress(adventure.getId(), entityId, startNodeId);
+        setId(progress, UUID.randomUUID());
+        when(adventureRepo.findById(adventure.getId())).thenReturn(Optional.of(adventure));
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity(entityId)));
+        when(progressRepo.findByAdventureIdAndEntityId(adventure.getId(), entityId)).thenReturn(Optional.of(progress));
+        when(choiceRepo.findById(choice.getId())).thenReturn(Optional.of(choice));
+
+        assertThatThrownBy(() -> service.advance(adventure.getId(), entityId, choice.getId(), userId))
+            .isInstanceOf(AdventureService.AdventureException.class)
+            .matches(e -> ((AdventureService.AdventureException) e).getErrorCode()
+                .equals("ADVENTURE_CHOICE_INVALID"));
+    }
+
+    @Test
+    void advanceRejectsForeignControlledEntity() {
+        var entityId = UUID.randomUUID();
+        var held = entity(entityId);
+        held.setOwnerUserId(UUID.randomUUID());
+        when(adventureRepo.findById(adventure.getId())).thenReturn(Optional.of(adventure));
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(held));
+        doThrow(new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireDm(worldId, userId);
+
+        assertThatThrownBy(() -> service.advance(adventure.getId(), entityId, UUID.randomUUID(), userId))
+            .isInstanceOf(WorldAccess.WorldAccessException.class);
+    }
+
+    private GameEntity entity(UUID id) {
+        var e = new GameEntity(worldId, "PC", "Held");
+        setId(e, id);
+        return e;
     }
 
     private void setId(Object obj, UUID id) {

@@ -323,6 +323,10 @@ Modifiziert Proben/Schaden und tickt beim Zugbeginn in `nextTurn`. **Fehlercodes
 ### `POST /api/v1/entities/{entityId}/fate/spend?campaignId=uuid`
 Gibt einen Schicksalspunkt aus (Metadata `fate_points`). **Fehlercodes:** `FATE_NONE_LEFT`
 
+### `PATCH /api/v1/worlds/{worldId}/entities/{entityId}/owner` (auth, DM, Runde 1)
+Ordnet einen Charakter einem Spieler zu (`{"userId": "uuid"}`; leer = Zuordnung lösen).
+Ohne Zuordnung (`ownerUserId: null`) gilt member-level Kontrolle (Legacy-Fallback).
+
 ### `PATCH /api/v1/worlds/{worldId}/entities/{entityId}/attributes`
 **Request:** `{ "staerke": 16 }` — merged in attributesJson
 **Fehlercodes:** `ENTITY_NOT_FOUND`, `WORLD_ACCESS_DENIED`
@@ -409,6 +413,9 @@ Führt eine Probe aus. Erzeugt `PROBE_ROLLED` Event + WS-Broadcast. Mit `campaig
 
 ### `POST /api/v1/rolls/probe`
 Charakter-Probe (Per-Character-Skills, Vor-/Nachteil). `campaignId` optional im Body.
+`difficulty` (optional, Runde 1): DSA-Probenmodifikator — positiv = erschwert,
+negativ = erleichtert (Schwelle = Attribut − difficulty; Details zeigen die
+angepassten Schwellen).
 
 **Response 200:**
 ```json
@@ -427,6 +434,7 @@ Charakter-Probe (Per-Character-Skills, Vor-/Nachteil). `campaignId` optional im 
 Zauber/Liturgie wirken: Probe + AsP-/KaP-Abzug (Kosten aus `skills[].casting`,
 Merkmal-Pflicht via `requiresTrait`). Fehler: `CAST_NOT_CASTABLE` /
 `CAST_MISSING_TRAIT` / `CAST_INSUFFICIENT_RESOURCE` (422).
+`target` (optional, d20-Systeme, Default 10) und `difficulty` (optional, DSA, Default 0, s. Probe).
 
 ### `GET /api/v1/combat/active?worldId=` (Playtest #10)
 Aktive Kampf-Session einer Welt (Reload-/Deep-Link-Rehydrate), 204 wenn keine.

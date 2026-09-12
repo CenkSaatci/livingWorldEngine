@@ -6,7 +6,7 @@
 
 - **P28 Engine-Bausteine** ✅ · **P29 Spielgefühl + Pakete** ✅ · **P23 Schadenstypen** ✅ (T05 optional) · **P30 Charakter-Wizard** ✅ · **P31 E2E-Ausbau** ✅
 - **P33 Backlog-Abbau & Härtung** ✅ (T33-01…11: E2E-Zustände/Schadensart, Welt-PUBLIC, Member-Quota, Fork inkl. Quests/Adventures/Choices, System-Shares, Bot-Runtime, DM-Queue Bulk+WS, Adventure-Inject, ADR-013; Final-Audit + Re-Audit ohne offene HIGH/MEDIUM)
-- **Tests:** Backend 453 (`mvn -B test`) · Frontend 180 (`npx vitest run`) · E2E 11 (`npm run test:e2e`) · ai-bot 50 · `tsc`/Build grün
+- **Tests:** Backend 467 (`mvn -B test`) · Frontend 180 (`npx vitest run`) · E2E 11 (`npm run test:e2e`) · ai-bot 50 · `tsc`/Build grün
 - **Audits:** P28, P23/P29, P30 und ein finales Gesamt-Audit — alle HIGH/MEDIUM-Findings gefixt, Rest bewusst zurückgestellt (siehe Notizen unten)
 - **P27-Status:** komplett ✅ (Shares/Welt-PUBLIC und Fork-Lücken via P33; Bot-Runtime via T33-06; Bulk/WS/E2E via T33-07/08)
 - **Offen (bewusst):** P34 ✅ abgeschlossen · P14-Rest (Editor-E2E; Inject-Choice ✅) · E2E-Backlog T32-T03 (Fork-Unabhängigkeit) · `attackMalus` ohne Attack-Roll-Modell · Fate „+1/Tod abwenden" · Conditions-Aktionssperren · `baseValues` schema-only
@@ -2569,6 +2569,21 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Status:** 📋
 
 ---
+
+## Phase 36: Audit-Nacharbeit (Runden)
+
+> Voll-Audit 2026-09-12 (Funktionalität/Qualität/UI/Doku). Runde 1 abgeschlossen.
+
+### Runde 1 — Sicherheit (✅)
+- **C1:** Chat-WS mit Principal + `requireAccess` (Spam/Cross-World gesperrt); POST/Persist ebenfalls member-only, leere Texte ohne Broadcast.
+- **F1/F3 (Ownership):** V105 `entities.owner_user_id`; `EntityAccess.requireControl` (Owner oder DM, NULL = Legacy member-level); angewandt auf Inventar, Trade, Combat (Actor/Zug/Ende), Adventure (start/advance/abandon), Sheet/Entity-Mutationen, Abilities, Rests. DM-Endpoint `PATCH …/entities/{id}/owner`.
+- **F2:** `advance` prüft Choice↔aktueller Node + Ziel-Nodes im Abenteuer (`ADVENTURE_CHOICE_INVALID` 422).
+- **F4:** `difficulty` für 3W20 (positiv = erschwert) + Cast-`target` Default 10 für d20.
+- **F5:** `update()` zieht HP nach Attributänderung nach (campaignId).
+- **F6:** Trade-Row-Lock + Entity-Locks (ID-sortiert).
+- Live verifiziert: Owner/DM/Fremd-Matrix (403/200/200), Cross-Trade 403, Difficulty-Schwellen.
+
+> Runde 2 (Logik), Runde 3 (Qualität/i18n), Runde 4 (UX), Doku-Sync — offen.
 
 ## Phase 35: Backlog aus DSA-Spieltest (Details s. `docs/PLAYTEST-DSA.md`)
 

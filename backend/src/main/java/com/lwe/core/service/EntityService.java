@@ -3,6 +3,7 @@ package com.lwe.core.service;
 import com.lwe.core.domain.GameEntity;
 import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.repository.WorldRepository;
+import com.lwe.core.util.EntityAccess;
 import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,17 +24,20 @@ public class EntityService {
     private final RulesLoader rulesLoader;
     private final ConditionService conditionService;
     private final DerivedValueService derivedValueService;
+    private final EntityAccess entityAccess;
     private static final TypeReference<Map<String, Integer>> ATTR_MAP = new TypeReference<>() {};
 
     public EntityService(GameEntityRepository entityRepo, WorldAccess worldAccess,
                         ObjectMapper objectMapper, RulesLoader rulesLoader,
-                        ConditionService conditionService, DerivedValueService derivedValueService) {
+                        ConditionService conditionService, DerivedValueService derivedValueService,
+                        EntityAccess entityAccess) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldAccess = worldAccess;
         this.rulesLoader = rulesLoader;
         this.conditionService = conditionService;
         this.derivedValueService = derivedValueService;
+        this.entityAccess = entityAccess;
     }
 
     @Transactional
@@ -45,6 +49,7 @@ public class EntityService {
         requireWorldAccess(worldId, userId);
 
         var entity = new GameEntity(worldId, entityType, name);
+        entity.setOwnerUserId(userId); // Runde 1: Ersteller kontrolliert den Charakter
         if (nonBlank(attributesJson)) entity.setAttributesJson(attributesJson);
         if (nonBlank(inventoryJson)) entity.setInventoryJson(inventoryJson);
         if (nonBlank(positionJson)) entity.setPositionJson(positionJson);
@@ -140,9 +145,9 @@ public class EntityService {
     public GameEntity update(UUID entityId, UUID userId, String name, String attributesJson,
                               String inventoryJson, String positionJson, String metadataJson,
                               String backstory, Integer age, String experienceLevel,
-                              String socialStanding, UUID factionId) {
+                              String socialStanding, UUID factionId, UUID campaignId) {
         var entity = getById(entityId, userId);
-        requireWorldAccess(entity.getWorldId(), userId);
+        entityAccess.checkControl(entity, userId); // F1: nur Kontrolleur/DM
         if (name != null) entity.setName(name);
         if (nonBlank(attributesJson)) entity.setAttributesJson(attributesJson);
         if (nonBlank(inventoryJson)) entity.setInventoryJson(inventoryJson);
@@ -153,6 +158,8 @@ public class EntityService {
         if (experienceLevel != null) entity.setExperienceLevel(experienceLevel);
         if (socialStanding != null) entity.setSocialStanding(socialStanding);
         if (factionId != null) entity.setFactionId(factionId);
+        // F5: Attribut-Aenderungen ziehen die HP nach (Schaden bleibt erhalten).
+        if (nonBlank(attributesJson)) refreshHpFromDerived(entity, entity.getWorldId(), campaignId);
         return entityRepo.save(entity);
     }
 
@@ -160,7 +167,7 @@ public class EntityService {
     public GameEntity updateAttributes(UUID entityId, UUID userId, Map<String, Integer> newAttrs,
                                        UUID campaignId) {
         var entity = getById(entityId, userId);
-        requireWorldAccess(entity.getWorldId(), userId); // F1: Write-Guard
+        entityAccess.checkControl(entity, userId); // F1
         try {
             var raw = entity.getAttributesJson();
             if (raw == null || raw.isBlank()) raw = "{}";
@@ -177,7 +184,7 @@ public class EntityService {
     @Transactional
     public GameEntity updateProgression(UUID entityId, UUID userId, int experiencePoints, Integer level) {
         var entity = getById(entityId, userId);
-        requireWorldAccess(entity.getWorldId(), userId); // F1: Write-Guard
+        entityAccess.checkControl(entity, userId); // F1
         entity.setExperiencePoints(experiencePoints);
         return entityRepo.save(entity);
     }
@@ -196,7 +203,7 @@ public class EntityService {
     @Transactional
     public GameEntity updateSkills(UUID entityId, UUID userId, Map<String, Integer> skills, UUID campaignId) {
         var entity = getById(entityId, userId);
-        requireWorldAccess(entity.getWorldId(), userId);
+        entityAccess.checkControl(entity, userId); // F1
         enforceSkillMax(entity, skills, campaignId);
         try {
             var existing = entity.getSkillsJson() != null && !entity.getSkillsJson().isBlank()
@@ -353,7 +360,7 @@ public class EntityService {
     @Transactional
     public GameEntity updateOverrides(UUID entityId, UUID userId, Map<String, Object> overrides) {
         var entity = getById(entityId, userId);
-        requireWorldAccess(entity.getWorldId(), userId); // F1: Write-Guard
+        entityAccess.checkControl(entity, userId); // F1
         try {
             var meta = entity.getMetadataJson() != null
                 ? objectMapper.readTree(entity.getMetadataJson())
@@ -369,15 +376,24 @@ public class EntityService {
     @Transactional
     public void delete(UUID entityId, UUID userId) {
         var entity = getById(entityId, userId);
-        requireWorldAccess(entity.getWorldId(), userId);
+        entityAccess.checkControl(entity, userId); // F1
         entity.setActive(false);
         entityRepo.save(entity);
     }
 
-    /** N2-Audit: Schreibzugriff auf eine Entity (Read-Guard + Write-Guard). */
+    /** N2-Audit: Schreibzugriff auf eine Entity (jetzt Kontrolleur/DM). */
     public void requireWriteAccess(UUID entityId, UUID userId) {
         var entity = getById(entityId, userId);
-        requireWorldAccess(entity.getWorldId(), userId);
+        entityAccess.checkControl(entity, userId);
+    }
+
+    /** Runde 1: DM ordnet einen Legacy-Charakter einem Spieler zu (oder loest). */
+    @Transactional
+    public GameEntity setOwner(UUID entityId, UUID actorUserId, UUID ownerUserId) {
+        var entity = getById(entityId, actorUserId);
+        worldAccess.requireDm(entity.getWorldId(), actorUserId);
+        entity.setOwnerUserId(ownerUserId);
+        return entityRepo.save(entity);
     }
 
     private void requireWorldAccess(UUID worldId, UUID userId) {

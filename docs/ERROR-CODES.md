@@ -207,6 +207,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `ADVENTURE_NODE_TERMINAL` | 422 | Node hat keine Choices mehr (`is_end`) |
 | `NODE_NOT_FOUND` | 400 | Adventure-Node existiert nicht |
 | `NODE_NOT_IN_ADVENTURE` | 422 | Node gehört nicht zu diesem Abenteuer |
+| `ADVENTURE_CHOICE_INVALID` | 422 | Choice gehört nicht zum aktuellen Node (Runde 1, F2) |
 
 ### 3.10 NPC Intents (`INTENT_*`)
 

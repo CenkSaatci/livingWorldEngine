@@ -27,6 +27,7 @@ public class CombatService {
     private final SimpMessagingTemplate messaging;
     private final com.lwe.core.util.WorldAccess worldAccess;
     private final RulesLoader rulesLoader;
+    private final com.lwe.core.util.EntityAccess entityAccess;
     private final CampaignMemberService campaignMemberService;
     private final Map<DiceExpressionParser.DiceSystem, RuleEngine> engines;
     private final ObjectMapper objectMapper;
@@ -43,6 +44,7 @@ public class CombatService {
                          AbilityRepository abilityRepo,
                          SimpMessagingTemplate messaging,
                          com.lwe.core.util.WorldAccess worldAccess,
+                         com.lwe.core.util.EntityAccess entityAccess,
                          java.util.List<RuleEngine> engineList,
                          ObjectMapper objectMapper,
                          RulesLoader rulesLoader,
@@ -62,6 +64,7 @@ public class CombatService {
         this.abilityRepo = abilityRepo;
         this.messaging = messaging;
         this.worldAccess = worldAccess;
+        this.entityAccess = entityAccess;
         this.rulesLoader = rulesLoader;
         this.campaignMemberService = campaignMemberService;
         this.engines = new EnumMap<>(DiceExpressionParser.DiceSystem.class);
@@ -141,6 +144,7 @@ public class CombatService {
     public CombatActionResult executeAction(UUID userId, UUID sessionId, UUID actorId,
                                             String actionType, UUID targetId, UUID itemId) {
         var session = validateSession(sessionId, userId, actorId);
+        entityAccess.requireControl(actorId, userId); // Runde 1: nur Kontrolleur/DM
         var participants = participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId);
         var actor = findActor(participants, actorId);
         if (actor.getHpCurrent() <= 0)
@@ -202,6 +206,7 @@ public class CombatService {
     public CombatActionResult useAbility(UUID userId, UUID sessionId, UUID actorId,
                                           UUID abilityId, UUID targetId) {
         var session = validateSession(sessionId, userId, actorId);
+        entityAccess.requireControl(actorId, userId); // Runde 1
         var participants = participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId);
         var actor = findActor(participants, actorId);
         if (actor.getHpCurrent() <= 0)
@@ -427,6 +432,7 @@ public class CombatService {
     public CombatActionResult executeManeuver(UUID userId, UUID sessionId, UUID actorId,
                                               UUID targetId, String maneuverName) {
         var session = validateSession(sessionId, userId, actorId);
+        entityAccess.requireControl(actorId, userId); // Runde 1
         var participants = participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId);
         var actor = findActor(participants, actorId);
         var world = worldRepo.findById(session.getWorldId())
@@ -491,7 +497,8 @@ public class CombatService {
     public CombatSession nextTurn(UUID userId, UUID sessionId) {
         var session = sessionRepo.findById(sessionId)
             .orElseThrow(() -> new CombatException("COMBAT_NOT_FOUND", "Combat session not found"));
-        requireWorldAccess(session.getWorldId(), userId);
+        // Runde 1: Zug weitergeben darf der Kontrolleur des aktuellen Actors oder der DM.
+        entityAccess.requireControl(session.getCurrentTurnEntityId(), userId);
 
         var participants = participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId);
         var currentIdx = -1;
@@ -533,7 +540,7 @@ public class CombatService {
     public CombatSession endCombat(UUID userId, UUID sessionId) {
         var session = sessionRepo.findById(sessionId)
             .orElseThrow(() -> new CombatException("COMBAT_NOT_FOUND", "Combat session not found"));
-        requireWorldAccess(session.getWorldId(), userId);
+        worldAccess.requireDm(session.getWorldId(), userId); // Runde 1: Beenden ist DM-only
         session.setStatus("ENDED");
         session.setEndedAt(java.time.Instant.now());
         session = sessionRepo.save(session);

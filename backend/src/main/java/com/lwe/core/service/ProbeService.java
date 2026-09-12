@@ -60,6 +60,14 @@ public class ProbeService {
 
     public ProbeResponse executeProbe(UUID entityId, UUID userId, String skillName,
                                        int target, boolean advantage, UUID campaignId) {
+        return executeProbe(entityId, userId, skillName, target, advantage, campaignId, 0);
+    }
+
+    /** difficulty (Runde 1): DSA-Probenmodifikator — positiv = erschwert,
+     *  negativ = erleichtert; Schwelle = Attribut − difficulty (3W20). */
+    public ProbeResponse executeProbe(UUID entityId, UUID userId, String skillName,
+                                       int target, boolean advantage, UUID campaignId,
+                                       int difficulty) {
         var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new RuntimeException("ENTITY_NOT_FOUND"));
         worldAccess.requireAccess(entity.getWorldId(), userId);
@@ -123,7 +131,8 @@ public class ProbeService {
                 int fails = 0;
                 for (int i = 0; i < count; i++) {
                     rolls[i] = rng.nextInt(1, 21);
-                    var attrVal = attributes.getOrDefault(skillAttrs.get(i), 10);
+                    // Runde 1: Erschwernis/Erleichterung senkt/hebt die Attributsschwelle.
+                    var attrVal = attributes.getOrDefault(skillAttrs.get(i), 10) - difficulty;
                     var ok = rolls[i] <= attrVal;
                     if (!ok) fails += rolls[i] - attrVal;
                     details.add(new ProbeResponse.DieDetail(rolls[i], skillAttrs.get(i), attrVal, ok));
@@ -190,6 +199,13 @@ public class ProbeService {
     /** B3: Zauber/Liturgien wirken — Probe + Ressourcen-Abzug (AsP/KaP). */
     @Transactional
     public CastResult cast(UUID entityId, UUID userId, String skillName, UUID campaignId) {
+        return cast(entityId, userId, skillName, campaignId, null, null);
+    }
+
+    /** F4: d20-Systeme brauchen eine echte Schwelle (Default 10 statt 0 = Auto-Erfolg);
+     *  DSA nutzt difficulty (Default 0). */
+    public CastResult cast(UUID entityId, UUID userId, String skillName, UUID campaignId,
+                           Integer target, Integer difficulty) {
         var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new CastException("CAST_ENTITY_NOT_FOUND", "Entity not found"));
         worldAccess.requireAccess(entity.getWorldId(), userId);
@@ -228,7 +244,9 @@ public class ProbeService {
             throw new CastException("CAST_INSUFFICIENT_RESOURCE",
                 "Not enough " + resource.toUpperCase() + " (" + current + "/" + cost + ")");
 
-        var probe = executeProbe(entityId, userId, skillName, 0, false, campaignId);
+        var probe = executeProbe(entityId, userId, skillName,
+            target != null ? target : 10, false, campaignId,
+            difficulty != null ? difficulty : 0);
         var remaining = current - cost;
         meta.put(key, remaining);
         entity.setMetadataJson(meta.toString());

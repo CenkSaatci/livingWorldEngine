@@ -60,6 +60,10 @@ public class GameEntity {
     @Column(name = "faction_id")
     private UUID factionId;
 
+    /** Runde 1: steuernder Spieler. NULL = Legacy (member-level). */
+    @Column(name = "owner_user_id")
+    private UUID ownerUserId;
+
     @Column(columnDefinition = "text")
     private String backstory;
 
@@ -126,6 +130,8 @@ public class GameEntity {
     public void setMetadataJson(String v) { this.metadataJson = v; }
     public UUID getFactionId() { return factionId; }
     public void setFactionId(UUID v) { this.factionId = v; }
+    public UUID getOwnerUserId() { return ownerUserId; }
+    public void setOwnerUserId(UUID v) { this.ownerUserId = v; }
     public String getBackstory() { return backstory; }
     public void setBackstory(String v) { this.backstory = v; }
     public int getAge() { return age; }

@@ -6,6 +6,7 @@ import com.lwe.core.domain.GameSystem;
 import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.util.WorldAccess;
 import com.lwe.rules.DiceExpression;
+import com.lwe.core.util.EntityAccess;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,14 +17,16 @@ public class RestService {
 
     private final GameEntityRepository entityRepo;
     private final WorldAccess worldAccess;
+    private final EntityAccess entityAccess;
     private final RulesLoader rulesLoader;
     private final ObjectMapper mapper;
 
     public RestService(GameEntityRepository entityRepo, WorldAccess worldAccess,
-                       RulesLoader rulesLoader, ObjectMapper mapper) {
+                       EntityAccess entityAccess, RulesLoader rulesLoader, ObjectMapper mapper) {
         this.mapper = mapper;
         this.entityRepo = entityRepo;
         this.worldAccess = worldAccess;
+        this.entityAccess = entityAccess;
         this.rulesLoader = rulesLoader;
     }
 
@@ -60,7 +63,7 @@ public class RestService {
     private GameEntity findEntity(UUID entityId, UUID userId) {
         var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new RestException("ENTITY_NOT_FOUND", "Entity not found"));
-        worldAccess.requireAccess(entity.getWorldId(), userId);
+        entityAccess.checkControl(entity, userId); // Runde 1: Rasten ist Charakter-Handlung
         return entity;
     }
 

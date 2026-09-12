@@ -64,6 +64,15 @@ class ProbeServiceTest {
         return e;
     }
 
+    private static final String D20_CAST_RULES = """
+        {"version":1,"probeType":"d20_target",
+         "attributes":[{"name":"staerke","type":"INT","min":1,"max":20,"default":10}],
+         "skills":[{"name":"Feuerball","attributes":["staerke"],"bonus":0,
+                    "casting":{"resource":"asp","cost":1,"requiresTrait":"Zauberer"}}],
+         "derived_values":[{"name":"asp","formula":"5"}],
+         "dice_mechanics":{"probe":"1d20"}}
+        """;
+
     private static final String DSA_RULES = """
         {"version":1,"probeType":"d20_3attr",
          "attributes":[{"name":"mut","type":"INT","min":1,"max":20,"default":8},
@@ -74,6 +83,43 @@ class ProbeServiceTest {
          "derived_values":[{"name":"asp","formula":"(mut+klugheit+intuition)/2"}],
          "dice_mechanics":{"probe":"3d20"}}
         """;
+
+    @Test
+    void dsaProbeShowsAdjustedThresholds() throws Exception {
+        var entity = entityWithAttrs("{\"mut\":14,\"klugheit\":14,\"intuition\":13}");
+        entity.setMetadataJson("{\"traits\":[\"Zauberer\"]}");
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        lenient().when(rulesLoader.loadRules(any(), eq(worldId))).thenAnswer(inv ->
+            objectMapper.readValue(DSA_RULES, Map.class));
+
+        var result = service.executeProbe(entityId, userId, "Odem", 0, false, campaignId(), 2);
+
+        // Schwellen: klugheit 14-2=12, intuition 13-2=11, charisma default 10-2=8
+        assertThat(result.details()).extracting(com.lwe.api.dto.ProbeResponse.DieDetail::attrValue)
+            .containsExactly(12, 11, 8);
+    }
+
+    @Test
+    void castUsesTargetForD20() throws Exception {
+        var entity = entityWithAttrs("{\"staerke\":10}");
+        entity.setMetadataJson("{\"traits\":[\"Zauberer\"]}");
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        lenient().when(rulesLoader.loadRules(any(), eq(worldId))).thenAnswer(inv ->
+            objectMapper.readValue(D20_CAST_RULES, Map.class));
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        // Zielwert 100 ist mit 1d20 sicher nicht erreichbar -> Erfolg muss false sein.
+        var result = service.cast(entityId, userId, "Feuerball", campaignId(), 100, null);
+
+        assertThat(result.probe().success()).isFalse();
+        assertThat(result.resourceRemaining()).isEqualTo(4);
+    }
 
     @Test
     void castDeductsAsp() throws Exception {

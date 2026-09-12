@@ -41,6 +41,37 @@ class ChatControllerTest {
         return u;
     }
 
+    @Test
+    void wsChatRequiresAuth() {
+        assertThatThrownBy(() -> controller.handleChat(worldId.toString(),
+                Map.of("sender", "X", "text", "hi"), null))
+            .isInstanceOf(WorldAccess.WorldAccessException.class);
+    }
+
+    @Test
+    void wsChatRequiresMembership() {
+        stubWorld();
+        doThrow(new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireAccess(worldId, userId);
+
+        assertThatThrownBy(() -> controller.handleChat(worldId.toString(),
+                Map.of("sender", "X", "text", "hi"), () -> userId.toString()))
+            .isInstanceOf(WorldAccess.WorldAccessException.class);
+    }
+
+    @Test
+    void wsChatPersistsAndBroadcasts() {
+        stubWorld();
+        when(chatRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        controller.handleChat(worldId.toString(), Map.of("sender", "X", "text", "hallo"),
+            () -> userId.toString());
+
+        verify(worldAccess).requireAccess(worldId, userId);
+        verify(chatRepo).save(any());
+        verify(messaging).convertAndSend(eq("/topic/world/" + worldId), org.mockito.ArgumentMatchers.<Object>any());
+    }
+
     private void stubWorld() {
         var world = new World("W", userId, "{}");
         try {
@@ -82,6 +113,8 @@ class ChatControllerTest {
         stubWorld();
         doThrow(new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
             .when(worldAccess).requireRead(worldId, userId);
+        doThrow(new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireAccess(worldId, userId);
 
         assertThatThrownBy(() -> controller.history(worldId.toString(), user()))
             .isInstanceOf(WorldAccess.WorldAccessException.class);

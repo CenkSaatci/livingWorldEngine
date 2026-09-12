@@ -47,7 +47,8 @@ public class RollController {
                                                 @AuthenticationPrincipal User user) {
         var result = probeService.executeProbe(
             req.entityId(), user.getId(), req.skillName(),
-            req.target(), req.advantage(), req.campaignId());
+            req.target(), req.advantage(), req.campaignId(),
+            req.difficulty() != null ? req.difficulty() : 0);
         return ResponseEntity.ok(result);
     }
 
@@ -55,7 +56,8 @@ public class RollController {
     public ResponseEntity<ProbeService.CastResult> cast(@Valid @RequestBody CastRequest req,
                                                         @AuthenticationPrincipal User user) {
         var result = probeService.cast(
-            req.entityId(), user.getId(), req.skillName(), req.campaignId());
+            req.entityId(), user.getId(), req.skillName(), req.campaignId(),
+            req.target(), req.difficulty());
         return ResponseEntity.ok(result);
     }
 
@@ -73,13 +75,16 @@ public class RollController {
         @NotBlank String skillName,
         int target,
         boolean advantage,
-        UUID campaignId
+        UUID campaignId,
+        Integer difficulty
     ) {}
 
     public record CastRequest(
         @NotNull UUID entityId,
         @NotBlank String skillName,
-        UUID campaignId
+        UUID campaignId,
+        Integer target,
+        Integer difficulty
     ) {}
 
     public record RollRequest(

@@ -29,6 +29,7 @@ public class CharacterSheetService {
     private final RulesLoader rulesLoader;
     private final ObjectMapper objectMapper;
     private final ConditionService conditionService;
+    private final com.lwe.core.util.EntityAccess entityAccess;
 
     private static final TypeReference<Map<String, Integer>> ATTR_MAP_TYPE = new TypeReference<>() {};
     private static final TypeReference<List<Map<String, Object>>> LIST_MAP_TYPE = new TypeReference<>() {};
@@ -36,6 +37,7 @@ public class CharacterSheetService {
 
     public CharacterSheetService(GameEntityRepository entityRepo, WorldRepository worldRepo,
                                   WorldAccess worldAccess,
+                                  com.lwe.core.util.EntityAccess entityAccess,
                                   ModifierService modifierService,
                                   DerivedValueService derivedValueService,
                                   LevelUpService levelUpService,
@@ -46,6 +48,7 @@ public class CharacterSheetService {
         this.entityRepo = entityRepo;
         this.worldRepo = worldRepo;
         this.worldAccess = worldAccess;
+        this.entityAccess = entityAccess;
         this.modifierService = modifierService;
         this.derivedValueService = derivedValueService;
         this.levelUpService = levelUpService;
@@ -195,7 +198,7 @@ public class CharacterSheetService {
     public void updateProgression(UUID entityId, UUID userId, int experiencePoints) {
         var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new RuntimeException("ENTITY_NOT_FOUND"));
-        worldAccess.requireAccess(entity.getWorldId(), userId);
+        entityAccess.checkControl(entity, userId); // Runde 1
         entity.setExperiencePoints(experiencePoints);
         entityRepo.save(entity);
     }

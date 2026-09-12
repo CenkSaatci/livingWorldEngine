@@ -38,7 +38,8 @@ class EntityAbilityServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new EntityAbilityService(repo, entityRepo, abilityRepo, worldAccess);
+        service = new EntityAbilityService(repo, entityRepo, abilityRepo, worldAccess,
+            new com.lwe.core.util.EntityAccess(entityRepo, worldAccess));
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
     }
 

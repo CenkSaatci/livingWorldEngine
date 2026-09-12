@@ -60,12 +60,25 @@ public class EntityController {
     public ResponseEntity<EntityResponse> update(@PathVariable UUID worldId,
                                                   @PathVariable UUID entityId,
                                                   @RequestBody UpdateRequest req,
+                                                  @RequestParam(required = false) UUID campaignId,
                                                   @AuthenticationPrincipal User user) {
         var entity = entityService.update(entityId, user.getId(),
             req.name(), req.attributesJson(), req.inventoryJson(),
             req.positionJson(), req.metadataJson(),
             req.backstory(), req.age(), req.experienceLevel(), req.socialStanding(),
-            req.factionId());
+            req.factionId(), campaignId);
+        return ResponseEntity.ok(EntityResponse.from(entity));
+    }
+
+    /** Runde 1: DM ordnet Legacy-Charaktere Spielern zu (body: {userId}, null = loesen). */
+    @PatchMapping("/{entityId}/owner")
+    public ResponseEntity<EntityResponse> setOwner(@PathVariable UUID worldId,
+                                                   @PathVariable UUID entityId,
+                                                   @RequestBody Map<String, String> body,
+                                                   @AuthenticationPrincipal User user) {
+        var raw = body.get("userId");
+        var ownerId = (raw == null || raw.isBlank()) ? null : UUID.fromString(raw);
+        var entity = entityService.setOwner(entityId, user.getId(), ownerId);
         return ResponseEntity.ok(EntityResponse.from(entity));
     }
 

@@ -24,6 +24,7 @@ public record EntityResponse(
     int hpMax,
     int apCurrent,
     int apMax,
+    String ownerUserId,
     String createdAt
 ) {
     public static EntityResponse from(GameEntity e) {
@@ -37,6 +38,7 @@ public record EntityResponse(
             e.getAge(), e.getExperienceLevel(), e.getSocialStanding(),
             e.getExperiencePoints(), e.getUnspentAttributePoints(),
             e.getHpCurrent(), e.getHpMax(), e.getApCurrent(), e.getApMax(),
+            e.getOwnerUserId() != null ? e.getOwnerUserId().toString() : null,
             e.getCreatedAt().toString()
         );
     }

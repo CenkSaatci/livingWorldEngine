@@ -7,6 +7,7 @@ import com.lwe.core.domain.EntityAbility;
 import com.lwe.core.repository.AbilityRepository;
 import com.lwe.core.repository.EntityAbilityRepository;
 import com.lwe.core.repository.GameEntityRepository;
+import com.lwe.core.util.EntityAccess;
 import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,22 +23,24 @@ public class EntityAbilityService {
     private final GameEntityRepository entityRepo;
     private final AbilityRepository abilityRepo;
     private final WorldAccess worldAccess;
+    private final EntityAccess entityAccess;
 
     public EntityAbilityService(EntityAbilityRepository repo,
                                 GameEntityRepository entityRepo,
                                 AbilityRepository abilityRepo,
-                                WorldAccess worldAccess) {
+                                WorldAccess worldAccess, EntityAccess entityAccess) {
         this.repo = repo;
         this.entityRepo = entityRepo;
         this.abilityRepo = abilityRepo;
         this.worldAccess = worldAccess;
+        this.entityAccess = entityAccess;
     }
 
     @Transactional
     public EntityAbility assign(UUID entityId, UUID abilityId, UUID userId) {
         var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new EntityAbilityException("ENTITY_NOT_FOUND", "Entity not found"));
-        worldAccess.requireAccess(entity.getWorldId(), userId);
+        entityAccess.checkControl(entity, userId); // Runde 1
         var ability = abilityRepo.findById(abilityId)
             .orElseThrow(() -> new EntityAbilityException("ABILITY_NOT_FOUND", "Ability not found"));
 
@@ -63,7 +66,7 @@ public class EntityAbilityService {
     public void unassign(UUID entityId, UUID abilityId, UUID userId) {
         var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new EntityAbilityException("ENTITY_NOT_FOUND", "Entity not found"));
-        worldAccess.requireAccess(entity.getWorldId(), userId);
+        entityAccess.checkControl(entity, userId); // Runde 1
         var ea = repo.findByEntityIdAndAbilityId(entityId, abilityId)
             .orElseThrow(() -> new EntityAbilityException("NOT_ASSIGNED", "Ability not assigned to entity"));
         repo.delete(ea);

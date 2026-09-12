@@ -6,6 +6,7 @@ import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.GameItem;
 import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.repository.GameItemRepository;
+import com.lwe.core.util.EntityAccess;
 import com.lwe.core.util.WorldAccess;
 import com.lwe.rules.DiceExpression;
 import org.springframework.stereotype.Service;
@@ -20,15 +21,17 @@ public class InventoryService {
     private final GameEntityRepository entityRepo;
     private final GameItemRepository itemRepo;
     private final WorldAccess worldAccess;
+    private final EntityAccess entityAccess;
     private final ObjectMapper objectMapper;
 
     public InventoryService(GameEntityRepository entityRepo, GameItemRepository itemRepo,
-                            WorldAccess worldAccess,
+                            WorldAccess worldAccess, EntityAccess entityAccess,
                         ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.itemRepo = itemRepo;
         this.worldAccess = worldAccess;
+        this.entityAccess = entityAccess;
     }
 
     public InventoryResult getInventory(UUID entityId, UUID userId) {
@@ -57,7 +60,7 @@ public class InventoryService {
 
     @Transactional
     public void addItem(UUID entityId, UUID userId, UUID itemId, int quantity) {
-        var entity = findEntity(entityId, userId);
+        var entity = entityAccess.requireControl(entityId, userId); // Runde 1: nur Kontrolleur/DM
         itemRepo.findById(itemId).orElseThrow(
             () -> new InventoryException("INVENTORY_ITEM_NOT_FOUND", "Item not found"));
 
@@ -78,7 +81,7 @@ public class InventoryService {
 
     @Transactional
     public void removeItem(UUID entityId, UUID userId, UUID itemId, int quantity) {
-        var entity = findEntity(entityId, userId);
+        var entity = entityAccess.requireControl(entityId, userId); // Runde 1
         var inventory = parseInventory(entity.getInventoryJson());
         var existing = inventory.stream().filter(e -> e.itemId().equals(itemId)).findFirst()
             .orElseThrow(() -> new InventoryException("INVENTORY_ITEM_NOT_FOUND", "Item not in inventory"));
@@ -104,7 +107,7 @@ public class InventoryService {
 
     @Transactional
     public InventoryResult equipItem(UUID entityId, UUID userId, UUID itemId, String slot) {
-        var entity = findEntity(entityId, userId);
+        var entity = entityAccess.requireControl(entityId, userId); // Runde 1
         var inventory = parseInventory(entity.getInventoryJson());
         var existing = inventory.stream().filter(e -> e.itemId().equals(itemId)).findFirst()
             .orElseThrow(() -> new InventoryException("INVENTORY_ITEM_NOT_FOUND", "Item not in inventory"));
@@ -131,7 +134,7 @@ public class InventoryService {
 
     @Transactional
     public InventoryResult unequipItem(UUID entityId, UUID userId, UUID itemId) {
-        var entity = findEntity(entityId, userId);
+        var entity = entityAccess.requireControl(entityId, userId); // Runde 1
         var inventory = parseInventory(entity.getInventoryJson());
         var equipped = inventory.stream()
             .filter(e -> e.itemId().equals(itemId) && e.equipped())
@@ -151,7 +154,7 @@ public class InventoryService {
 
     @Transactional
     public int useConsumable(UUID entityId, UUID userId, UUID itemId) {
-        var entity = findEntity(entityId, userId);
+        var entity = entityAccess.requireControl(entityId, userId); // Runde 1
         var item = itemRepo.findById(itemId)
             .orElseThrow(() -> new InventoryException("INVENTORY_ITEM_NOT_FOUND", "Item not found"));
         if (!"CONSUMABLE".equals(item.getType()))

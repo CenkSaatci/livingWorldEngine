@@ -22,13 +22,14 @@ public class AdventureService {
     private final RollService rollService;
     private final WorldEventService eventService;
     private final com.lwe.core.util.WorldAccess worldAccess;
+    private final com.lwe.core.util.EntityAccess entityAccess;
     private final ObjectMapper objectMapper;
 
     public AdventureService(AdventureRepository adventureRepo, AdventureNodeRepository nodeRepo,
                             NodeChoiceRepository choiceRepo, AdventureProgressRepository progressRepo,
                             WorldRepository worldRepo, RollService rollService,
                             WorldEventService eventService, com.lwe.core.util.WorldAccess worldAccess,
-                        ObjectMapper objectMapper) {
+                        com.lwe.core.util.EntityAccess entityAccess, ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         this.adventureRepo = adventureRepo;
         this.nodeRepo = nodeRepo;
@@ -38,6 +39,7 @@ public class AdventureService {
         this.rollService = rollService;
         this.eventService = eventService;
         this.worldAccess = worldAccess;
+        this.entityAccess = entityAccess;
     }
 
     @Transactional
@@ -136,7 +138,7 @@ public class AdventureService {
     public AdventureProgress start(UUID adventureId, UUID entityId, UUID userId) {
         var adv = adventureRepo.findById(adventureId)
             .orElseThrow(() -> new AdventureException("ADVENTURE_NOT_FOUND", "Adventure not found"));
-        verifyWorldAccess(adv.getWorldId(), userId);
+        entityAccess.requireControl(entityId, userId, adv.getWorldId()); // Runde 1: F2
 
         if (adv.getStartNodeId() == null)
             throw new AdventureException("ADVENTURE_NODE_NOT_FOUND", "Adventure has no start node");
@@ -159,7 +161,8 @@ public class AdventureService {
 
     @Transactional
     public AdvanceResult advance(UUID adventureId, UUID entityId, UUID choiceId, UUID userId) {
-        verifyAdventureAccess(adventureId, userId); // N1-Audit
+        var adv = verifyAdventureAccess(adventureId, userId);
+        entityAccess.requireControl(entityId, userId, adv.getWorldId()); // Runde 1: F2
         var progress = progressRepo.findByAdventureIdAndEntityId(adventureId, entityId)
             .orElseThrow(() -> new AdventureException("ADVENTURE_PROGRESS_NOT_FOUND",
                 "Character has not started this adventure"));
@@ -170,6 +173,15 @@ public class AdventureService {
         var choice = choiceRepo.findById(choiceId)
             .orElseThrow(() -> new AdventureException("ADVENTURE_CHOICE_NOT_FOUND",
                 "Choice not found"));
+
+        // F2: Choice muss zum aktuellen Node des Fortschritts gehören; Ziel-Nodes
+        // müssen Teil dieses Abenteuers sein (kein Fremd-Sprung).
+        if (choice.getNodeId() == null || !choice.getNodeId().equals(progress.getCurrentNodeId()))
+            throw new AdventureException("ADVENTURE_CHOICE_INVALID",
+                "Choice does not belong to the current node");
+        if (choice.getTargetNodeId() != null) verifyNodeInAdventure(adventureId, choice.getTargetNodeId());
+        if (choice.getOnSuccessNodeId() != null) verifyNodeInAdventure(adventureId, choice.getOnSuccessNodeId());
+        if (choice.getOnFailureNodeId() != null) verifyNodeInAdventure(adventureId, choice.getOnFailureNodeId());
 
         // Determine next node
         UUID nextNodeId;
@@ -216,8 +228,7 @@ public class AdventureService {
 
         progressRepo.save(progress);
 
-        var adv = adventureRepo.findById(adventureId).orElse(null);
-        eventService.publish(adv != null ? adv.getWorldId() : null, ADVENTURE_ADVANCED,
+        eventService.publish(adv.getWorldId(), ADVENTURE_ADVANCED,
             entityId, null, Map.of(
                 "adventureId", adventureId,
                 "choiceId", choiceId,
@@ -236,7 +247,11 @@ public class AdventureService {
 
     @Transactional
     public void abandon(UUID adventureId, UUID entityId, UUID userId) {
-        var progress = getProgress(adventureId, entityId, userId);
+        var adv = verifyAdventureAccess(adventureId, userId);
+        entityAccess.requireControl(entityId, userId, adv.getWorldId()); // Runde 1
+        var progress = progressRepo.findByAdventureIdAndEntityId(adventureId, entityId)
+            .orElseThrow(() -> new AdventureException("ADVENTURE_PROGRESS_NOT_FOUND",
+                "Character has not started this adventure"));
         progress.setStatus("ABANDONED");
         progressRepo.save(progress);
     }

@@ -40,8 +40,10 @@ class TradeServiceTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(entityRepo.findByIdForUpdate(any())).thenAnswer(inv ->
+            entityRepo.findById(inv.getArgument(0)));
         service = new TradeService(tradeRepo, entityRepo, itemRepo, inventoryService,
-            worldAccess, new ObjectMapper());
+            worldAccess, new com.lwe.core.util.EntityAccess(entityRepo, worldAccess), new ObjectMapper());
     }
 
     private GameEntity entity(UUID id, String inventoryJson) {
@@ -84,6 +86,9 @@ class TradeServiceTest {
         assertThat(done.getStatus()).isEqualTo("accepted");
         verify(inventoryService).removeItem(proposerId, userId, itemId, 2);
         verify(inventoryService).addItem(partnerId, userId, itemId, 2);
+        // Runde 1 (F6): Trade-Zeile und Entities werden gesperrt geladen.
+        verify(tradeRepo).findByIdForUpdate(trade.getId());
+        verify(entityRepo, org.mockito.Mockito.atLeastOnce()).findByIdForUpdate(any());
     }
 
     @Test
@@ -113,6 +118,20 @@ class TradeServiceTest {
         verify(inventoryService).addItem(aId, userId, potionId, 1);
         verify(inventoryService).removeItem(aId, userId, swordId, 1);
         verify(inventoryService).addItem(bId, userId, swordId, 1);
+    }
+
+    @Test
+    void foreignOwnedEntityNeedsDm() {
+        var aId = UUID.randomUUID();
+        var bId = UUID.randomUUID();
+        var a = entity(aId, "[]");
+        a.setOwnerUserId(UUID.randomUUID()); // gehoert jemand anderem
+        stubEntities(a, entity(bId, "[]"));
+        doThrow(new com.lwe.core.util.WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireDm(worldId, userId);
+
+        assertThatThrownBy(() -> service.propose(worldId, userId, aId, bId, List.of(), List.of()))
+            .isInstanceOf(com.lwe.core.util.WorldAccess.WorldAccessException.class);
     }
 
     @Test
@@ -158,6 +177,12 @@ class TradeServiceTest {
                 List.of(Map.of("itemId", itemId.toString(), "quantity", 5)), List.of()))
             .isInstanceOf(TradeService.TradeException.class)
             .matches(e -> ((TradeService.TradeException) e).getErrorCode().equals("TRADE_INSUFFICIENT_QUANTITY"));
+    }
+
+    @org.junit.jupiter.api.BeforeEach
+    void stubTradeLock() {
+        lenient().when(tradeRepo.findByIdForUpdate(any())).thenAnswer(inv ->
+            tradeRepo.findById(inv.getArgument(0)));
     }
 
     private void setId(Trade trade, UUID id) {
