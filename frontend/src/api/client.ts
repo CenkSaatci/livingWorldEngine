@@ -1,10 +1,26 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api/v1';
+/** QA-Audit (LAN-Zugriff): Host dynamisch aus der aufgerufenen URL ableiten, damit die App
+ *  auch von anderen Rechnern im Netz funktioniert (statt hartkodiertem localhost). */
+function backendHost(): string {
+  if (typeof window !== 'undefined' && window.location.hostname) {
+    const h = window.location.hostname;
+    if (h !== 'localhost' && h !== '127.0.0.1' && h !== '[::1]') return h;
+  }
+  return 'localhost';
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? `http://${backendHost()}:8080/api/v1`;
 const REFRESH_URL = `${API_BASE_URL}/auth/refresh`;
 
 /** Backend-URL für absolute Pfade (Bilder, Uploads) — inkludiert /api/v1 */
 export const BACKEND_ORIGIN = API_BASE_URL;
+
+/** WS-URL aus der API-URL abgeleitet (VITE_WS_URL hat Vorrang). */
+export function backendWsUrl(): string {
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL as string;
+  return `${BACKEND_ORIGIN.replace(/^http/, 'ws').replace(/\/api\/v1$/, '')}/ws`;
+}
 
 /**
  * Axios-Client für LWE-Backend.

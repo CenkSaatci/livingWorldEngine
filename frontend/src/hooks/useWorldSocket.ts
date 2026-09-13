@@ -4,9 +4,9 @@ import { useAuthStore } from '../store/authStore';
 import { useWorldStore, type WorldEvent } from '../store/worldStore';
 import { useCombatStore } from '../store/combatStore';
 import { useToastStore } from '../store/toastStore';
-import { getAccessToken, apiClient } from '../api/client';
+import { getAccessToken, apiClient, backendWsUrl } from '../api/client';
 
-const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8080/ws';
+const WS_URL = backendWsUrl();
 const RECONNECT_BASE_MS = 3000;
 const RECONNECT_MAX_MS = 30000;
 
