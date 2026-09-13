@@ -185,6 +185,31 @@ class AdventureServiceTest {
     }
 
     @Test
+    void startReturnsExistingOnConcurrentDuplicateStart() {
+        var entityId = UUID.randomUUID();
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+        when(adventureRepo.findById(adventure.getId())).thenReturn(Optional.of(adventure));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity(entityId)));
+        when(progressRepo.findByAdventureIdAndEntityId(adventure.getId(), entityId))
+            .thenReturn(Optional.empty());
+        var existing = new AdventureProgress(adventure.getId(), entityId, startNodeId);
+        setId(existing, UUID.randomUUID());
+        when(progressRepo.save(any())).thenThrow(
+            new org.springframework.dao.DataIntegrityViolationException("dup"));
+        when(progressRepo.findByAdventureIdAndEntityId(adventure.getId(), entityId))
+            .thenReturn(Optional.empty())
+            .thenReturn(Optional.of(existing));
+        when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any()))
+            .thenReturn(1L);
+
+        var result = service.start(adventure.getId(), entityId, userId);
+
+        assertThat(result.getId()).isEqualTo(existing.getId());
+    }
+
+    @Test
     void advanceRequiresWorldAccess() {
         doThrow(new com.lwe.core.util.WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
             .when(worldAccess).requireAccess(worldId, userId);

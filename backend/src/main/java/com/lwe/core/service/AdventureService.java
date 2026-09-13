@@ -158,7 +158,15 @@ public class AdventureService {
         }
 
         var progress = new AdventureProgress(adventureId, entityId, adv.getStartNodeId());
-        progress = progressRepo.save(progress);
+        try {
+            progress = progressRepo.save(progress);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // QA-Audit: paralleler Start (z. B. doppelter Auto-Start im UI) — statt 500
+            // den inzwischen angelegten Fortschritt zurückgeben (Resume).
+            return progressRepo.findByAdventureIdAndEntityId(adventureId, entityId)
+                .orElseThrow(() -> new AdventureException("ADVENTURE_PROGRESS_NOT_FOUND",
+                    "Character has not started this adventure"));
+        }
 
         eventService.publish(adv.getWorldId(), ADVENTURE_STARTED, entityId, null,
             Map.of("adventureId", adventureId, "startNodeId", adv.getStartNodeId()));

@@ -96,6 +96,18 @@ export default function NpcViewPage() {
   const [socialActionName, setSocialActionName] = useState('');
   const [socialRolling, setSocialRolling] = useState(false);
 
+  // SM-03: Regelwerk der aktiven Kampagne laden (nur wenn sie zu dieser Welt gehoert).
+  // Muss VOR dem Early-Return stehen (Hooks-Reihenfolge).
+  useEffect(() => {
+    setSocialRules(null);
+    if (!activeCampaign || activeCampaign.worldId !== worldId) return;
+    let cancelled = false;
+    apiClient.get(`/game-systems/${activeCampaign.gameSystemId}`).then((res) => {
+      if (!cancelled) setSocialRules(fromRulesJson((res.data.rulesJson as string) ?? '') ?? null);
+    }).catch(() => { if (!cancelled) setSocialRules(null); });
+    return () => { cancelled = true; };
+  }, [activeCampaign, worldId]);
+
   const [editing, setEditing] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [xpAmount, setXpAmount] = useState(50);
@@ -176,20 +188,9 @@ export default function NpcViewPage() {
   const relationships = (meta.relationships ?? {}) as Record<string, string>;
   const services = (meta.services_offered ?? []) as string[];
 
-  // SM-03: Regelwerk der aktiven Kampagne laden (nur wenn sie zu dieser Welt gehoert).
-  useEffect(() => {
-    setSocialRules(null);
-    if (!activeCampaign || activeCampaign.worldId !== worldId) return;
-    let cancelled = false;
-    apiClient.get(`/game-systems/${activeCampaign.gameSystemId}`).then((res) => {
-      if (!cancelled) setSocialRules(fromRulesJson((res.data.rulesJson as string) ?? '') ?? null);
-    }).catch(() => { if (!cancelled) setSocialRules(null); });
-    return () => { cancelled = true; };
-  }, [activeCampaign, worldId]);
-
+  const pcs = (worldEntities ?? []).filter((e) => e.entityType === 'PC');
   const socialActions = socialRules?.socialActions ?? [];
   const relationshipScores = socialRules?.social?.relationshipScores ?? {};
-  const pcs = (worldEntities ?? []).filter((e) => e.entityType === 'PC');
 
   const rollSocial = async () => {
     const action = socialActions.find((a) => a.name === socialActionName);

@@ -84,3 +84,5 @@ frontend/e2e/.auth/
 frontend/test-results/
 frontend/playwright-report/
 .playwright-cli/
+
+frontend/e2e/qa-out/
