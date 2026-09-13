@@ -61,6 +61,12 @@ public class InventoryService {
     @Transactional
     public void addItem(UUID entityId, UUID userId, UUID itemId, int quantity) {
         var entity = entityAccess.requireControl(entityId, userId); // Runde 1: nur Kontrolleur/DM
+        addItemInternal(entity, itemId, quantity);
+    }
+
+    /** QA-Audit: Engine-internes Hinzufügen ohne Kontrolleur-Check
+     *  (nur für TradeService nach Teilnahme-Validierung). */
+    void addItemInternal(GameEntity entity, UUID itemId, int quantity) {
         itemRepo.findById(itemId).orElseThrow(
             () -> new InventoryException("INVENTORY_ITEM_NOT_FOUND", "Item not found"));
 
@@ -82,6 +88,23 @@ public class InventoryService {
     @Transactional
     public void removeItem(UUID entityId, UUID userId, UUID itemId, int quantity) {
         var entity = entityAccess.requireControl(entityId, userId); // Runde 1
+        removeItemInternal(entity, itemId, quantity);
+    }
+
+    /** QA-Audit: Engine-interner Transfer ohne Kontrolleur-Check —
+     *  Autorisierung ist der Trade selbst (beide Parteien haben zugestimmt). */
+    @Transactional
+    public void transferItem(UUID fromEntityId, UUID toEntityId, UUID itemId, int quantity) {
+        var from = entityRepo.findById(fromEntityId)
+            .orElseThrow(() -> new InventoryException("ENTITY_NOT_FOUND", "Entity not found"));
+        var to = entityRepo.findById(toEntityId)
+            .orElseThrow(() -> new InventoryException("ENTITY_NOT_FOUND", "Entity not found"));
+        removeItemInternal(from, itemId, quantity);
+        addItemInternal(to, itemId, quantity);
+    }
+
+    /** QA-Audit: Engine-internes Entfernen ohne Kontrolleur-Check (s. addItemInternal). */
+    void removeItemInternal(GameEntity entity, UUID itemId, int quantity) {
         var inventory = parseInventory(entity.getInventoryJson());
         var existing = inventory.stream().filter(e -> e.itemId().equals(itemId)).findFirst()
             .orElseThrow(() -> new InventoryException("INVENTORY_ITEM_NOT_FOUND", "Item not in inventory"));

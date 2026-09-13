@@ -437,6 +437,26 @@ class WorldServiceTest {
         assertThat(advCopy.getStartNodeId()).isNotEqualTo(node.getId());
     }
 
+    @Test
+    void membershipReturnsOwnerDmPlayerAndViewer() {
+        var ownerId = UUID.randomUUID();
+        var dmId = UUID.randomUUID();
+        var playerId = UUID.randomUUID();
+        var strangerId = UUID.randomUUID();
+        var world = worldWithId("Rollenwelt", ownerId);
+        when(worldRepo.findById(world.getId())).thenReturn(Optional.of(world));
+        var dm = new com.lwe.core.domain.WorldMember(world.getId(), dmId, "DM");
+        var player = new com.lwe.core.domain.WorldMember(world.getId(), playerId, "PLAYER");
+        when(memberRepo.findByWorldIdAndUserId(world.getId(), dmId)).thenReturn(Optional.of(dm));
+        when(memberRepo.findByWorldIdAndUserId(world.getId(), playerId)).thenReturn(Optional.of(player));
+        when(memberRepo.findByWorldIdAndUserId(world.getId(), strangerId)).thenReturn(Optional.empty());
+
+        assertThat(worldService.membership(world.getId(), ownerId)).isEqualTo("OWNER");
+        assertThat(worldService.membership(world.getId(), dmId)).isEqualTo("DM");
+        assertThat(worldService.membership(world.getId(), playerId)).isEqualTo("PLAYER");
+        assertThat(worldService.membership(world.getId(), strangerId)).isEqualTo("VIEWER");
+    }
+
     // -- helpers --
 
     private World worldWithId(String name, UUID owner) {

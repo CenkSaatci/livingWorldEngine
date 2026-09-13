@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ChatPanel } from './ChatPanel';
 import { apiClient } from '../../api/client';
 import { useWorldStore } from '../../store/worldStore';
@@ -32,6 +32,32 @@ describe('ChatPanel (B5/R3)', () => {
     expect(await screen.findByText('Historien-Test')).toBeInTheDocument();
     expect(screen.getByText('Antwort')).toBeInTheDocument();
     expect(mockedGet).toHaveBeenCalledWith('/chat/w1');
+  });
+
+  it('Echo-vor-POST: Broadcast vor POST-Response erzeugt kein Duplikat (QA-Audit)', async () => {
+    const post = vi.mocked(apiClient.post);
+    let resolvePost!: (v: unknown) => void;
+    post.mockImplementationOnce(() => new Promise((res) => { resolvePost = res; }));
+    const { container } = render(<ChatPanel worldId="w1" />);
+    const input = container.querySelector('[data-chat-input]') as HTMLInputElement;
+    expect(input).not.toBeNull();
+    fireEvent.change(input, { target: { value: 'Hallo QA' } });
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    // Echo ist sofort da (vor POST-Response)
+    await screen.findByText('Hallo QA');
+    // Broadcast gewinnt das Rennen (POST noch offen)
+    useWorldStore.setState({
+      worldEvents: [
+        {
+          event_type: 'CHAT_MESSAGE',
+          payload: { sender: 'You', text: 'Hallo QA', timestamp: new Date().toISOString() },
+          created_at: new Date().toISOString(),
+        } as never,
+      ],
+    });
+    resolvePost({});
+    await waitFor(() => expect(post).toHaveBeenCalled());
+    expect(screen.getAllByText('Hallo QA')).toHaveLength(1);
   });
 
   it('zeigt keine Roh-JSON-Systemevents im Chat (Playtest #11)', async () => {

@@ -77,7 +77,10 @@ public class LocationController {
     }
 
     public record CreateRequest(
-        @NotBlank String type, @NotBlank String name, String description, String history,
+        @NotBlank @jakarta.validation.constraints.Pattern(
+            regexp = "village|town|city|castle|dungeon|ruin|temple|tower|inn|camp|shrine|cave|port|mine",
+            message = "Unknown location type") String type,
+        @NotBlank String name, String description, String history,
         @Min(0) int population, @Min(1) @Max(10) int wealth,
         String services, String factions, boolean isCapital, String positionJson
     ) {}

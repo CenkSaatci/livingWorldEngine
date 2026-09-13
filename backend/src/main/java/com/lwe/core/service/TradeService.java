@@ -88,8 +88,8 @@ public class TradeService {
         var from = trade.getLastEditorEntityId().equals(proposer.getId()) ? proposer : partner;
         var to = trade.getLastEditorEntityId().equals(proposer.getId()) ? partner : proposer;
         // Atomarer Tausch: erst beide Seiten abziehen (Mengenfehler -> Rollback), dann gutschreiben.
-        moveItems(from, to, parseItems(trade.getOfferJson()), userId);
-        moveItems(to, from, parseItems(trade.getRequestJson()), userId);
+        moveItems(from, to, parseItems(trade.getOfferJson()));
+        moveItems(to, from, parseItems(trade.getRequestJson()));
         trade.setStatus("accepted");
         trade.touch();
         return tradeRepo.save(trade);
@@ -111,12 +111,14 @@ public class TradeService {
         return tradeRepo.findByWorldAndEntity(worldId, entity.getId());
     }
 
-    private void moveItems(GameEntity from, GameEntity to, List<Map<String, Object>> items, UUID userId) {
+    private void moveItems(GameEntity from, GameEntity to, List<Map<String, Object>> items) {
         for (var item : items) {
             var itemId = UUID.fromString(String.valueOf(item.get("itemId")));
             var qty = ((Number) item.get("quantity")).intValue();
-            inventoryService.removeItem(from.getId(), userId, itemId, qty);
-            inventoryService.addItem(to.getId(), userId, itemId, qty);
+            // QA-Audit: Transfer als Engine-Aktion — der Trade selbst (Propose+Accept
+            // beider Teilnehmer) ist die Autorisierung, nicht die Kontrolle des Users
+            // über beide Entities (sonst wäre Spieler-zu-Spieler-Handel DM-pflichtig).
+            inventoryService.transferItem(from.getId(), to.getId(), itemId, qty);
         }
     }
 

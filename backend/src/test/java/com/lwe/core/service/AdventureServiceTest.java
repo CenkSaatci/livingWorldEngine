@@ -185,28 +185,24 @@ class AdventureServiceTest {
     }
 
     @Test
-    void startReturnsExistingOnConcurrentDuplicateStart() {
+    void startLocksAdventureRowToSerializeConcurrentStarts() {
         var entityId = UUID.randomUUID();
         var world = new com.lwe.core.domain.World("W", userId, "{}");
         setId(world, worldId);
-        when(adventureRepo.findById(adventure.getId())).thenReturn(Optional.of(adventure));
+        when(adventureRepo.findByIdForUpdate(adventure.getId())).thenReturn(Optional.of(adventure));
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity(entityId)));
         when(progressRepo.findByAdventureIdAndEntityId(adventure.getId(), entityId))
             .thenReturn(Optional.empty());
-        var existing = new AdventureProgress(adventure.getId(), entityId, startNodeId);
-        setId(existing, UUID.randomUUID());
-        when(progressRepo.save(any())).thenThrow(
-            new org.springframework.dao.DataIntegrityViolationException("dup"));
-        when(progressRepo.findByAdventureIdAndEntityId(adventure.getId(), entityId))
-            .thenReturn(Optional.empty())
-            .thenReturn(Optional.of(existing));
+        when(progressRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any()))
             .thenReturn(1L);
 
         var result = service.start(adventure.getId(), entityId, userId);
 
-        assertThat(result.getId()).isEqualTo(existing.getId());
+        // QA-Audit: parallele Starts werden über Zeilen-Lock serialisiert (kein 500-Race).
+        verify(adventureRepo).findByIdForUpdate(adventure.getId());
+        assertThat(result.getStatus()).isEqualTo("ACTIVE");
     }
 
     @Test
@@ -278,7 +274,7 @@ class AdventureServiceTest {
         var world = new com.lwe.core.domain.World("W", userId, "{}");
         setId(world, worldId);
 
-        when(adventureRepo.findById(adventure.getId())).thenReturn(Optional.of(adventure));
+        when(adventureRepo.findByIdForUpdate(adventure.getId())).thenReturn(Optional.of(adventure));
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity(entityId)));
         when(progressRepo.findByAdventureIdAndEntityId(adventure.getId(), entityId)).thenReturn(Optional.empty());

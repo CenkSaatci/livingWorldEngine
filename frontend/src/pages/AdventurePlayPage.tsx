@@ -22,7 +22,11 @@ export default function AdventurePlayPage() {
   const [resultOk, setResultOk] = useState(true);
   const [entityId, setEntityId] = useState<string | null>(null);
 
-  // Start or resume the adventure
+  // Start or resume the adventure. Hinweis (QA-Audit): KEIN Ref-Guard gegen
+  // StrictMode-Doppel-Start — der erste Effect-Lauf wird abgebrochen und seine
+  // Antwort verworfen; ein Guard würde den zweiten (echten) Lauf blockieren und
+  // die Seite im Ladezustand hängen lassen. Stattdessen serialisiert das Backend
+  // parallele Starts (Zeilen-Lock + Resume), beide Requests liefern Zustand.
   useEffect(() => {
     if (!adventureId || !worldId) return;
     let cancelled = false;

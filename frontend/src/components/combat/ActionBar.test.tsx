@@ -82,7 +82,7 @@ describe('ActionBar', () => {
 
     render(<ActionBar worldId="w1" />);
 
-    const btn = await screen.findByText('action');
+    const btn = await screen.findByText('Angreifen'); // QA-Audit: Typ 'action' trägt das Angreifen-Label
     fireEvent.click(btn);
 
     await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/combat/s1/action', {

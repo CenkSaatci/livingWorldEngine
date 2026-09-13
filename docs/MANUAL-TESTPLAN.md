@@ -6,6 +6,9 @@
 > und E2E-Tests (11).
 >
 > **Stand:** Phase 38 (T0–T7) + alle vorherigen Phasen. Änderbar — Funde und Status werden hier gepflegt.
+>
+> **Agent-Sweep (Runde 1, abgeschlossen):** Playwright-Sweep über Golden Path + Kern-Blöcke,
+> Log in `docs/QA-AGENT-LOG.md` (Funde `QA-A-###`, 8 Bugs bereits gefixt). Abgleich-Anleitung dort.
 
 ---
 
@@ -1250,6 +1253,13 @@ cd frontend && npx vitest run && E2E_EMAIL=devbe@test.de E2E_PASSWORD='Test123!'
 # Aufräumen (E2E-Artefakte, Testsysteme)
 E2E_EMAIL=devbe@test.de E2E_PASSWORD='Test123!' ./scripts/e2e-cleanup.sh --dry-run
 ```
+
+## Block AG — Agent-Sweep (Referenz, bereits gelaufen)
+
+- Specs: `frontend/e2e/qa-helpers.ts`, `qa-golden.spec.ts`, `qa-ui-states.spec.ts` — rerunbar via
+  `npx playwright test qa-golden qa-ui-states` (QA-Daten + Tokens aus Setup vorausgesetzt).
+- Ergebnisse/Screenshots: `frontend/e2e/qa-out/` (gitignored). Funde: `docs/QA-AGENT-LOG.md`.
+- Nach Fixes: Sweep wiederholen (Regression) + betroffene Stellen manuell nachtesten.
 
 ## Anhang C — Abnahmekriterien
 

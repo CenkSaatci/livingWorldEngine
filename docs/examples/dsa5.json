@@ -932,7 +932,7 @@
         {
           "name": "Wuchtschlag",
           "attackMalus": 4,
-          "apCost": 2,
+          "apCost": 1,
           "damageType": "bludgeoning",
           "effects": [
             {
@@ -945,7 +945,7 @@
         {
           "name": "Finte",
           "attackMalus": 4,
-          "apCost": 2,
+          "apCost": 1,
           "effects": [
             {
               "target": "damage",

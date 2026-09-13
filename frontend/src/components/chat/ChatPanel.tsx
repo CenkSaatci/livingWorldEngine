@@ -146,12 +146,14 @@ export function ChatPanel({ worldId }: { worldId: string }) {
         setRollModal({ label: rawExpr, dice, modifier, total });
 
         const rollText = `🎲 ${rawExpr} = ${total}`;
+        // QA-Audit: Echo VOR dem POST anhängen — sonst gewinnt das WS-Broadcast
+        // das Rennen und die Nachricht erscheint doppelt.
+        appendLocal('🎲 System', rollText);
         try {
           await apiClient.post(`/chat/${worldId}`, { sender: '🎲 System', text: rollText });
         } catch {
           // Audit R4: POST fehlgeschlagen → Zeile trotzdem lokal anzeigen.
         }
-        appendLocal('🎲 System', rollText);
         playChatMessage();
       } catch {
         toast.error(t('invalidExpression'));
@@ -159,15 +161,16 @@ export function ChatPanel({ worldId }: { worldId: string }) {
       return;
     }
 
-    // Normaler Chat: POST + lokales Echo (WS-Echo wird dedupliziert; funktioniert
-    // damit auch bei totem WS — Audit R4).
+    // Normaler Chat: erst lokales Echo (WS-Echo wird dedupliziert; funktioniert
+    // damit auch bei totem WS — Audit R4). QA-Audit: Reihenfolge Echo-vor-POST ist
+    // entscheidend, sonst erscheint die Nachricht doppelt (WS gewinnt das Rennen).
+    appendLocal('You', text);
     try {
       await apiClient.post(`/chat/${worldId}`, { sender: 'You', text });
       playChatMessage();
     } catch {
-      /* offline: lokales Echo unten reicht */
+      /* offline: lokales Echo oben reicht */
     }
-    appendLocal('You', text);
   };
 
   return (

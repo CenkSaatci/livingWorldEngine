@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -16,6 +16,7 @@ import { WorldMapView } from '../components/world/WorldMapView';
 import { QuestLog } from '../components/world/QuestLog';
 import { RightPanel } from '../components/world/RightPanel';
 import { DmQueuePanel } from '../components/dm/DmQueuePanel';
+import { apiClient } from '../api/client';
 import { LiveAdventurePanel } from '../components/dm/LiveAdventurePanel';
 import { StatusBar } from '../components/ui/StatusBar';
 import { SessionManager } from '../components/session/SessionManager';
@@ -47,6 +48,20 @@ export default function GameView() {
     && window.matchMedia('(max-width: 767px)').matches;
   const [sidebarOpen, setSidebarOpen] = useState(() => !isMobileViewport());
   const [chatOpen, setChatOpen] = useState(() => !isMobileViewport());
+  const [worldRole, setWorldRole] = useState<string | null>(null);
+
+  // QA-Audit: eigene Welt-Rolle laden, um DM-Panels zu gates (Spieler sollen
+  // keine DM-Endpunkte pollen → 403-Spam in der Konsole).
+  useEffect(() => {
+    let cancelled = false;
+    setWorldRole(null);
+    if (!worldId) return;
+    apiClient.get(`/worlds/${worldId}/membership`)
+      .then((res) => { if (!cancelled) setWorldRole((res.data?.role as string) ?? null); })
+      .catch(() => { if (!cancelled) setWorldRole(null); });
+    return () => { cancelled = true; };
+  }, [worldId]);
+  const isPrivileged = worldRole === 'OWNER' || worldRole === 'DM';
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [selectedNpc, setSelectedNpc] = useState<string | null>(null);
   const [showCreateMenu, setShowCreateMenu] = useState(false);
@@ -153,20 +168,20 @@ export default function GameView() {
               />
             </div>
 
-            {/* Session */}
-            <div className="border-t border-bg-elevated p-2">
-              <SessionManager worldId={worldId} />
-            </div>
-
-            {/* DM-Queue */}
-            <div className="border-t border-bg-elevated p-2">
-              <DmQueuePanel worldId={worldId} />
-            </div>
-
-            {/* Live Adventures (DM Override) */}
-            <div className="border-t border-bg-elevated p-2">
-              <LiveAdventurePanel worldId={worldId} />
-            </div>
+            {/* Session + DM-Queue + Live-Adventures: nur für Owner/DM (QA-Audit) */}
+            {isPrivileged && (
+              <>
+                <div className="border-t border-bg-elevated p-2">
+                  <SessionManager worldId={worldId} />
+                </div>
+                <div className="border-t border-bg-elevated p-2">
+                  <DmQueuePanel worldId={worldId} />
+                </div>
+                <div className="border-t border-bg-elevated p-2">
+                  <LiveAdventurePanel worldId={worldId} />
+                </div>
+              </>
+            )}
 
             {/* Entity-Übersicht Link */}
             <div className="border-t border-bg-elevated p-2">

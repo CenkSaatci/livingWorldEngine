@@ -143,7 +143,11 @@ public class AdventureService {
 
     @Transactional
     public AdventureProgress start(UUID adventureId, UUID entityId, UUID userId) {
-        var adv = adventureRepo.findById(adventureId)
+        // QA-Audit: Abenteuer-Zeile zuerst sperren — parallele Starts desselben
+        // Abenteuers (z. B. doppelter Auto-Start im UI) werden serialisiert, statt
+        // in einen Unique-Verstoß zu laufen (Postgres bricht die Tx ab, ein Catch
+        // mit Retry in derselben Tx kann dann nicht mehr funktionieren).
+        var adv = adventureRepo.findByIdForUpdate(adventureId)
             .orElseThrow(() -> new AdventureException("ADVENTURE_NOT_FOUND", "Adventure not found"));
         entityAccess.requireControl(entityId, userId, adv.getWorldId()); // Runde 1: F2
 
@@ -158,15 +162,7 @@ public class AdventureService {
         }
 
         var progress = new AdventureProgress(adventureId, entityId, adv.getStartNodeId());
-        try {
-            progress = progressRepo.save(progress);
-        } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            // QA-Audit: paralleler Start (z. B. doppelter Auto-Start im UI) — statt 500
-            // den inzwischen angelegten Fortschritt zurückgeben (Resume).
-            return progressRepo.findByAdventureIdAndEntityId(adventureId, entityId)
-                .orElseThrow(() -> new AdventureException("ADVENTURE_PROGRESS_NOT_FOUND",
-                    "Character has not started this adventure"));
-        }
+        progress = progressRepo.save(progress);
 
         eventService.publish(adv.getWorldId(), ADVENTURE_STARTED, entityId, null,
             Map.of("adventureId", adventureId, "startNodeId", adv.getStartNodeId()));

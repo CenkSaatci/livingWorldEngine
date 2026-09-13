@@ -189,6 +189,42 @@ export async function countVisible(loc: Locator): Promise<number> {
   return c;
 }
 
+export async function diagCampaign(page: import('@playwright/test').Page): Promise<string> {
+  return page.evaluate(async () => {
+    const ac = localStorage.getItem('lwe:activeCampaign');
+    return `url=${location.href} activeCampaign=${(ac ?? 'NONE').slice(0, 160)}`;
+  }).catch((e) => `diag-error: ${e}`);
+}
+
+export async function ensureCampaign(page: import('@playwright/test').Page, campaignId: string, worldId: string) {
+  await page.goto(`/campaigns/${campaignId}`);
+  const startBtn = page.getByRole('button', { name: 'In Welt starten' });
+  if (!(await waitVisible(startBtn))) return;
+  const n = await startBtn.count().catch(() => 0);
+  for (let i = 0; i < n; i++) {
+    if (await startBtn.nth(i).isVisible().catch(() => false)) {
+      await startBtn.nth(i).click();
+      await page.waitForURL(new RegExp(`/worlds/${worldId}$`), { timeout: 10_000 }).catch(() => {});
+      break;
+    }
+  }
+}
+
+export async function waitVisible(loc: Locator, timeoutMs = 15000): Promise<boolean> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if (await anyVisible(loc)) return true;
+    await new Promise((r) => setTimeout(r, 400));
+  }
+  return anyVisible(loc);
+}
+
+/** Sauberer Kontext ohne vererbten Storage-State (z. B. für Register/Login-Tests). */
+export async function cleanPage(browser: import('@playwright/test').Browser) {
+  const ctx = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+  return ctx.newPage();
+}
+
 export function saveQaResults(suite: string) {
   mkdirSync('e2e/qa-out', { recursive: true });
   writeFileSync(

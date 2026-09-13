@@ -53,6 +53,34 @@ class InventoryServiceTest {
     }
 
     @Test
+    void transferItemMovesBetweenForeignEntitiesWithoutControlCheck() {
+        var fromId = UUID.randomUUID();
+        var toId = UUID.randomUUID();
+        var from = new GameEntity(worldId, "PC", "A");
+        from.setInventoryJson("[{\"itemId\":\"" + itemId + "\",\"quantity\":2}]");
+        from.setOwnerUserId(UUID.randomUUID());
+        setId(from, fromId);
+        var to = new GameEntity(worldId, "PC", "B");
+        to.setInventoryJson("[]");
+        to.setOwnerUserId(UUID.randomUUID());
+        setId(to, toId);
+        when(entityRepo.findById(fromId)).thenReturn(Optional.of(from));
+        when(entityRepo.findById(toId)).thenReturn(Optional.of(to));
+        when(itemRepo.findById(itemId)).thenReturn(Optional.of(mock(GameItem.class)));
+
+        // QA-Audit: Transfer als Engine-Aktion — kein Kontrolleur-Check (Trade-Vertrag genuegt).
+        service.transferItem(fromId, toId, itemId, 2);
+
+        assertThat(from.getInventoryJson()).doesNotContain(itemId.toString());
+        assertThat(to.getInventoryJson()).contains(itemId.toString());
+    }
+
+    private void setId(Object obj, UUID id) {
+        try { var f = obj.getClass().getDeclaredField("id"); f.setAccessible(true); f.set(obj, id); }
+        catch (Exception ex) { throw new RuntimeException(ex); }
+    }
+
+    @Test
     void shouldGetEmptyInventory() {
         when(entityRepo.findById(entityId)).thenReturn(Optional.of(entityWithInventory("[]")));
 

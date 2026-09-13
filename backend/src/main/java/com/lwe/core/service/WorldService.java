@@ -493,6 +493,24 @@ public class WorldService {
         return memberRepo.findByWorldId(worldId);
     }
 
+    /** QA-Audit: eigene Rolle in der Welt (OWNER/DM/PLAYER) — member-level lesbar,
+     *  damit die UI DM-Panels gates kann statt DM-Endpunkte als Spieler zu pollen (403-Spam). */
+    public String membership(UUID worldId, UUID userId) {
+        var world = worldRepo.findById(worldId)
+            .orElseThrow(() -> new WorldException("WORLD_NOT_FOUND", "World not found"));
+        if (world.getOwnerId().equals(userId)) return "OWNER";
+        if (!world.isActive()) {
+            throw new WorldException("WORLD_ACCESS_DENIED", "World is deleted");
+        }
+        if ("PRIVATE".equals(world.getVisibility())) {
+            return memberRepo.findByWorldIdAndUserId(worldId, userId)
+                .map(WorldMember::getRole).orElseThrow(() ->
+                    new WorldException("WORLD_ACCESS_DENIED", "Access denied"));
+        }
+        return memberRepo.findByWorldIdAndUserId(worldId, userId)
+            .map(WorldMember::getRole).orElse("VIEWER");
+    }
+
     private World requireOwner(UUID worldId, UUID userId) {
         var world = worldRepo.findById(worldId)
             .orElseThrow(() -> new WorldException("WORLD_NOT_FOUND", "World not found"));

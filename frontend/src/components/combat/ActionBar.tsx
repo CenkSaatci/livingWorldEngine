@@ -201,7 +201,7 @@ export function ActionBar({ worldId }: Props) {
               title={t('combat.remaining', { remaining, total: actionsPerTurn[type] ?? 1 })}
             >
               {ACTION_ICONS[type] ?? <Zap size={14} />}
-              {t(`combat.action_${type}`, { defaultValue: type })}
+              {type === 'action' ? t('combat.attack') : t(`combat.action_${type}`, { defaultValue: type })}
               {!available && t('combat.used')}
             </button>
           );

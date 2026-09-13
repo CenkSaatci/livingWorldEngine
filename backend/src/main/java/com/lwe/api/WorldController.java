@@ -17,6 +17,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Validated
@@ -85,6 +86,12 @@ public class WorldController {
                                                           @AuthenticationPrincipal User user) {
         var member = worldService.addMember(id, user.getId(), req.userId(), req.role());
         return ResponseEntity.status(HttpStatus.CREATED).body(WorldMemberResponse.from(member));
+    }
+
+    @GetMapping("/{id}/membership")
+    public ResponseEntity<Map<String, String>> membership(@PathVariable UUID id,
+                                                          @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(Map.of("role", worldService.membership(id, user.getId())));
     }
 
     @GetMapping("/{id}/members")

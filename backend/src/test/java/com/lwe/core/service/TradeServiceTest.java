@@ -84,11 +84,38 @@ class TradeServiceTest {
         var done = service.accept(trade.getId(), userId, partnerId);
 
         assertThat(done.getStatus()).isEqualTo("accepted");
-        verify(inventoryService).removeItem(proposerId, userId, itemId, 2);
-        verify(inventoryService).addItem(partnerId, userId, itemId, 2);
+        verify(inventoryService).transferItem(proposerId, partnerId, itemId, 2);
         // Runde 1 (F6): Trade-Zeile und Entities werden gesperrt geladen.
         verify(tradeRepo).findByIdForUpdate(trade.getId());
         verify(entityRepo, org.mockito.Mockito.atLeastOnce()).findByIdForUpdate(any());
+    }
+
+    @Test
+    void partnerWithoutControlOverProposerCanAccept() {
+        var proposerUser = UUID.randomUUID();
+        var partnerUser = UUID.randomUUID();
+        var proposerId = UUID.randomUUID();
+        var partnerId = UUID.randomUUID();
+        var proposer = entity(proposerId, "[{\"itemId\":\"" + itemId + "\",\"quantity\":2}]");
+        proposer.setOwnerUserId(proposerUser);
+        var partner = entity(partnerId, "[]");
+        partner.setOwnerUserId(partnerUser);
+        stubEntities(proposer, partner);
+        var item = mock(GameItem.class);
+        when(itemRepo.findById(itemId)).thenReturn(Optional.of(item));
+        when(tradeRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var trade = service.propose(worldId, proposerUser, proposerId, partnerId,
+            List.of(Map.of("itemId", itemId.toString(), "quantity", 2)), List.of());
+        setId(trade, UUID.randomUUID());
+        when(tradeRepo.findById(trade.getId())).thenReturn(Optional.of(trade));
+
+        // QA-Audit: Annahme als Partner darf nicht an der fehlenden Kontrolle
+        // ueber den Proposer scheitern (sonst waere jeder Spieler-Handel DM-pflichtig).
+        var done = service.accept(trade.getId(), partnerUser, partnerId);
+
+        assertThat(done.getStatus()).isEqualTo("accepted");
+        verify(inventoryService).transferItem(proposerId, partnerId, itemId, 2);
     }
 
     @Test
@@ -114,10 +141,8 @@ class TradeServiceTest {
             List.of(Map.of("itemId", swordId.toString(), "quantity", 1)));
         service.accept(trade.getId(), userId, aId);
 
-        verify(inventoryService).removeItem(bId, userId, potionId, 1);
-        verify(inventoryService).addItem(aId, userId, potionId, 1);
-        verify(inventoryService).removeItem(aId, userId, swordId, 1);
-        verify(inventoryService).addItem(bId, userId, swordId, 1);
+        verify(inventoryService).transferItem(bId, aId, potionId, 1);
+        verify(inventoryService).transferItem(aId, bId, swordId, 1);
     }
 
     @Test
