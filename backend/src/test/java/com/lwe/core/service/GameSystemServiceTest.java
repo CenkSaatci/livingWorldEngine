@@ -55,6 +55,19 @@ class GameSystemServiceTest {
     }
 
     @Test
+    void updateRejectsRenameToExistingName() {
+        var gs = new com.lwe.core.domain.GameSystem("Alt", 1, validRules, schema);
+        setId(gs, UUID.randomUUID());
+        when(repo.findById(gs.getId())).thenReturn(Optional.of(gs));
+        when(repo.existsByName("Neu")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.update(gs.getId(), "Neu", 1, null, UUID.randomUUID(), true))
+            .isInstanceOf(com.lwe.core.service.GameSystemService.GameSystemException.class)
+            .matches(e -> ((com.lwe.core.service.GameSystemService.GameSystemException) e).getErrorCode()
+                .equals("GAME_SYSTEM_VERSION_CONFLICT"));
+    }
+
+    @Test
     void shouldCreateValidGameSystem() {
         when(repo.existsByName("D20Lite")).thenReturn(false);
         doNothing().when(validator).validateOrThrow(validRules, com.lwe.rules.RuleSchemaValidator.DEFAULT_SCHEMA);

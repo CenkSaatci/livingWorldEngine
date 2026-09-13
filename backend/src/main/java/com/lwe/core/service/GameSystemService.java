@@ -220,6 +220,12 @@ public class GameSystemService {
                              UUID userId, boolean isAdmin) {
         var gs = getById(id);
         requireOwner(gs, userId, isAdmin);
+        // QA-Fund: Umbenennen auf einen vergebenen Namen war möglich (doppelte
+        // Systemnamen) — wie bei create ablehnen (eigene ID ausgenommen).
+        if (name != null && !name.equals(gs.getName()) && repo.existsByName(name)) {
+            throw new GameSystemException("GAME_SYSTEM_VERSION_CONFLICT",
+                "A game system with name '" + name + "' already exists");
+        }
         if (name != null) gs.setName(name);
         if (version != null) gs.setVersion(version);
         if (rulesJson != null && !rulesJson.equals(gs.getRulesJson())) {

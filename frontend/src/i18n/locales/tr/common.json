@@ -415,6 +415,7 @@
   },
   "systems": {
     "owner": "Oluşturan",
-    "sharedWithYou": "Seninle paylaşıldı"
+    "sharedWithYou": "Seninle paylaşıldı",
+    "backToList": "Listeye dön"
   }
 }

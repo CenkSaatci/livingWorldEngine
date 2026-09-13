@@ -147,8 +147,9 @@ public class CharacterSheetService {
                 var total = (int) Math.round(effectiveBonus + attrMod);
                 var perCharVal = perCharSkills.get(name);
                 var advanceCost = skillAdvanceCost(rules, s, effectiveBonus);
+                var description = s.get("description") instanceof String d ? d : null;
                 return new SheetResponse.SkillInfo(name, total, perCharVal, advanceCost,
-                    castingInfo(s));
+                    castingInfo(s), description);
             })
             .collect(Collectors.toList());
 

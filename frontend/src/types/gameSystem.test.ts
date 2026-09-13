@@ -125,6 +125,17 @@ describe('gameSystem roundtrip', () => {
     expect(restored!.packages![0].baseValues).toEqual([{ name: 'Klettern', value: 4 }]);
   });
 
+  it('roundtrip preserves QA descriptions (skills, traits)', () => {
+    const data = defaultWizardData();
+    data.skills = [{ name: 'Klettern', attributes: ['mut'], bonus: 0, description: 'Bergsteigen und Abseilen' }];
+    data.traits = [{ name: 'Zauberer', kind: 'advantage', description: 'Darf zaubern' }];
+
+    const restored = fromRulesJson(toRulesJson(data));
+
+    expect(restored!.skills[0].description).toBe('Bergsteigen und Abseilen');
+    expect(restored!.traits![0].description).toBe('Darf zaubern');
+  });
+
   it('roundtrip preserves SM social config and actions', () => {
     const data = defaultWizardData();
     data.social = { relationshipScores: { freundlich: 2, feindselig: -3 }, maxModifier: 3 };

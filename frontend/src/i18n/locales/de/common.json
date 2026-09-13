@@ -415,6 +415,7 @@
   },
   "systems": {
     "owner": "Ersteller",
-    "sharedWithYou": "Für dich freigegeben"
+    "sharedWithYou": "Für dich freigegeben",
+    "backToList": "Zurück zur Liste"
   }
 }

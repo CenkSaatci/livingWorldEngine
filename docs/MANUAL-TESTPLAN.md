@@ -1232,6 +1232,21 @@
 | QA-002 | SYS | GP-01 | MEDIUM/IDEE | Keine Suche/Filter in Systemliste (wächst: >15 Systeme). | Systemliste | Backlog | |
 | QA-003 | SYS | GP-01 | LOW/IDEE | Download enthält Wire-Envelope (`{id,name,version,rulesJson als String}`) statt handlichem Rules-JSON. | Download-Button | Backlog | |
 | QA-004 | SYS | GP-01 | MEDIUM | Nur „Private"-Badge — Ersteller vs. eingeladen nicht ersichtlich. | Systemliste | **gefixt** (Ersteller-/Geteilt-Badge) | |
+| QA-005 | SYS | GP-01 | HIGH (offen) | Edit-Crash `reading 'startTime'` (sporadisch, exakter Text/Repro ausstehend). | System-Edit | offen — bitte vollen Konsolentext + Aktion melden | |
+| QA-006 | SYS | GP-01 | MEDIUM | Umbenennen auf vergebenen Namen möglich → doppelte Systemnamen (DSA5 Playtest hieß danach QA-DSA5). | System-Edit | **gefixt** (409-Konflikt + Test); Name zurückgesetzt | |
+| QA-007 | SYS | GP-01 | IDEE→umgesetzt | Pretty-Export (lesbares Rules-JSON statt Wire-Envelope). | Download | **umgesetzt** | |
+| QA-008 | SYS | GP-01 | MEDIUM | Editor öffnete unten auf der Seite (Scroll-Pflicht). | System-Edit | **umgesetzt** (Vollbild-Overlay + Zurück-Button) | |
+| QA-009 | SYS | GP-01 | MEDIUM/UX | Abgeleitete Werte: @-Syntax vs. Freitext unklar; Builder-Verhalten unerklärt. | Wizard | **Texte erweitert** (de/en, Rest fallbackt en) | |
+| QA-010 | SYS | GP-01 | MEDIUM/UX | Fertigkeiten: Beschreibungen fehlen. | Wizard/Sheet | **umgesetzt** (description in Schema+Wizard+Sheet-Tooltip) | |
+| QA-011 | SYS | GP-01 | MEDIUM/UX | Fähigkeiten: Dropdowns/Header/Spalten unklar; Formel-Semantik, Auto-Anwendung, abgeleitete Werte in Würfen. | Wizard | **Texte erweitert** (s5a_hint) | |
+| QA-012 | SYS | GP-01 | MEDIUM/UX | Aufstieg mager: „Talent (A)" unverständlich. | Wizard | **Texte erweitert** (s6_xp_hint, sa_hint) | |
+| QA-013 | SYS | GP-01 | MEDIUM/UX | Magie: Mana-Formel vs. Zauber-pro-Stufe — schließen sie sich aus? Wie definieren? | Wizard | **Texte erweitert** (s7_magic_hint) | |
+| QA-014 | SYS | GP-01 | MEDIUM/UX | Bedingungen: immer aktiv oder Voraussetzungen? Wer vergibt? | Wizard | **Texte erweitert** (s8_states_hint) | |
+| QA-015 | SYS | GP-01 | MEDIUM/UX | Würfel-Anzeige 3d20+mod: Summe vs. Einzelwürfe unklar. | Wizard/Probe | **Texte erweitert** (s4_probe_hint) | |
+| QA-016 | SYS | GP-01 | MEDIUM/UX | Rasten: „Heilung %" unverständlich; ohne Config wirkungslos (still). | Wizard | **Texte erweitert** (s4_resting_hint) | |
+| QA-017 | SYS | GP-01 | MEDIUM/UX | Budget-Felder unerklärt. | Wizard | **Texte erweitert** (sb_hint) | |
+| QA-018 | SYS | GP-01 | MEDIUM/UX | Merkmale: Beschreibungsfeld fehlt; „derived:" unverständlich. | Wizard | **umgesetzt** (description + Text); derived: = Effekt-Ziel | |
+| QA-019 | SYS | GP-01 | MEDIUM/UX | Pakete: Auto-Merkmale nur Textinput statt Auswahl aus Merkmals-Liste. | Wizard | **umgesetzt** (Dropdown-Vorschläge) | |
 
 **Triage-Regeln:**
 - BLOCKER/HIGH → sofort fixen (mit Test), dann weiter.

@@ -415,6 +415,7 @@
   },
   "systems": {
     "owner": "Owner",
-    "sharedWithYou": "Shared with you"
+    "sharedWithYou": "Shared with you",
+    "backToList": "Back to list"
   }
 }

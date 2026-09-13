@@ -193,7 +193,15 @@ export default function GameSystemPage() {
   const handleExport = async (sys: GameSystem) => {
     try {
       const res = await apiClient.get<GameSystemDetail>(`/game-systems/${sys.id}`);
-      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
+      // QA-Fund: Pretty-Export als reines Rules-JSON (docs/examples-Format, lesbar und
+      // re-importierbar) statt Wire-Envelope mit escaped rulesJson-String.
+      let body: string;
+      try {
+        body = JSON.stringify(JSON.parse(res.data.rulesJson ?? '{}'), null, 2);
+      } catch {
+        body = JSON.stringify(res.data, null, 2);
+      }
+      const blob = new Blob([body], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -533,8 +541,18 @@ export default function GameSystemPage() {
           </div>
         )}
 
-        {/* Editor */}
+        {/* Editor als eigene Ansicht (QA-Fund: Inline-Editor ging unten unter — kein Scrollen mehr nötig) */}
         {showEditor && (
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-bg-primary">
+            <div className="mx-auto max-w-6xl px-4 py-6">
+              <div className="mb-4 flex items-center gap-2">
+                <button
+                  onClick={closeEditor}
+                  className="rounded border border-bg-elevated px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary"
+                >
+                  ← {t('systems.backToList')}
+                </button>
+              </div>
           <div className="rounded-lg border border-accent/20 bg-bg-surface p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-heading text-text-primary">
@@ -721,6 +739,8 @@ export default function GameSystemPage() {
                 </div>
               </>
             )}
+          </div>
+            </div>
           </div>
         )}
 

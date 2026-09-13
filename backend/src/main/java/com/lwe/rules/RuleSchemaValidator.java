@@ -120,6 +120,7 @@ public class RuleSchemaValidator {
               ],
               "properties": {
                 "name":       { "type": "string" },
+                "description": { "type": "string" },
                 "attribute":  { "type": "string", "description": "Legacy single attribute reference" },
                 "attributes": { "type": "array", "items": { "type": "string" }, "description": "Multi-attribute reference" },
                 "bonus":      { "type": "integer", "default": 0 },

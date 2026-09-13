@@ -497,6 +497,17 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 className="w-20 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
                 placeholder={t('s3_placeholder')}
               />
+              <input
+                value={skill.description ?? ''}
+                onChange={(e) => {
+                  const s = [...data.skills];
+                  s[i] = { ...s[i], description: e.target.value };
+                  update('skills', s);
+                }}
+                className="w-40 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                placeholder={t('s3_description_ph')}
+                title={t('s3_description_hint')}
+              />
               <div className="flex-1 space-y-1">
                 {skill.attributes.map((attrName, ai) => (
                   <div key={ai} className="flex items-center gap-1">
@@ -1911,6 +1922,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   {t('s4_resting')}
                 </summary>
                 <div className="space-y-3 px-3 pb-3">
+                  <p className="text-[10px] text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s4_resting_hint') }} />
                   <div className="rounded bg-bg-primary/30 p-2">
                     <p className="text-xs font-medium text-text-primary mb-2">{t('s4_short_rest')}</p>
                     <div className="grid grid-cols-2 gap-3">
@@ -2126,6 +2138,13 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                     <option value="advantage">{t('st_advantage')}</option>
                     <option value="disadvantage">{t('st_disadvantage')}</option>
                   </select>
+                  <input
+                    value={tr.description ?? ''}
+                    onChange={(e) => setTrait({ description: e.target.value })}
+                    placeholder={t('st_description_ph')}
+                    title={t('st_description_hint')}
+                    className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
                   <button
                     aria-label={t('st_delete')}
                     onClick={() => update('traits', (data.traits ?? []).filter((_, j) => j !== i))}
@@ -2377,9 +2396,17 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                         value={(pkg[key] ?? []).join(', ')}
                         onChange={(e) => setPkg({ [key]: listOf(e.target.value) } as Partial<PkgDef>)}
                         className="mt-1 w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                        {...(key === 'autoTraits'
+                          ? { list: `traits-datalist`, title: t('spk_autotraits_hint') }
+                          : {})}
                       />
                     </label>
                   ))}
+                  <datalist id="traits-datalist">
+                    {(data.traits ?? []).map((tr) => (
+                      <option key={tr.name} value={tr.name} />
+                    ))}
+                  </datalist>
                 </div>
               </div>
             );

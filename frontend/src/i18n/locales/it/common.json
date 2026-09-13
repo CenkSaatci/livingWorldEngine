@@ -415,6 +415,7 @@
   },
   "systems": {
     "owner": "Creatore",
-    "sharedWithYou": "Condiviso con te"
+    "sharedWithYou": "Condiviso con te",
+    "backToList": "Torna alla lista"
   }
 }

@@ -13,6 +13,8 @@ export interface AttributeDef {
 
 export interface SkillDef {
   name: string;
+  /** QA: kurze Regelerklärung, erscheint als Tooltip im Charakterbogen. */
+  description?: string;
   attributes: string[];
   bonus: number;
   costColumn?: string;
@@ -495,6 +497,8 @@ export interface TraitEffect {
 
 export interface TraitDef {
   name: string;
+  /** QA: kurze Regelerklärung für Spieler. */
+  description?: string;
   kind: string;
   costs?: TraitCost[];
   requires?: string[];
@@ -918,6 +922,7 @@ export function fromRulesJson(json: string): WizardData | null {
     );
     const skills: SkillDef[] = ((parsed.skills as Record<string, unknown>[] | undefined) ?? []).map((s: Record<string, unknown>) => ({
       name: (s.name as string) ?? '',
+      ...(s.description != null ? { description: s.description as string } : {}),
       attributes: (s.attributes as string[]) ?? ((s.attribute as string) ? [s.attribute as string] : []),
       bonus: (s.bonus as number) ?? 0,
       ...(s.costColumn !== undefined ? { costColumn: s.costColumn as string } : {}),

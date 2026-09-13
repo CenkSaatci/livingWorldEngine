@@ -26,7 +26,7 @@ public record SheetResponse(
     public record DifficultyInfo(String name, Double multiplier, Integer delta) {}
 
     public record SkillInfo(String name, int total, Integer perCharacterValue, Integer advanceCost,
-                            CastingInfo casting) {}
+                            CastingInfo casting, String description) {}
     public record ConditionalInfo(String name, boolean active, String description) {}
     public record AbilityInfo(String name, String type, int apCost, String effect, String diceExpression, String damageType) {}
     public record ConditionInfo(String name, Integer rounds) {}
