@@ -412,5 +412,9 @@
     "botModeHint": "Anula el modo del mundo; se aplica a los intents de esta campaña (P27-T04).",
     "botModeSaved": "Modo IA guardado",
     "botModeFailed": "No se pudo guardar el modo IA"
+  },
+  "systems": {
+    "owner": "Creador",
+    "sharedWithYou": "Compartido contigo"
   }
 }

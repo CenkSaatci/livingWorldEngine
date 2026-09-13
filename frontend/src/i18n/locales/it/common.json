@@ -412,5 +412,9 @@
     "botModeHint": "Sostituisce la modalità del mondo; vale per gli intent di questa campagna (P27-T04).",
     "botModeSaved": "Modalità IA salvata",
     "botModeFailed": "Impossibile salvare la modalità IA"
+  },
+  "systems": {
+    "owner": "Creatore",
+    "sharedWithYou": "Condiviso con te"
   }
 }

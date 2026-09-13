@@ -412,5 +412,9 @@
     "botModeHint": "Remplace le mode du monde ; s’applique aux intents de cette campagne (P27-T04).",
     "botModeSaved": "Mode IA enregistré",
     "botModeFailed": "Impossible d’enregistrer le mode IA"
+  },
+  "systems": {
+    "owner": "Créateur",
+    "sharedWithYou": "Partagé avec vous"
   }
 }

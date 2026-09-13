@@ -412,5 +412,9 @@
     "loadFailed": "Handelsdaten konnten nicht geladen werden",
     "summary": "Du gibst {{give}} · Du willst {{want}}",
     "max": "Max"
+  },
+  "systems": {
+    "owner": "Ersteller",
+    "sharedWithYou": "Für dich freigegeben"
   }
 }

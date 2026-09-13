@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   Plus,
@@ -144,6 +145,7 @@ const TEMPLATES: Record<string, string> = {
 
 export default function GameSystemPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation('common');
   const toast = useToast();
   const currentUser = useAuthStore((s2) => s2.user);
   const [systems, setSystems] = useState<GameSystem[]>([]);
@@ -457,6 +459,17 @@ export default function GameSystemPage() {
                       {sys.visibility && sys.visibility !== 'PUBLIC' && sys.visibility !== 'INVITE_ONLY' && (
                         <span className="ml-2 rounded bg-bg-elevated px-1.5 py-0.5 text-[10px] text-text-secondary">
                           Private
+                        </span>
+                      )}
+                      {/* QA-Fund: Ersteller vs. eingeladen unterscheiden */}
+                      {!!sys.ownerId && sys.ownerId === currentUser?.id && (
+                        <span className="ml-2 rounded bg-success/10 px-1.5 py-0.5 text-[10px] text-success">
+                          {t('systems.owner')}
+                        </span>
+                      )}
+                      {!!sys.ownerId && sys.ownerId !== currentUser?.id && sys.visibility !== 'PUBLIC' && (
+                        <span className="ml-2 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] text-accent">
+                          {t('systems.sharedWithYou')}
                         </span>
                       )}
                     </p>

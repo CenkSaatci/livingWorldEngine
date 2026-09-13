@@ -412,5 +412,9 @@
     "loadFailed": "Could not load trade data",
     "summary": "You give {{give}} · you want {{want}}",
     "max": "Max"
+  },
+  "systems": {
+    "owner": "Owner",
+    "sharedWithYou": "Shared with you"
   }
 }

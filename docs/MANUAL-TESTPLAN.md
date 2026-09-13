@@ -1228,7 +1228,10 @@
 
 | ID | Block | Fall | Schwere | Beschreibung | Repro | Status | Fix-Commit |
 |----|-------|------|---------|--------------|-------|--------|------------|
-| QA-001 | | | | | | offen | |
+| QA-001 | SYS | GP-01 | HIGH | System-Edit (Stift): Console `Uncaught TypeError: Cannot read properties of undefined` — Repro steht noch aus (welches System/was danach?). | Systemliste → Stift | offen (Repro offen) | |
+| QA-002 | SYS | GP-01 | MEDIUM/IDEE | Keine Suche/Filter in Systemliste (wächst: >15 Systeme). | Systemliste | Backlog | |
+| QA-003 | SYS | GP-01 | LOW/IDEE | Download enthält Wire-Envelope (`{id,name,version,rulesJson als String}`) statt handlichem Rules-JSON. | Download-Button | Backlog | |
+| QA-004 | SYS | GP-01 | MEDIUM | Nur „Private"-Badge — Ersteller vs. eingeladen nicht ersichtlich. | Systemliste | **gefixt** (Ersteller-/Geteilt-Badge) | |
 
 **Triage-Regeln:**
 - BLOCKER/HIGH → sofort fixen (mit Test), dann weiter.
