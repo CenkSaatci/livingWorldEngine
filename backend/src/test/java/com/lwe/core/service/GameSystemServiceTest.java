@@ -48,7 +48,7 @@ class GameSystemServiceTest {
         when(repo.findById(gs.getId())).thenReturn(Optional.of(gs));
         when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        service.update(gs.getId(), null, null, validRules + " ", UUID.randomUUID(), true);
+        service.update(gs.getId(), null, null, validRules + " ", UUID.randomUUID(), true, false, true);
 
         verify(validator).validateOrThrow(any(),
             org.mockito.ArgumentMatchers.eq(com.lwe.rules.RuleSchemaValidator.DEFAULT_SCHEMA));
@@ -61,7 +61,7 @@ class GameSystemServiceTest {
         when(repo.findById(gs.getId())).thenReturn(Optional.of(gs));
         when(repo.existsByName("Neu")).thenReturn(true);
 
-        assertThatThrownBy(() -> service.update(gs.getId(), "Neu", 1, null, UUID.randomUUID(), true))
+        assertThatThrownBy(() -> service.update(gs.getId(), "Neu", 1, null, UUID.randomUUID(), true, false, true))
             .isInstanceOf(com.lwe.core.service.GameSystemService.GameSystemException.class)
             .matches(e -> ((com.lwe.core.service.GameSystemService.GameSystemException) e).getErrorCode()
                 .equals("GAME_SYSTEM_VERSION_CONFLICT"));
@@ -125,14 +125,14 @@ class GameSystemServiceTest {
         when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         // Fremder -> 403-Code
-        assertThatThrownBy(() -> service.update(gs.getId(), "Neu", null, null, stranger, false))
+        assertThatThrownBy(() -> service.update(gs.getId(), "Neu", null, null, stranger, false, false, true))
             .isInstanceOf(GameSystemService.GameSystemException.class)
             .matches(e -> ((GameSystemService.GameSystemException) e).getErrorCode()
                 .equals("GAME_SYSTEM_ACCESS_DENIED"));
 
         // Owner + Admin duerfen
-        service.update(gs.getId(), "Neu", null, null, owner, false);
-        service.update(gs.getId(), "Neu2", null, null, stranger, true);
+        service.update(gs.getId(), "Neu", null, null, owner, false, false, true);
+        service.update(gs.getId(), "Neu2", null, null, stranger, true, false, true);
         assertThat(gs.getName()).isEqualTo("Neu2");
     }
 
@@ -233,9 +233,37 @@ class GameSystemServiceTest {
 
         var updated = service.update(gs.getId(), null, null,
             "{\"version\":1,\"attributes\":[{\"name\":\"x\",\"type\":\"INT\",\"default\":1}],\"dice_mechanics\":{\"probe\":\"1d20\"}}",
-            gs.getOwnerId(), false);
+            gs.getOwnerId(), false, false, true);
 
         assertThat(updated.getVersion()).isEqualTo(3);
+    }
+
+    @Test
+    void updateForceRenameAllowsDuplicateNameOnPurpose() {
+        var gs = new com.lwe.core.domain.GameSystem("Alt", 1, validRules, schema);
+        setId(gs, UUID.randomUUID());
+        when(repo.findById(gs.getId())).thenReturn(Optional.of(gs));
+        when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var updated = service.update(gs.getId(), "Neu", 1, null, UUID.randomUUID(), true, true, true);
+
+        assertThat(updated.getName()).isEqualTo("Neu");
+        verify(repo, never()).existsByName(any());
+    }
+
+    @Test
+    void updateWithoutBumpKeepsVersionOnRulesChange() {
+        var gs = new com.lwe.core.domain.GameSystem("Sys", 2, validRules, schema, UUID.randomUUID());
+        setId(gs, UUID.randomUUID());
+        when(repo.findById(any())).thenReturn(Optional.of(gs));
+        when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        doNothing().when(validator).validateOrThrow(any(), any());
+
+        var updated = service.update(gs.getId(), null, null,
+            "{\"version\":1,\"attributes\":[{\"name\":\"x\",\"type\":\"INT\",\"default\":1}],\"dice_mechanics\":{\"probe\":\"1d20\"}}",
+            gs.getOwnerId(), false, false, false);
+
+        assertThat(updated.getVersion()).isEqualTo(2);
     }
 
     @Test

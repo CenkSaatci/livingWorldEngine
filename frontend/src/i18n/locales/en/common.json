@@ -416,6 +416,14 @@
   "systems": {
     "owner": "Owner",
     "sharedWithYou": "Shared with you",
-    "backToList": "Back to list"
+    "backToList": "Back to list",
+    "updateHint": "Saving updates this system (no copy). On rules changes the version bumps automatically.",
+    "bumpVersion": "Create new version (+1 on rules change)",
+    "bumpVersionOffHint": "Unchecked, the version stays — campaigns will not auto-detect the change.",
+    "createHint": "Saving creates a new system.",
+    "renameTitle": "Name already taken",
+    "renameHint": "Another system already has this name. Rename anyway? (Duplicate names are confusing.)",
+    "cancel": "Cancel",
+    "renameConfirm": "Rename anyway"
   }
 }

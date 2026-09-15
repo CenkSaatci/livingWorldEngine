@@ -36,6 +36,7 @@
 | QA-A-006 | MEDIUM | Angriffs-Button zeigte Roh-Typ „action" (i18n-Key `combat.attack` ungenutzt). | Typ `action` → Label „Angreifen". |
 | QA-A-007 | MEDIUM | Location-Typ „Dorf" (deutsch) → 500 `SYSTEM_INTERNAL_ERROR` (DB-Check-Constraint). | `@Pattern` auf `CreateRequest.type` (12 Enum-Werte) → sauberes 400. UI nutzt bereits Select. |
 | QA-A-008 | MEDIUM (Content) | DSA-Manöver (Wuchtschlag/Finte, apCost 2) bei AP-Max 1 **nie nutzbar** (Buttons permanent disabled). | apCost 1 in `dsa5.json` + `dsa5-playtest.json` + QA-DSA5-System + Kampagnen-Pull. |
+| QA-006b | MEDIUM | Rename-Konflikt-Härtung war Überkorrektur (User will entscheiden: Version leicht anheben, keine Kopie-Flut). Speichern erstellt nie Kopien (nur Clone-Button). | Umgesetzt: Warn-Dialog + forceRename, Versions-Checkbox (Bump default an), Hinweistexte; Tests + Live-Verifikation (409/force/bump) |
 | QA-A-023 | MEDIUM (Infra) | App von anderem Rechner im LAN nicht erreichbar: Vite band nur `127.0.0.1`; API-/WS-URLs hart auf `localhost` (fremder Browser hätte ins Leere gezielt). | Frontend auf `0.0.0.0` (pm2 neu angelegt + `pm2 save`); API-/WS-Host dynamisch aus `window.location.hostname` (`client.ts`/`useWorldSocket.ts`, `VITE_*`-Override bleibt). Zusatz: Root-`.env` setzte `VITE_API_URL/WS_URL` hart auf localhost und hat das Dynamic-Host-Override wirkungslos gemacht → aus `.env` entfernt (nur noch opt-in in `.env.example`). |
 
 ## Offene / akzeptierte Befunde (für gemeinsame Tests + Playbook)

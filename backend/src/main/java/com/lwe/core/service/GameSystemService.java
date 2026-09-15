@@ -218,11 +218,17 @@ public class GameSystemService {
     @Transactional
     public GameSystem update(UUID id, String name, Integer version, String rulesJson,
                              UUID userId, boolean isAdmin) {
+        return update(id, name, version, rulesJson, userId, isAdmin, false, true);
+    }
+
+    /** QA: Der User entscheidet — forceRename erlaubt bewusst doppelte Namen,
+     *  bumpVersion=false speichert Regeländerungen ohne Versionssprung (z. B.
+     *  Tippfehler; Kampagnen erkennen die Änderung dann nicht automatisch). */
+    public GameSystem update(UUID id, String name, Integer version, String rulesJson,
+                             UUID userId, boolean isAdmin, boolean forceRename, boolean bumpVersion) {
         var gs = getById(id);
         requireOwner(gs, userId, isAdmin);
-        // QA-Fund: Umbenennen auf einen vergebenen Namen war möglich (doppelte
-        // Systemnamen) — wie bei create ablehnen (eigene ID ausgenommen).
-        if (name != null && !name.equals(gs.getName()) && repo.existsByName(name)) {
+        if (name != null && !name.equals(gs.getName()) && !forceRename && repo.existsByName(name)) {
             throw new GameSystemException("GAME_SYSTEM_VERSION_CONFLICT",
                 "A game system with name '" + name + "' already exists");
         }
@@ -234,8 +240,9 @@ public class GameSystemService {
             // validieren (Custom-Schemas sind im Produkt nicht vorgesehen).
             validator.validateOrThrow(rulesJson, RuleSchemaValidator.DEFAULT_SCHEMA);
             gs.setRulesJson(rulesJson);
-            // Audit P27: Regel-Aenderung erhoeht die Version automatisch (monoton).
-            gs.setVersion(gs.getVersion() + 1);
+            // Audit P27/QA: Regel-Aenderung erhoeht die Version — außer der User
+            // will bewusst nur leicht korrigieren (bumpVersion=false).
+            if (bumpVersion) gs.setVersion(gs.getVersion() + 1);
         } else if (version != null && version > gs.getVersion()) {
             gs.setVersion(version);
         }

@@ -416,6 +416,14 @@
   "systems": {
     "owner": "Creador",
     "sharedWithYou": "Compartido contigo",
-    "backToList": "Volver a la lista"
+    "backToList": "Volver a la lista",
+    "updateHint": "Guardar actualiza este sistema (sin copia). Con cambios de reglas la versión sube automáticamente.",
+    "bumpVersion": "Crear nueva versión (+1 con cambios)",
+    "bumpVersionOffHint": "Sin marcar, la versión se mantiene — las campañas no detectarán el cambio.",
+    "createHint": "Guardar crea un sistema nuevo.",
+    "renameTitle": "Nombre en uso",
+    "renameHint": "Otro sistema ya tiene este nombre. ¿Renombrar igualmente?",
+    "cancel": "Cancelar",
+    "renameConfirm": "Renombrar igualmente"
   }
 }

@@ -151,6 +151,8 @@ export default function GameSystemPage() {
   const [systems, setSystems] = useState<GameSystem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEditor, setShowEditor] = useState(false);
+  const [bumpVersion, setBumpVersion] = useState(true);
+  const [renameConfirm, setRenameConfirm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [version, setVersion] = useState(1);
@@ -280,14 +282,24 @@ export default function GameSystemPage() {
     }
   };
 
-  const handleSave = async () => {
+  // QA: Der User entscheidet — kein stilles Verhalten: Speichern aktualisiert immer
+  // (nie Kopie), Versionssprung nur mit bumpVersion, Doppelname nur mit Bestätigung.
+  const handleSave = async (forceRename = false) => {
     if (!name.trim() || !rulesJson.trim()) return;
+    if (editingId && !forceRename
+        && systems.some((s) => s.id !== editingId && s.name === name.trim())) {
+      setRenameConfirm(true);
+      return;
+    }
+    setRenameConfirm(false);
     try {
       if (editingId) {
         await apiClient.patch(`/game-systems/${editingId}`, {
           name: name.trim(),
           version,
           rulesJson,
+          forceRename,
+          bumpVersion,
         });
         toast.success('Game system updated');
       } else {
@@ -730,13 +742,59 @@ export default function GameSystemPage() {
                     Cancel
                   </button>
                   <button
-                    onClick={handleSave}
+                    onClick={() => handleSave(false)}
                     disabled={!name?.trim() || !rulesJson?.trim()}
                     className="rounded bg-accent px-4 py-2 text-xs text-white hover:bg-accent/80 disabled:opacity-40"
                   >
                     {editingId ? 'Update System' : 'Save System'}
                   </button>
                 </div>
+                {editingId ? (
+                  <div className="mt-3 space-y-1 text-[11px] text-text-secondary">
+                    <p>{t('systems.updateHint')}</p>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={bumpVersion}
+                        onChange={(e) => setBumpVersion(e.target.checked)}
+                        className="accent-accent"
+                      />
+                      {t('systems.bumpVersion')}
+                    </label>
+                    {!bumpVersion && <p>{t('systems.bumpVersionOffHint')}</p>}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-[11px] text-text-secondary">{t('systems.createHint')}</p>
+                )}
+                {/* Umbenennen-Bestätigung bei Namens-Kollision */}
+                {renameConfirm && (
+                  <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+                    onClick={() => setRenameConfirm(false)}
+                  >
+                    <div
+                      className="w-80 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <h3 className="font-heading text-text-primary mb-2">{t('systems.renameTitle')}</h3>
+                      <p className="text-sm text-text-secondary mb-4">{t('systems.renameHint')}</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setRenameConfirm(false)}
+                          className="flex-1 rounded border border-bg-elevated px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary"
+                        >
+                          {t('systems.cancel')}
+                        </button>
+                        <button
+                          onClick={() => handleSave(true)}
+                          className="flex-1 rounded bg-warning/80 px-3 py-1.5 text-xs text-white hover:bg-warning"
+                        >
+                          {t('systems.renameConfirm')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>

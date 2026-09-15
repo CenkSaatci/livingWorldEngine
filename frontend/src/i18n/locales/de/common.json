@@ -416,6 +416,14 @@
   "systems": {
     "owner": "Ersteller",
     "sharedWithYou": "Für dich freigegeben",
-    "backToList": "Zurück zur Liste"
+    "backToList": "Zurück zur Liste",
+    "updateHint": "Speichern aktualisiert dieses System (keine Kopie). Bei Regeländerung steigt die Version automatisch.",
+    "bumpVersion": "Neue Version anlegen (+1 bei Regeländerung)",
+    "bumpVersionOffHint": "Ohne Haken bleibt die Version — Kampagnen erkennen die Änderung dann nicht automatisch.",
+    "createHint": "Speichern legt ein neues System an.",
+    "renameTitle": "Name bereits vergeben",
+    "renameHint": "Ein anderes System trägt diesen Namen bereits. Trotzdem umbenennen? (Doppelte Namen sind verwirrend.)",
+    "cancel": "Abbrechen",
+    "renameConfirm": "Trotzdem umbenennen"
   }
 }

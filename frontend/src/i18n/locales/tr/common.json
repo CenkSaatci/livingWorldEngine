@@ -416,6 +416,14 @@
   "systems": {
     "owner": "Oluşturan",
     "sharedWithYou": "Seninle paylaşıldı",
-    "backToList": "Listeye dön"
+    "backToList": "Listeye dön",
+    "updateHint": "Kaydetme bu sistemi günceller (kopya yok). Kural değişikliğinde sürüm otomatik artar.",
+    "bumpVersion": "Yeni sürüm oluştur (değişiklikte +1)",
+    "bumpVersionOffHint": "İşaretsiz sürüm kalır — kampanyalar değişikliği algılamaz.",
+    "createHint": "Kaydetme yeni bir sistem oluşturur.",
+    "renameTitle": "Ad kullanımda",
+    "renameHint": "Başka bir sistem bu adı taşıyor. Yine de yeniden adlandır?",
+    "cancel": "İptal",
+    "renameConfirm": "Yine de adlandır"
   }
 }

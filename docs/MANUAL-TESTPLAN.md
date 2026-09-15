@@ -1231,9 +1231,9 @@
 | QA-001 | SYS | GP-01 | HIGH | System-Edit (Stift): Console `Uncaught TypeError: Cannot read properties of undefined` — Repro steht noch aus (welches System/was danach?). | Systemliste → Stift | offen (Repro offen) | |
 | QA-002 | SYS | GP-01 | MEDIUM/IDEE | Keine Suche/Filter in Systemliste (wächst: >15 Systeme). | Systemliste | Backlog | |
 | QA-003 | SYS | GP-01 | LOW/IDEE | Download enthält Wire-Envelope (`{id,name,version,rulesJson als String}`) statt handlichem Rules-JSON. | Download-Button | Backlog | |
-| QA-004 | SYS | GP-01 | MEDIUM | Nur „Private"-Badge — Ersteller vs. eingeladen nicht ersichtlich. | Systemliste | **gefixt** (Ersteller-/Geteilt-Badge) | |
+| QA-004 | SYS | GP-01 | MEDIUM | Nur „Private"-Badge (User-Wunsch: Ersteller vs. eingeladen sichtbar). — Ersteller vs. eingeladen nicht ersichtlich. | Systemliste | **gefixt** (Ersteller-/Geteilt-Badge) | |
 | QA-005 | SYS | GP-01 | HIGH (offen) | Edit-Crash `reading 'startTime'` (sporadisch, exakter Text/Repro ausstehend). | System-Edit | offen — bitte vollen Konsolentext + Aktion melden | |
-| QA-006 | SYS | GP-01 | MEDIUM | Umbenennen auf vergebenen Namen möglich → doppelte Systemnamen (DSA5 Playtest hieß danach QA-DSA5). | System-Edit | **gefixt** (409-Konflikt + Test); Name zurückgesetzt | |
+| QA-006 | SYS | GP-01 | MEDIUM | Umbenennen auf vergebenen Namen möglich → doppelte Systemnamen (DSA5 Playtest hieß danach QA-DSA5). | System-Edit | **umgesetzt User-Entscheid**: Warn-Dialog + force-Option (API-409 bleibt als Netz); Versions-Checkbox (Bump an/aus); Name zurückgesetzt | |
 | QA-007 | SYS | GP-01 | IDEE→umgesetzt | Pretty-Export (lesbares Rules-JSON statt Wire-Envelope). | Download | **umgesetzt** | |
 | QA-008 | SYS | GP-01 | MEDIUM | Editor öffnete unten auf der Seite (Scroll-Pflicht). | System-Edit | **umgesetzt** (Vollbild-Overlay + Zurück-Button) | |
 | QA-009 | SYS | GP-01 | MEDIUM/UX | Abgeleitete Werte: @-Syntax vs. Freitext unklar; Builder-Verhalten unerklärt. | Wizard | **Texte erweitert** (de/en, Rest fallbackt en) | |

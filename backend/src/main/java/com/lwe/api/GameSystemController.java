@@ -59,9 +59,10 @@ public class GameSystemController {
 
     @PatchMapping("/{id}")
     public ResponseEntity<GameSystemInfoResponse> update(@PathVariable UUID id,
-                                                          @Valid @RequestBody CreateRequest req,
+                                                          @Valid @RequestBody UpdateRequest req,
                                                           @org.springframework.security.core.annotation.AuthenticationPrincipal User user) {
-        var gs = service.update(id, req.name(), req.version(), req.rulesJson(), user.getId(), isAdmin(user));
+        var gs = service.update(id, req.name(), req.version(), req.rulesJson(), user.getId(), isAdmin(user),
+            Boolean.TRUE.equals(req.forceRename()), !Boolean.FALSE.equals(req.bumpVersion()));
         return ResponseEntity.ok(GameSystemInfoResponse.from(gs));
     }
 
@@ -119,6 +120,8 @@ public class GameSystemController {
     }
 
     public record CreateRequest(@NotBlank String name, @Positive int version, String rulesJson, String schemaJson) {}
+    public record UpdateRequest(@NotBlank String name, @Positive int version, String rulesJson,
+                                Boolean forceRename, Boolean bumpVersion) {}
     public record GameSystemDetailResponse(UUID id, String name, int version, String rulesJson, boolean active) {}
     public record ValidationResponse(boolean valid, List<String> errors) {}
     public record ShareRequest(@NotBlank String user) {}
