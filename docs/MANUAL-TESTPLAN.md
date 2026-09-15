@@ -138,7 +138,7 @@
 - **Erwartet:** Beitritt ohne Hilfe; Welt erscheint im Dashboard beider (Detail: KRG-13).
 - **Fund:**
 
-#### GP-04 ★ DM erstellt Kampagne → Welt wird geforkt
+#### GP-04 ★ DM erstellt Kampagne → Welt wird geforkt ✅ (manuell 2026-09-15: Ansicht ok — Welt/System/Mitglieder+Rollen korrekt)
 - **Ziel:** „Template nutzen" = Kampagne startet auf Kopie; Original bleibt unberührt.
 - **Schritte:** 1) Kampagne „GP-Runde" in GP-Aventurien mit System DSA5 Playtest (GP-01/02). 2) Kampagnen-Welt-ID mit Basiswelt vergleichen (API/Ansicht). 3) P1/P2: Dashboard/Kampagne sichtbar?
 - **Erwartet:** Automatischer Fork (neue Welt-ID), System gepinnt (Snapshot); Spieler sehen die Kampagne, Original unverändert (Detail: KRG-01, KRG-08/11).
