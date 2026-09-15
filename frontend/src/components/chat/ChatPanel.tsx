@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Send } from 'lucide-react';
 import { apiClient } from '../../api/client';
+import { useAuthStore } from '../../store/authStore';
 import { useWorldStore } from '../../store/worldStore';
 import { useToast } from '../../hooks/useToast';
 import { DiceRollModal } from '../ui/DiceRollModal';
@@ -41,6 +42,8 @@ interface RollModalState {
 export function ChatPanel({ worldId }: { worldId: string }) {
   const { t } = useTranslation('chat');
   const toast = useToast();
+  // QA: Echte Usernamen statt hardcoded 'You' (sonst heißen alle Nachrichten gleich).
+  const username = useAuthStore((s) => s.user?.username) ?? 'You';
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [rollModal, setRollModal] = useState<RollModalState | null>(null);
@@ -164,9 +167,9 @@ export function ChatPanel({ worldId }: { worldId: string }) {
     // Normaler Chat: erst lokales Echo (WS-Echo wird dedupliziert; funktioniert
     // damit auch bei totem WS — Audit R4). QA-Audit: Reihenfolge Echo-vor-POST ist
     // entscheidend, sonst erscheint die Nachricht doppelt (WS gewinnt das Rennen).
-    appendLocal('You', text);
+    appendLocal(username, text);
     try {
-      await apiClient.post(`/chat/${worldId}`, { sender: 'You', text });
+      await apiClient.post(`/chat/${worldId}`, { sender: username, text });
       playChatMessage();
     } catch {
       /* offline: lokales Echo oben reicht */

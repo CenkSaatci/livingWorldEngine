@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dice1 as Dice } from 'lucide-react';
 import { apiClient } from '../../api/client';
@@ -44,6 +44,13 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, c
   const [remaining, setRemaining] = useState<number | null>(null);
   const [difficultyKey, setDifficultyKey] = useState('');
   const [useFate, setUseFate] = useState(false);
+  // QA: Details-Popup auch per Escape schließbar.
+  useEffect(() => {
+    if (!showDetails) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowDetails(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showDetails]);
   const activeCampaignId = useCampaignStore((s) => s.activeCampaignId);
 
   const handleRoll = async () => {
@@ -169,12 +176,25 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, c
           <button
             onClick={() => setShowDetails(!showDetails)}
             className={`text-xs font-mono ${result.success ? 'text-success' : 'text-danger'}`}
+            title={result.probeType === 'd20_3attr' ? t('sheet.probeDetails3d20')! : undefined}
           >
-            {result.total}
-            {result.dice.length > 1 && (
-              <span className="text-text-secondary text-[10px] ml-1">
-                ({result.dice.join(', ')})
+            {result.probeType === 'd20_3attr' ? (
+              // QA: Bei 3W20 zählt jeder Einzelwurf — die Summe wäre irreführend.
+              <span>
+                {result.success ? '✓' : '✗'}{' '}
+                <span className="text-text-secondary text-[10px] ml-1">
+                  ({result.dice.join(', ')})
+                </span>
               </span>
+            ) : (
+              <>
+                {result.total}
+                {result.dice.length > 1 && (
+                  <span className="text-text-secondary text-[10px] ml-1">
+                    ({result.dice.join(', ')})
+                  </span>
+                )}
+              </>
             )}
             {remaining !== null && (
               <span className="text-text-secondary text-[10px] ml-1">
@@ -185,7 +205,17 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, c
 
           {showDetails && (
             <div className="absolute mt-8 right-0 z-10 w-64 rounded border border-bg-elevated bg-bg-surface p-2 shadow-lg text-[10px]">
-              {result.probeType && <p className="text-text-secondary mb-1">{result.probeType}</p>}
+              <div className="mb-1 flex items-center justify-between">
+                <p className="text-text-secondary">{result.probeType}</p>
+                <button
+                  onClick={() => setShowDetails(false)}
+                  aria-label={t('sheet.closeDetails')!}
+                  title={t('sheet.closeDetails')!}
+                  className="rounded px-1 text-text-secondary hover:text-text-primary hover:bg-bg-elevated"
+                >
+                  ×
+                </button>
+              </div>
               {result.details.map((d, i) => (
                 <p key={i} className={d.success ? 'text-success' : 'text-danger'}>
                   {d.die} ≤ {d.attribute}({d.attrValue}) {d.success ? '✓' : '✗'}

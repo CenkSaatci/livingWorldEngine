@@ -48,7 +48,9 @@
     "useFate": "Spendi un punto fato per un bonus su questa prova",
     "spendFateFailed": "Impossibile spendere il punto fato",
     "armor": "Armatura",
-    "difficulty": "Difficoltà"
+    "difficulty": "Difficoltà",
+    "probeDetails3d20": "Contano i dadi individuali — espandi dettagli",
+    "closeDetails": "Chiudi dettagli"
   },
   "attribute": {
     "modifier": "Modifier"

@@ -18,6 +18,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -332,6 +333,32 @@ class EntityServiceTest {
             .isInstanceOf(EntityService.EntityException.class)
             .satisfies(e -> assertThat(((EntityService.EntityException) e).getErrorCode())
                 .isEqualTo("UNKNOWN_CONDITION"));
+    }
+
+    @Test
+    void conditionOwnerMayManageButStrangerMayNot() {
+        var ownerId = UUID.randomUUID();
+        var strangerId = UUID.randomUUID();
+        var campaignId = campaignInWorld();
+        var entity = entityWithId("{\"staerke\":10}");
+        entity.setOwnerUserId(ownerId);
+        when(entityRepo.findByIdForUpdate(any())).thenReturn(Optional.of(entity));
+        doNothing().when(worldAccess).requireAccess(any(), any());
+        doThrow(new com.lwe.core.util.WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireDm(any(), eq(strangerId));
+        when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(rulesLoader.loadRules(campaignId, worldId)).thenReturn(Map.of(
+            "conditions", List.of(Map.of("name", "Wunde"))));
+
+        // Owner darf hinzufügen/entfernen ...
+        service.addCondition(entity.getId(), ownerId, "Wunde", 2, campaignId);
+        service.removeCondition(entity.getId(), ownerId, "Wunde");
+        verify(conditionService).add(eq(entity), any());
+        verify(conditionService).remove(entity, "Wunde");
+
+        // ... Fremder (kein DM) nicht.
+        assertThatThrownBy(() -> service.addCondition(entity.getId(), strangerId, "Wunde", 2, campaignId))
+            .isInstanceOf(com.lwe.core.util.WorldAccess.WorldAccessException.class);
     }
 
     @Test

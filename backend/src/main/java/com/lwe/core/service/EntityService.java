@@ -393,7 +393,9 @@ public class EntityService {
     @Transactional
     public GameEntity addCondition(UUID entityId, UUID userId, String name, Integer rounds, UUID campaignId) {
         var entity = getLocked(entityId, userId);
-        worldAccess.requireDm(entity.getWorldId(), userId);
+        // QA: Owner darf Zustände selbst verwalten (DM sowieso) — vorher DM-only, Spieler
+        // konnten nicht mal eigene Wunden eintragen.
+        entityAccess.checkControl(entity, userId);
         if (campaignId != null) {
             if (!rulesLoader.campaignBelongsToWorld(campaignId, entity.getWorldId())) {
                 throw new EntityException("WORLD_ACCESS_DENIED", "Campaign does not belong to world");
@@ -421,7 +423,7 @@ public class EntityService {
     @Transactional
     public GameEntity removeCondition(UUID entityId, UUID userId, String name) {
         var entity = getLocked(entityId, userId);
-        worldAccess.requireDm(entity.getWorldId(), userId);
+        entityAccess.checkControl(entity, userId);
         conditionService.remove(entity, name);
         return entityRepo.save(entity);
     }

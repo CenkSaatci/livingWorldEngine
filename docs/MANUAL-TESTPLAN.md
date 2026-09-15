@@ -1232,6 +1232,10 @@
 | QA-002 | SYS | GP-01 | MEDIUM/IDEE | Keine Suche/Filter in Systemliste (wächst: >15 Systeme). | Systemliste | Backlog | |
 | QA-003 | SYS | GP-01 | LOW/IDEE | Download enthält Wire-Envelope (`{id,name,version,rulesJson als String}`) statt handlichem Rules-JSON. | Download-Button | Backlog | |
 | QA-004 | SYS | GP-01 | MEDIUM | Nur „Private"-Badge (User-Wunsch: Ersteller vs. eingeladen sichtbar). — Ersteller vs. eingeladen nicht ersichtlich. | Systemliste | **gefixt** (Ersteller-/Geteilt-Badge) | |
+| QA-022 | Sheet | GP-05+ | HIGH | Zustände konnten nicht hinzugefügt werden — `add/removeCondition` verlangte DM, selbst Owner bekam 403. | Sheet | **gefixt** (Owner/DM via requireControl + Test) | |
+| QA-023 | Chat | GP-08 | MEDIUM | Alle Nachrichten als „You" gespeichert/angezeigt (Sender hardcoded). | Chat | **gefixt** (echter Username in Echo+POST) | |
+| QA-024 | Sheet | GP-05+ | MEDIUM | 3W20-Ergebnis zeigt irreführende Summe; Details-Popup (mit Attributen) nur per Toggle schließbar, kein X/Escape. | Probe | **gefixt** (✓/✗ + Einzelwürfe; X + Escape) | |
+| QA-025 | Kampf | GP-01 | IDEE | Zustands-Stufen (z. B. Wunde I/II/III)? Aktuell binär (+Runden); Workaround: eigene Katalog-Einträge. | Engine | Backlog | |
 | QA-005 | SYS | GP-01 | HIGH (beobachten) | Edit-Crash `reading 'startTime'` (sporadisch). Im Code existiert keine solche Property; nicht reproduzierbar, aktuell nicht mehr im Log. | System-Edit | Monitoring — bei Wiederauftreten vollen Text + Aktion melden | |
 | QA-006 | SYS | GP-01 | MEDIUM | Umbenennen auf vergebenen Namen möglich → doppelte Systemnamen (DSA5 Playtest hieß danach QA-DSA5). | System-Edit | **umgesetzt User-Entscheid**: Warn-Dialog + force-Option (API-409 bleibt als Netz); Versions-Checkbox (Bump an/aus); Name zurückgesetzt | |
 | QA-007 | SYS | GP-01 | IDEE→umgesetzt | Pretty-Export (lesbares Rules-JSON statt Wire-Envelope). | Download | **umgesetzt** | |

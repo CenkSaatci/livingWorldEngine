@@ -48,7 +48,9 @@
     "castNoTrait": "Required trait missing",
     "trade": "Trade",
     "rounds": "rounds",
-    "difficulty": "Difficulty"
+    "difficulty": "Difficulty",
+    "probeDetails3d20": "Individual dice count, total is informational — expand details",
+    "closeDetails": "Close details"
   },
   "attribute": {
     "modifier": "Modifier"

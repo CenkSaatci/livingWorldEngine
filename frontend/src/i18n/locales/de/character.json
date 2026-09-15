@@ -48,7 +48,9 @@
     "castNoTrait": "Erforderliches Merkmal fehlt",
     "trade": "Handeln",
     "rounds": "Runden",
-    "difficulty": "Schwierigkeit"
+    "difficulty": "Schwierigkeit",
+    "probeDetails3d20": "Einzelwürfe zählen, Summe ist nur Info — Details aufklappen",
+    "closeDetails": "Details schließen"
   },
   "attribute": {
     "modifier": "Modifikator"

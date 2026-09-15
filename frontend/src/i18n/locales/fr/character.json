@@ -48,7 +48,9 @@
     "useFate": "Dépenser un point de destin pour un bonus sur ce jet",
     "spendFateFailed": "Impossible de dépenser le point de destin",
     "armor": "Armure",
-    "difficulty": "Difficulté"
+    "difficulty": "Difficulté",
+    "probeDetails3d20": "Les dés individuels comptent — déplier les détails",
+    "closeDetails": "Fermer les détails"
   },
   "attribute": {
     "modifier": "Modifier"

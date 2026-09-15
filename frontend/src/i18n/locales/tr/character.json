@@ -48,7 +48,9 @@
     "useFate": "Bu deneme için bonus amacıyla kader puanı harca",
     "spendFateFailed": "Kader puanı harcanamadı",
     "armor": "Zırh",
-    "difficulty": "Zorluk"
+    "difficulty": "Zorluk",
+    "probeDetails3d20": "Tek zarlar sayılır — ayrıntıları aç",
+    "closeDetails": "Ayrıntıları kapat"
   },
   "attribute": {
     "modifier": "Modifier"

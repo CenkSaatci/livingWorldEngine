@@ -48,7 +48,9 @@
     "useFate": "Gastar punto de destino para un bono en esta tirada",
     "spendFateFailed": "No se pudo gastar el punto de destino",
     "armor": "Armadura",
-    "difficulty": "Dificultad"
+    "difficulty": "Dificultad",
+    "probeDetails3d20": "Cuentan los dados individuales — desplegar detalles",
+    "closeDetails": "Cerrar detalles"
   },
   "attribute": {
     "modifier": "Modifier"
