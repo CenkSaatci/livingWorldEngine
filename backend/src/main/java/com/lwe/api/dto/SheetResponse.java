@@ -20,8 +20,8 @@ public record SheetResponse(
     List<DifficultyInfo> difficultyLevels
 ) {
     public record EntityInfo(String id, String name, String entityType) {}
-    public record AttributeInfo(String name, int value, double modifier, int min, int max) {}
-    public record DerivedValueInfo(String name, double value, String error) {}
+    public record AttributeInfo(String name, int value, double modifier, int min, int max, String description) {}
+    public record DerivedValueInfo(String name, double value, String error, String description) {}
     public record CastingInfo(String resource, int cost, String requiresTrait) {}
     public record DifficultyInfo(String name, Double multiplier, Integer delta) {}
 

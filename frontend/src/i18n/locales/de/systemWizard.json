@@ -333,5 +333,9 @@
   "s3_description_hint": "Erklärt den Skill den Spielern im Charakterbogen.",
   "st_description_ph": "Kurzbeschreibung (Regelwirkung)",
   "st_description_hint": "Erklärt Spielern, was das Merkmal regeltechnisch tut.",
-  "spk_autotraits_hint": "Am besten Merkmale aus der Liste oben übernehmen (Dropdown-Vorschläge)."
+  "spk_autotraits_hint": "Am besten Merkmale aus der Liste oben übernehmen (Dropdown-Vorschläge).",
+  "s2_description_ph": "Kurzbeschreibung (Tooltip)",
+  "s2_description_hint": "Erklärt das Attribut im Charakterbogen.",
+  "sdv_description_ph": "Kurzbeschreibung (Tooltip)",
+  "sdv_description_hint": "Erklärt den Wert den Spielern im Charakterbogen."
 }

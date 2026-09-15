@@ -104,6 +104,7 @@ public class RuleSchemaValidator {
               "required": ["name", "type", "default"],
               "properties": {
                 "name":    { "type": "string", "minLength": 1, "maxLength": 50 },
+                "description": { "type": "string" },
                 "type":    { "enum": ["INT", "FLOAT", "STRING", "BOOL"] },
                 "min":     { "type": "number" },
                 "max":     { "type": "number" },

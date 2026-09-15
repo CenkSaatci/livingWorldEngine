@@ -99,12 +99,17 @@ public class CharacterSheetService {
             )
         ));
 
-        // Attribute mit Modifiern + Min/Max
+        // Attribute mit Modifiern + Min/Max (+ QA-Beschreibung als Tooltip)
+        var attrDescriptions = rulesAttrs.stream()
+            .filter(a -> a.get("description") instanceof String)
+            .collect(Collectors.toMap(a -> (String) a.get("name"), a -> (String) a.get("description"),
+                (x, y) -> x));
         var attributes = attributeValues.entrySet().stream()
             .map(e -> {
                 var mm = attrMinMax.getOrDefault(e.getKey(), Map.entry(1, 99));
                 return new SheetResponse.AttributeInfo(e.getKey(), e.getValue(),
-                    modifiers.getOrDefault(e.getKey(), 0.0), mm.getKey(), mm.getValue());
+                    modifiers.getOrDefault(e.getKey(), 0.0), mm.getKey(), mm.getValue(),
+                    attrDescriptions.get(e.getKey()));
             })
             .collect(Collectors.toList());
 
@@ -120,7 +125,7 @@ public class CharacterSheetService {
                     var overrideVal = overrides.get(dv.name());
                     if (overrideVal instanceof Number n) {
                         return new SheetResponse.DerivedValueInfo(
-                            dv.name(), dv.value() + n.doubleValue(), dv.error());
+                            dv.name(), dv.value() + n.doubleValue(), dv.error(), dv.description());
                     }
                     return dv;
                 })
@@ -291,7 +296,7 @@ public class CharacterSheetService {
         if (adds.isEmpty()) return values;
         return values.stream().map(dv -> {
             var add = adds.get(dv.name());
-            return add != null ? new SheetResponse.DerivedValueInfo(dv.name(), dv.value() + add, dv.error()) : dv;
+            return add != null ? new SheetResponse.DerivedValueInfo(dv.name(), dv.value() + add, dv.error(), dv.description()) : dv;
         }).collect(Collectors.toList());
     }
 

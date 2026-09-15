@@ -385,7 +385,7 @@ class CombatServiceTest {
 
     private void stubDerivedAc(double ac) {
         when(derivedValueService.evaluate(any(), any(), any())).thenReturn(
-            List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("ac", ac, null)));
+            List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("ac", ac, null, null)));
     }
 
     @Test
@@ -782,8 +782,8 @@ class CombatServiceTest {
         when(derivedValueService.evaluate(any(), any(), any())).thenAnswer(inv -> {
             java.util.Map<String, Integer> attrs = inv.getArgument(1);
             return attrs.containsKey("at")
-                ? List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("at", 30, null))
-                : List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("pa", 10, null));
+                ? List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("at", 30, null, null))
+                : List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("pa", 10, null, null));
         });
         when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt(), any()))
             .thenReturn(new RollService.RollResult("damage", "1d8", new int[]{5}, 5, 0, true, null));
@@ -834,8 +834,8 @@ class CombatServiceTest {
         when(derivedValueService.evaluate(any(), any(), any())).thenAnswer(inv -> {
             java.util.Map<String, Integer> attrs = inv.getArgument(1);
             return attrs.containsKey("at")
-                ? List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("at", 20, null))
-                : List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("pa", 10, null));
+                ? List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("at", 20, null, null))
+                : List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("pa", 10, null, null));
         });
         when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 

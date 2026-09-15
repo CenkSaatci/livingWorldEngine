@@ -125,6 +125,15 @@ describe('gameSystem roundtrip', () => {
     expect(restored!.packages![0].baseValues).toEqual([{ name: 'Klettern', value: 4 }]);
   });
 
+  it('roundtrip preserves QA descriptions (attributes, skills, traits, derived)', () => {
+    const dataAttr = defaultWizardData();
+    dataAttr.attributes = [{ name: 'mut', type: 'INT', min: 1, max: 20, default: 8, description: 'Mut & Entschlossenheit' }];
+    dataAttr.derivedValues = [{ name: 'lep', formula: 'x', description: 'Lebenspunkte' }];
+    const restoredAttr = fromRulesJson(toRulesJson(dataAttr));
+    expect(restoredAttr!.attributes[0].description).toBe('Mut & Entschlossenheit');
+    expect(restoredAttr!.derivedValues[0].description).toBe('Lebenspunkte');
+  });
+
   it('roundtrip preserves QA descriptions (skills, traits)', () => {
     const data = defaultWizardData();
     data.skills = [{ name: 'Klettern', attributes: ['mut'], bonus: 0, description: 'Bergsteigen und Abseilen' }];

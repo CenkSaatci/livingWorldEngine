@@ -85,7 +85,7 @@ class RestServiceTest {
         entity.setMetadataJson("{\"fokus_current\":0}");
         stubSystem(SHORT_CAST_RULES);
         when(derivedValueService.evaluate(any(), any(), any())).thenReturn(
-            List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("fokus", 2.0, null)));
+            List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("fokus", 2.0, null, null)));
         when(entityRepo.findById(entity.getId())).thenReturn(Optional.of(entity));
         when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -101,7 +101,7 @@ class RestServiceTest {
         entity.setMetadataJson("{\"slp_current\":0}");
         stubSystem(CAST_REST_RULES);
         when(derivedValueService.evaluate(any(), any(), any())).thenReturn(
-            List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("slp", 3.0, null)));
+            List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("slp", 3.0, null, null)));
         when(entityRepo.findById(entity.getId())).thenReturn(Optional.of(entity));
         when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 

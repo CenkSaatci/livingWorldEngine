@@ -51,7 +51,7 @@ class EntityServiceTest {
         when(rulesLoader.campaignBelongsToWorld(campaignId, worldId)).thenReturn(true);
         when(rulesLoader.loadRules(campaignId, worldId)).thenReturn(Map.of("derived_values", List.of()));
         when(derivedValueService.evaluate(any(), any(), any())).thenReturn(
-            List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("lep", 15.5, null)));
+            List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("lep", 15.5, null, null)));
         when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var result = service.create(worldId, userId, "PC", "Held",
@@ -95,7 +95,7 @@ class EntityServiceTest {
         when(rulesLoader.campaignBelongsToWorld(campaignId, worldId)).thenReturn(true);
         when(rulesLoader.loadRules(campaignId, worldId)).thenReturn(Map.of());
         when(derivedValueService.evaluate(any(), any(), any())).thenReturn(
-            List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("lep", 17.0, null)));
+            List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("lep", 17.0, null, null)));
         when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var result = service.updateAttributes(entityId, userId, Map.of("konstitution", 13), campaignId);

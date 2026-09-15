@@ -45,6 +45,7 @@ public class DerivedValueService {
             Set<String> allowed, List<String> selectedTraits) {
 
         var name = (String) dv.getOrDefault("name", "");
+        var description = dv.get("description") instanceof String d ? d : null;
 
         var requiresTrait = (String) dv.get("requiresTrait");
         if (requiresTrait != null && !hasTrait(selectedTraits, requiresTrait)) {
@@ -55,22 +56,23 @@ public class DerivedValueService {
             if (dv.get("table") instanceof List<?> table) {
                 var input = dv.get("input") instanceof String s ? s : null;
                 if (input == null || input.isBlank()) {
-                    return new SheetResponse.DerivedValueInfo(name, 0, "Missing input expression");
+                    return new SheetResponse.DerivedValueInfo(name, 0, "Missing input expression", description);
                 }
                 var value = FormulaEvaluator.eval(input, attributeValues, allowed);
-                return lookup(name, value, (List<Map<String, Object>>) table);
+                return lookup(name, value, (List<Map<String, Object>>) table, description);
             }
             var formula = dv.get("formula") instanceof String s ? s : "0";
             var value = FormulaEvaluator.eval(formula, attributeValues, allowed);
             // B9 (DSA 5): Brueche werden aufgerundet (Anzeige + HP konsistent).
-            return new SheetResponse.DerivedValueInfo(name, Math.ceil(value), null);
+            return new SheetResponse.DerivedValueInfo(name, Math.ceil(value), null, description);
         } catch (FormulaEvaluator.EvaluationException e) {
-            return new SheetResponse.DerivedValueInfo(name, 0, e.getMessage());
+            return new SheetResponse.DerivedValueInfo(name, 0, e.getMessage(), description);
         }
     }
 
     private SheetResponse.DerivedValueInfo lookup(String name, double value,
-                                                  List<Map<String, Object>> table) {
+                                                  List<Map<String, Object>> table,
+                                                  String description) {
         List<Double> matches = new java.util.ArrayList<>();
         boolean invalidRange = false;
         boolean invalidRow = false;
@@ -98,10 +100,10 @@ public class DerivedValueService {
         }
         if (matches.size() > 1) {
             return new SheetResponse.DerivedValueInfo(name, 0,
-                "Overlapping table rows for value " + (long) value);
+                "Overlapping table rows for value " + (long) value, description);
         }
         if (matches.size() == 1) {
-            return new SheetResponse.DerivedValueInfo(name, matches.getFirst(), null);
+            return new SheetResponse.DerivedValueInfo(name, matches.getFirst(), null, description);
         }
         // Audit P28: kaputte Zeilen (min > max) nicht als "Luecke" verkaufen.
         var reason = invalidRow
@@ -109,7 +111,7 @@ public class DerivedValueService {
             : invalidRange
                 ? "Invalid table row (min > max)"
                 : "No table row for value " + (long) value;
-        return new SheetResponse.DerivedValueInfo(name, 0, reason);
+        return new SheetResponse.DerivedValueInfo(name, 0, reason, description);
     }
 
     private static Double numberOrNull(Object o) {

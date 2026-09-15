@@ -243,6 +243,17 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 className="w-24 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
                 placeholder={t('s2_name_placeholder')}
               />
+              <input
+                value={attr.description ?? ''}
+                onChange={(e) => {
+                  const a = [...data.attributes];
+                  a[i] = { ...a[i], description: e.target.value };
+                  update('attributes', a);
+                }}
+                className="w-40 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                placeholder={t('s2_description_ph')}
+                title={t('s2_description_hint')}
+              />
               <select
                 value={attr.type}
                 onChange={(e) => {
@@ -355,6 +366,13 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   onChange={(e) => setDv({ name: e.target.value })}
                   className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
                   placeholder={t('sdv_name_placeholder')}
+                />
+                <input
+                  value={dv.description ?? ''}
+                  onChange={(e) => setDv({ description: e.target.value })}
+                  className="flex-[2] rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  placeholder={t('sdv_description_ph')}
+                  title={t('sdv_description_hint')}
                 />
                 <select
                   value={isTable ? 'table' : 'formula'}

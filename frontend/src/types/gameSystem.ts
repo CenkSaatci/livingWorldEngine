@@ -4,6 +4,8 @@
 
 export interface AttributeDef {
   name: string;
+  /** QA: kurze Regelerklärung. */
+  description?: string;
   type: 'INT' | 'STRING' | 'BOOL';
   min: number;
   max: number;
@@ -88,6 +90,8 @@ export interface SystemFeatures {
 
 export interface DerivedValue {
   name: string;
+  /** QA: kurze Regelerklärung. */
+  description?: string;
   formula?: string;
   input?: string;
   table?: { min: number; max: number; value: number }[];
@@ -913,6 +917,7 @@ export function fromRulesJson(json: string): WizardData | null {
     const attrs: AttributeDef[] = ((parsed.attributes as Record<string, unknown>[] | undefined) ?? []).map(
       (a: Record<string, unknown>) => ({
         name: (a.name as string) ?? '',
+        ...(a.description != null ? { description: a.description as string } : {}),
         type: (['INT', 'STRING', 'BOOL'].includes(a.type as string) ? a.type : 'INT') as 'INT' | 'STRING' | 'BOOL',
         min: (a.min as number) ?? 1,
         max: (a.max as number) ?? 20,
@@ -1054,6 +1059,7 @@ export function fromRulesJson(json: string): WizardData | null {
       derivedValues: ((parsed.derived_values as Record<string, unknown>[]) ?? []).map(
         (dv: Record<string, unknown>) => ({
           name: (dv.name as string) ?? '',
+          ...(dv.description !== undefined ? { description: dv.description as string } : {}),
           ...(dv.formula !== undefined ? { formula: dv.formula as string } : {}),
           ...(dv.input !== undefined ? { input: dv.input as string } : {}),
           ...(dv.table !== undefined

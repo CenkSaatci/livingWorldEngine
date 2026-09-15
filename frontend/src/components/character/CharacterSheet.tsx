@@ -198,7 +198,7 @@ export function CharacterSheet({ entityId }: Props) {
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {data.attributes.map((attr) => (
             <div key={attr.name} className="rounded bg-bg-primary/50 p-2 text-center">
-              <p className="text-[10px] text-text-secondary uppercase">{attr.name}</p>
+              <p className="text-[10px] text-text-secondary uppercase" title={attr.description ?? undefined}>{attr.name}</p>
               <AttrInput name={attr.name} value={attr.value} min={attr.min} max={attr.max} entityId={entityId}
                 campaignId={useCampaignStore.getState().activeCampaignId}
                 allAttributes={Object.fromEntries(data.attributes.map((a) => [a.name, a.value]))} onSaved={refetch} />
@@ -220,7 +220,7 @@ export function CharacterSheet({ entityId }: Props) {
               <div key={dv.name} className="flex items-center gap-2 rounded bg-bg-primary/50 p-2">
                 {VALUE_ICONS[dv.name] ?? <Zap size={16} className="text-text-secondary" />}
                 <div>
-                  <p className="text-[10px] text-text-secondary uppercase">{dv.name}</p>
+                  <p className="text-[10px] text-text-secondary uppercase" title={dv.description ?? undefined}>{dv.name}</p>
                   <p className={`text-sm font-heading ${dv.error ? 'text-danger' : 'text-text-primary'}`}
                      title={dv.error ?? undefined}>
                     {dv.error ? '—' : Math.round(dv.value * 10) / 10}

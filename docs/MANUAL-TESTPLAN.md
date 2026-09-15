@@ -1247,6 +1247,8 @@
 | QA-017 | SYS | GP-01 | MEDIUM/UX | Budget-Felder unerklärt. | Wizard | **Texte erweitert** (sb_hint) | |
 | QA-018 | SYS | GP-01 | MEDIUM/UX | Merkmale: Beschreibungsfeld fehlt; „derived:" unverständlich. | Wizard | **umgesetzt** (description + Text); derived: = Effekt-Ziel | |
 | QA-019 | SYS | GP-01 | MEDIUM/UX | Pakete: Auto-Merkmale nur Textinput statt Auswahl aus Merkmals-Liste. | Wizard | **umgesetzt** (Dropdown-Vorschläge) | |
+| QA-020 | SYS | GP-01 | MEDIUM/UX | Beschreibungsfelder fehlen auch bei Attributen + abgeleiteten Werten (Tooltips im Bogen). | Wizard/Sheet | **umgesetzt** (Schema+Wizard+Sheet-Tooltip) | |
+| QA-021 | Kampf | GP-01 | HIGH/Design | Waffenschaden nicht abbildbar: `combat.damage`-Würfel wird ignoriert (nur Attribut genutzt), Waffen liefern nur Typ, `damage_bonus` tot, kein Attribut-je-Waffe, Merkmal-Boni wirken nicht im Kampf. | Engine | **offen** — Vorschlag: Item-Felder `damage`/`damage_attr`+Fallback, siehe Chat | |
 
 **Triage-Regeln:**
 - BLOCKER/HIGH → sofort fixen (mit Test), dann weiter.

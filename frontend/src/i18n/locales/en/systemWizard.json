@@ -333,5 +333,9 @@
   "s3_description_hint": "Explains the skill to players on the character sheet.",
   "st_description_ph": "Short description (rules effect)",
   "st_description_hint": "Explains to players what the trait does rules-wise.",
-  "spk_autotraits_hint": "Prefer picking traits from the list above (dropdown suggestions)."
+  "spk_autotraits_hint": "Prefer picking traits from the list above (dropdown suggestions).",
+  "s2_description_ph": "Short description (tooltip)",
+  "s2_description_hint": "Explains the attribute on the character sheet.",
+  "sdv_description_ph": "Short description (tooltip)",
+  "sdv_description_hint": "Explains the value to players on the character sheet."
 }
