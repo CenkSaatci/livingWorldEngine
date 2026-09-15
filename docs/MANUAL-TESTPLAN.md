@@ -1248,7 +1248,7 @@
 | QA-018 | SYS | GP-01 | MEDIUM/UX | Merkmale: Beschreibungsfeld fehlt; „derived:" unverständlich. | Wizard | **umgesetzt** (description + Text); derived: = Effekt-Ziel | |
 | QA-019 | SYS | GP-01 | MEDIUM/UX | Pakete: Auto-Merkmale nur Textinput statt Auswahl aus Merkmals-Liste. | Wizard | **umgesetzt** (Dropdown-Vorschläge) | |
 | QA-020 | SYS | GP-01 | MEDIUM/UX | Beschreibungsfelder fehlen auch bei Attributen + abgeleiteten Werten (Tooltips im Bogen). | Wizard/Sheet | **umgesetzt** (Schema+Wizard+Sheet-Tooltip) | |
-| QA-021 | Kampf | GP-01 | HIGH/Design | Waffenschaden nicht abbildbar: `combat.damage`-Würfel wird ignoriert (nur Attribut genutzt), Waffen liefern nur Typ, `damage_bonus` tot, kein Attribut-je-Waffe, Merkmal-Boni wirken nicht im Kampf. | Engine | **offen** — Vorschlag: Item-Felder `damage`/`damage_attr`+Fallback, siehe Chat | |
+| QA-021 | Kampf | GP-01 | HIGH/Design | Waffenschaden nicht abbildbar (Würfel ignoriert, damage_bonus tot, kein Attribut-je-Waffe, Merkmale wirkungslos). | Engine | **umgesetzt**: Item-Felder damage/damage_attr/damage_bonus/damage_type, Fallback würfelt wirklich, Merkmal-Boni verdrahtet — live verifiziert (Schwert 1d6+2/KK = 4–9, Treffer 7) | |: `combat.damage`-Würfel wird ignoriert (nur Attribut genutzt), Waffen liefern nur Typ, `damage_bonus` tot, kein Attribut-je-Waffe, Merkmal-Boni wirken nicht im Kampf. | Engine | **offen** — Vorschlag: Item-Felder `damage`/`damage_attr`+Fallback, siehe Chat | |
 
 **Triage-Regeln:**
 - BLOCKER/HIGH → sofort fixen (mit Test), dann weiter.

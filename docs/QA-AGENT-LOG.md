@@ -64,6 +64,8 @@
 - **Meine blinden Flecken:** StrictMode-/Timing-Artefakte in der Harness (durch `waitVisible` + Isolation-Runs minimiert; als „flaky in Suite" markiert, nie als App-Bug gewertet ohne Screenshot-/API-Beweis).
 - **Screenshots:** 48 in `frontend/e2e/qa-out/shots/` (lokal) — Schlüsselmotive: `gp*-chat/trade-open/combat-open/after-action`, `ui-*-desktop/mobile`, `gp12-*`, `gp13-social-result`. Beim Abgleich gemeinsam ansehen.
 
+| QA-A-024 | HIGH | Kampfschaden item-fremd: `combat.damage`-Würfel wurde ignoriert (nur Attribut via Proben-Engine → absurde Werte), `damage_bonus` tot, kein Attribut-je-Waffe, Merkmal-Boni wirkungslos. | Umgesetzt (s. QA-021): Waffen-Pipeline + Fallback-Fix + Tests; live verifiziert |
+
 ## Nächste Schritte
 
 1. Gemeinsam: Block GP + Kern-Blöcke nach `MANUAL-TESTPLAN.md`, Funde als `QA-###`.

@@ -518,7 +518,7 @@ class CombatServiceTest {
 
         var pa = new CombatParticipant(sessionId, attackerId, 10, 2, "A");
         var pd = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
-        pd.setHpCurrent(5);
+        pd.setHpCurrent(1);
         pd.setHpMax(5);
         when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
@@ -543,6 +543,128 @@ class CombatServiceTest {
 
         assertThat(pd.getHpCurrent()).isEqualTo(1); // statt 0 (Tod abgewendet)
         verify(entityService).spendFatePointsIfAvailable(eq(defenderId), eq(userId), any(), eq(1));
+    }
+
+    @Test
+    void weaponDamageUsesWeaponDiceAttrAndBonus() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var itemId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Held");
+        attacker.setAttributesJson("{\"koerperkraft\":14}");
+        attacker.setInventoryJson("[{\"itemId\":\"" + itemId + "\",\"quantity\":1,\"equipped\":true}]");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        setId(defender, defenderId);
+        var weapon = mock(GameItem.class);
+        when(weapon.getMetadataJson()).thenReturn(
+            "{\"damage\":\"1d4+2\",\"damage_attr\":\"koerperkraft\",\"damage_bonus\":1,\"damage_type\":\"cut\"}");
+
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        var pa = new CombatParticipant(sessionId, attackerId, 10, 2, "A");
+        var pd = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
+        pd.setHpCurrent(20);
+        pd.setHpMax(20);
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(pa, pd)));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        when(itemRepo.findById(itemId)).thenReturn(Optional.of(weapon));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of("dice_mechanics", Map.of("combat", Map.of(
+            "initiative", "1d20", "damage", "1d8"))));
+        when(participantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        var result = combatService.executeAction(userId, sessionId, attackerId, "ATTACK", defenderId, itemId);
+
+        // QA: 1d4 (1-4) + 2 (Waffe) + 1 (Bonus) + 2 (KK 14 -> floor(4/2)).
+        assertThat(result.totalDamage()).isBetween(6, 9);
+        assertThat(pd.getHpCurrent()).isEqualTo(20 - result.totalDamage());
+    }
+
+    @Test
+    void traitDamageBonusApplies() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Held");
+        attacker.setMetadataJson("{\"traits\":[\"Wütend\"]}");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        setId(defender, defenderId);
+
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        var pa = new CombatParticipant(sessionId, attackerId, 10, 2, "A");
+        var pd = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
+        pd.setHpCurrent(20);
+        pd.setHpMax(20);
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(pa, pd)));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of(
+            "dice_mechanics", Map.of("combat", Map.of("initiative", "1d20", "damage", "1d2")),
+            "traits", List.of(Map.of("name", "Wütend",
+                "effects", List.of(Map.of("target", "damage", "op", "add", "value", 2))))));
+        when(participantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        var result = combatService.executeAction(userId, sessionId, attackerId, "ATTACK", defenderId, null);
+
+        // QA: 1d2 (1-2) + 2 Merkmal-Bonus.
+        assertThat(result.totalDamage()).isBetween(3, 4);
+    }
+
+    @Test
+    void fallbackHonorsCombatDamageDice() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Held");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        setId(defender, defenderId);
+
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        var pa = new CombatParticipant(sessionId, attackerId, 10, 2, "A");
+        var pd = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
+        pd.setHpCurrent(20);
+        pd.setHpMax(20);
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(pa, pd)));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of("dice_mechanics", Map.of("combat", Map.of(
+            "initiative", "1d20", "damage", "1d2+4"))));
+        when(participantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        var result = combatService.executeAction(userId, sessionId, attackerId, "ATTACK", defenderId, null);
+
+        // QA: Fallback würfelt den Würfelteil wirklich (vorher ignoriert).
+        assertThat(result.totalDamage()).isBetween(5, 6);
     }
 
     @Test
@@ -745,9 +867,10 @@ class CombatServiceTest {
 
         var result = combatService.executeManeuver(userId, session.getId(), attackerId, defenderId, "Wuchtschlag");
 
-        assertThat(result.totalDamage()).isEqualTo(8); // 5 + 3
+        // QA: echte Würfel (Default 1d6 ohne combat.damage) + 3 Manöver-Bonus.
+        assertThat(result.totalDamage()).isBetween(4, 9);
         assertThat(result.apRemaining()).isZero();     // 2 AP - 2
-        assertThat(defenderParticipant.getHpCurrent()).isEqualTo(2);
+        assertThat(defenderParticipant.getHpCurrent()).isEqualTo(10 - result.totalDamage());
     }
 
     @Test
@@ -868,7 +991,7 @@ class CombatServiceTest {
 
         attacker.setInventoryJson("[{\"itemId\":\"" + itemId + "\",\"quantity\":1,\"equipped\":true}]");
         var weapon = mock(GameItem.class);
-        when(weapon.getMetadataJson()).thenReturn("{\"damage_type\":\"fire\"}");
+        when(weapon.getMetadataJson()).thenReturn("{\"damage_type\":\"fire\",\"damage\":\"1d2+6\"}");
 
         when(sessionRepo.findById(session.getId())).thenReturn(Optional.of(session));
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
@@ -888,8 +1011,9 @@ class CombatServiceTest {
 
         var result = combatService.executeAction(userId, session.getId(), attackerId, "ATTACK", defenderId, itemId);
 
-        assertThat(result.totalDamage()).isEqualTo(4); // 8 / 2
-        assertThat(defenderParticipant.getHpCurrent()).isEqualTo(6);
+        // QA: Waffe 1d2+6 (7-8), Feuer-Resistenz halbiert (3-4).
+        assertThat(result.totalDamage()).isBetween(3, 4);
+        assertThat(defenderParticipant.getHpCurrent()).isEqualTo(10 - result.totalDamage());
     }
 
     @Test
@@ -935,8 +1059,9 @@ class CombatServiceTest {
 
     @Test
     void armorReducesDamage() {
+        var sessionId = UUID.randomUUID();
         var session = new CombatSession(worldId, null);
-        setId(session, UUID.randomUUID());
+        setId(session, sessionId);
         var attackerId = UUID.randomUUID();
         var defenderId = UUID.randomUUID();
 
@@ -953,21 +1078,22 @@ class CombatServiceTest {
         when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
         when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
         when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
-        var participant = new CombatParticipant(session.getId(), attackerId, 15, 2, "A");
-        var defenderParticipant = new CombatParticipant(session.getId(), defenderId, 10, 2, "A");
+        when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of("dice_mechanics", Map.of("combat", Map.of(
+            "initiative", "1d20", "damage", "1d2+8"))));
+        var participant = new CombatParticipant(sessionId, attackerId, 15, 2, "A");
+        var defenderParticipant = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
         defenderParticipant.setHpCurrent(10);
         defenderParticipant.setHpMax(10);
-        when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
             .thenReturn(new java.util.ArrayList<>(List.of(participant, defenderParticipant)));
-        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt(), any()))
-            .thenReturn(new RollService.RollResult("attack", "1d8+3", new int[]{5}, 8, 0, true, null));
         when(participantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
         var result = combatService.executeAction(userId, session.getId(), attackerId, "ATTACK", defenderId, null);
 
-        assertThat(result.totalDamage()).isEqualTo(5); // 8 - 3 Ruestung
-        assertThat(defenderParticipant.getHpCurrent()).isEqualTo(5);
+        // QA: 1d2+8 (9-10) minus 3 Rüstung.
+        assertThat(result.totalDamage()).isBetween(6, 7);
+        assertThat(defenderParticipant.getHpCurrent()).isEqualTo(10 - result.totalDamage());
     }
     @Test
     void executeManeuverRejectsInsufficientAp() {

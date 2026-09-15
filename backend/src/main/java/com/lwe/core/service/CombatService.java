@@ -202,8 +202,9 @@ public class CombatService {
             }
         }
 
-        var damage = rollDamage(userId, session.getWorldId(), actorId, actionType, session.getCampaignId());
-        var damageType = resolveWeaponDamageType(actorId, itemId);
+        var weapon = resolveWeaponDamage(actorId, itemId);
+        var damage = rollDamage(session.getWorldId(), actorId, actionType, session.getCampaignId(), weapon);
+        var damageType = weapon != null ? weapon.type() : null;
         damage = applyDamageModifiers(damage, targetId, damageType);
         deductAp(actor);
 
@@ -308,8 +309,14 @@ public class CombatService {
         }
     }
 
-    /** Waffen-Schadensart aus Item-Metadata (P23-T02); nur Items im Inventar des Actors. */
-    private String resolveWeaponDamageType(UUID actorId, UUID itemId) {
+    /** Waffenschaden aus Item-Metadata (QA: item-basiert statt system-global).
+     *  Felder (alle optional): {@code damage} (Würfel, z. B. "1d6+2", Default "1d6"),
+     *  {@code damage_attr} (Attribut für Bonus, z. B. "ge"/"kk" je Waffe),
+     *  {@code damage_bonus} (flat, Default 0), {@code damage_type} (Resistenzen).
+     *  Nur Items im Inventar des Actors zählen. */
+    private record WeaponDamage(String dice, String attr, int bonus, String type) {}
+
+    private WeaponDamage resolveWeaponDamage(UUID actorId, UUID itemId) {
         if (itemId == null) return null;
         var actor = entityRepo.findById(actorId).orElse(null);
         if (actor == null || !inventoryContains(actor, itemId)) return null;
@@ -317,8 +324,15 @@ public class CombatService {
             .map(i -> {
                 if (i.getMetadataJson() == null || i.getMetadataJson().isBlank()) return null;
                 try {
-                    var t = objectMapper.readTree(i.getMetadataJson()).path("damage_type");
-                    return t.isTextual() && !t.asText().isBlank() ? t.asText() : null;
+                    var t = objectMapper.readTree(i.getMetadataJson());
+                    var type = t.path("damage_type");
+                    var typeStr = type.isTextual() && !type.asText().isBlank() ? type.asText() : null;
+                    var dice = t.path("damage").isTextual() && !t.path("damage").asText().isBlank()
+                        ? t.path("damage").asText() : "1d6";
+                    var attr = t.path("damage_attr").isTextual() && !t.path("damage_attr").asText().isBlank()
+                        ? t.path("damage_attr").asText() : null;
+                    var bonus = t.path("damage_bonus").isNumber() ? t.path("damage_bonus").asInt() : 0;
+                    return new WeaponDamage(dice, attr, bonus, typeStr);
                 } catch (Exception e) {
                     return null;
                 }
@@ -415,18 +429,100 @@ public class CombatService {
             throw new CombatException("COMBAT_RANGE_INVALID", "Target out of range (" + range + " tiles)");
     }
 
-    private int rollDamage(UUID userId, UUID worldId, UUID actorId, String actionType, UUID campaignId) {
+    /** QA: Item-basierter Schaden — Waffenwürfel + Waffenbonus + Attributbonus
+     *  (floor((Attribut-10)/2): D&D-exakt, DSA-plausibel) + Zustands-/Merkmal-Boni.
+     *  Ohne Waffe (oder ohne damage-Ausdruck) gilt combat.damage als Fallback —
+     *  dessen Würfelteil wird jetzt WIRKLICH gewürfelt (vorher ignoriert). */
+    private int rollDamage(UUID worldId, UUID actorId, String actionType, UUID campaignId,
+                           WeaponDamage weapon) {
         var entity = entityRepo.findById(actorId)
             .orElseThrow(() -> new CombatException("ENTITY_NOT_FOUND", "Actor not found"));
         var world = worldRepo.findById(worldId)
             .orElseThrow(() -> new CombatException("WORLD_NOT_FOUND", "World not found"));
         if (!isDamagingAction(world, campaignId, actionType)) return 0;
-        var damageAttr = resolveDamageAttr(entity, world, campaignId);
-        var rollResult = rollService.executeRoll(userId, worldId, actorId, damageAttr, 0, 0, campaignId);
-        var base = rollResult != null ? rollResult.total() : 0;
-        // Aktive Zustaende (P29-T01): Schadens-Modifikator
         var rules = rulesLoader.loadRules(campaignId, worldId);
-        return Math.max(0, base + conditionService.modifier(entity, rules, "damage"));
+
+        String diceExpr;
+        String attrName;
+        int flatBonus;
+        if (weapon != null) {
+            diceExpr = weapon.dice();
+            attrName = weapon.attr();
+            flatBonus = weapon.bonus();
+        } else {
+            var fallback = parseDamageExpr(combatDamageExpr(rules));
+            diceExpr = fallback.dice();
+            attrName = fallback.attr();
+            flatBonus = fallback.flat();
+        }
+
+        int total = flatBonus;
+        try {
+            total += new com.lwe.rules.DiceExpression(diceExpr).getTotal();
+        } catch (IllegalArgumentException e) {
+            // Kaputter Ausdruck: kein Würfelschaden statt Crash (Fallback: Boni).
+        }
+        if (attrName != null) {
+            int attrValue = AttributeUtils.extractAttribute(entity, attrName).orElse(10);
+            total += (int) Math.floor((attrValue - 10) / 2.0);
+        }
+        // Aktive Zustaende (P29-T01) + gewählte Merkmale: Schadens-Modifikator.
+        total += conditionService.modifier(entity, rules, "damage");
+        total += traitDamageBonus(entity, rules);
+        return Math.max(0, total);
+    }
+
+    /** Zerlegt "1d6+2" / "1d8+staerke" / "2d6" in Würfel + Flat + Attributname. */
+    private record DamageParts(String dice, String attr, int flat) {}
+
+    private DamageParts parseDamageExpr(String expr) {
+        if (expr == null || expr.isBlank()) return new DamageParts("1d6", null, 0);
+        var m = java.util.regex.Pattern.compile("^(\\d+d\\d+)(.*)$")
+            .matcher(expr.strip());
+        if (!m.matches()) return new DamageParts("1d6", null, 0);
+        var dice = m.group(1);
+        var rest = m.group(2).strip();
+        if (rest.isEmpty()) return new DamageParts(dice, null, 0);
+        var num = java.util.regex.Pattern.compile("^[+-]?(\\d+)$").matcher(rest);
+        if (num.matches()) {
+            int sign = rest.startsWith("-") ? -1 : 1;
+            return new DamageParts(dice, null, sign * Integer.parseInt(num.group(1)));
+        }
+        var attr = java.util.regex.Pattern.compile("^[+-]?([A-Za-z_äöüÄÖÜß][\\wäöüÄÖÜß]*)$")
+            .matcher(rest);
+        if (attr.matches()) return new DamageParts(dice, attr.group(1), 0);
+        return new DamageParts(dice, null, 0);
+    }
+
+    private String combatDamageExpr(Map<String, Object> rules) {
+        if (rules.get("dice_mechanics") instanceof Map<?, ?> dm
+            && dm.get("combat") instanceof Map<?, ?> combat
+            && combat.get("damage") instanceof String d && !d.isBlank()) {
+            return d;
+        }
+        return "1d6";
+    }
+
+    /** Merkmal-Boni aufs Ziel "damage" (gewählte Merkmale, Tier-Suffixe ignoriert). */
+    private int traitDamageBonus(GameEntity entity, Map<String, Object> rules) {
+        var selected = selectedTraits(entity);
+        if (selected.isEmpty()) return 0;
+        if (!(rules.get("traits") instanceof List<?> catalog)) return 0;
+        int sum = 0;
+        for (var t : catalog) {
+            if (!(t instanceof Map<?, ?> m) || !(m.get("name") instanceof String name)) continue;
+            boolean has = selected.stream().anyMatch(s -> s.equals(name) || s.startsWith(name + " "));
+            if (!has) continue;
+            if (m.get("effects") instanceof List<?> effects) {
+                for (var e : effects) {
+                    if (e instanceof Map<?, ?> em && "damage".equals(em.get("target"))
+                        && "add".equals(em.get("op")) && em.get("value") instanceof Number n) {
+                        sum += n.intValue();
+                    }
+                }
+            }
+        }
+        return sum;
     }
 
     private boolean isDamagingAction(World world, UUID campaignId, String actionType) {
@@ -495,7 +591,7 @@ public class CombatService {
             }
         }
 
-        var base = rollDamage(userId, session.getWorldId(), actorId, "ACTION", session.getCampaignId());
+        var base = rollDamage(session.getWorldId(), actorId, "ACTION", session.getCampaignId(), null);
         int bonus = 0;
         if (def.get("effects") instanceof List<?> effects) {
             for (var e : effects) {
@@ -665,10 +761,6 @@ public class CombatService {
 
     private String resolveInitiativeAttr(GameEntity entity, World world, UUID campaignId) {
         return resolveCombatAttr(world, campaignId, "initiative", "geschicklichkeit");
-    }
-
-    private String resolveDamageAttr(GameEntity entity, World world, UUID campaignId) {
-        return resolveCombatAttr(world, campaignId, "damage", "staerke");
     }
 
     private String resolveCombatAttr(World world, UUID campaignId, String combatKey, String fallback) {
