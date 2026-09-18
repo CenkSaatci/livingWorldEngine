@@ -7,12 +7,11 @@ import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.repository.GameSystemRepository;
 import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.util.WorldAccess;
-import com.lwe.rules.DiceExpressionParser;
+import com.lwe.rules.EngineResolver;
 import com.lwe.rules.RuleEngine;
 import static com.lwe.core.service.WorldEventService.EventType.*;
 import org.springframework.stereotype.Service;
 
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,12 +25,12 @@ public class RollService {
     private final WorldEventService eventService;
     private final WorldAccess worldAccess;
     private final RulesLoader rulesLoader;
-    private final Map<DiceExpressionParser.DiceSystem, RuleEngine> engines;
+    private final EngineResolver engineResolver;
     private final ObjectMapper objectMapper;
 
     public RollService(GameEntityRepository entityRepo, WorldRepository worldRepo,
                        GameSystemRepository gameSystemRepo, WorldEventService eventService,
-                       java.util.List<RuleEngine> engineList,
+                       EngineResolver engineResolver,
                        RulesLoader rulesLoader,
                        ObjectMapper objectMapper,
                        WorldAccess worldAccess) {
@@ -42,10 +41,7 @@ public class RollService {
         this.eventService = eventService;
         this.worldAccess = worldAccess;
         this.rulesLoader = rulesLoader;
-        this.engines = new EnumMap<>(DiceExpressionParser.DiceSystem.class);
-        for (var engine : engineList) {
-            this.engines.put(engine.getDiceSystem(), engine);
-        }
+        this.engineResolver = engineResolver;
     }
 
     public RollResult executeRoll(UUID userId, UUID worldId, UUID entityId,
@@ -87,24 +83,11 @@ public class RollService {
     }
 
     private RuleEngine getEngineForWorld(com.lwe.core.domain.World world, UUID campaignId) {
-        var gs = rulesLoader.loadSystemByCampaign(campaignId);
-        if (gs == null) gs = rulesLoader.loadSystem(world);
-        if (gs != null) {
-            try {
-                var system = DiceExpressionParser.detect(gs.getRulesJson());
-                var engine = engines.get(system);
-                if (engine != null) return engine;
-            } catch (IllegalArgumentException e) {
-                // unsupported dice system → fall through to fallback
-            }
-        }
-        return engines.getOrDefault(DiceExpressionParser.DiceSystem.D20,
-            engines.values().iterator().next());
+        return engineResolver.resolve(world, campaignId);
     }
 
     private String resolveDiceExpression(com.lwe.core.domain.World world, UUID campaignId) {
-        var gs = rulesLoader.loadSystemByCampaign(campaignId);
-        if (gs == null) gs = rulesLoader.loadSystem(world);
+        var gs = rulesLoader.resolveSystem(campaignId, world);
         if (gs != null) {
             try {
                 var tree = objectMapper.readTree(gs.getRulesJson());

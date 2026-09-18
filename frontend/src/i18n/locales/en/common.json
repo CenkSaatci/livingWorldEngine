@@ -99,6 +99,10 @@
     "remaining": "{{remaining}}/{{total}} remaining",
     "apCost": "AP: {{cost}}",
     "maneuverFailed": "Maneuver failed",
+    "hitFor": "{{name}} takes {{damage}} damage",
+    "missed": "Attack missed {{name}}",
+    "done": "Action performed",
+    "actionFailed": "Action failed",
     "noActiveCombat": "No active combat — start one from the game view.",
     "startFromWorld": "Start combat from the game view"
   },

@@ -1,8 +1,12 @@
 package com.lwe.core.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -11,6 +15,11 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ModifierService {
+
+    private static final Logger log = LoggerFactory.getLogger(ModifierService.class);
+
+    /** Bare-Platzhalter nur als ganzes Wort ersetzen (kein Teilstring-Treffer in "nickname"). */
+    private static final Pattern BARE_NAME = Pattern.compile("\\bname\\b");
 
     /**
      * Berechnet Modifier für alle Attribute.
@@ -26,14 +35,16 @@ public class ModifierService {
         var result = new HashMap<String, Double>();
         var allowed = attributeValues.keySet();
         for (var entry : attributeValues.entrySet()) {
-            // Ersetze @{name} durch den tatsächlichen Wert für diese Berechnung
-            var expr = modifierFormula.replace("@{name}", String.valueOf(entry.getValue()))
-                .replace("@name", String.valueOf(entry.getValue()))
-                .replace("name", String.valueOf(entry.getValue()));
+            var value = String.valueOf(entry.getValue());
+            var expr = modifierFormula.replace("@{name}", value).replace("@name", value);
+            expr = BARE_NAME.matcher(expr).replaceAll(value);
             try {
                 var evaluator = new FormulaEvaluator(expr, allowed);
                 result.put(entry.getKey(), evaluator.evaluate(attributeValues));
             } catch (FormulaEvaluator.EvaluationException e) {
+                // Sichtbar machen statt still 0: Regel-Fehler bleibt am Sheet erkennbar.
+                log.warn("modifierFormula '{}' fuer Attribut '{}' nicht auswertbar: {}",
+                    modifierFormula, entry.getKey(), e.getMessage());
                 result.put(entry.getKey(), 0.0);
             }
         }

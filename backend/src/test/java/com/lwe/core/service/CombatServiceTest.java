@@ -27,7 +27,6 @@ class CombatServiceTest {
     private final WorldRepository worldRepo = mock();
     private final GameSystemRepository gameSystemRepo = mock();
     private final WorldEventService eventService = mock();
-    private final RollService rollService = mock();
     private final AbilityRepository abilityRepo = mock();
     private final SimpMessagingTemplate messaging = mock();
     private final WorldAccess worldAccess = mock();
@@ -45,8 +44,9 @@ class CombatServiceTest {
     @BeforeEach
     void setUp() {
         combatService = new CombatService(sessionRepo, participantRepo, entityRepo,
-            worldRepo, gameSystemRepo, eventService, rollService, abilityRepo, messaging, worldAccess,
-            new com.lwe.core.util.EntityAccess(entityRepo, worldAccess), List.of(new D20RuleEngine()),
+            worldRepo, gameSystemRepo, eventService, abilityRepo, messaging, worldAccess,
+            new com.lwe.core.util.EntityAccess(entityRepo, worldAccess),
+            new com.lwe.rules.EngineResolver(rulesLoader, List.of(new D20RuleEngine())),
             new ObjectMapper(), rulesLoader, campaignMemberService, conditionService, itemRepo,
             derivedValueService, entityService);
     }
@@ -203,8 +203,6 @@ class CombatServiceTest {
         defenderParticipant.setHpMax(10);
         when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
             .thenReturn(List.of(participant, defenderParticipant));
-        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt()))
-            .thenReturn(new RollService.RollResult("attack", "1d8+3", new int[]{5}, 8, 0, true, null));
         when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
         var result = combatService.executeAction(userId, session.getId(), attackerId, "ATTACK", defenderId, null);
@@ -246,10 +244,6 @@ class CombatServiceTest {
         defenderParticipant.setHpMax(10);
         when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
             .thenReturn(new java.util.ArrayList<>(List.of(participant, defenderParticipant)));
-        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt(), any()))
-            .thenReturn(new RollService.RollResult("attack", "1d8+3", new int[]{5}, 8, 0, true, null));
-        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt()))
-            .thenReturn(new RollService.RollResult("attack", "1d8+3", new int[]{5}, 8, 0, true, null));
         when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
         var result = combatService.executeAction(userId, session.getId(), attackerId, "ACTION", defenderId, null);
@@ -452,10 +446,6 @@ class CombatServiceTest {
         when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
         when(rulesLoader.loadRules(any(), any())).thenReturn(attackRules());
         stubDerivedAc(1); // immer treffer
-        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt(), any()))
-            .thenReturn(new RollService.RollResult("damage", "1d8", new int[]{5}, 8, 0, true, null));
-        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt()))
-            .thenReturn(new RollService.RollResult("damage", "1d8", new int[]{5}, 8, 0, true, null));
         when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
         var result = combatService.executeAction(userId, sessionId, attackerId, "ACTION", defenderId, null);
@@ -531,10 +521,6 @@ class CombatServiceTest {
             "attack", Map.of("attribute", "geschick", "target", "ac", "dice", "1d20"))),
             "fate", Map.of("avoidDeathCost", 1)));
         stubDerivedAc(1); // immer Treffer
-        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt(), any()))
-            .thenReturn(new RollService.RollResult("damage", "1d8", new int[]{8}, 8, 0, true, null));
-        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt()))
-            .thenReturn(new RollService.RollResult("damage", "1d8", new int[]{8}, 8, 0, true, null));
         when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
         when(entityService.spendFatePointsIfAvailable(eq(defenderId), eq(userId), any(), eq(1)))
             .thenReturn(true);
@@ -1009,8 +995,7 @@ class CombatServiceTest {
             .thenReturn(new java.util.ArrayList<>(List.of(
                 new CombatParticipant(sessionId, a.getId(), 10, 2, "A"),
                 new CombatParticipant(sessionId, b.getId(), 10, 2, "B"))));
-        when(entityRepo.findById(a.getId())).thenReturn(Optional.of(a));
-        when(entityRepo.findById(b.getId())).thenReturn(Optional.of(b));
+        when(entityRepo.findAllById(any())).thenReturn(List.of(a, b));
         doThrow(new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
             .when(worldAccess).requireDm(eq(worldId), eq(stranger));
 
@@ -1035,8 +1020,7 @@ class CombatServiceTest {
             .thenReturn(new java.util.ArrayList<>(List.of(
                 new CombatParticipant(sessionId, mine.getId(), 10, 2, "A"),
                 new CombatParticipant(sessionId, foe.getId(), 10, 2, "B"))));
-        when(entityRepo.findById(mine.getId())).thenReturn(Optional.of(mine));
-        when(entityRepo.findById(foe.getId())).thenReturn(Optional.of(foe));
+        when(entityRepo.findAllById(any())).thenReturn(List.of(mine, foe));
 
         // beteiligt (ohne DM-Stub) + DM (requireDm default no-op bei manuellem Mock)
         assertThat(combatService.getParticipants(sessionId, userId)).hasSize(2);
@@ -1062,8 +1046,7 @@ class CombatServiceTest {
             .thenReturn(new java.util.ArrayList<>(List.of(
                 new CombatParticipant(sessionId, a.getId(), 10, 2, "A"),
                 new CombatParticipant(sessionId, b.getId(), 10, 2, "B"))));
-        when(entityRepo.findById(a.getId())).thenReturn(Optional.of(a));
-        when(entityRepo.findById(b.getId())).thenReturn(Optional.of(b));
+        when(entityRepo.findAllById(any())).thenReturn(List.of(a, b));
         // Kein Welt-DM ...
         doThrow(new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
             .when(worldAccess).requireDm(worldId, dm);
@@ -1216,8 +1199,6 @@ class CombatServiceTest {
         defenderParticipant.setHpMax(10);
         when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
             .thenReturn(new java.util.ArrayList<>(List.of(participant, defenderParticipant)));
-        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt(), any()))
-            .thenReturn(new RollService.RollResult("attack", "1d6", new int[]{4}, 4, 0, true, null));
         when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
         var result = combatService.executeAction(userId, session.getId(), attackerId, "ACTION", defenderId, null);
@@ -1338,8 +1319,6 @@ class CombatServiceTest {
         defenderParticipant.setHpMax(10);
         when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
             .thenReturn(new java.util.ArrayList<>(java.util.List.of(participant, defenderParticipant)));
-        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt(), any()))
-            .thenReturn(new RollService.RollResult("dmg", "1d8", new int[]{5}, 5, 0, true, null));
         when(participantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
@@ -1386,10 +1365,6 @@ class CombatServiceTest {
                 ? List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("at", 30, null, null))
                 : List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("pa", 10, null, null));
         });
-        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt(), any()))
-            .thenReturn(new RollService.RollResult("damage", "1d8", new int[]{5}, 5, 0, true, null));
-        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt()))
-            .thenReturn(new RollService.RollResult("damage", "1d8", new int[]{5}, 5, 0, true, null));
         when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
         var result = combatService.executeAction(userId, sessionId, attackerId, "ACTION", defenderId, null);
@@ -1482,8 +1457,6 @@ class CombatServiceTest {
         defenderParticipant.setHpMax(10);
         when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
             .thenReturn(new java.util.ArrayList<>(List.of(participant, defenderParticipant)));
-        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt(), any()))
-            .thenReturn(new RollService.RollResult("attack", "1d8+3", new int[]{5}, 8, 0, true, null));
         when(participantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 
@@ -1525,8 +1498,6 @@ class CombatServiceTest {
         defenderParticipant.setHpMax(12);
         when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
             .thenReturn(new java.util.ArrayList<>(List.of(participant, defenderParticipant)));
-        when(rollService.executeRoll(any(), any(), any(), any(), anyInt(), anyInt()))
-            .thenReturn(new RollService.RollResult("dmg", "1d6", new int[]{5}, 5, 0, true, null));
         when(participantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(eventService.publish(any(), any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
 

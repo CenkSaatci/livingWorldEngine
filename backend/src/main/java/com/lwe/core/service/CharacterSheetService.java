@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.api.dto.SheetResponse;
 import com.lwe.core.domain.*;
 import com.lwe.core.repository.*;
+import com.lwe.core.util.EntityJson;
 import com.lwe.core.util.RuleNames;
 import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
@@ -33,8 +34,6 @@ public class CharacterSheetService {
     private final com.lwe.core.util.EntityAccess entityAccess;
     private final CampaignMemberService campaignMemberService;
 
-    private static final TypeReference<Map<String, Integer>> ATTR_MAP_TYPE = new TypeReference<>() {};
-    private static final TypeReference<List<Map<String, Object>>> LIST_MAP_TYPE = new TypeReference<>() {};
     private static final TypeReference<Map<String, Object>> OVERRIDE_TYPE = new TypeReference<>() {};
 
     public CharacterSheetService(GameEntityRepository entityRepo, WorldRepository worldRepo,
@@ -186,8 +185,7 @@ public class CharacterSheetService {
 
         // Level aus XP berechnen
         int level = 1;
-        var gs = rulesLoader.loadSystemByCampaign(campaignId);
-        if (gs == null) gs = rulesLoader.loadSystem(world);
+        var gs = rulesLoader.resolveSystem(campaignId, world);
         if (gs != null) {
             level = levelUpService.getLevel(entity, gs);
         }
@@ -252,18 +250,7 @@ public class CharacterSheetService {
 
     /** Ausgewählte Traits des Charakters (metadataJson.traits, z. B. ["Glück II", "Zauberer"]). */
     private List<String> selectedTraits(GameEntity entity) {
-        if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank()) return List.of();
-        try {
-            var node = objectMapper.readTree(entity.getMetadataJson()).path("traits");
-            if (!node.isArray()) return List.of();
-            var list = new java.util.ArrayList<String>();
-            node.forEach(n -> {
-                if (n.isTextual()) list.add(n.asText());
-            });
-            return list;
-        } catch (Exception e) {
-            return List.of();
-        }
+        return EntityJson.traits(objectMapper, entity.getMetadataJson());
     }
 
     @SuppressWarnings("unchecked")
@@ -384,12 +371,7 @@ public class CharacterSheetService {
     }
 
     private Map<String, Integer> parsePerCharacterSkills(GameEntity entity) {
-        if (entity.getSkillsJson() == null || entity.getSkillsJson().isBlank()) return Map.of();
-        try {
-            return objectMapper.readValue(entity.getSkillsJson(), ATTR_MAP_TYPE);
-        } catch (Exception e) {
-            return Map.of();
-        }
+        return EntityJson.skills(objectMapper, entity.getSkillsJson());
     }
 
     /** P1: benannte Difficulty-Level aus dem Regelwerk (generisch). */
@@ -419,14 +401,7 @@ public class CharacterSheetService {
     }
 
     private Map<String, Integer> parseAttributes(GameEntity entity) {
-        if (entity.getAttributesJson() == null || entity.getAttributesJson().isBlank() || entity.getAttributesJson().equals("{}")) {
-            return Map.of();
-        }
-        try {
-            return objectMapper.readValue(entity.getAttributesJson(), ATTR_MAP_TYPE);
-        } catch (Exception e) {
-            return Map.of();
-        }
+        return EntityJson.attributes(objectMapper, entity.getAttributesJson());
     }
 
     private List<SheetResponse.ConditionalInfo> evaluateConditionals(

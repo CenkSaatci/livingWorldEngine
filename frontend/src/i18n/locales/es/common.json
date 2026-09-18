@@ -100,6 +100,10 @@
     "remaining": "{{remaining}}/{{total}} restantes",
     "apCost": "PA: {{cost}}",
     "maneuverFailed": "Maniobra fallida",
+    "hitFor": "{{name}} recibe {{damage}} de daño",
+    "missed": "Ataque fallido contra {{name}}",
+    "done": "Acción realizada",
+    "actionFailed": "Acción fallida",
     "startFromWorld": "Iniciar combate desde la vista de juego"
   },
   "entityTimeline": {

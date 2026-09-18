@@ -4,7 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.NpcIntent;
 import com.lwe.core.repository.GameEntityRepository;
+import com.lwe.core.service.AttributeUtils;
 import com.lwe.core.service.FactionService;
+import com.lwe.core.service.FormulaEvaluator;
+import com.lwe.core.service.RulesLoader;
 import com.lwe.core.service.WorldEventService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,14 +40,16 @@ public class IntentExecutor {
     private final WorldEventService eventService;
     private final FactionService factionService;
     private final ObjectMapper objectMapper;
+    private final RulesLoader rulesLoader;
 
     public IntentExecutor(GameEntityRepository entityRepo, WorldEventService eventService,
                           FactionService factionService,
-                        ObjectMapper objectMapper) {
+                        ObjectMapper objectMapper, RulesLoader rulesLoader) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.eventService = eventService;
         this.factionService = factionService;
+        this.rulesLoader = rulesLoader;
     }
 
     /**
@@ -96,8 +101,26 @@ public class IntentExecutor {
         var npc = entityRepo.findById(intent.getNpcId()).orElse(null);
         if (npc == null) return;
 
-        // Schaden würfeln (vereinfacht: 1d6 Basis-Schaden ohne Attribut)
-        var damage = java.util.concurrent.ThreadLocalRandom.current().nextInt(1, 7);
+        // ADR-014/Vision: Schaden aus dem System statt hartkodiertem 1d6;
+        // kaputter Ausdruck = Angriff entfaellt (fail-closed), kein stiller Ersatz.
+        var rules = rulesLoader.loadRules(intent.getCampaignId(), intent.getWorldId());
+        var expr = combatDamageExpr(rules);
+        var parts = DamageExpression.parse(expr);
+        if (parts == null) {
+            log.error("NPC {}: Schadensausdruck '{}' nicht parsbar — Angriff uebersprungen",
+                npc.getName(), expr);
+            return;
+        }
+        int damage;
+        try {
+            damage = parts.flat() + new com.lwe.rules.DiceExpression(parts.dice()).getTotal();
+            if (parts.attr() != null) damage += damageAttrBonus(npc, rules, parts.attr());
+        } catch (IllegalArgumentException e) {
+            log.error("NPC {}: Schadensausdruck '{}' nicht auswertbar ({}): Angriff uebersprungen",
+                npc.getName(), expr, e.getMessage());
+            return;
+        }
+        damage = Math.max(0, damage);
 
         eventService.publish(intent.getWorldId(), COMBAT_ACTION_EXECUTED,
             intent.getNpcId(), null, Map.of(
@@ -106,6 +129,33 @@ public class IntentExecutor {
                 "reasoning", intent.getReasoning()
             ));
         log.info("NPC {} attacks for {} damage", npc.getName(), damage);
+    }
+
+    /** System-Schadensausdruck; fehlend = Default 1d6 (ADR-014). */
+    private static String combatDamageExpr(Map<String, Object> rules) {
+        if (rules.get("dice_mechanics") instanceof Map<?, ?> dm
+            && dm.get("combat") instanceof Map<?, ?> combat
+            && combat.get("damage") instanceof String d && !d.isBlank()) {
+            return d;
+        }
+        return "1d6";
+    }
+
+    /** Attribut-Schadenbonus per System-Formel (Default = dokumentierter D&D-Modifikator). */
+    private static int damageAttrBonus(GameEntity npc, Map<String, Object> rules, String attr) {
+        String formula = "floor((attr-10)/2)";
+        if (rules.get("dice_mechanics") instanceof Map<?, ?> dm
+            && dm.get("combat") instanceof Map<?, ?> combat
+            && combat.get("damage_attr_bonus") instanceof String f && !f.isBlank()) {
+            formula = f;
+        }
+        int value = AttributeUtils.extractAttribute(npc, attr).orElse(10);
+        try {
+            return (int) Math.floor(FormulaEvaluator.eval(
+                formula, Map.of("attr", value), java.util.Set.of("attr")));
+        } catch (FormulaEvaluator.EvaluationException e) {
+            throw new IllegalArgumentException("damage_attr_bonus: " + e.getMessage());
+        }
     }
 
     private void executeSpeak(NpcIntent intent) {

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.GameSystem;
 import com.lwe.core.repository.GameEntityRepository;
+import com.lwe.core.util.EntityJson;
 import com.lwe.core.util.RuleNames;
 import com.lwe.core.util.WorldAccess;
 import com.lwe.rules.DiceExpression;
@@ -77,8 +78,7 @@ public class RestService {
      */
     @SuppressWarnings("unchecked")
     private void restoreCastResources(GameEntity entity, UUID campaignId, String restType) {
-        var gs = rulesLoader.loadSystemByCampaign(campaignId);
-        if (gs == null) gs = rulesLoader.loadSystem(entity.getWorldId());
+        var gs = rulesLoader.resolveSystem(campaignId, entity.getWorldId());
         if (gs == null) return;
         try {
             var rules = mapper.readValue(gs.getRulesJson(),
@@ -131,16 +131,7 @@ public class RestService {
     }
 
     private List<String> selectedTraits(GameEntity entity) {
-        try {
-            if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank()) return List.of();
-            var node = mapper.readTree(entity.getMetadataJson()).path("traits");
-            if (!node.isArray()) return List.of();
-            var out = new java.util.ArrayList<String>();
-            node.forEach(n -> { if (n.isTextual()) out.add(n.asText()); });
-            return out;
-        } catch (Exception e) {
-            return List.of();
-        }
+        return EntityJson.traits(mapper, entity.getMetadataJson());
     }
 
     private GameEntity findEntity(UUID entityId, UUID userId) {
@@ -159,7 +150,13 @@ public class RestService {
             healed = Math.max(0, entity.getHpMax() - entity.getHpCurrent());
             entity.setHpCurrent(entity.getHpMax());
         } else if (hpExpr.endsWith("%")) {
-            var pct = Integer.parseInt(hpExpr.replace("%", ""));
+            int pct;
+            try {
+                pct = Integer.parseInt(hpExpr.replace("%", "").trim());
+            } catch (NumberFormatException e) {
+                log.warn("Rest-Config hp '{}' ist kein gueltiger Prozentwert", hpExpr);
+                return;
+            }
             var pctHeal = (int) Math.round(entity.getHpMax() * pct / 100.0);
             healed = Math.max(0, Math.min(pctHeal, entity.getHpMax() - entity.getHpCurrent()));
             entity.setHpCurrent(entity.getHpCurrent() + healed);
@@ -190,8 +187,7 @@ public class RestService {
     }
 
     private RestConfig parseRestConfig(UUID campaignId, UUID worldId, String restType) {
-        var gs = rulesLoader.loadSystemByCampaign(campaignId);
-        if (gs == null) gs = rulesLoader.loadSystem(worldId);
+        var gs = rulesLoader.resolveSystem(campaignId, worldId);
         if (gs == null) return null;
         try {
             var tree = mapper.readTree(gs.getRulesJson());

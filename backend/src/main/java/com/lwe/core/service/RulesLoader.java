@@ -104,6 +104,19 @@ public class RulesLoader {
         return null;
     }
 
+    /**
+     * System der Kampagne (inkl. gepinntem Snapshot); der frühere Welt-Fallback
+     * ist seit P25-T06 leer, bleibt aber für Übergangs-Code erhalten.
+     */
+    public GameSystem resolveSystem(UUID campaignId, World world) {
+        var gs = loadSystemByCampaign(campaignId);
+        return gs != null ? gs : loadSystem(world);
+    }
+
+    public GameSystem resolveSystem(UUID campaignId, UUID worldId) {
+        return resolveSystem(campaignId, worldRepo.findById(worldId).orElse(null));
+    }
+
     /** Liefert das GameSystem zur worldId oder null. */
     public GameSystem loadSystem(UUID worldId) {
         if (worldId == null) return null;

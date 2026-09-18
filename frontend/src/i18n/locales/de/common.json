@@ -99,6 +99,10 @@
     "remaining": "{{remaining}}/{{total}} verbleibend",
     "apCost": "AP: {{cost}}",
     "maneuverFailed": "Manöver fehlgeschlagen",
+    "hitFor": "{{name}} erleidet {{damage}} Schaden",
+    "missed": "Angriff verfehlt {{name}}",
+    "done": "Aktion ausgeführt",
+    "actionFailed": "Aktion fehlgeschlagen",
     "noActiveCombat": "Kein aktiver Kampf — starte einen aus der Spielansicht.",
     "startFromWorld": "Kampf aus der Spielansicht starten"
   },

@@ -68,12 +68,25 @@ public class LocationController {
         var loc = service.update(locationId, user.getId(),
             body.get("type"), body.get("name"), body.get("description"),
             body.get("history"),
-            body.containsKey("population") ? Integer.parseInt(body.get("population")) : null,
-            body.containsKey("wealth") ? Integer.parseInt(body.get("wealth")) : null,
+            parseIntOrNull(body, "population"),
+            parseIntOrNull(body, "wealth"),
             body.get("services"), body.get("factions"),
             body.containsKey("isCapital") ? Boolean.parseBoolean(body.get("isCapital")) : null,
             body.get("positionJson"));
         return ResponseEntity.ok(LocationResponse.from(loc));
+    }
+
+    /** Boundary-Validierung: kaputte Zahl im Body => 400 statt 500. */
+    private static Integer parseIntOrNull(Map<String, String> body, String key) {
+        if (!body.containsKey(key)) return null;
+        var raw = body.get(key);
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            return Integer.valueOf(raw.trim());
+        } catch (NumberFormatException e) {
+            throw new LocationService.LocationException("INVALID_INPUT",
+                key + " must be a number");
+        }
     }
 
     public record CreateRequest(

@@ -1,6 +1,5 @@
 package com.lwe.core.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.api.dto.ProbeResponse;
 import com.lwe.core.domain.GameEntity;
@@ -8,6 +7,7 @@ import com.lwe.core.domain.World;
 import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.repository.GameSystemRepository;
 import com.lwe.core.repository.WorldRepository;
+import com.lwe.core.util.EntityJson;
 import com.lwe.core.util.RuleNames;
 import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
@@ -99,7 +99,9 @@ public class ProbeService {
     }
 
     /** SM-01 (ADR-013): Soziale Probe = Skill-Probe mit Beziehungs-Modifikator
-     *  (socialAction aus {@code social_actions[]}, Ziel = socialTargetId). */
+     *  (socialAction aus {@code social_actions[]}, Ziel = socialTargetId).
+     *  @Transactional: Fate-Ausgabe + Zustands-Effekte sind eine Einheit (H-2). */
+    @Transactional
     public ProbeResponse executeProbe(UUID entityId, UUID userId, String skillName,
                                        int target, boolean advantage, UUID campaignId,
                                        ProbeOptions options, String socialAction, UUID socialTargetId) {
@@ -375,21 +377,11 @@ public class ProbeService {
     }
 
     private Map<String, Integer> parsePerCharacterSkills(GameEntity entity) {
-        if (entity.getSkillsJson() == null || entity.getSkillsJson().isBlank()) return Map.of();
-        try {
-            return objectMapper.readValue(entity.getSkillsJson(), new TypeReference<>() {});
-        } catch (Exception e) {
-            return Map.of();
-        }
+        return EntityJson.skills(objectMapper, entity.getSkillsJson());
     }
 
     private Map<String, Integer> parseAttributes(GameEntity entity) {
-        if (entity.getAttributesJson() == null || entity.getAttributesJson().isBlank()) return Map.of();
-        try {
-            return objectMapper.readValue(entity.getAttributesJson(), new TypeReference<>() {});
-        } catch (Exception e) {
-            return Map.of();
-        }
+        return EntityJson.attributes(objectMapper, entity.getAttributesJson());
     }
 
     /** B3: Zauber/Liturgien wirken — Probe + Ressourcen-Abzug (AsP/KaP). */
@@ -412,7 +404,7 @@ public class ProbeService {
             .filter(s -> s.get("name") instanceof String n && RuleNames.eq(n, skillName))
             .findFirst()
             .orElseThrow(() -> new CastException("CAST_SKILL_NOT_FOUND", "Skill not found"));
-        var casting = (Map<String, Object>) skill.get("casting");
+        var casting = skill.get("casting") instanceof Map<?, ?> cm ? (Map<String, Object>) cm : null;
         if (casting == null)
             throw new CastException("CAST_NOT_CASTABLE", "Skill is not castable");
         // P1: Ressourcen sind generisch (asp/kap/mp/slot_1/…); max kommt aus
@@ -486,16 +478,7 @@ public class ProbeService {
     }
 
     private List<String> entityTraits(GameEntity entity) {
-        if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank()) return List.of();
-        try {
-            var node = objectMapper.readTree(entity.getMetadataJson()).path("traits");
-            if (!node.isArray()) return List.of();
-            var out = new java.util.ArrayList<String>();
-            node.forEach(n -> { if (n.isTextual()) out.add(n.asText()); });
-            return out;
-        } catch (Exception e) {
-            return List.of();
-        }
+        return EntityJson.traits(objectMapper, entity.getMetadataJson());
     }
 
     private com.fasterxml.jackson.databind.node.ObjectNode readMeta(GameEntity entity) {

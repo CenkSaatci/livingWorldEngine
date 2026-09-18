@@ -28,7 +28,8 @@ class RollServiceTest {
     private final RulesLoader rulesLoader = mock();
 
     private final RollService service = new RollService(entityRepo, worldRepo,
-        gameSystemRepo, eventService, List.of(new D20RuleEngine()),
+        gameSystemRepo, eventService,
+        new com.lwe.rules.EngineResolver(rulesLoader, List.of(new D20RuleEngine())),
             rulesLoader, new ObjectMapper(), worldAccess);
 
     @Test

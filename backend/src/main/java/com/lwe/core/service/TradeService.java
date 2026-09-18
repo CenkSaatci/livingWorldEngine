@@ -113,7 +113,7 @@ public class TradeService {
 
     private void moveItems(GameEntity from, GameEntity to, List<Map<String, Object>> items) {
         for (var item : items) {
-            var itemId = UUID.fromString(String.valueOf(item.get("itemId")));
+            var itemId = parseItemId(item.get("itemId"));
             var qty = ((Number) item.get("quantity")).intValue();
             // QA-Audit: Transfer als Engine-Aktion — der Trade selbst (Propose+Accept
             // beider Teilnehmer) ist die Autorisierung, nicht die Kontrolle des Users
@@ -157,11 +157,20 @@ public class TradeService {
         return entity;
     }
 
+    /** Boundary: kaputte Item-ID im Trade-Payload => 400 statt 500. */
+    private static UUID parseItemId(Object raw) {
+        try {
+            return UUID.fromString(String.valueOf(raw));
+        } catch (IllegalArgumentException e) {
+            throw new TradeException("INVALID_INPUT", "itemId is not a valid UUID");
+        }
+    }
+
     /** Validiert Items (Existenz + Bestand beim Besitzer) und liefert kanonisches JSON. */
     private String checkItems(GameEntity owner, List<Map<String, Object>> items, String side) {
         var clean = new ArrayList<Map<String, Object>>();
         for (var item : items == null ? List.<Map<String, Object>>of() : items) {
-            var itemId = UUID.fromString(String.valueOf(item.get("itemId")));
+            var itemId = parseItemId(item.get("itemId"));
             var qty = item.get("quantity") instanceof Number n ? n.intValue() : 0;
             if (qty < 1)
                 throw new TradeException("TRADE_INVALID_QUANTITY", "Quantity must be >= 1 (" + side + ")");

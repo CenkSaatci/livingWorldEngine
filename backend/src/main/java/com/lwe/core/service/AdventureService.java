@@ -200,20 +200,35 @@ public class AdventureService {
 
         if (choice.getSkillCheck() != null && !choice.getSkillCheck().isBlank()) {
             // Evaluate skill check via Rule-Engine
+            com.fasterxml.jackson.databind.JsonNode tree;
             try {
-                var tree = objectMapper.readTree(choice.getSkillCheck());
-                var skill = tree.path("skill").asText("staerke");
-                var modifier = tree.path("modifier").asInt(0);
-                var target = tree.path("target").asInt(10);
+                tree = objectMapper.readTree(choice.getSkillCheck());
+            } catch (Exception e) {
+                throw new AdventureException("ADVENTURE_SKILLCHECK_INVALID",
+                    "Skillcheck-JSON unlesbar");
+            }
+            var skill = tree.path("skill").asText("").strip();
+            var modifier = tree.path("modifier").asInt(0);
+            var target = tree.path("target").asInt(10);
 
-                var worldId = adv.getWorldId();
-                // Audit T7: deterministisch die zuletzt angelegte Kampagne der Fork-Welt
-                // (Fork-Welten gehoeren 1:1 zu genau einer Kampagne).
-                var campaignId = campaignRepo.findByWorldId(worldId).stream()
-                    .max(java.util.Comparator.comparing(Campaign::getCreatedAt))
-                    .map(Campaign::getId).orElse(null);
-                var rules = rulesLoader.loadRules(campaignId, worldId);
+            var worldId = adv.getWorldId();
+            // Audit T7: deterministisch die zuletzt angelegte Kampagne der Fork-Welt
+            // (Fork-Welten gehoeren 1:1 zu genau einer Kampagne).
+            var campaignId = campaignRepo.findByWorldId(worldId).stream()
+                .max(java.util.Comparator.comparing(Campaign::getCreatedAt))
+                .map(Campaign::getId).orElse(null);
+            var rules = rulesLoader.loadRules(campaignId, worldId);
+            // Vision-Fix: kein deutsches Hardcode-Attribut mehr — fehlt der Skill,
+            // greift der erste Skill des Systems; ohne Skills ist es ein Autorenfehler.
+            if (skill.isEmpty()) {
+                skill = firstSkillName(rules);
+                if (skill == null) {
+                    throw new AdventureException("ADVENTURE_SKILLCHECK_INVALID",
+                        "Skillcheck ohne Skill und System ohne Skills");
+                }
+            }
 
+            try {
                 if ("d20_3attr".equals(ProbeService.resolveProbeType(rules))) {
                     // T1: DSA-Proben (3W20) laufen über den ProbeService; modifier = Difficulty.
                     var probe = probeService.executeProbe(entityId, userId, skill, target, false,
@@ -375,6 +390,18 @@ public class AdventureService {
 
     private void verifyWorldAccess(UUID worldId, UUID userId) {
         worldAccess.requireAccess(worldId, userId);
+    }
+
+    /** System-agnostischer Default fuer Skillchecks ohne konfigurierten Skill. */
+    private static String firstSkillName(Map<String, Object> rules) {
+        if (rules.get("skills") instanceof List<?> skills) {
+            for (var s : skills) {
+                if (s instanceof Map<?, ?> m && m.get("name") instanceof String n && !n.isBlank()) {
+                    return n;
+                }
+            }
+        }
+        return null;
     }
 
     public record AdvanceResult(AdventureNode nextNode, boolean completed, boolean skillCheckSuccess) {}

@@ -53,7 +53,9 @@ class RestServiceTest {
     private void stubSystem(String rulesJson) {
         var gs = new GameSystem("D20", 1, rulesJson.startsWith("{") ? rulesJson : "{\"version\":1,\"attributes\":[]," + rulesJson + "}", "{}");
         setId(gs, gameSystemId);
-        when(rulesLoader.loadSystem(any(UUID.class))).thenReturn(gs);
+        // campaignId kann null sein (Welt-Rast) — nullable-Matcher statt any(Class).
+        when(rulesLoader.resolveSystem(org.mockito.ArgumentMatchers.nullable(UUID.class), any(UUID.class)))
+            .thenReturn(gs);
     }
 
     private static final String CAST_REST_RULES = """
@@ -117,7 +119,8 @@ class RestServiceTest {
         var gs = new GameSystem("D20", 1,
             "{\"version\":1,\"attributes\":[]," + NEW_REST_CONFIG + "}", "{}");
         setId(gs, gameSystemId);
-        when(rulesLoader.loadSystemByCampaign(campaignId)).thenReturn(gs);
+        when(rulesLoader.resolveSystem(org.mockito.ArgumentMatchers.nullable(UUID.class), any(UUID.class)))
+            .thenReturn(gs);
         when(entityRepo.findById(entity.getId())).thenReturn(Optional.of(entity));
         when(entityRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 

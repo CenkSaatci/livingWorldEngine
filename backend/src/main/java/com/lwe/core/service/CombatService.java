@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.api.dto.ParticipantResponse;
 import com.lwe.core.domain.*;
 import com.lwe.core.repository.*;
+import com.lwe.core.util.EntityJson;
 import com.lwe.core.util.RuleNames;
-import com.lwe.rules.DiceExpressionParser;
+import com.lwe.rules.DamageExpression;
+import com.lwe.rules.EngineResolver;
 import com.lwe.rules.RuleEngine;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -23,7 +25,6 @@ public class CombatService {
     private final WorldRepository worldRepo;
     private final GameSystemRepository gameSystemRepo;
     private final WorldEventService eventService;
-    private final RollService rollService;
     private final AbilityRepository abilityRepo;
     private final SimpMessagingTemplate messaging;
     private final com.lwe.core.util.WorldAccess worldAccess;
@@ -32,10 +33,16 @@ public class CombatService {
     private final DerivedValueService derivedValueService;
     private final EntityService entityService;
     private final CampaignMemberService campaignMemberService;
-    private final Map<DiceExpressionParser.DiceSystem, RuleEngine> engines;
+    private final EngineResolver engineResolver;
     private final ObjectMapper objectMapper;
     private final ConditionService conditionService;
     private final GameItemRepository itemRepo;
+
+    // Vorkompilierte Patterns (Hot Path: jede Kampfaktion).
+    private static final java.util.regex.Pattern ATTRIBUTE_SUFFIX =
+        java.util.regex.Pattern.compile("[+-](\\w+)$");
+    private static final java.util.regex.Pattern DICE_PART =
+        java.util.regex.Pattern.compile("(\\d+)d(\\d+)");
 
     public CombatService(CombatSessionRepository sessionRepo,
                          CombatParticipantRepository participantRepo,
@@ -43,12 +50,11 @@ public class CombatService {
                          WorldRepository worldRepo,
                          GameSystemRepository gameSystemRepo,
                          WorldEventService eventService,
-                         RollService rollService,
                          AbilityRepository abilityRepo,
                          SimpMessagingTemplate messaging,
                          com.lwe.core.util.WorldAccess worldAccess,
                          com.lwe.core.util.EntityAccess entityAccess,
-                         java.util.List<RuleEngine> engineList,
+                         EngineResolver engineResolver,
                          ObjectMapper objectMapper,
                          RulesLoader rulesLoader,
                          CampaignMemberService campaignMemberService,
@@ -65,7 +71,6 @@ public class CombatService {
         this.worldRepo = worldRepo;
         this.gameSystemRepo = gameSystemRepo;
         this.eventService = eventService;
-        this.rollService = rollService;
         this.abilityRepo = abilityRepo;
         this.messaging = messaging;
         this.worldAccess = worldAccess;
@@ -74,10 +79,7 @@ public class CombatService {
         this.entityService = entityService;
         this.rulesLoader = rulesLoader;
         this.campaignMemberService = campaignMemberService;
-        this.engines = new EnumMap<>(DiceExpressionParser.DiceSystem.class);
-        for (var engine : engineList) {
-            this.engines.put(engine.getDiceSystem(), engine);
-        }
+        this.engineResolver = engineResolver;
     }
 
     @Transactional
@@ -265,6 +267,16 @@ public class CombatService {
             var parts = parseDamageOrThrow(effects.damageExpr, "ability");
             damage = computeDamage(entity, rules, parts.dice(), parts.flat(), parts.attr());
         }
+        // Heil-Ausdruck vorab validieren: kaputt = Fehler, BEVOR Schaden angewendet wird.
+        int healAmount = 0;
+        if (effects.healExpr != null) {
+            try {
+                healAmount = new com.lwe.rules.DiceExpression(effects.healExpr).getTotal();
+            } catch (IllegalArgumentException e) {
+                throw new CombatException("COMBAT_EFFECTS_INVALID",
+                    "Heil-Ausdruck '" + effects.healExpr + "' nicht parsbar");
+            }
+        }
 
         // Apply damage to target
         if (damage > 0 && targetId != null) {
@@ -285,8 +297,7 @@ public class CombatService {
         }
 
         // Apply healing to actor
-        if (effects.healExpr != null) {
-            var healAmount = new com.lwe.rules.DiceExpression(effects.healExpr).getTotal();
+        if (healAmount > 0) {
             actor.setHpCurrent(Math.min(actor.getHpMax(), actor.getHpCurrent() + healAmount));
             participantRepo.save(actor);
         }
@@ -305,13 +316,14 @@ public class CombatService {
     private Effects parseEffectsJson(String effectsJson) {
         if (effectsJson == null || effectsJson.isBlank()) return new Effects(null, null, null);
         try {
-            var tree = new ObjectMapper().readTree(effectsJson);
+            var tree = objectMapper.readTree(effectsJson);
             return new Effects(
                 tree.path("damage").asText(null),
                 tree.path("heal").asText(null),
                 tree.path("damageType").asText(null));
         } catch (Exception e) {
-            return new Effects(null, null, null);
+            // ADR-014: kaputte Effekte = Fehler, kein stiller 0-Schaden bei bezahlten AP.
+            throw new CombatException("COMBAT_EFFECTS_INVALID", "Ability-Effekte nicht lesbar");
         }
     }
 
@@ -375,7 +387,9 @@ public class CombatService {
             var bonus = t.path("damage_bonus").isNumber() ? t.path("damage_bonus").asInt() : 0;
             return new WeaponDamage(dice, attr, bonus, typeStr);
         } catch (Exception e) {
-            return null;
+            // Feld vorhanden, aber kaputt: fail-closed statt stillem 1d6-Fallback (ADR-014).
+            throw new CombatException("COMBAT_ATTACK_UNRESOLVABLE",
+                "Waffen-Metadata nicht lesbar: " + i.getId());
         }
     }
 
@@ -463,7 +477,9 @@ public class CombatService {
         var aPos = attacker.getPositionJson();
         var dPos = defender.getPositionJson();
         if (aPos == null || aPos.isBlank() || dPos == null || dPos.isBlank()) return;
-        var range = AttributeUtils.gridDistance(attacker, defender);
+        var rangeOpt = AttributeUtils.tryGridDistance(attacker, defender);
+        if (rangeOpt.isEmpty()) return; // Positionen unvollstaendig (Legacy/kein Token): keine Range-Pruefung
+        var range = rangeOpt.getAsInt();
         if (range > 5)
             throw new CombatException("COMBAT_RANGE_INVALID", "Target out of range (" + range + " tiles)");
     }
@@ -548,22 +564,8 @@ public class CombatService {
 
     /** @return null bei unparsbarem Ausdruck (Aufrufer entscheidet: Default vs. Fehler). */
     private DamageParts parseDamageExpr(String expr) {
-        if (expr == null || expr.isBlank()) return null;
-        var m = java.util.regex.Pattern.compile("^(\\d+d\\d+)(.*)$")
-            .matcher(expr.strip());
-        if (!m.matches()) return null;
-        var dice = m.group(1);
-        var rest = m.group(2).strip();
-        if (rest.isEmpty()) return new DamageParts(dice, null, 0);
-        var num = java.util.regex.Pattern.compile("^[+-]?(\\d+)$").matcher(rest);
-        if (num.matches()) {
-            int sign = rest.startsWith("-") ? -1 : 1;
-            return new DamageParts(dice, null, sign * Integer.parseInt(num.group(1)));
-        }
-        var attr = java.util.regex.Pattern.compile("^[+-]?([A-Za-z_äöüÄÖÜß][\\wäöüÄÖÜß]*)$")
-            .matcher(rest);
-        if (attr.matches()) return new DamageParts(dice, attr.group(1), 0);
-        return null;
+        var parts = DamageExpression.parse(expr);
+        return parts == null ? null : new DamageParts(parts.dice(), parts.attr(), parts.flat());
     }
 
     /** @return null wenn kein Schadensausdruck konfiguriert (dann gilt Default 1d6). */
@@ -783,17 +785,21 @@ public class CombatService {
         var session = sessionRepo.findById(sessionId)
             .orElseThrow(() -> new CombatException("COMBAT_NOT_FOUND", "Combat session not found"));
         var parts = participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId);
+        // N+1 vermeiden: Teilnehmer-Entities einmal laden.
+        var entities = new java.util.HashMap<UUID, GameEntity>();
+        entityRepo.findAllById(parts.stream().map(CombatParticipant::getEntityId).toList())
+            .forEach(e -> entities.put(e.getId(), e));
         // ADR-014: Aufstellung sehen nur Beteiligte + DM (kein Zuschauen fremder HP).
         // Leiter = Welt-DM oder Kampagnen-DM (Legacy-Kampagnen ohne Welt-Rolle, Audit H-1).
-        if (!involved(parts, userId) && !isDm(session.getWorldId(), userId)
+        if (!involved(parts, entities, userId) && !isDm(session.getWorldId(), userId)
             && !isCampaignDm(session.getCampaignId(), userId)) {
             throw new CombatException("WORLD_ACCESS_DENIED", "Not involved in this combat");
         }
         return parts.stream()
             .map(p -> {
-                var name = entityRepo.findById(p.getEntityId())
-                    .map(e -> e.getName())
-                    .orElse(p.getEntityId().toString().substring(0, 8));
+                var entity = entities.get(p.getEntityId());
+                var name = entity != null && entity.getName() != null
+                    ? entity.getName() : p.getEntityId().toString().substring(0, 8);
                 return new ParticipantResponse(
                     p.getId(), p.getEntityId(), name, p.getInitiative(),
                     p.getApCurrent(), p.getApMax(), p.getHpCurrent(), p.getHpMax(), p.getSide());
@@ -815,9 +821,9 @@ public class CombatService {
         return campaignId != null && campaignMemberService.isDm(campaignId, userId);
     }
 
-    private boolean involved(List<CombatParticipant> parts, UUID userId) {
+    private boolean involved(List<CombatParticipant> parts, Map<UUID, GameEntity> entities, UUID userId) {
         for (var p : parts) {
-            var entity = entityRepo.findById(p.getEntityId()).orElse(null);
+            var entity = entities.get(p.getEntityId());
             if (entity == null) continue;
             try {
                 entityAccess.checkControl(entity, userId);
@@ -832,24 +838,11 @@ public class CombatService {
     // -- Helpers --
 
     private RuleEngine resolveEngine(World world, UUID campaignId) {
-        var gs = rulesLoader.loadSystemByCampaign(campaignId);
-        if (gs == null) gs = rulesLoader.loadSystem(world);
-        if (gs != null) {
-            try {
-                var system = DiceExpressionParser.detect(gs.getRulesJson());
-                var engine = engines.get(system);
-                if (engine != null) return engine;
-            } catch (IllegalArgumentException e) {
-                // unsupported dice system → fall through to fallback
-            }
-        }
-        return engines.getOrDefault(DiceExpressionParser.DiceSystem.D20,
-            engines.values().iterator().next());
+        return engineResolver.resolve(world, campaignId);
     }
 
     private int resolveApMax(World world, RuleEngine engine, UUID campaignId) {
-        var gs = rulesLoader.loadSystemByCampaign(campaignId);
-        if (gs == null) gs = rulesLoader.loadSystem(world);
+        var gs = rulesLoader.resolveSystem(campaignId, world);
         if (gs != null) {
             try {
                 var tree = objectMapper.readTree(gs.getRulesJson());
@@ -865,13 +858,12 @@ public class CombatService {
     }
 
     private String resolveCombatAttr(World world, UUID campaignId, String combatKey, String fallback) {
-        var gs = rulesLoader.loadSystemByCampaign(campaignId);
-        if (gs == null) gs = rulesLoader.loadSystem(world);
+        var gs = rulesLoader.resolveSystem(campaignId, world);
         if (gs == null) return fallback;
         try {
             var tree = objectMapper.readTree(gs.getRulesJson());
             var expr = tree.path("dice_mechanics").path("combat").path(combatKey).asText("");
-            var m = java.util.regex.Pattern.compile("[+-](\\w+)$").matcher(expr);
+            var m = ATTRIBUTE_SUFFIX.matcher(expr);
             return m.find() ? m.group(1) : fallback;
         } catch (Exception e) {
             return fallback;
@@ -961,7 +953,7 @@ public class CombatService {
     }
 
     private int rollDice(String expression) {
-        var m = java.util.regex.Pattern.compile("(\\d+)d(\\d+)").matcher(expression == null ? "" : expression);
+        var m = DICE_PART.matcher(expression == null ? "" : expression);
         if (!m.find()) return 0;
         int count = Integer.parseInt(m.group(1));
         int sides = Integer.parseInt(m.group(2));
@@ -1030,35 +1022,15 @@ public class CombatService {
     }
 
     private java.util.List<String> selectedTraits(GameEntity entity) {
-        if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank()) return List.of();
-        try {
-            var node = objectMapper.readTree(entity.getMetadataJson()).path("traits");
-            if (!node.isArray()) return List.of();
-            var out = new java.util.ArrayList<String>();
-            node.forEach(n -> { if (n.isTextual()) out.add(n.asText()); });
-            return out;
-        } catch (Exception e) {
-            return List.of();
-        }
+        return EntityJson.traits(objectMapper, entity.getMetadataJson());
     }
 
     private java.util.Map<String, Integer> parsePerCharacterSkills(GameEntity entity) {
-        if (entity.getSkillsJson() == null || entity.getSkillsJson().isBlank()) return java.util.Map.of();
-        try {
-            return objectMapper.readValue(entity.getSkillsJson(),
-                new com.fasterxml.jackson.core.type.TypeReference<>() {});
-        } catch (Exception e) {
-            return java.util.Map.of();
-        }
+        return EntityJson.skills(objectMapper, entity.getSkillsJson());
     }
 
-    private java.util.Map<String, Integer> parseAttributes(GameEntity entity) {        if (entity.getAttributesJson() == null || entity.getAttributesJson().isBlank()) return java.util.Map.of();
-        try {
-            return objectMapper.readValue(entity.getAttributesJson(),
-                new com.fasterxml.jackson.core.type.TypeReference<>() {});
-        } catch (Exception e) {
-            return java.util.Map.of();
-        }
+    private java.util.Map<String, Integer> parseAttributes(GameEntity entity) {
+        return EntityJson.attributes(objectMapper, entity.getAttributesJson());
     }
 
     private void requireWorldAccess(UUID worldId, UUID userId) {

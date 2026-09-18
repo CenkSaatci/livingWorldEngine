@@ -136,7 +136,20 @@ export function ActionBar({ worldId }: Props) {
     (p) => p.entityId !== session.currentTurnEntityId && p.apCurrent > 0,
   );
 
+  const [acting, setActing] = useState(false);
+
+  const targetName = (id: string | null) =>
+    id ? (participants.find((p) => p.entityId === id)?.name ?? id.slice(0, 8)) : '';
+
+  const errorText = (e: unknown, fallback: string) => {
+    const msg = (e as { response?: { data?: { error?: { message?: string } } } })
+      ?.response?.data?.error?.message;
+    return msg ?? fallback;
+  };
+
   const handleAction = async (type: string, abilityId?: string) => {
+    if (acting) return;
+    setActing(true);
     try {
       const url = abilityId
         ? `/combat/${session.id}/ability`
@@ -149,11 +162,32 @@ export function ActionBar({ worldId }: Props) {
       // POST returns full session state → AP-Werte sind bereits korrekt
       useCombatStore.getState().setSession(res.data.session, res.data.participants);
       setUsedActions((prev) => ({ ...prev, [type]: (prev[type] ?? 0) + 1 }));
-      if (!abilityId) playCombatHit();
-    } catch { toast.error('Action failed'); }
+      const result = res.data.result as { actionType?: string; totalDamage?: number } | null | undefined;
+      if (!abilityId) {
+        // QA/UX: Treffer, Miss und Schaden sichtbar machen (vorher stumm).
+        if (result?.actionType === 'MISS') {
+          toast.error(t('combat.missed', { name: targetName(targetEntityId) }));
+        } else {
+          playCombatHit();
+          if ((result?.totalDamage ?? 0) > 0) {
+            toast.success(t('combat.hitFor', {
+              name: targetName(targetEntityId), damage: result?.totalDamage,
+            }));
+          } else {
+            toast.success(t('combat.done'));
+          }
+        }
+      }
+    } catch (e) {
+      toast.error(errorText(e, t('combat.actionFailed', { defaultValue: 'Action failed' })));
+    } finally {
+      setActing(false);
+    }
   };
 
   const handleManeuver = async (maneuver: string) => {
+    if (acting) return;
+    setActing(true);
     try {
       const res = await apiClient.post(`/combat/${session.id}/maneuver`, {
         actorId: currentActor?.entityId,
@@ -162,7 +196,11 @@ export function ActionBar({ worldId }: Props) {
       });
       useCombatStore.getState().setSession(res.data.session, res.data.participants);
       playCombatHit();
-    } catch { toast.error(t('combat.maneuverFailed', { defaultValue: 'Maneuver failed' })); }
+    } catch (e) {
+      toast.error(errorText(e, t('combat.maneuverFailed', { defaultValue: 'Maneuver failed' })));
+    } finally {
+      setActing(false);
+    }
   };
 
   const isAvailable = (type: string) => (usedActions[type] ?? 0) < (actionsPerTurn[type] ?? 1);
@@ -194,7 +232,7 @@ export function ActionBar({ worldId }: Props) {
           return (
             <button key={type}
               onClick={() => handleAction(type)}
-              disabled={!available || !targetEntityId}
+              disabled={!available || !targetEntityId || acting}
               className={`flex items-center gap-1 rounded px-3 py-1.5 text-xs
                 ${type === 'action' ? 'bg-accent text-white hover:bg-accent/80' : 'bg-bg-elevated text-text-secondary hover:text-text-primary'}
                 disabled:opacity-40`}
@@ -211,7 +249,7 @@ export function ActionBar({ worldId }: Props) {
         {maneuvers.map((m) => (
           <button key={m.name}
             onClick={() => handleManeuver(m.name)}
-            disabled={!currentActor || !targetEntityId || (currentActor.apCurrent ?? 0) < (m.apCost ?? 1)}
+            disabled={!currentActor || !targetEntityId || acting || (currentActor.apCurrent ?? 0) < (m.apCost ?? 1)}
             className="flex items-center gap-1 rounded bg-warning/10 px-3 py-1.5 text-xs text-warning hover:bg-warning/25 disabled:opacity-40"
             title={t('combat.apCost', { cost: m.apCost ?? 1 })}
           >
@@ -223,7 +261,7 @@ export function ActionBar({ worldId }: Props) {
         {abilities.map((a) => (
           <button key={a.abilityId}
             onClick={() => handleAction('ability', a.abilityId)}
-            disabled={!targetEntityId}
+            disabled={!targetEntityId || acting}
             className="flex items-center gap-1 rounded bg-warning/20 px-3 py-1.5 text-xs text-warning hover:bg-warning/30 disabled:opacity-40"
             title={t('combat.apCost', { cost: a.apCost })}
           >

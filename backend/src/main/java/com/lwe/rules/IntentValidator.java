@@ -53,7 +53,13 @@ public class IntentValidator {
             return reject("No target specified");
 
         // Range-Check (vereinfacht: max 5 Tiles)
-        var target = entityRepo.findById(UUID.fromString(targetId)).orElse(null);
+        UUID targetUuid;
+        try {
+            targetUuid = UUID.fromString(targetId);
+        } catch (IllegalArgumentException e) {
+            return reject("Invalid target id");
+        }
+        var target = entityRepo.findById(targetUuid).orElse(null);
         if (target == null) return reject("Target not found");
 
         var distance = AttributeUtils.gridDistance(npc, target);

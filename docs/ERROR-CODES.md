@@ -169,7 +169,6 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `COMBAT_NOT_YOUR_TURN` | 422 | Actor ist nicht der aktuelle Turn-Inhaber |
 | `COMBAT_AP_INSUFFICIENT` | 422 | Nicht genug Action Points für Aktion |
 | `COMBAT_RANGE_INVALID` | 422 | Ziel außerhalb der Waffenreichweite |
-| `COMBAT_LINE_OF_SIGHT_BLOCKED` | 422 | Sichtlinie durch Fog of War / Wand blockiert |
 | `COMBAT_TARGET_INVALID` | 422 | Ziel-Entity existiert oder ist verbündet |
 | `COMBAT_TARGET_DEFEATED` | 422 | Ziel bereits besiegt (Heilung weiter erlaubt) |
 | `COMBAT_ACTOR_DEFEATED` | 422 | Actor besiegt — kann nicht handeln |
@@ -178,6 +177,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `COMBAT_MANEUVER_UNKNOWN` | 422 | Manöver nicht in `dice_mechanics.combat.maneuvers` konfiguriert |
 | `COMBAT_ACTION_BLOCKED` | 422 | Aktion durch aktiven Zustand gesperrt (`conditions[].blocks`, T3) |
 | `COMBAT_ATTACK_UNRESOLVABLE` | 422 | Konfigurierter Angriffs-/Zielwert nicht ableitbar (kaputte Formel/fehlender Skill) — Angriff blockiert statt stiller Treffer (ADR-014) |
+| `COMBAT_EFFECTS_INVALID` | 422 | Ability-Effekte/Heil-Ausdruck nicht lesbar oder nicht parsbar — Aktion blockiert statt stiller 0-Wirkung |
 | `COMBAT_TARGET_DEFEATED` | 422 | Ziel bereits besiegt (Heilung weiter erlaubt) |
 | `COMBAT_ACTOR_DEFEATED` | 422 | Actor besiegt — kann nicht handeln |
 
@@ -317,7 +317,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `LAST_DM` | 409 | Mindestens ein Leiter muss bleiben (letzter DM geschützt) |
 | `CREATOR_REQUIRED` | 403 | Nur der Kampagnen-Ersteller verwaltet Leiter-Rollen (ADR-014) |
 | `CREATOR_TARGET_MUST_BE_DM` | 422 | Nur ein Leiter kann Ersteller werden |
-| `DM_REMOVAL_DENIED` | 403 | DM kann nicht entfernt/degradiert werden |
+| `DM_REMOVAL_DENIED` | 409 | Letzter Leiter kann nicht entfernt werden |
 
 ### 3.19 Fraktionen (`FACTION_*`)
 
