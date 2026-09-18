@@ -62,10 +62,10 @@ public class CharacterSheetService {
 
     public SheetResponse getSheet(UUID entityId, UUID userId, UUID campaignId) {
         var entity = entityRepo.findById(entityId)
-            .orElseThrow(() -> new RuntimeException("ENTITY_NOT_FOUND"));
+            .orElseThrow(() -> new EntityService.EntityException("ENTITY_NOT_FOUND", "Entity not found"));
 
         var world = worldRepo.findById(entity.getWorldId())
-            .orElseThrow(() -> new RuntimeException("WORLD_NOT_FOUND"));
+            .orElseThrow(() -> new EntityService.EntityException("WORLD_NOT_FOUND", "World not found"));
 
         worldAccess.requireAccess(entity.getWorldId(), userId);
         // ADR-014: fremde Charaktere sehen nur Owner/DM (NPCs ohne Owner bleiben offen).

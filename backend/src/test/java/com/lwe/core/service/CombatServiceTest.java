@@ -1044,6 +1044,43 @@ class CombatServiceTest {
     }
 
     @Test
+    void unknownActionTypeIsRejectedBeforeApIsSpent() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Held");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        setId(defender, defenderId);
+
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        var pa = new CombatParticipant(sessionId, attackerId, 10, 2, "A");
+        var pd = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(pa, pd)));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of("dice_mechanics", Map.of("combat", Map.of(
+            "initiative", "1d20", "damage", "1d6", "action_types", List.of("action")))));
+        when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        assertThatThrownBy(() -> combatService.executeAction(
+            userId, sessionId, attackerId, "FIREBALL", defenderId, null))
+            .isInstanceOf(CombatService.CombatException.class)
+            .satisfies(e -> assertThat(((CombatService.CombatException) e).getErrorCode())
+                .isEqualTo("COMBAT_ACTION_TYPE_INVALID"));
+        assertThat(pa.getApCurrent()).isEqualTo(2);
+        assertThat(pd.getHpCurrent()).isEqualTo(pd.getHpMax());
+    }
+
+    @Test
     void blockedConditionPreventsAttackAction() {        var sessionId = UUID.randomUUID();
         var attackerId = UUID.randomUUID();
         var defenderId = UUID.randomUUID();

@@ -49,7 +49,7 @@ class CharacterSheetServiceTest {
             new com.lwe.core.util.EntityAccess(entityRepo, worldAccess),
             modifierService, derivedValueService, levelUpService, rulesLoader, objectMapper,
             new ConditionService(objectMapper));
-        doNothing().when(worldAccess).requireAccess(any(), any());
+        lenient().doNothing().when(worldAccess).requireAccess(any(), any());
         lenient().when(levelUpService.getLevel(any(), any())).thenReturn(1);
     }
 
@@ -76,6 +76,26 @@ class CharacterSheetServiceTest {
         stubRules("{\"attributes\":[{\"name\":\"mut\",\"type\":\"INT\",\"default\":10}]}");
 
         assertDoesNotThrow(() -> service.getSheet(entityId, userId, null));
+    }
+
+    @Test
+    void getSheetThrowsTypedNotFoundForMissingEntity() {
+        when(entityRepo.findById(entityId)).thenReturn(Optional.empty());
+
+        assertThrows(EntityService.EntityException.class,
+            () -> service.getSheet(entityId, userId, null));
+    }
+
+    @Test
+    void getSheetThrowsTypedNotFoundForMissingWorld() {
+        var entity = mock(GameEntity.class);
+        when(entity.getWorldId()).thenReturn(worldId);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.empty());
+
+        var ex = assertThrows(EntityService.EntityException.class,
+            () -> service.getSheet(entityId, userId, null));
+        assertThat(ex.getErrorCode()).isEqualTo("WORLD_NOT_FOUND");
     }
 
     private void stubRules(String rulesJson) throws Exception {

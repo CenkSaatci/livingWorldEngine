@@ -523,6 +523,22 @@ class ProbeServiceTest {
     }
 
     @Test
+    void unknownSkillIn3AttrProbeIsRejected() throws Exception {
+        var entity = entityWithAttrs("{\"mut\":14,\"klugheit\":14,\"intuition\":13}");
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        lenient().when(rulesLoader.loadRules(any(), eq(worldId))).thenAnswer(inv ->
+            objectMapper.readValue(DSA_RULES, Map.class));
+
+        assertThatThrownBy(() -> service.executeProbe(entityId, userId, "Nix", 0, false,
+            campaignId(), new ProbeService.ProbeOptions(0, null, 0, 0)))
+            .isInstanceOf(ProbeService.ProbeException.class)
+            .matches(e -> ((ProbeService.ProbeException) e).getErrorCode().equals("ROLL_SKILL_NOT_FOUND"));
+    }
+
+    @Test
     void conditionMalusAppliesToProbe() {        var entity = entityWithAttrs("{\"staerke\":10}");
         entity.setMetadataJson("{\"conditions\":[{\"name\":\"Wunde\",\"rounds\":2}]}");
         var world = new World("W", userId, "{}");

@@ -104,11 +104,11 @@ public class ProbeService {
                                        ProbeOptions options, String socialAction, UUID socialTargetId) {
         var opts = options == null ? ProbeOptions.none() : options;
         var entity = entityRepo.findById(entityId)
-            .orElseThrow(() -> new RuntimeException("ENTITY_NOT_FOUND"));
+            .orElseThrow(() -> new EntityService.EntityException("ENTITY_NOT_FOUND", "Entity not found"));
         worldAccess.requireAccess(entity.getWorldId(), userId);
 
         var world = worldRepo.findById(entity.getWorldId())
-            .orElseThrow(() -> new RuntimeException("WORLD_NOT_FOUND"));
+            .orElseThrow(() -> new EntityService.EntityException("WORLD_NOT_FOUND", "World not found"));
         var rules = rulesLoader.loadRules(campaignId, entity.getWorldId());
         var diff = resolveDifficulty(rules, opts);
         var difficulty = diff.delta();
@@ -223,6 +223,12 @@ public class ProbeService {
                 break;
             }
             case "d20_3attr": {
+                // K-2: 3W20 braucht die Attribut-Zuordnung des Skills; ohne sie wären
+                // es 0 Würfe = Auto-Erfolg. Fail-closed statt stiller Treffer.
+                if (skillAttrs.isEmpty()) {
+                    throw new ProbeException("ROLL_SKILL_NOT_FOUND",
+                        "Skill not defined in rules (no attributes): " + skillName);
+                }
                 // 3d20, je ≤ Attribut
                 int count = Math.min(skillAttrs.size(), 3);
                 var rolls = new int[count];
@@ -431,6 +437,16 @@ public class ProbeService {
     public static class SocialException extends RuntimeException {
         private final String errorCode;
         public SocialException(String errorCode, String message) {
+            super(message);
+            this.errorCode = errorCode;
+        }
+        public String getErrorCode() { return errorCode; }
+    }
+
+    /** Fail-closed: Probe auf unbekannten Skill (K-2). */
+    public static class ProbeException extends RuntimeException {
+        private final String errorCode;
+        public ProbeException(String errorCode, String message) {
             super(message);
             this.errorCode = errorCode;
         }

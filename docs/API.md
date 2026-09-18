@@ -432,6 +432,9 @@ ADR-013: Skill-Probe mit Beziehungs-Modifikator aus `social.relationshipScores`,
 gedeckelt auf `social.maxModifier`; Erfolg/Fehlschlag wendet die Zustände aus
 `social_actions[].onSuccess/onFailure` auf das Ziel an).
 
+**Fehlercodes:** `ROLL_SKILL_NOT_FOUND` (3W20: Skill nicht im Regelwerk definiert, 422),
+`SOCIAL_ACTION_UNKNOWN` / `SOCIAL_SKILL_MISMATCH` / `SOCIAL_TARGET_INVALID` (422).
+
 **Response 200:**
 ```json
 {

@@ -111,6 +111,7 @@ public class GlobalExceptionHandler {
             case InventoryService.InventoryException e -> e.getErrorCode();
             case ProbeService.CastException e -> e.getErrorCode();
             case ProbeService.SocialException e -> e.getErrorCode();
+            case ProbeService.ProbeException e -> e.getErrorCode();
             case TradeService.TradeException e -> e.getErrorCode();            case EntityService.EntityException e -> e.getErrorCode();
             case AbilityService.AbilityException e -> e.getErrorCode();
             case EntityAbilityService.EntityAbilityException e -> e.getErrorCode();
@@ -144,6 +145,7 @@ public class GlobalExceptionHandler {
                 default -> HttpStatus.UNPROCESSABLE_ENTITY;
             };
             case ProbeService.SocialException e -> HttpStatus.UNPROCESSABLE_ENTITY;
+            case ProbeService.ProbeException e -> HttpStatus.UNPROCESSABLE_ENTITY;
             case TradeService.TradeException e -> switch (e.getErrorCode()) {
                 case "TRADE_NOT_FOUND", "TRADE_ENTITY_NOT_FOUND", "TRADE_ENTITY_GONE",
                      "TRADE_ITEM_NOT_FOUND" -> HttpStatus.NOT_FOUND;
@@ -177,7 +179,7 @@ public class GlobalExceptionHandler {
                 default -> HttpStatus.BAD_REQUEST;
             };
             case EntityService.EntityException e -> switch (e.getErrorCode()) {
-                case "ENTITY_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                case "ENTITY_NOT_FOUND", "WORLD_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 case "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
                 case "SKILL_MAX_EXCEEDED", "FATE_NONE_LEFT", "UNKNOWN_CONDITION" -> HttpStatus.UNPROCESSABLE_ENTITY;
                 default -> HttpStatus.BAD_REQUEST;

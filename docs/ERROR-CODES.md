@@ -157,6 +157,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `ROLL_ATTRIBUTE_NOT_FOUND` | 422 | Referenziertes Attribut existiert am Charakter nicht |
 | `ROLL_ENTITY_NOT_CHARACTER` | 422 | Entity ist keine Probe-fähige Figur (z. B. Fraktion) |
 | `ROLL_TARGET_REQUIRED` | 400 | Probe benötigt ein Target-Wert, aber keins übergeben |
+| `ROLL_SKILL_NOT_FOUND` | 422 | Skill ist im Regelwerk nicht definiert (3W20-Probe ohne Attribut-Zuordnung) |
 | `INVALID_INPUT` | 400 | Ungültiges Argument/Parameter (z. B. nicht parsebare Dice-Expression, malformed UUID) |
 
 ### 3.8 Combat (`COMBAT_*`)

@@ -176,6 +176,12 @@ public class CombatService {
             return new CombatActionResult("DEFEND", 0, actor.getApCurrent(), true, null);
         }
 
+        // K-1: Unbekannte Aktionstypen scheitern, statt AP zu kosten und 0 Schaden zu melden.
+        if (!isDamagingAction(rules, actionType)) {
+            throw new CombatException("COMBAT_ACTION_TYPE_INVALID",
+                "Unknown action type: " + actionType);
+        }
+
         checkRange(actionType, targetId, actorId);
 
         // Playtest: keine Angriffe auf bereits Besiegte (Heilung via Ability bleibt erlaubt).
