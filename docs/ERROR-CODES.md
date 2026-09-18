@@ -281,6 +281,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | Code | HTTP | Bedeutung |
 |---|---|---|
 | `SYSTEM_INTERNAL_ERROR` | 500 | Unerwarteter Fehler im Server (mit `request_id` für Logs) |
+| `CONFLICT` | 409 | Gleichzeitige Änderung (Optimistic Locking) — Request erneut versuchen (R3/Block C) |
 | `SYSTEM_DATABASE_UNAVAILABLE` | 503 | Datenbank nicht erreichbar |
 | `SYSTEM_LLM_UNAVAILABLE` | 503 | AI-Bot kann LLM nicht erreichen (delegiert an Backend) |
 | `SYSTEM_DEPENDENT_SERVICE_DOWN` | 503 | Redis / andere abhängige Services nicht erreichbar |

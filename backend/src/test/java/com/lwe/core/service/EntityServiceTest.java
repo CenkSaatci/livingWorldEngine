@@ -203,6 +203,24 @@ class EntityServiceTest {
     }
 
     @Test
+    void skillCapIsCaseInsensitive() {
+        var entity = entityWithId("{\"staerke\":14}");
+        var campaignId = campaignInWorld();
+        when(entityRepo.findById(any())).thenReturn(Optional.of(entity));
+        doNothing().when(worldAccess).requireAccess(any(), any());
+        when(rulesLoader.loadRules(campaignId, worldId)).thenReturn(Map.of(
+            "skills", List.of(Map.of("name", "Athletik", "attributes", List.of("staerke"))),
+            "advancement", Map.of("maxRule", "highestAttributePlus2")));
+
+        // R3: Cap greift auch bei anderer Schreibweise (14+2=16; „ATHLETIK“:17 zu hoch).
+        assertThatThrownBy(() -> service.updateSkills(entity.getId(), userId,
+            Map.of("ATHLETIK", 17), campaignId))
+            .isInstanceOf(EntityService.EntityException.class)
+            .satisfies(e -> assertThat(((EntityService.EntityException) e).getErrorCode())
+                .isEqualTo("SKILL_MAX_EXCEEDED"));
+    }
+
+    @Test
     void skillAtMaxIsAccepted() {
         var entity = entityWithId("{\"staerke\":14}");
         var campaignId = campaignInWorld();

@@ -9,6 +9,8 @@ import com.lwe.core.util.RuleNames;
 import com.lwe.rules.DamageExpression;
 import com.lwe.rules.EngineResolver;
 import com.lwe.rules.RuleEngine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import static com.lwe.core.service.WorldEventService.EventType.*;
@@ -18,6 +20,8 @@ import java.util.*;
 
 @Service
 public class CombatService {
+
+    private static final Logger log = LoggerFactory.getLogger(CombatService.class);
 
     private final CombatSessionRepository sessionRepo;
     private final CombatParticipantRepository participantRepo;
@@ -103,6 +107,9 @@ public class CombatService {
         var entities = entityRepo.findAllById(entityIds);
         if (entities.size() < 2)
             throw new CombatException("COMBAT_INSUFFICIENT_PARTICIPANTS", "Need at least 2 participants");
+        // R3: Teilnehmer muessen zur Kampfwelt gehoeren (kein Fremdwelt-Leak im Roster).
+        if (entities.stream().anyMatch(e -> !worldId.equals(e.getWorldId())))
+            throw new CombatException("COMBAT_TARGET_INVALID", "Participant does not belong to this world");
 
         var engine = resolveEngine(world, campaignId);
 
@@ -210,7 +217,7 @@ public class CombatService {
                     COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
                         "actionType", "MISS", "damage", 0));
                 return new CombatActionResult("MISS", 0, actor.getApCurrent(), false, null,
-                    attackRoll, null);
+                    attackRoll, null, 0);
             }
         }
 
@@ -242,7 +249,7 @@ public class CombatService {
         eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
             "actionType", actionType, "damage", damage));
         return new CombatActionResult(actionType, damage, actor.getApCurrent(), true, null,
-            attackRoll, damageRoll);
+            attackRoll, damageRoll, 0);
     }
 
     @Transactional
@@ -290,20 +297,19 @@ public class CombatService {
         // Apply damage to target
         if (damage > 0 && targetId != null) {
             var target = participants.stream()
-                .filter(p -> p.getEntityId().equals(targetId)).findFirst().orElse(null);
-            if (target != null) {
-                // Schadende Abilities treffen keine Besiegten (Heilung schon).
-                if (target.getHpCurrent() <= 0)
-                    throw new CombatException("COMBAT_TARGET_DEFEATED", "Target is already defeated");
-                var mitigation = applyDamageModifiers(damage, targetId, effects.damageType());
-                damageRoll = withMitigation(damageRoll, mitigation);
-                damage = mitigation.total();
-                target.setHpCurrent(Math.max(0, target.getHpCurrent() - damage));
-                participantRepo.save(target);
-                if (target.getHpCurrent() <= 0 && !tryAvoidDeath(userId, session, targetId, target)) {
-                    eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED,
-                        target.getEntityId(), null, Map.of("actionType", "DEFEATED"));
-                }
+                .filter(p -> p.getEntityId().equals(targetId)).findFirst()
+                .orElseThrow(() -> new CombatException("COMBAT_TARGET_INVALID", "Target not in combat"));
+            // Schadende Abilities treffen keine Besiegten (Heilung schon).
+            if (target.getHpCurrent() <= 0)
+                throw new CombatException("COMBAT_TARGET_DEFEATED", "Target is already defeated");
+            var mitigation = applyDamageModifiers(damage, targetId, effects.damageType());
+            damageRoll = withMitigation(damageRoll, mitigation);
+            damage = mitigation.total();
+            target.setHpCurrent(Math.max(0, target.getHpCurrent() - damage));
+            participantRepo.save(target);
+            if (target.getHpCurrent() <= 0 && !tryAvoidDeath(userId, session, targetId, target)) {
+                eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED,
+                    target.getEntityId(), null, Map.of("actionType", "DEFEATED"));
             }
         }
 
@@ -319,7 +325,7 @@ public class CombatService {
         eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
             "actionType", "ABILITY_" + ability.getName(), "damage", damage));
         return new CombatActionResult("ABILITY_" + ability.getName(), damage,
-            actor.getApCurrent(), true, null, null, damageRoll);
+            actor.getApCurrent(), true, null, null, damageRoll, healAmount);
     }
 
     private record Effects(String damageExpr, String healExpr, String damageType) {}
@@ -367,7 +373,10 @@ public class CombatService {
                 if (item == null || !hasDamageFields(item)) continue;
                 return readWeaponDamage(item);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            // R3: sichtbar machen statt still ohne Waffe weiterzurechnen.
+            log.warn("Inventar von {} nicht lesbar: {}", actorId, e.getMessage());
+        }
         return null;
     }
 
@@ -449,7 +458,10 @@ public class CombatService {
                 if (node.path("damage_armor").isNumber()) armor = node.path("damage_armor").asInt();
                 resistances = stringList(node.path("damage_resistances"));
                 vulnerabilities = stringList(node.path("damage_vulnerabilities"));
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                // R3: korrupte Verteidigungs-Metadata wird geloggt (Ruestung 0 bleibt Default).
+                log.warn("Verteidigungs-Metadata von {} nicht lesbar: {}", targetEntityId, e.getMessage());
+            }
         }
         int afterArmor = Math.max(0, damage - Math.max(0, armor));
         double multiplier = 1.0;
@@ -699,7 +711,7 @@ public class CombatService {
                     COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
                         "actionType", "MISS", "maneuver", maneuverName, "damage", 0));
                 return new CombatActionResult("MISS", 0, actor.getApCurrent(), false, null,
-                    attackRoll, null);
+                    attackRoll, null, 0);
             }
         }
 
@@ -741,7 +753,7 @@ public class CombatService {
         eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED,
             actorId, targetId, Map.of("actionType", "MANEUVER", "maneuver", maneuverName, "damage", damage));
         return new CombatActionResult("MANEUVER:" + maneuverName, damage, actor.getApCurrent(), true, null,
-            attackRoll, damageRoll);
+            attackRoll, damageRoll, 0);
     }
 
     @SuppressWarnings("unchecked")
@@ -1188,11 +1200,11 @@ public class CombatService {
 
     public record CombatActionResult(String actionType, int totalDamage,
                                      int apRemaining, boolean success, String error,
-                                     RollBreakdown attack, RollBreakdown damage) {
+                                     RollBreakdown attack, RollBreakdown damage, int healing) {
         /** Kompakt-Konstruktor für Aktionen ohne Wurf-Details. */
         public CombatActionResult(String actionType, int totalDamage, int apRemaining,
                                   boolean success, String error) {
-            this(actionType, totalDamage, apRemaining, success, error, null, null);
+            this(actionType, totalDamage, apRemaining, success, error, null, null, 0);
         }
     }
 

@@ -100,6 +100,7 @@
     "apCost": "AP: {{cost}}",
     "maneuverFailed": "Manöver fehlgeschlagen",
     "hitFor": "{{name}} erleidet {{damage}} Schaden",
+    "healedFor": "{{name}} heilt {{healing}} HP",
     "missed": "Angriff verfehlt {{name}}",
     "done": "Aktion ausgeführt",
     "actionFailed": "Aktion fehlgeschlagen",

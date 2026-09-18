@@ -976,6 +976,92 @@ class CombatServiceTest {
     }
 
     @Test
+    void abilityHealingIsReportedInResult() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var abilityId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Heiler");
+        setId(attacker, attackerId);
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        var ability = new Ability(worldId, "Heilung", Ability.AbilityType.ACTIVE);
+        ability.setEffectsJson("{\"heal\":\"1d4\"}");
+
+        var participant = new CombatParticipant(session.getId(), attackerId, 15, 2, "A");
+        participant.setHpCurrent(5);
+        participant.setHpMax(15);
+        when(sessionRepo.findById(session.getId())).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(abilityRepo.findById(abilityId)).thenReturn(Optional.of(ability));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
+            .thenReturn(new java.util.ArrayList<>(List.of(participant)));
+        when(participantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        var result = combatService.useAbility(userId, session.getId(), attackerId, abilityId, null);
+
+        // N-1: Heilung muss im Ergebnis stehen, sonst ist sie im Kampf-Log unsichtbar.
+        assertThat(result.healing()).isBetween(1, 4);
+        assertThat(participant.getHpCurrent()).isEqualTo(5 + result.healing());
+    }
+
+    @Test
+    void damageExpressionNegativeAttributeReducesDamage() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "A");
+        attacker.setAttributesJson("{\"staerke\":14}");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        setId(defender, defenderId);
+
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        var pa = new CombatParticipant(sessionId, attackerId, 10, 2, "A");
+        var pd = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(pa, pd)));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of("dice_mechanics", Map.of("combat", Map.of(
+            "initiative", "1d20", "damage", "1d6-staerke"))));
+
+        var result = combatService.executeAction(userId, sessionId, attackerId, "ACTION", defenderId, null);
+
+        // R3: negatives Attribut-Vorzeichen senkt den Schaden (floor((14-10)/2)=2).
+        assertThat(result.damage()).isNotNull();
+        assertThat(result.damage().parts())
+            .anyMatch(p -> p.label().equals("staerke") && p.value() == -2);
+        assertThat(result.damage().total()).isBetween(0, 4);
+    }
+
+    @Test
+    void nextTurnRejectedWhenCombatEnded() {
+        var sessionId = UUID.randomUUID();
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setStatus("ENDED");
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+
+        // R3: keine Zug-Wechsel in beendeten Kaempfen.
+        assertThatThrownBy(() -> combatService.nextTurn(userId, sessionId))
+            .isInstanceOf(CombatService.CombatException.class)
+            .matches(e -> ((CombatService.CombatException) e).getErrorCode().equals("COMBAT_NOT_ACTIVE"));
+    }
+
+    @Test
     void rosterDeniedForUninvolvedNonDm() {
         var sessionId = UUID.randomUUID();
         var session = new CombatSession(worldId, null);

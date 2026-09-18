@@ -48,5 +48,16 @@ class DamageExpressionTest {
         assertThat(DamageExpression.parse("1d6+")).isNull();
         assertThat(DamageExpression.parse("6")).isNull();
         assertThat(DamageExpression.parse("1d6++2")).isNull();
+        // R3-Nacharbeit: keine stillen Overflows / NumberFormat-Ausnahmen.
+        assertThat(DamageExpression.parse("1d6+9999999999")).isNull();
+        assertThat(DamageExpression.parse("1d6+2147483647+1")).isNull();
+        // Verschmolzene Identifier sind kein gültiger Term.
+        assertThat(DamageExpression.parse("1d6 + staerke mut")).isNull();
+    }
+
+    @Test
+    void acceptsUppercaseDice() {
+        // DiceExpression ist case-insensitiv — der Parser zieht mit.
+        assertThat(DamageExpression.parse("1D6+2").dice()).isEqualTo("1D6");
     }
 }

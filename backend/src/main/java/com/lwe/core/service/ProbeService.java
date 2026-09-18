@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
  * </ul>
  */
 @Service
+@Transactional
 public class ProbeService {
 
     private final GameEntityRepository entityRepo;
@@ -486,10 +487,16 @@ public class ProbeService {
             return objectMapper.createObjectNode();
         try {
             var parsed = objectMapper.readTree(entity.getMetadataJson());
-            return parsed.isObject() ? (com.fasterxml.jackson.databind.node.ObjectNode) parsed
-                : objectMapper.createObjectNode();
+            if (parsed.isObject()) {
+                return (com.fasterxml.jackson.databind.node.ObjectNode) parsed;
+            }
+            // R3-Fix: kein stilles Zuruecksetzen auf ein leeres Objekt.
+            throw new CastException("CAST_NOT_CASTABLE", "Entity-Metadaten sind kein Objekt");
+        } catch (CastException e) {
+            throw e;
         } catch (Exception e) {
-            return objectMapper.createObjectNode();
+            // Kaputte Metadaten nicht ueberschreiben (verliert conditions/fate/traits).
+            throw new CastException("CAST_NOT_CASTABLE", "Entity-Metadaten nicht lesbar");
         }
     }
 }

@@ -101,6 +101,7 @@
     "apCost": "PA: {{cost}}",
     "maneuverFailed": "Maniobra fallida",
     "hitFor": "{{name}} recibe {{damage}} de daño",
+    "healedFor": "{{name}} cura {{healing}} PV",
     "missed": "Ataque fallido contra {{name}}",
     "done": "Acción realizada",
     "actionFailed": "Acción fallida",

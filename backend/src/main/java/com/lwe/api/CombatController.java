@@ -147,10 +147,10 @@ public class CombatController {
      *  QA: attack/damage enthalten die Wurf-Aufstellung (Einzelwürfe + Boni + Summe). */
     public record ActionResultResponse(String actionType, int totalDamage, int apCurrent,
                                        CombatService.RollBreakdown attack,
-                                       CombatService.RollBreakdown damage) {
+                                       CombatService.RollBreakdown damage, int healing) {
         static ActionResultResponse from(CombatService.CombatActionResult r) {
             return r == null ? null : new ActionResultResponse(r.actionType(), r.totalDamage(),
-                r.apRemaining(), r.attack(), r.damage());
+                r.apRemaining(), r.attack(), r.damage(), r.healing());
         }
     }
 }

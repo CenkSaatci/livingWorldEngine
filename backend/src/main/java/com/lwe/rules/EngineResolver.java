@@ -2,6 +2,8 @@ package com.lwe.rules;
 
 import com.lwe.core.domain.World;
 import com.lwe.core.service.RulesLoader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
@@ -15,6 +17,8 @@ import java.util.UUID;
  */
 @Component
 public class EngineResolver {
+
+    private static final Logger log = LoggerFactory.getLogger(EngineResolver.class);
 
     private final RulesLoader rulesLoader;
     private final Map<DiceExpressionParser.DiceSystem, RuleEngine> engines;
@@ -34,8 +38,9 @@ public class EngineResolver {
             try {
                 var engine = engines.get(DiceExpressionParser.detect(gs.getRulesJson()));
                 if (engine != null) return engine;
-            } catch (IllegalArgumentException ignored) {
-                // unbekanntes Würfelsystem -> Fallback unten
+            } catch (IllegalArgumentException e) {
+                // R3: sichtbar machen statt still auf D20 zurückzufallen.
+                log.warn("Wuerfelsystem nicht bestimmbar ({}): Fallback D20", e.getMessage());
             }
         }
         return engines.getOrDefault(DiceExpressionParser.DiceSystem.D20,

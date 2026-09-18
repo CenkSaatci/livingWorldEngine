@@ -101,6 +101,7 @@
     "apCost": "AP: {{cost}}",
     "maneuverFailed": "Manevra başarısız",
     "hitFor": "{{name}} {{damage}} hasar alır",
+    "healedFor": "{{name}} {{healing}} HP iyileştirir",
     "missed": "Saldırı {{name}} hedefini ıskaladı",
     "done": "Eylem gerçekleştirildi",
     "actionFailed": "Eylem başarısız",

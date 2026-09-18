@@ -66,7 +66,7 @@ class CombatControllerActiveTest {
         var damage = new CombatService.RollBreakdown("damage", List.of(4),
             List.of(new CombatService.RollPart("Bonus", 1)), null, 5, null, null, null);
         var action = new CombatService.CombatActionResult("MANEUVER:Wuchtschlag", 5, 1, true, null,
-            null, damage);
+            null, damage, 0);
         when(combatService.executeManeuver(userId, sessionId, actorId, targetId, "Wuchtschlag"))
             .thenReturn(action);
         when(combatService.getSession(userId, sessionId)).thenReturn(session);
@@ -90,7 +90,7 @@ class CombatControllerActiveTest {
         var damage = new CombatService.RollBreakdown("damage", List.of(6), List.of(),
             null, 6, null, null, null);
         var action = new CombatService.CombatActionResult("ABILITY:Feuerball", 6, 0, true, null,
-            null, damage);
+            null, damage, 0);
         when(combatService.useAbility(userId, sessionId, actorId, abilityId, null))
             .thenReturn(action);
         when(combatService.getSession(userId, sessionId)).thenReturn(session);

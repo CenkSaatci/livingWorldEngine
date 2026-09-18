@@ -165,22 +165,30 @@ export function ActionBar({ worldId }: Props) {
       useCombatStore.getState().setSession(res.data.session, res.data.participants);
       setUsedActions((prev) => ({ ...prev, [type]: (prev[type] ?? 0) + 1 }));
       const result = res.data.result as {
-        actionType?: string; totalDamage?: number;
+        actionType?: string; totalDamage?: number; healing?: number;
         attack?: RollBreakdown | null; damage?: RollBreakdown | null;
       } | null | undefined;
-      // QA/UX: Treffer, Miss und die Wurf-Aufstellung sichtbar machen.
+      // QA/UX: Treffer, Miss, Heilung und die Wurf-Aufstellung sichtbar machen.
       if (result?.actionType === 'MISS') {
         const detail = result.attack ? ` (${formatRollBreakdown(result.attack)})` : '';
         toast.error(`${t('combat.missed', { name: targetName(targetEntityId) })}${detail}`);
-      } else if ((result?.totalDamage ?? 0) > 0) {
-        if (!abilityId) playCombatHit();
-        const detail = result?.damage ? ` · ${formatRollBreakdown(result.damage)}` : '';
-        toast.success(t('combat.hitFor', {
-          name: targetName(targetEntityId), damage: result?.totalDamage,
-        }) + detail);
       } else {
         if (!abilityId) playCombatHit();
-        toast.success(t('combat.done'));
+        const damage = result?.totalDamage ?? 0;
+        const healing = result?.healing ?? 0;
+        const messages: string[] = [];
+        if (damage > 0) {
+          const detail = result?.damage ? ` · ${formatRollBreakdown(result.damage)}` : '';
+          messages.push(t('combat.hitFor', {
+            name: targetName(targetEntityId), damage,
+          }) + detail);
+        }
+        if (healing > 0) {
+          messages.push(t('combat.healedFor', {
+            name: targetName(currentActor?.entityId ?? null), healing,
+          }));
+        }
+        toast.success(messages.length > 0 ? messages.join(' · ') : t('combat.done'));
       }
     } catch (e) {
       toast.error(errorText(e, t('combat.actionFailed', { defaultValue: 'Action failed' })));

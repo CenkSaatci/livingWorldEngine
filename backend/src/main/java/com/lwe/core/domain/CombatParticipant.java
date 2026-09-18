@@ -36,6 +36,11 @@ public class CombatParticipant {
     @Column(nullable = false, length = 20)
     private String side = "A";
 
+    /** R3/Block C: Optimistic Locking gegen Lost Updates bei parallelen Aktionen. */
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
     protected CombatParticipant() {}
 
     public CombatParticipant(UUID combatId, UUID entityId, int initiative, int apMax, String side) {

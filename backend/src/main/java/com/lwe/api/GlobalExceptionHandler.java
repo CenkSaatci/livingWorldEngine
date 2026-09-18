@@ -95,6 +95,14 @@ public class GlobalExceptionHandler {
             .body(ApiError.of("SYSTEM_INTERNAL_ERROR", "An unexpected error occurred"));
     }
 
+    /** R3/Block C: parallele Aenderung (Optimistic Locking) => 409 statt 500. */
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ApiError> handleOptimisticLock(
+            org.springframework.orm.ObjectOptimisticLockingFailureException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(ApiError.of("CONFLICT", "Gleichzeitige Änderung — bitte erneut versuchen"));
+    }
+
     private static String extractErrorCode(RuntimeException ex) {
         return switch (ex) {
             case AuthService.AuthException e -> e.getErrorCode();

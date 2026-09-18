@@ -101,6 +101,7 @@
     "apCost": "AP: {{cost}}",
     "maneuverFailed": "Manovra fallita",
     "hitFor": "{{name}} subisce {{damage}} danni",
+    "healedFor": "{{name}} cura {{healing}} PF",
     "missed": "Attacco mancato su {{name}}",
     "done": "Azione eseguita",
     "actionFailed": "Azione fallita",

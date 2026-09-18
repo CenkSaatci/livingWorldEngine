@@ -5,6 +5,8 @@ import com.lwe.core.domain.NpcIntent;
 import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.service.AttributeUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -19,6 +21,8 @@ import java.util.UUID;
  */
 @Component
 public class IntentValidator {
+
+    private static final Logger log = LoggerFactory.getLogger(IntentValidator.class);
 
     private final GameEntityRepository entityRepo;
     private final ObjectMapper objectMapper;
@@ -62,8 +66,13 @@ public class IntentValidator {
         var target = entityRepo.findById(targetUuid).orElse(null);
         if (target == null) return reject("Target not found");
 
-        var distance = AttributeUtils.gridDistance(npc, target);
-        if (distance > 5) return reject("Target out of range (" + distance + " tiles)");
+        // Range-Check (max 5 Tiles); ohne Positionsdaten sichtbar ueberspringen.
+        var distanceOpt = AttributeUtils.tryGridDistance(npc, target);
+        if (distanceOpt.isEmpty()) {
+            log.warn("Intent-Range-Check ohne Positionsdaten (NPC {} -> {})", npc.getId(), targetId);
+        } else if (distanceOpt.getAsInt() > 5) {
+            return reject("Target out of range (" + distanceOpt.getAsInt() + " tiles)");
+        }
 
         return new ValidationResult(true, null);
     }

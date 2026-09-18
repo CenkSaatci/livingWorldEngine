@@ -8,6 +8,8 @@ import com.lwe.core.domain.World;
 import com.lwe.core.repository.CampaignRepository;
 import com.lwe.core.repository.GameSystemRepository;
 import com.lwe.core.repository.WorldRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -20,6 +22,8 @@ import java.util.UUID;
  */
 @Service
 public class RulesLoader {
+
+    private static final Logger log = LoggerFactory.getLogger(RulesLoader.class);
 
     private final WorldRepository worldRepo;
     private final GameSystemRepository systemRepo;
@@ -75,6 +79,7 @@ public class RulesLoader {
             try {
                 return objectMapper.readValue(snapshot, RULES_MAP);
             } catch (Exception e) {
+                log.warn("Regel-Snapshot der Kampagne {} nicht lesbar: {}", campaignId, e.getMessage());
                 return Map.of();
             }
         }
@@ -85,6 +90,7 @@ public class RulesLoader {
         try {
             return objectMapper.readValue(system.getRulesJson(), RULES_MAP);
         } catch (Exception e) {
+            log.warn("Regel-JSON des Systems {} nicht lesbar: {}", system.getId(), e.getMessage());
             return Map.of();
         }
     }
@@ -132,6 +138,7 @@ public class RulesLoader {
         try {
             return objectMapper.readValue(system.getRulesJson(), RULES_MAP);
         } catch (Exception e) {
+            log.warn("Regel-JSON nicht lesbar: {}", e.getMessage());
             return Map.of();
         }
     }
