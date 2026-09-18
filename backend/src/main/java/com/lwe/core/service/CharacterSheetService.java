@@ -220,7 +220,7 @@ public class CharacterSheetService {
     @Transactional
     public void updateProgression(UUID entityId, UUID userId, int experiencePoints) {
         var entity = entityRepo.findById(entityId)
-            .orElseThrow(() -> new RuntimeException("ENTITY_NOT_FOUND"));
+            .orElseThrow(() -> new EntityService.EntityException("ENTITY_NOT_FOUND", "Entity not found"));
         entityAccess.checkControl(entity, userId); // Runde 1
         entity.setExperiencePoints(experiencePoints);
         entityRepo.save(entity);

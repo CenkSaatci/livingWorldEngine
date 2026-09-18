@@ -51,6 +51,17 @@ class DiceExpressionParserTest {
     }
 
     @Test
+    void shouldTolerateSpacesInProbe() {
+        // Doku-Beispiel (API.md): "1d20 + mod" muss parsebar sein.
+        var result = DiceExpressionParser.parseProbe("1d20 + mod");
+        assertThat(result.count()).isEqualTo(1);
+        assertThat(result.sides()).isEqualTo(20);
+        assertThat(DiceExpressionParser.detect("""
+            {"version":1,"attributes":[],"dice_mechanics":{"probe":"1d20 + mod"}}
+            """)).isEqualTo(DiceExpressionParser.DiceSystem.D20);
+    }
+
+    @Test
     void shouldRejectZeroDiceProbe() {
         assertThatThrownBy(() -> DiceExpressionParser.parseProbe("0d6"))
             .isInstanceOf(IllegalArgumentException.class);

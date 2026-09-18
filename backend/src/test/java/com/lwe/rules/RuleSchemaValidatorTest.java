@@ -401,6 +401,19 @@ class RuleSchemaValidatorTest {
     }
 
     @Test
+    void rejectsUnparsableCombatDamageExpression() {
+        var bad = """
+            {"version":1,
+             "attributes":[{"name":"mut","type":"INT","default":10}],
+             "skills":[],
+             "dice_mechanics":{"probe":"1d20+mod",
+               "combat":{"initiative":"1d20","damage":"1w6"}}}
+            """;
+        assertThat(validator.validate(bad, RuleSchemaValidator.DEFAULT_SCHEMA))
+            .as("kaputter Schadensausdruck muss Upload-Fehler sein").isNotEmpty();
+    }
+
+    @Test
     void attackSkillWithNonCombatKindIsWarningNotError() {
         var bad = """
             {"version":1,

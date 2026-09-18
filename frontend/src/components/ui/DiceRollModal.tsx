@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { CssDice } from './CssDice';
-import { ThreeDice, DICE_SKINS } from './ThreeDice';
+import { ThreeDice } from './ThreeDice';
+import { DICE_SKINS } from './diceSkins';
 
 interface DieRoll {
   sides: number;

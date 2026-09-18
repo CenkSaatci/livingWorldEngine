@@ -864,7 +864,8 @@ export function toRulesJson(data: WizardData): string {
     attributes: data.attributes,
     skills: data.skills.map((sk) => {
       if (!sk.casting || !sk.casting.resource?.trim()) {
-        const { casting: _omit, ...rest } = sk;
+        const rest = { ...sk };
+        delete (rest as { casting?: unknown }).casting;
         return rest;
       }
       return sk;

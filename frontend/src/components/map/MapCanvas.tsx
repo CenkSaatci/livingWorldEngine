@@ -58,7 +58,7 @@ export function MapCanvas({ cols = 20, rows = 15, tileSize = 48, worldId = '', m
     bgSpriteRef.current = sprite;
     return () => {
       if (bgSpriteRef.current) {
-        try { app.stage.removeChild(bgSpriteRef.current); bgSpriteRef.current.destroy(true); } catch {}
+        try { app.stage.removeChild(bgSpriteRef.current); bgSpriteRef.current.destroy(true); } catch { /* destroy best-effort */ }
         bgSpriteRef.current = null;
       }
     };

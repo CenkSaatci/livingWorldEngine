@@ -37,6 +37,9 @@ export function ActionBar({ worldId }: Props) {
   const [maneuvers, setManeuvers] = useState<{ name: string; apCost?: number }[]>([]);
   const [weaponItemId, setWeaponItemId] = useState<string | null>(null);
   const [usedActions, setUsedActions] = useState<Record<string, number>>({});
+  // QA-Fix: Hook muss VOR dem Early-Return stehen (sonst Rules-of-Hooks-Crash beim
+  // Wechsel "kein Kampf -> aktiver Kampf", z. B. Deep-Link/Reload).
+  const [acting, setActing] = useState(false);
   const toast = useToast();
   const activeCampaignId = useCampaignStore((s) => s.activeCampaignId);
   // GameView-Badge-Pattern: gecachte activeCampaign zuerst (Deep-Link/Reload),
@@ -136,8 +139,6 @@ export function ActionBar({ worldId }: Props) {
   const aliveTargets = participants.filter(
     (p) => p.entityId !== session.currentTurnEntityId && p.apCurrent > 0,
   );
-
-  const [acting, setActing] = useState(false);
 
   const targetName = (id: string | null) =>
     id ? (participants.find((p) => p.entityId === id)?.name ?? id.slice(0, 8)) : '';

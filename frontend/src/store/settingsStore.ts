@@ -16,7 +16,7 @@ const storedTheme = (() => {
   try {
     const v = localStorage.getItem('lwe:theme');
     if (v === 'light' || v === 'dark' || v === 'cyber') return v;
-  } catch {}
+  } catch { /* localStorage kann blockiert sein */ }
   return 'dark';
 })();
 

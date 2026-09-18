@@ -50,11 +50,12 @@ public class CombatController {
     public ResponseEntity<CombatSessionWithParticipants> maneuver(@PathVariable UUID sessionId,
                                                                    @Valid @RequestBody ManeuverRequest req,
                                                                    @AuthenticationPrincipal User user) {
-        combatService.executeManeuver(user.getId(), sessionId, req.actorId(), req.targetId(), req.maneuver());
+        var result = combatService.executeManeuver(user.getId(), sessionId,
+            req.actorId(), req.targetId(), req.maneuver());
         var session = combatService.getSession(user.getId(), sessionId);
         var participants = combatService.getParticipants(sessionId, user.getId());
         return ResponseEntity.ok(new CombatSessionWithParticipants(
-            CombatSessionResponse.from(session), participants));
+            CombatSessionResponse.from(session), participants, ActionResultResponse.from(result)));
     }
 
     @PostMapping("/{sessionId}/next-turn")
@@ -96,12 +97,12 @@ public class CombatController {
     public ResponseEntity<CombatSessionWithParticipants> useAbility(@PathVariable UUID sessionId,
                                                                       @Valid @RequestBody AbilityRequest req,
                                                                       @AuthenticationPrincipal User user) {
-        combatService.useAbility(user.getId(), sessionId,
+        var result = combatService.useAbility(user.getId(), sessionId,
             req.actorId(), req.abilityId(), req.targetId());
         var session = combatService.getSession(user.getId(), sessionId);
         var participants = combatService.getParticipants(sessionId, user.getId());
         return ResponseEntity.ok(new CombatSessionWithParticipants(
-            CombatSessionResponse.from(session), participants));
+            CombatSessionResponse.from(session), participants, ActionResultResponse.from(result)));
     }
 
     public record StartRequest(

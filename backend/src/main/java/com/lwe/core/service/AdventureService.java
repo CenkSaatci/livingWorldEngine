@@ -3,6 +3,8 @@ package com.lwe.core.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.*;
 import com.lwe.core.repository.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import static com.lwe.core.service.WorldEventService.EventType.*;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +15,8 @@ import java.util.UUID;
 
 @Service
 public class AdventureService {
+
+    private static final Logger log = LoggerFactory.getLogger(AdventureService.class);
 
     private final AdventureRepository adventureRepo;
     private final AdventureNodeRepository nodeRepo;
@@ -239,7 +243,11 @@ public class AdventureService {
                         skill, modifier, target, campaignId);
                     skillCheckSuccess = rollResult != null && rollResult.success();
                 }
+            } catch (ProbeService.ProbeException | ProbeService.SocialException | ProbeService.CastException e) {
+                // R2-Fix: Fail-closed-Regelfehler nicht als "Wurf misslungen" tarnen.
+                throw e;
             } catch (Exception e) {
+                log.warn("Skillcheck-Wurf '{}' fehlgeschlagen: {}", skill, e.getMessage());
                 skillCheckSuccess = false;
             }
 

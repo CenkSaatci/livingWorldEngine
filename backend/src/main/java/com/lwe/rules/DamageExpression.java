@@ -3,17 +3,23 @@ package com.lwe.rules;
 import java.util.regex.Pattern;
 
 /**
- * Zerlegt Schadensausdrücke wie {@code "1d6"}, {@code "1d6+2"} oder
- * {@code "1d8+staerke"} in Würfel + Flat + Attributname.
+ * Zerlegt Schadensausdrücke wie {@code "1d6"}, {@code "1d6+2"}, {@code "1d8+staerke"},
+ * {@code "1d8+staerke+2"} oder {@code "1d6-staerke"} in Würfel, Flat und Attribut-Term.
+ * Leerzeichen sind erlaubt; mehrere Flat-Terme werden summiert; maximal ein Attribut-Term.
  * Gemeinsame Quelle für CombatService und NPC-IntentExecutor (ADR-014).
  */
 public final class DamageExpression {
 
-    public record Parts(String dice, String attr, int flat) {}
+    /** {@code attrBonusSign} ist +1 oder -1 (Ausdrücke wie "1d6-staerke"). */
+    public record Parts(String dice, String attr, int flat, int attrBonusSign) {
+        public Parts(String dice, String attr, int flat) {
+            this(dice, attr, flat, 1);
+        }
+    }
 
     private static final Pattern EXPR = Pattern.compile("^(\\d+d\\d+)(.*)$");
-    private static final Pattern FLAT = Pattern.compile("^[+-]?(\\d+)$");
-    private static final Pattern ATTR = Pattern.compile("^[+-]?([A-Za-z_äöüÄÖÜß][\\wäöüÄÖÜß]*)$");
+    private static final Pattern TERM =
+        Pattern.compile("([+-])(\\d+|[A-Za-z_äöüÄÖÜß][\\wäöüÄÖÜß]*)");
 
     private DamageExpression() {}
 
@@ -23,15 +29,28 @@ public final class DamageExpression {
         var m = EXPR.matcher(expr.strip());
         if (!m.matches()) return null;
         var dice = m.group(1);
-        var rest = m.group(2).strip();
-        if (rest.isEmpty()) return new Parts(dice, null, 0);
-        var num = FLAT.matcher(rest);
-        if (num.matches()) {
-            int sign = rest.startsWith("-") ? -1 : 1;
-            return new Parts(dice, null, sign * Integer.parseInt(num.group(1)));
+        var rest = m.group(2).replaceAll("\\s+", "");
+        if (rest.isEmpty()) return new Parts(dice, null, 0, 1);
+
+        String attr = null;
+        int attrBonusSign = 1;
+        int flat = 0;
+        int pos = 0;
+        var term = TERM.matcher(rest);
+        while (term.find()) {
+            if (term.start() != pos) return null; // Lücke / ungültiges Zeichen
+            pos = term.end();
+            int sign = "-".equals(term.group(1)) ? -1 : 1;
+            var token = term.group(2);
+            if (token.chars().allMatch(Character::isDigit)) {
+                flat += sign * Integer.parseInt(token);
+            } else {
+                if (attr != null) return null; // nur ein Attribut-Term
+                attr = token;
+                attrBonusSign = sign;
+            }
         }
-        var attr = ATTR.matcher(rest);
-        if (attr.matches()) return new Parts(dice, attr.group(1), 0);
-        return null;
+        if (pos != rest.length()) return null;
+        return new Parts(dice, attr, flat, attrBonusSign);
     }
 }

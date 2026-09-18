@@ -14,7 +14,7 @@ public class DiceExpressionParser {
     public static DiceSystem detect(String rulesJson) {
         try {
             var tree = MAPPER.readTree(rulesJson);
-            var probe = tree.path("dice_mechanics").path("probe").asText("").strip();
+            var probe = tree.path("dice_mechanics").path("probe").asText("").replaceAll("\\s+", "");
             
             // Fudge-Erkennung
             if (FUDGE_PATTERN.matcher(probe).matches()) return DiceSystem.FUDGE;
@@ -38,7 +38,7 @@ public class DiceExpressionParser {
     public record DiceProbe(int count, int sides) {}
 
     public static DiceProbe parseProbe(String expression) {
-        var m = EXPR_PATTERN.matcher(expression.strip());
+        var m = EXPR_PATTERN.matcher(expression.replaceAll("\\s+", ""));
         if (!m.matches()) throw new IllegalArgumentException("Invalid dice expression: " + expression);
         int count;
         int sides;

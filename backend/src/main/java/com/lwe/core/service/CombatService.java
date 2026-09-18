@@ -272,7 +272,8 @@ public class CombatService {
             var entity = entityRepo.findById(actorId)
                 .orElseThrow(() -> new CombatException("ENTITY_NOT_FOUND", "Actor not found"));
             var parts = parseDamageOrThrow(effects.damageExpr, "ability");
-            damageRoll = computeDamage(entity, rules, parts.dice(), parts.flat(), parts.attr());
+            damageRoll = computeDamage(entity, rules, parts.dice(), parts.flat(), parts.attr(),
+                parts.attrBonusSign());
             damage = damageRoll.total();
         }
         // Heil-Ausdruck vorab validieren: kaputt = Fehler, BEVOR Schaden angewendet wird.
@@ -530,23 +531,25 @@ public class CombatService {
         DamageParts parts;
         String attrName;
         int flatBonus;
+        int attrBonusSign = 1;
         if (weapon != null) {
             parts = parseDamageOrThrow(weapon.dice(), "Waffe");
             attrName = weapon.attr();
             flatBonus = weapon.bonus() + parts.flat();
         } else {
             var raw = combatDamageExpr(rules);
-            parts = raw == null ? new DamageParts("1d6", null, 0) : parseDamageOrThrow(raw, "combat.damage");
+            parts = raw == null ? new DamageParts("1d6", null, 0, 1) : parseDamageOrThrow(raw, "combat.damage");
             attrName = parts.attr();
+            attrBonusSign = parts.attrBonusSign();
             flatBonus = parts.flat();
         }
-        return computeDamage(entity, rules, parts.dice(), flatBonus, attrName);
+        return computeDamage(entity, rules, parts.dice(), flatBonus, attrName, attrBonusSign);
     }
 
     /** Gemeinsame Schadens-Stufen für Angriffe, Manöver und Fähigkeiten (ADR-014)
      *  inkl. Aufstellung (Würfel + Boni = Summe) für die Anzeige. */
     private RollBreakdown computeDamage(GameEntity entity, Map<String, Object> rules,
-                                        String dice, int flat, String attrName) {
+                                        String dice, int flat, String attrName, int attrBonusSign) {
         var diceValues = new ArrayList<Integer>();
         try {
             for (int r : new com.lwe.rules.DiceExpression(dice).getRolls()) diceValues.add(r);
@@ -558,7 +561,7 @@ public class CombatService {
         if (flat != 0) parts.add(new RollPart("Bonus", flat));
         if (attrName != null) {
             int attrValue = AttributeUtils.extractAttribute(entity, attrName).orElse(10);
-            int bonus = damageAttrBonus(attrValue, rules);
+            int bonus = damageAttrBonus(attrValue, rules) * (attrBonusSign < 0 ? -1 : 1);
             if (bonus != 0) parts.add(new RollPart(attrName, bonus));
         }
         // Aktive Zustaende (P29-T01) + gewählte Merkmale: Schadens-Modifikator.
@@ -591,8 +594,8 @@ public class CombatService {
         }
     }
 
-    /** Zerlegt "1d6+2" / "1d8+staerke" / "2d6" in Würfel + Flat + Attributname. */
-    private record DamageParts(String dice, String attr, int flat) {}
+    /** Zerlegt "1d6+2" / "1d8+staerke" / "2d6" in Würfel + Flat + Attributname (+Vorzeichen). */
+    private record DamageParts(String dice, String attr, int flat, int attrBonusSign) {}
 
     private DamageParts parseDamageOrThrow(String expr, String what) {
         var parts = parseDamageExpr(expr);
@@ -606,7 +609,8 @@ public class CombatService {
     /** @return null bei unparsbarem Ausdruck (Aufrufer entscheidet: Default vs. Fehler). */
     private DamageParts parseDamageExpr(String expr) {
         var parts = DamageExpression.parse(expr);
-        return parts == null ? null : new DamageParts(parts.dice(), parts.attr(), parts.flat());
+        return parts == null ? null
+            : new DamageParts(parts.dice(), parts.attr(), parts.flat(), parts.attrBonusSign());
     }
 
     /** @return null wenn kein Schadensausdruck konfiguriert (dann gilt Default 1d6). */
@@ -755,6 +759,9 @@ public class CombatService {
     public CombatSession nextTurn(UUID userId, UUID sessionId) {
         var session = sessionRepo.findById(sessionId)
             .orElseThrow(() -> new CombatException("COMBAT_NOT_FOUND", "Combat session not found"));
+        // R2-Fix: keine Zug-Wechsel in beendeten Kaempfen.
+        if (!"ACTIVE".equals(session.getStatus()))
+            throw new CombatException("COMBAT_NOT_ACTIVE", "Combat has ended");
         // Runde 1: Zug weitergeben darf der Kontrolleur des aktuellen Actors oder der DM.
         entityAccess.requireControl(session.getCurrentTurnEntityId(), userId);
 

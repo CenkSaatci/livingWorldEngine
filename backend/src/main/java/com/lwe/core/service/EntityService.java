@@ -320,7 +320,7 @@ public class EntityService {
             }
             if (!highestPlus2) continue;
             var def = skillDefs.stream()
-                .filter(d -> e.getKey().equals(d.get("name")))
+                .filter(d -> d.get("name") instanceof String dn && RuleNames.eq(e.getKey(), dn))
                 .findFirst().orElse(null);
             if (def == null) continue;
             // Legacy "attribute" (Singular) mitlesen (Audit P28).

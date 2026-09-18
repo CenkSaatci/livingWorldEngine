@@ -69,6 +69,21 @@ class AdventureServiceTest {
     }
 
     @Test
+    void advancePropagatesSkillNotFoundInsteadOfSilentFailure() {
+        var r = advanceFixture(3);
+        when(rulesLoader.loadRules(r.campaignId(), worldId))
+            .thenReturn(java.util.Map.of("dice_mechanics", java.util.Map.of("probe", "3d20")));
+        when(probeService.executeProbe(eq(r.entityId()), eq(userId), eq("Klettern"), eq(10),
+            eq(false), eq(r.campaignId()), any()))
+            .thenThrow(new ProbeService.ProbeException("ROLL_SKILL_NOT_FOUND", "Unknown skill: Klettern"));
+
+        // R2-Fix: Regelfehler sichtbar machen, nicht still als Story-Fehlschlag verbuchen.
+        assertThatThrownBy(() -> service.advance(adventure.getId(), r.entityId(), r.choiceId(), userId))
+            .isInstanceOf(ProbeService.ProbeException.class)
+            .matches(e -> ((ProbeService.ProbeException) e).getErrorCode().equals("ROLL_SKILL_NOT_FOUND"));
+    }
+
+    @Test
     void advanceKeepsOtherSystemsOnRollServiceWithCampaignContext() {
         var r = advanceFixture(2);
         when(rulesLoader.loadRules(r.campaignId(), worldId))

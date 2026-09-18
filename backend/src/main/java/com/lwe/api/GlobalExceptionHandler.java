@@ -153,12 +153,13 @@ public class GlobalExceptionHandler {
                 default -> HttpStatus.UNPROCESSABLE_ENTITY;
             };
             case CombatService.CombatException e -> switch (e.getErrorCode()) {                case "COMBAT_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                case "ABILITY_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 case "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
                 case "COMBAT_NOT_ACTIVE", "COMBAT_NOT_YOUR_TURN", "COMBAT_AP_INSUFFICIENT",
                      "COMBAT_RANGE_INVALID", "COMBAT_TARGET_INVALID",
                      "COMBAT_TARGET_DEFEATED", "COMBAT_ACTOR_DEFEATED",
                      "COMBAT_MANEUVER_UNKNOWN", "COMBAT_ACTION_BLOCKED",
-                     "COMBAT_ATTACK_UNRESOLVABLE" -> HttpStatus.UNPROCESSABLE_ENTITY;
+                     "COMBAT_ATTACK_UNRESOLVABLE", "COMBAT_EFFECTS_INVALID" -> HttpStatus.UNPROCESSABLE_ENTITY;
                 case "COMBAT_INSUFFICIENT_PARTICIPANTS" -> HttpStatus.BAD_REQUEST;
                 default -> HttpStatus.BAD_REQUEST;
             };

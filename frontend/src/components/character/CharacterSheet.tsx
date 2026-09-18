@@ -587,7 +587,8 @@ function FormulaOverrides({ entityId, onSaved }: { entityId: string; onSaved: ()
   };
 
   const handleRemove = async (name: string) => {
-    const { [name]: _, ...rest } = overrides;
+    const rest = { ...overrides };
+    delete rest[name];
     try {
       await apiClient.patch(`/entities/${entityId}/override`, rest);
       setOverrides(rest);

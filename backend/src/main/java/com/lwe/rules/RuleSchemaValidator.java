@@ -367,6 +367,14 @@ public class RuleSchemaValidator {
                 }
             }
         }
+        // ADR-014: vorhandener, aber kaputter Schadensausdruck ist ein Upload-Fehler
+        // (fehlend bleibt erlaubt — dann gilt der Default 1d6 zur Laufzeit).
+        var combatDamage = rules.path("dice_mechanics").path("combat").path("damage");
+        if (combatDamage.isTextual() && !combatDamage.asText().isBlank()
+            && DamageExpression.parse(combatDamage.asText()) == null) {
+            out.add(new ValidationError("$.dice_mechanics.combat.damage",
+                "Schadensausdruck '" + combatDamage.asText() + "' nicht parsbar"));
+        }
         return out;
     }
 

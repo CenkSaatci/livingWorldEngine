@@ -114,7 +114,9 @@ public class IntentExecutor {
         int damage;
         try {
             damage = parts.flat() + new com.lwe.rules.DiceExpression(parts.dice()).getTotal();
-            if (parts.attr() != null) damage += damageAttrBonus(npc, rules, parts.attr());
+            if (parts.attr() != null) {
+                damage += parts.attrBonusSign() * damageAttrBonus(npc, rules, parts.attr());
+            }
         } catch (IllegalArgumentException e) {
             log.error("NPC {}: Schadensausdruck '{}' nicht auswertbar ({}): Angriff uebersprungen",
                 npc.getName(), expr, e.getMessage());

@@ -46,9 +46,20 @@ public class EntityController {
                                   @RequestParam(required = false, defaultValue = "false") boolean forTrade,
                                   @RequestParam(required = false) UUID campaignId,
                                   @AuthenticationPrincipal User user) {
-        var entities = entityService.list(worldId, user.getId(), type, forTrade, campaignId)
-            .stream().map(EntityResponse::from).toList();
-        return ResponseEntity.ok(entities);
+        var entities = entityService.list(worldId, user.getId(), type, forTrade, campaignId);
+        if (forTrade) {
+            // ADR-014 (R2-Fix): Handelskandidaten sind nur Referenzen — keine fremden
+            // Attributes/Inventory/Metadata/Backstory ausliefern.
+            return ResponseEntity.ok(entities.stream().map(TradeCandidateResponse::from).toList());
+        }
+        return ResponseEntity.ok(entities.stream().map(EntityResponse::from).toList());
+    }
+
+    /** Schlanke Kandidaten-Ansicht für den Handel (ADR-014: fremde Bögen bleiben zu). */
+    public record TradeCandidateResponse(UUID id, String name, String entityType) {
+        static TradeCandidateResponse from(com.lwe.core.domain.GameEntity e) {
+            return new TradeCandidateResponse(e.getId(), e.getName(), e.getEntityType());
+        }
     }
 
     @GetMapping("/{entityId}")

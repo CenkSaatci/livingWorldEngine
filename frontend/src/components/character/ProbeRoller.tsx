@@ -80,12 +80,13 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, c
         setResult(res.data);
         setUseFate(false); // Punkt ist ausgegeben
       }
-    } catch (e: any) {
+    } catch (e) {
       // Kein lokaler Fallback-Wurf: Ein fehlgeschlagener Server-Wurf darf nicht
       // wie ein echtes Ergebnis aussehen. Fehler anzeigen, nichts würfeln.
       setResult(null);
       setFailed(true);
-      const code = e?.response?.data?.error?.code;
+      const err = e as { response?: { data?: { error?: { code?: string; message?: string } } } };
+      const code = err?.response?.data?.error?.code;
       toast.error(
         code === 'CAST_INSUFFICIENT_RESOURCE'
           ? t('sheet.castNoResource')!
