@@ -137,10 +137,11 @@ public class EntityService {
         } else {
             all = entityRepo.findByWorldIdAndActiveTrue(worldId);
         }
-        // ADR-014: Spieler sehen nur eigene Charaktere (+ NPCs/Legacy ohne Owner); DM alles.
+        // ADR-014: Spieler sehen nur eigene Charaktere (+ NPCs/Alles ohne Owner); DM alles.
         if (isPrivileged(worldId, userId)) return all;
         return all.stream()
-            .filter(e -> e.getOwnerUserId() == null || e.getOwnerUserId().equals(userId))
+            .filter(e -> !"PC".equalsIgnoreCase(e.getEntityType())
+                || e.getOwnerUserId() == null || e.getOwnerUserId().equals(userId))
             .toList();
     }
 
@@ -148,8 +149,9 @@ public class EntityService {
         var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new EntityException("ENTITY_NOT_FOUND", "Entity not found"));
         worldAccess.requireRead(entity.getWorldId(), userId); // T33-02
-        // ADR-014: fremde Charaktere (Owner gesetzt) sehen nur Owner/DM.
-        if (entity.getOwnerUserId() != null && !entity.getOwnerUserId().equals(userId)
+        // ADR-014: fremde Spieler-Charaktere sehen nur Owner/DM (NPCs bleiben offen).
+        if ("PC".equalsIgnoreCase(entity.getEntityType())
+            && entity.getOwnerUserId() != null && !entity.getOwnerUserId().equals(userId)
             && !isPrivileged(entity.getWorldId(), userId)) {
             throw new EntityException("WORLD_ACCESS_DENIED", "Access denied");
         }

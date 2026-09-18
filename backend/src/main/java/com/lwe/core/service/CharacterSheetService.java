@@ -68,6 +68,10 @@ public class CharacterSheetService {
             .orElseThrow(() -> new RuntimeException("WORLD_NOT_FOUND"));
 
         worldAccess.requireAccess(entity.getWorldId(), userId);
+        // ADR-014: fremde Charaktere sehen nur Owner/DM (NPCs ohne Owner bleiben offen).
+        if (entity.getOwnerUserId() != null && !entity.getOwnerUserId().equals(userId)) {
+            worldAccess.requireDm(entity.getWorldId(), userId);
+        }
         // Fremde Kampagne darf das Sheet nicht mit ihrem System rechnen (finaler Audit).
         if (campaignId != null && !rulesLoader.campaignBelongsToWorld(campaignId, entity.getWorldId())) {
             throw new EntityService.EntityException("WORLD_ACCESS_DENIED",

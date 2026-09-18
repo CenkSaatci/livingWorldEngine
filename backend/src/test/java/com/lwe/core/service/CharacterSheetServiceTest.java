@@ -53,6 +53,31 @@ class CharacterSheetServiceTest {
         lenient().when(levelUpService.getLevel(any(), any())).thenReturn(1);
     }
 
+    @Test
+    void sheetDeniesForeignOwnedCharacterToPlayer() {
+        var stranger = UUID.randomUUID();
+        var entity = mock(GameEntity.class);
+        when(entity.getWorldId()).thenReturn(worldId);
+        when(entity.getOwnerUserId()).thenReturn(stranger);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        mockWorld(systemId);
+        doThrow(new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireDm(worldId, userId);
+
+        assertThrows(WorldAccess.WorldAccessException.class,
+            () -> service.getSheet(entityId, userId, null));
+    }
+
+    @Test
+    void sheetAllowsNpcWithoutOwner() throws Exception {
+        var entity = mockEntity("{\"mut\":10}", null);
+        when(entity.getOwnerUserId()).thenReturn(null);
+        mockWorld(systemId);
+        stubRules("{\"attributes\":[{\"name\":\"mut\",\"type\":\"INT\",\"default\":10}]}");
+
+        assertDoesNotThrow(() -> service.getSheet(entityId, userId, null));
+    }
+
     private void stubRules(String rulesJson) throws Exception {
         when(rulesLoader.loadRules(isNull(), any())).thenReturn(
             objectMapper.readValue(rulesJson, new TypeReference<Map<String, Object>>() {}));
