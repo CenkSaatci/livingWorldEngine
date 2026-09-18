@@ -437,6 +437,39 @@ class ProbeServiceTest {
     }
 
     @Test
+    void socialEffectConditionValidatedBeforeFateSpend() throws Exception {
+        var entity = entityWithAttrs("{\"staerke\":10}");
+        var targetId = UUID.randomUUID();
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        var rules = objectMapper.readValue("""
+            {"version":1,"probeType":"d20_target",
+             "attributes":[{"name":"staerke","type":"INT","default":10}],
+             "skills":[{"name":"Überreden","attributes":[],"bonus":0}],
+             "conditions":[{"name":"Beeindruckt"}],
+             "fate":{"probeBonusPerPoint":2},
+             "social_actions":[{"name":"Freundlich bitten","skill":"Überreden",
+                "onSuccess":[{"condition":"Nix","rounds":3}]}]}
+            """, Map.class);
+        when(rulesLoader.loadRules(any(), any())).thenReturn(rules);
+        var target = new GameEntity(worldId, "NPC", "Alrik");
+        setId(target, targetId);
+        when(entityRepo.findById(targetId)).thenReturn(Optional.of(target));
+        doThrow(new EntityService.EntityException("UNKNOWN_CONDITION", "Unknown condition: Nix"))
+            .when(entityService).validateConditionName("Nix", rules);
+
+        // H-2: unbekannter Effekt-Zustand faellt auf, BEVOR der Fate-Punkt ausgegeben wird.
+        assertThatThrownBy(() -> service.executeProbe(entityId, userId, "Überreden", 0, false,
+            campaignId(), new ProbeService.ProbeOptions(0, null, 0, 0, true),
+            "Freundlich bitten", targetId))
+            .isInstanceOf(EntityService.EntityException.class)
+            .matches(e -> ((EntityService.EntityException) e).getErrorCode().equals("UNKNOWN_CONDITION"));
+        verify(entityService, never()).spendFatePoint(any(), any(), any());
+    }
+
+    @Test
     void socialProbeCapsModifierAndAppliesFailureCondition() throws Exception {
         var entity = entityWithAttrs("{\"staerke\":10}");
         var targetId = UUID.randomUUID();

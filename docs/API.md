@@ -316,8 +316,8 @@ Zieht die aktuelle System-Version nach (P27-T05, Snapshot-Pin). **Fehlercodes:**
 **Fehlercodes:** `ENTITY_TYPE_INVALID`, `ENTITY_ATTRIBUTES_INVALID`, `ENTITY_POSITION_INVALID`, `ENTITY_FACTION_NOT_FOUND`
 
 ### `GET /api/v1/worlds/{worldId}/entities?type=NPC` → Filter
-**ADR-014:** Spieler sehen nur eigene Charaktere (+ NPCs); DM alles. `?forTrade=true` → zusätzlich fremde Charaktere als Handelskandidaten (Sheets bleiben zu).
-### `GET /api/v1/worlds/{worldId}/entities/{id}` (**Fehlercodes:** `ENTITY_NOT_FOUND`, `WORLD_ACCESS_DENIED` für fremde PCs)
+**ADR-014:** Spieler sehen nur eigene Charaktere (+ NPCs); DM alles. `?forTrade=true` → zusätzlich fremde Charaktere als Handelskandidaten (Sheets bleiben zu). `?campaignId=uuid` → Kampagnen-Leiter sehen alle Charaktere ihrer Kampagne (Legacy-Kampagnen ohne Welt-Rolle).
+### `GET /api/v1/worlds/{worldId}/entities/{id}` (**Fehlercodes:** `ENTITY_NOT_FOUND`, `WORLD_ACCESS_DENIED` für fremde PCs; `?campaignId=uuid` erlaubt Kampagnen-Leitern fremde PCs)
 ### `PATCH /api/v1/worlds/{worldId}/entities/{id}` → Update attributes/inventory/metadata
 
 ### `POST /api/v1/entities/{entityId}/conditions?campaignId=uuid`

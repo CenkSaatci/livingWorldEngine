@@ -17,7 +17,7 @@ const POTION = 'item-potion';
 
 function baseGet(url: string) {
   if (url === `/entities/${ME}`) return Promise.resolve({ data: { worldId: 'w1' } } as never);
-  if (url === '/worlds/w1/entities')
+  if (url.startsWith('/worlds/w1/entities'))
     return Promise.resolve({
       data: [
         { id: ME, name: 'Lysander', entityType: 'PC' },

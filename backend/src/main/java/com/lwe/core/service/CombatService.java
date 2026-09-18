@@ -783,7 +783,9 @@ public class CombatService {
             .orElseThrow(() -> new CombatException("COMBAT_NOT_FOUND", "Combat session not found"));
         var parts = participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId);
         // ADR-014: Aufstellung sehen nur Beteiligte + DM (kein Zuschauen fremder HP).
-        if (!involved(parts, userId) && !isDm(session.getWorldId(), userId)) {
+        // Leiter = Welt-DM oder Kampagnen-DM (Legacy-Kampagnen ohne Welt-Rolle, Audit H-1).
+        if (!involved(parts, userId) && !isDm(session.getWorldId(), userId)
+            && !isCampaignDm(session.getCampaignId(), userId)) {
             throw new CombatException("WORLD_ACCESS_DENIED", "Not involved in this combat");
         }
         return parts.stream()
@@ -805,6 +807,11 @@ public class CombatService {
         } catch (com.lwe.core.util.WorldAccess.WorldAccessException e) {
             return false;
         }
+    }
+
+    /** ADR-014: Kampagnen-Leiter ohne Welt-DM-Rolle (Legacy-Kampagnen). */
+    private boolean isCampaignDm(UUID campaignId, UUID userId) {
+        return campaignId != null && campaignMemberService.isDm(campaignId, userId);
     }
 
     private boolean involved(List<CombatParticipant> parts, UUID userId) {

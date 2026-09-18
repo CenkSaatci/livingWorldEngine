@@ -30,6 +30,7 @@ public class CharacterSheetService {
     private final ObjectMapper objectMapper;
     private final ConditionService conditionService;
     private final com.lwe.core.util.EntityAccess entityAccess;
+    private final CampaignMemberService campaignMemberService;
 
     private static final TypeReference<Map<String, Integer>> ATTR_MAP_TYPE = new TypeReference<>() {};
     private static final TypeReference<List<Map<String, Object>>> LIST_MAP_TYPE = new TypeReference<>() {};
@@ -43,7 +44,8 @@ public class CharacterSheetService {
                                   LevelUpService levelUpService,
                                   RulesLoader rulesLoader,
                                   ObjectMapper objectMapper,
-                                  ConditionService conditionService) {
+                                  ConditionService conditionService,
+                                  CampaignMemberService campaignMemberService) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldRepo = worldRepo;
@@ -54,6 +56,7 @@ public class CharacterSheetService {
         this.levelUpService = levelUpService;
         this.rulesLoader = rulesLoader;
         this.conditionService = conditionService;
+        this.campaignMemberService = campaignMemberService;
     }
 
     public SheetResponse getSheet(UUID entityId, UUID userId) {
@@ -68,14 +71,15 @@ public class CharacterSheetService {
             .orElseThrow(() -> new EntityService.EntityException("WORLD_NOT_FOUND", "World not found"));
 
         worldAccess.requireAccess(entity.getWorldId(), userId);
-        // ADR-014: fremde Charaktere sehen nur Owner/DM (NPCs ohne Owner bleiben offen).
-        if (entity.getOwnerUserId() != null && !entity.getOwnerUserId().equals(userId)) {
-            worldAccess.requireDm(entity.getWorldId(), userId);
-        }
         // Fremde Kampagne darf das Sheet nicht mit ihrem System rechnen (finaler Audit).
         if (campaignId != null && !rulesLoader.campaignBelongsToWorld(campaignId, entity.getWorldId())) {
             throw new EntityService.EntityException("WORLD_ACCESS_DENIED",
                 "Campaign does not belong to world");
+        }
+        // ADR-014: fremde Charaktere sehen nur Owner/DM; Leiter = Welt-DM oder Kampagnen-DM.
+        boolean campaignDm = campaignId != null && campaignMemberService.isDm(campaignId, userId);
+        if (entity.getOwnerUserId() != null && !entity.getOwnerUserId().equals(userId) && !campaignDm) {
+            worldAccess.requireDm(entity.getWorldId(), userId);
         }
 
         var rules = rulesLoader.loadRules(campaignId, entity.getWorldId());

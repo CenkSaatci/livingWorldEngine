@@ -169,6 +169,12 @@ public class ProbeService {
             socialBonus = Math.max(-cap, Math.min(cap, weight * score));
         }
 
+        // H-2: Effekt-Zustaende vorab gegen den Katalog pruefen, damit kein
+        // Fate-Punkt ohne Wirkung verfaellt (Validieren vor Ressourcen-Ausgabe).
+        if (socialDef != null) {
+            validateSocialEffectConditions(socialDef, rules);
+        }
+
         // T4: Schicksalspunkt für Probe-Bonus ausgeben (nur wenn Regelwerk fate kennt).
         int fateBonus = 0;
         if (opts.useFate() && rules.get("fate") instanceof Map<?, ?> fateCfg
@@ -349,6 +355,19 @@ public class ProbeService {
             if (!(e instanceof Map<?, ?> m) || !(m.get("condition") instanceof String condition)) continue;
             Integer rounds = m.get("rounds") instanceof Number n ? n.intValue() : null;
             entityService.applyCondition(targetId, condition, rounds, rules);
+        }
+    }
+
+    /** H-2: Beide Effektlisten vorab validieren (Katalog-Code UNKNOWN_CONDITION). */
+    private void validateSocialEffectConditions(Map<String, Object> socialDef,
+                                                Map<String, Object> rules) {
+        for (String key : List.of("onSuccess", "onFailure")) {
+            if (!(socialDef.get(key) instanceof List<?> effects)) continue;
+            for (var e : effects) {
+                if (e instanceof Map<?, ?> m && m.get("condition") instanceof String condition) {
+                    entityService.validateConditionName(condition, rules);
+                }
+            }
         }
     }
 

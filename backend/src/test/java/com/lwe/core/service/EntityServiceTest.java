@@ -35,6 +35,8 @@ class EntityServiceTest {
     private DerivedValueService derivedValueService;
     @Mock
     private com.lwe.core.repository.CampaignRepository campaignRepo;
+    @Mock
+    private CampaignMemberService campaignMemberService;
     private EntityService service;
     private final UUID userId = UUID.randomUUID();
     private final UUID worldId = UUID.randomUUID();
@@ -42,7 +44,8 @@ class EntityServiceTest {
     @BeforeEach
     void setUp() {
         service = new EntityService(entityRepo, worldAccess, new ObjectMapper(), rulesLoader, conditionService,
-            derivedValueService, new com.lwe.core.util.EntityAccess(entityRepo, worldAccess), campaignRepo);
+            derivedValueService, new com.lwe.core.util.EntityAccess(entityRepo, worldAccess), campaignRepo,
+            campaignMemberService);
     }
 
     @Test
@@ -336,6 +339,19 @@ class EntityServiceTest {
     }
 
     @Test
+    void applyConditionRejectsUnknownNameWithCatalogCode() {
+        var entity = entityWithId("{\"staerke\":10}");
+        when(entityRepo.findByIdForUpdate(any())).thenReturn(Optional.of(entity));
+
+        // Engine-Effekte (Sozial) nutzen denselben Katalog-Code wie addCondition (H-2).
+        assertThatThrownBy(() -> service.applyCondition(entity.getId(), "Nix", null,
+            Map.of("conditions", List.of(Map.of("name", "Wunde")))))
+            .isInstanceOf(EntityService.EntityException.class)
+            .satisfies(e -> assertThat(((EntityService.EntityException) e).getErrorCode())
+                .isEqualTo("UNKNOWN_CONDITION"));
+    }
+
+    @Test
     void listHidesForeignOwnedCharactersFromPlayers() {
         var stranger = UUID.randomUUID();
         var mine = entityWithId("{}");
@@ -365,6 +381,51 @@ class EntityServiceTest {
         doNothing().when(worldAccess).requireDm(worldId, userId);
 
         assertThat(service.list(worldId, userId, null)).contains(theirs);
+    }
+
+    @Test
+    void listShowsForeignPcsToCampaignDm() {
+        var stranger = UUID.randomUUID();
+        var dm = UUID.randomUUID();
+        var campaignId = UUID.randomUUID();
+        var theirs = entityWithId("{}");
+        theirs.setOwnerUserId(stranger);
+        when(entityRepo.findByWorldIdAndActiveTrue(worldId)).thenReturn(java.util.List.of(theirs));
+        doNothing().when(worldAccess).requireRead(worldId, dm);
+        // Kein Welt-DM, aber Kampagnen-Leiter (Legacy-Kampagne ohne Welt-Rolle).
+        doThrow(new com.lwe.core.util.WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireDm(worldId, dm);
+        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaignWithId(campaignId)));
+        when(campaignMemberService.isDm(campaignId, dm)).thenReturn(true);
+
+        assertThat(service.list(worldId, dm, null, false, campaignId)).contains(theirs);
+    }
+
+    @Test
+    void getByIdAllowsForeignPcForCampaignDm() {
+        var stranger = UUID.randomUUID();
+        var dm = UUID.randomUUID();
+        var campaignId = UUID.randomUUID();
+        var theirs = entityWithId("{}");
+        theirs.setOwnerUserId(stranger);
+        when(entityRepo.findById(theirs.getId())).thenReturn(Optional.of(theirs));
+        doNothing().when(worldAccess).requireRead(worldId, dm);
+        doThrow(new com.lwe.core.util.WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireDm(worldId, dm);
+        when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaignWithId(campaignId)));
+        when(campaignMemberService.isDm(campaignId, dm)).thenReturn(true);
+
+        assertThat(service.getById(theirs.getId(), dm, campaignId)).isEqualTo(theirs);
+    }
+
+    private com.lwe.core.domain.Campaign campaignWithId(UUID campaignId) {
+        var campaign = new com.lwe.core.domain.Campaign(worldId, UUID.randomUUID(), "QA");
+        try {
+            var f = com.lwe.core.domain.Campaign.class.getDeclaredField("id");
+            f.setAccessible(true);
+            f.set(campaign, campaignId);
+        } catch (Exception e) { throw new RuntimeException(e); }
+        return campaign;
     }
 
     @Test

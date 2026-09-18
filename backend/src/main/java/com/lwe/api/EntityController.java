@@ -44,8 +44,9 @@ public class EntityController {
     public ResponseEntity<?> list(@PathVariable UUID worldId,
                                   @RequestParam(required = false) String type,
                                   @RequestParam(required = false, defaultValue = "false") boolean forTrade,
+                                  @RequestParam(required = false) UUID campaignId,
                                   @AuthenticationPrincipal User user) {
-        var entities = entityService.list(worldId, user.getId(), type, forTrade)
+        var entities = entityService.list(worldId, user.getId(), type, forTrade, campaignId)
             .stream().map(EntityResponse::from).toList();
         return ResponseEntity.ok(entities);
     }
@@ -53,8 +54,9 @@ public class EntityController {
     @GetMapping("/{entityId}")
     public ResponseEntity<EntityResponse> getById(@PathVariable UUID worldId,
                                                    @PathVariable UUID entityId,
+                                                   @RequestParam(required = false) UUID campaignId,
                                                    @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(EntityResponse.from(entityService.getById(entityId, user.getId())));
+        return ResponseEntity.ok(EntityResponse.from(entityService.getById(entityId, user.getId(), campaignId)));
     }
 
     @PatchMapping("/{entityId}")

@@ -1044,6 +1044,36 @@ class CombatServiceTest {
     }
 
     @Test
+    void rosterVisibleForCampaignDm() {
+        var sessionId = UUID.randomUUID();
+        var campaignId = UUID.randomUUID();
+        var dm = UUID.randomUUID();
+        var session = new CombatSession(worldId, campaignId);
+        setId(session, sessionId);
+        var a = new GameEntity(worldId, "PC", "A");
+        a.setOwnerUserId(UUID.randomUUID());
+        setId(a, UUID.randomUUID());
+        var b = new GameEntity(worldId, "PC", "B");
+        b.setOwnerUserId(UUID.randomUUID());
+        setId(b, UUID.randomUUID());
+
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(
+                new CombatParticipant(sessionId, a.getId(), 10, 2, "A"),
+                new CombatParticipant(sessionId, b.getId(), 10, 2, "B"))));
+        when(entityRepo.findById(a.getId())).thenReturn(Optional.of(a));
+        when(entityRepo.findById(b.getId())).thenReturn(Optional.of(b));
+        // Kein Welt-DM ...
+        doThrow(new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireDm(worldId, dm);
+        // ... aber Kampagnen-Leiter (ADR-014).
+        when(campaignMemberService.isDm(campaignId, dm)).thenReturn(true);
+
+        assertThat(combatService.getParticipants(sessionId, dm)).hasSize(2);
+    }
+
+    @Test
     void unknownActionTypeIsRejectedBeforeApIsSpent() {
         var sessionId = UUID.randomUUID();
         var attackerId = UUID.randomUUID();

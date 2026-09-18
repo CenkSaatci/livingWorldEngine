@@ -30,6 +30,7 @@ class CharacterSheetServiceTest {
     @Mock WorldAccess worldAccess;
     @Mock LevelUpService levelUpService;
     @Mock RulesLoader rulesLoader;
+    @Mock CampaignMemberService campaignMemberService;
 
     private CharacterSheetService service;
     private ModifierService modifierService;
@@ -48,7 +49,7 @@ class CharacterSheetServiceTest {
         service = new CharacterSheetService(entityRepo, worldRepo, worldAccess,
             new com.lwe.core.util.EntityAccess(entityRepo, worldAccess),
             modifierService, derivedValueService, levelUpService, rulesLoader, objectMapper,
-            new ConditionService(objectMapper));
+            new ConditionService(objectMapper), campaignMemberService);
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
         lenient().when(levelUpService.getLevel(any(), any())).thenReturn(1);
     }
@@ -66,6 +67,23 @@ class CharacterSheetServiceTest {
 
         assertThrows(WorldAccess.WorldAccessException.class,
             () -> service.getSheet(entityId, userId, null));
+    }
+
+    @Test
+    void sheetVisibleForCampaignDm() throws Exception {
+        var stranger = UUID.randomUUID();
+        var campaignId = UUID.randomUUID();
+        var entity = mockEntity("{\"mut\":10}", null);
+        when(entity.getOwnerUserId()).thenReturn(stranger);
+        mockWorld(systemId);
+        when(rulesLoader.loadRules(campaignId, worldId)).thenAnswer(inv ->
+            objectMapper.readValue(
+                "{\"attributes\":[{\"name\":\"mut\",\"type\":\"INT\",\"default\":10}]}", Map.class));
+        when(rulesLoader.campaignBelongsToWorld(campaignId, worldId)).thenReturn(true);
+        when(campaignMemberService.isDm(campaignId, userId)).thenReturn(true);
+
+        assertDoesNotThrow(() -> service.getSheet(entityId, userId, campaignId));
+        verify(worldAccess, never()).requireDm(worldId, userId);
     }
 
     @Test

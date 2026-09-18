@@ -27,11 +27,19 @@ export default function EntityListPage() {
   const toast = useToast();
   const worldId = id ?? '';
 
+  const activeCampaign = useActiveCampaign();
+  // Nur die zur Welt passende Kampagne darf den Wizard steuern (Audit P30).
+  const campaignForWorld =
+    activeCampaign && activeCampaign.worldId === worldId ? activeCampaign : null;
+  const activeGameSystemId = campaignForWorld?.gameSystemId;
   const {
     data: entities,
     loading,
     refetch,
-  } = useApiGet<EntitySummary[]>(`/worlds/${worldId}/entities`, [worldId]);
+  } = useApiGet<EntitySummary[]>(
+    `/worlds/${worldId}/entities${campaignForWorld ? `?campaignId=${campaignForWorld.id}` : ''}`,
+    [worldId, campaignForWorld?.id],
+  );
 
   const { data: factions } = useApiGet<{ id: string; name: string }[]>(
     `/worlds/${worldId}/factions`,
@@ -45,10 +53,6 @@ export default function EntityListPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [charRules, setCharRules] = useState<WizardData | null>(null);
   const [showWizard, setShowWizard] = useState(false);
-  const activeCampaign = useActiveCampaign();
-  // Nur die zur Welt passende Kampagne darf den Wizard steuern (Audit P30).
-  const activeGameSystemId =
-    activeCampaign && activeCampaign.worldId === worldId ? activeCampaign.gameSystemId : undefined;
 
   const filtered = (entities ?? []).filter((e) => {
     if (e.entityType === 'FACTION') return false;

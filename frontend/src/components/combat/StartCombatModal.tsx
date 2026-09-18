@@ -36,7 +36,7 @@ export function StartCombatModal({ worldId, onClose }: Props) {
   useEffect(() => {
     if (!worldId) return;
     apiClient
-      .get(`/worlds/${worldId}/entities`)
+      .get(`/worlds/${worldId}/entities${campaignForWorld ? `?campaignId=${campaignForWorld.id}` : ''}`)
       .then((r) => {
         const all = (r.data as EntitySummary[]).filter(
           (e) => e.entityType === 'PC' || e.entityType === 'NPC',
@@ -54,7 +54,7 @@ export function StartCombatModal({ worldId, onClose }: Props) {
       })
       // Best-effort prefetch — keine Karte ist der gültige Fallback.
       .catch(() => {});
-  }, [worldId]);
+  }, [worldId, campaignForWorld?.id]);
 
   const toggle = (id: string) => {
     setSelectedIds((prev) => {

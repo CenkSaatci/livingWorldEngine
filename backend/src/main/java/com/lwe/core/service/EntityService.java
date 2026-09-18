@@ -26,13 +26,15 @@ public class EntityService {
     private final DerivedValueService derivedValueService;
     private final EntityAccess entityAccess;
     private final com.lwe.core.repository.CampaignRepository campaignRepo;
+    private final CampaignMemberService campaignMemberService;
     private static final TypeReference<Map<String, Integer>> ATTR_MAP = new TypeReference<>() {};
 
     public EntityService(GameEntityRepository entityRepo, WorldAccess worldAccess,
                         ObjectMapper objectMapper, RulesLoader rulesLoader,
                         ConditionService conditionService, DerivedValueService derivedValueService,
                         EntityAccess entityAccess,
-                        com.lwe.core.repository.CampaignRepository campaignRepo) {
+                        com.lwe.core.repository.CampaignRepository campaignRepo,
+                        CampaignMemberService campaignMemberService) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldAccess = worldAccess;
@@ -41,6 +43,7 @@ public class EntityService {
         this.derivedValueService = derivedValueService;
         this.entityAccess = entityAccess;
         this.campaignRepo = campaignRepo;
+        this.campaignMemberService = campaignMemberService;
     }
 
     @Transactional
@@ -130,7 +133,7 @@ public class EntityService {
     }
 
     public List<GameEntity> list(UUID worldId, UUID userId, String entityType) {
-        return list(worldId, userId, entityType, false);
+        return list(worldId, userId, entityType, false, null);
     }
 
     /**
@@ -139,6 +142,12 @@ public class EntityService {
      *                 bleiben Owner/DM-gated).
      */
     public List<GameEntity> list(UUID worldId, UUID userId, String entityType, boolean forTrade) {
+        return list(worldId, userId, entityType, forTrade, null);
+    }
+
+    /** @param campaignId ADR-014: Kampagnen-Leiter sehen alle PCs ihrer Kampagne. */
+    public List<GameEntity> list(UUID worldId, UUID userId, String entityType, boolean forTrade,
+                                 UUID campaignId) {
         worldAccess.requireRead(worldId, userId); // T33-02
         List<GameEntity> all;
         if (entityType != null) {
@@ -147,7 +156,7 @@ public class EntityService {
             all = entityRepo.findByWorldIdAndActiveTrue(worldId);
         }
         // ADR-014: Spieler sehen nur eigene Charaktere (+ NPCs/Alles ohne Owner); DM alles.
-        if (forTrade || isPrivileged(worldId, userId)) return all;
+        if (forTrade || isPrivileged(worldId, userId, campaignId)) return all;
         return all.stream()
             .filter(e -> !"PC".equalsIgnoreCase(e.getEntityType())
                 || e.getOwnerUserId() == null || e.getOwnerUserId().equals(userId))
@@ -155,25 +164,39 @@ public class EntityService {
     }
 
     public GameEntity getById(UUID entityId, UUID userId) {
+        return getById(entityId, userId, null);
+    }
+
+    /** @param campaignId ADR-014: Kampagnen-Leiter dürfen fremde PCs öffnen. */
+    public GameEntity getById(UUID entityId, UUID userId, UUID campaignId) {
         var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new EntityException("ENTITY_NOT_FOUND", "Entity not found"));
         worldAccess.requireRead(entity.getWorldId(), userId); // T33-02
         // ADR-014: fremde Spieler-Charaktere sehen nur Owner/DM (NPCs bleiben offen).
         if ("PC".equalsIgnoreCase(entity.getEntityType())
             && entity.getOwnerUserId() != null && !entity.getOwnerUserId().equals(userId)
-            && !isPrivileged(entity.getWorldId(), userId)) {
+            && !isPrivileged(entity.getWorldId(), userId, campaignId)) {
             throw new EntityException("WORLD_ACCESS_DENIED", "Access denied");
         }
         return entity;
     }
 
     private boolean isPrivileged(UUID worldId, UUID userId) {
+        return isPrivileged(worldId, userId, null);
+    }
+
+    /** ADR-014: Leiter = Welt-DM oder Kampagnen-DM (Legacy-Kampagnen ohne Welt-Rolle). */
+    private boolean isPrivileged(UUID worldId, UUID userId, UUID campaignId) {
         try {
             worldAccess.requireDm(worldId, userId);
             return true;
         } catch (WorldAccess.WorldAccessException e) {
-            return false;
+            // Kein Welt-DM — ggf. Kampagnen-Leiter pruefen.
         }
+        if (campaignId == null) return false;
+        var campaign = campaignRepo.findById(campaignId).orElse(null);
+        if (campaign == null || !worldId.equals(campaign.getWorldId())) return false;
+        return userId.equals(campaign.getCreatorId()) || campaignMemberService.isDm(campaignId, userId);
     }
 
     @Transactional
@@ -389,14 +412,15 @@ public class EntityService {
         return entityRepo.save(entity);
     }
 
-    private void validateConditionName(String name, java.util.Map<String, Object> rules) {
+    /** Katalog-Check fuer Engine-Effekte (Sozial) und REST: einheitlicher Code (H-2). */
+    public void validateConditionName(String name, java.util.Map<String, Object> rules) {
         if (rules == null) return;
         if (rules.get("conditions") instanceof List<?> catalog && !catalog.isEmpty()) {
             var match = catalog.stream()
                 .filter(c -> c instanceof Map<?, ?> m && name.equals(m.get("name")))
                 .findFirst();
             if (match.isEmpty()) {
-                throw new EntityException("CONDITION_UNKNOWN", "Unknown condition: " + name);
+                throw new EntityException("UNKNOWN_CONDITION", "Unknown condition: " + name);
             }
         }
     }
