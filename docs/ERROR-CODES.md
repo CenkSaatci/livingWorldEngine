@@ -298,6 +298,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 
 | Code | HTTP | Bedeutung |
 |---|---|---|
+| `WORLD_MISMATCH` | 422 | Entity/Kampagne gehört nicht zur angegebenen Welt |
 | `ABILITY_NOT_FOUND` | 404 | Ability existiert nicht |
 | `ABILITY_NOT_ACTIVE` | 400 | Ability ist keine aktive (nutzbare) Ability |
 | `ALREADY_ASSIGNED` | 409 | Ability bereits an Entity vergeben |
@@ -312,6 +313,8 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `MEMBER_ALREADY` | 409 | User ist bereits Kampagnen-Mitglied |
 | `INVALID_AI_MODE` | 400 | `botMode` nicht autonom/suggest/off |
 | `DM_REQUIRED` | 403 | Nur der DM darf diese Aktion |
+| `INVALID_ROLE` | 400 | Rolle muss `PLAYER` oder `DM` sein |
+| `LAST_DM` | 409 | Mindestens ein Leiter muss bleiben (letzter DM geschützt) |
 | `CREATOR_REQUIRED` | 403 | Nur der Kampagnen-Ersteller verwaltet Leiter-Rollen (ADR-014) |
 | `CREATOR_TARGET_MUST_BE_DM` | 422 | Nur ein Leiter kann Ersteller werden |
 | `DM_REMOVAL_DENIED` | 403 | DM kann nicht entfernt/degradiert werden |

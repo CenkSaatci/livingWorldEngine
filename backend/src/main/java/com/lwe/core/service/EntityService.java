@@ -4,6 +4,7 @@ import com.lwe.core.domain.GameEntity;
 import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.util.EntityAccess;
+import com.lwe.core.util.RuleNames;
 import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -93,8 +94,8 @@ public class EntityService {
                 rules.getOrDefault("derived_values", java.util.List.of());
             var attrs = parseAttributeMap(entity.getAttributesJson());
             var hp = derivedValueService.evaluate(raw, attrs, selectedTraits(entity)).stream()
-                .filter(dv -> dv.name().equalsIgnoreCase("lep") || dv.name().equalsIgnoreCase("hp"))
-                .map(dv -> (int) Math.round(dv.value()))
+                .filter(dv -> RuleNames.eq(dv.name(), "lep") || RuleNames.eq(dv.name(), "hp"))
+                .map(dv -> (int) Math.ceil(dv.value())) // eine Konvention: aufrunden (ADR-014)
                 .filter(v -> v > 0)
                 .findFirst();
             hp.ifPresent(v -> {
@@ -417,7 +418,8 @@ public class EntityService {
         if (rules == null) return;
         if (rules.get("conditions") instanceof List<?> catalog && !catalog.isEmpty()) {
             var match = catalog.stream()
-                .filter(c -> c instanceof Map<?, ?> m && name.equals(m.get("name")))
+                .filter(c -> c instanceof Map<?, ?> m && m.get("name") instanceof String n
+                    && RuleNames.eq(name, n))
                 .findFirst();
             if (match.isEmpty()) {
                 throw new EntityException("UNKNOWN_CONDITION", "Unknown condition: " + name);
@@ -459,7 +461,8 @@ public class EntityService {
             var rules = rulesLoader.loadRules(campaignId, entity.getWorldId());
             if (rules.get("conditions") instanceof List<?> catalog && !catalog.isEmpty()) {
                 var match = catalog.stream()
-                    .filter(c -> c instanceof Map<?, ?> m && name.equals(m.get("name")))
+                    .filter(c -> c instanceof Map<?, ?> m && m.get("name") instanceof String n
+                        && RuleNames.eq(name, n))
                     .findFirst();
                 if (match.isEmpty())
                     throw new EntityException("UNKNOWN_CONDITION", "Unknown condition: " + name);

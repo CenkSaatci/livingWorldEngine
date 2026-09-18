@@ -556,6 +556,30 @@ class ProbeServiceTest {
     }
 
     @Test
+    void skillAndConditionNamesAreCaseInsensitive() throws Exception {
+        var entity = entityWithAttrs("{\"staerke\":10}");
+        entity.setSkillsJson("{\"aThLeTiK\":7}");
+        entity.setMetadataJson("{\"conditions\":[{\"name\":\"wunde\",\"rounds\":2}]}");
+        var world = new World("W", userId, "{}");
+        setWorldId(world);
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(entity));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(rulesLoader.loadRules(any(), any())).thenAnswer(inv -> objectMapper.readValue("""
+            {"version":1,"probeType":"d20_target",
+             "attributes":[{"name":"staerke","type":"INT","default":10}],
+             "skills":[{"name":"Athletik","attributes":["staerke"],"bonus":2}],
+             "conditions":[{"name":"Wunde","effects":[{"target":"probe","op":"add","value":3}]}],
+             "dice_mechanics":{"probe":"1d20+mod"}}
+            """, Map.class));
+
+        // ADR-014: Skill- und Zustandsnamen werden case-insensitiv verglichen.
+        var result = service.executeProbe(entityId, userId, "ATHLETIK", 0, false,
+            campaignId(), new ProbeService.ProbeOptions(0, null, 0, 0));
+
+        assertThat(result.modifier()).isEqualTo(10); // Skill 7 + Zustand 3
+    }
+
+    @Test
     void unknownSkillIn3AttrProbeIsRejected() throws Exception {
         var entity = entityWithAttrs("{\"mut\":14,\"klugheit\":14,\"intuition\":13}");
         var world = new World("W", userId, "{}");

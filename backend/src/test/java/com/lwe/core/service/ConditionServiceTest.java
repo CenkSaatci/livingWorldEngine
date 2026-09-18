@@ -89,6 +89,17 @@ class ConditionServiceTest {
     }
 
     @Test
+    void conditionNamesAreCaseInsensitive() {
+        // ADR-014: Entity-Name "WUNDE" trifft Katalog-Eintrag "Wunde".
+        var e = entityWithMetadata("{\"conditions\":[\"WUNDE\"]}");
+
+        assertThat(service.modifier(e, RULES, "probe")).isEqualTo(-4);
+
+        service.remove(e, "wunde");
+        assertThat(service.active(e)).isEmpty();
+    }
+
+    @Test
     void addReplacesSameNameAndRemoveWorks() {
         var e = entityWithMetadata(null);
 

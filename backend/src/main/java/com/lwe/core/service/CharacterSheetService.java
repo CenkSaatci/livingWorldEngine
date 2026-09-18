@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.api.dto.SheetResponse;
 import com.lwe.core.domain.*;
 import com.lwe.core.repository.*;
+import com.lwe.core.util.RuleNames;
 import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -128,7 +129,8 @@ public class CharacterSheetService {
         var skillValues = new java.util.HashMap<String, Integer>();
         for (var s : skillsRaw) {
             if (s.get("name") instanceof String n) {
-                int v = perCharSkills.containsKey(n) ? perCharSkills.get(n)
+                var perCharValue = RuleNames.get(perCharSkills, n);
+                int v = perCharValue != null ? perCharValue
                     : (s.get("bonus") instanceof Number b ? b.intValue() : 0);
                 skillValues.put(n, v);
             }
@@ -161,13 +163,13 @@ public class CharacterSheetService {
                 var globalBonus = ((Number) s.getOrDefault("bonus", 0)).intValue();
                 var attrs = (List<String>) s.getOrDefault("attributes", List.of());
                 var attrMod = attrs.stream()
-                    .map(a -> modifiers.getOrDefault(a, 0.0))
+                    .map(a -> RuleNames.getOr(modifiers, a, 0.0))
                     .mapToDouble(Double::doubleValue)
                     .sum();
-                var effectiveBonus = perCharSkills.containsKey(name)
-                    ? perCharSkills.get(name) : globalBonus;
+                var perCharValue = RuleNames.get(perCharSkills, name);
+                var effectiveBonus = perCharValue != null ? perCharValue : globalBonus;
                 var total = (int) Math.round(effectiveBonus + attrMod);
-                var perCharVal = perCharSkills.get(name);
+                var perCharVal = perCharValue;
                 var advanceCost = skillAdvanceCost(rules, s, effectiveBonus);
                 var description = s.get("description") instanceof String d ? d : null;
                 var kind = s.get("kind") instanceof String k ? k : null;
@@ -272,7 +274,7 @@ public class CharacterSheetService {
 
     /** Tier-Suffix wird ignoriert: "Hohe Lebenskraft III" wählt "Hohe Lebenskraft". */
     private boolean traitSelected(List<String> selected, String defName) {
-        return selected.stream().anyMatch(s -> s.equals(defName) || s.startsWith(defName + " "));
+        return RuleNames.hasTrait(selected, defName);
     }
 
     private void applyTraitAttributeEffects(Map<String, Object> rules, GameEntity entity,

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.api.dto.ParticipantResponse;
 import com.lwe.core.domain.*;
 import com.lwe.core.repository.*;
+import com.lwe.core.util.RuleNames;
 import com.lwe.rules.DiceExpressionParser;
 import com.lwe.rules.RuleEngine;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -583,7 +584,7 @@ public class CombatService {
         int sum = 0;
         for (var t : catalog) {
             if (!(t instanceof Map<?, ?> m) || !(m.get("name") instanceof String name)) continue;
-            boolean has = selected.stream().anyMatch(s -> s.equals(name) || s.startsWith(name + " "));
+            boolean has = RuleNames.hasTrait(selected, name);
             if (!has) continue;
             if (m.get("effects") instanceof List<?> effects) {
                 for (var e : effects) {
@@ -976,16 +977,17 @@ public class CombatService {
             try {
                 var map = objectMapper.readValue(entity.getSkillsJson(),
                     new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Integer>>() {});
-                if (map.containsKey(name)) return map.get(name);
+                var perChar = RuleNames.get(map, name);
+                if (perChar != null) return perChar;
             } catch (Exception e) {
                 // fall through to rules
             }
         }
         if (rules.get("skills") instanceof List<?> skills) {
             for (var s : skills) {
-                if (s instanceof Map<?, ?> m && name.equals(m.get("name"))
-                    && m.get("bonus") instanceof Number n) {
-                    return n.intValue();
+                if (s instanceof Map<?, ?> m && m.get("name") instanceof String n
+                    && RuleNames.eq(n, name) && m.get("bonus") instanceof Number b) {
+                    return b.intValue();
                 }
             }
         }
@@ -1013,7 +1015,8 @@ public class CombatService {
         if (rules.get("skills") instanceof List<?> skillDefs) {
             for (var s : skillDefs) {
                 if (s instanceof Map<?, ?> m && m.get("name") instanceof String n) {
-                    int v = perChar.containsKey(n) ? perChar.get(n)
+                    var perCharValue = RuleNames.get(perChar, n);
+                    int v = perCharValue != null ? perCharValue
                         : (m.get("bonus") instanceof Number b ? b.intValue() : 0);
                     skillValues.put(n, v);
                 }
@@ -1022,7 +1025,7 @@ public class CombatService {
         return derivedValueService.evaluate(raw, attrs, traits, skillValues).stream()
             .filter(dv -> dv.name().equalsIgnoreCase(name))
             .filter(dv -> dv.error() == null) // Fehlerhafte Formeln fallen raus; Aufrufer entscheiden (Angriff: fail-closed)
-            .map(dv -> (int) Math.round(dv.value()))
+            .map(dv -> (int) Math.ceil(dv.value())) // eine Konvention: aufrunden (ADR-014)
             .findFirst().orElse(null);
     }
 

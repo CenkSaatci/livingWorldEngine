@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.lwe.core.domain.GameEntity;
+import com.lwe.core.util.RuleNames;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -58,7 +59,7 @@ public class ConditionService {
         int sum = 0;
         for (var inst : active) {
             var def = catalog.stream()
-                .filter(c -> inst.name().equals(c.get("name")))
+                .filter(c -> c.get("name") instanceof String n && RuleNames.eq(inst.name(), n))
                 .findFirst().orElse(null);
             if (def == null) continue;
             if (!(def.get("effects") instanceof List<?> effects)) continue;
@@ -82,7 +83,7 @@ public class ConditionService {
         var out = new java.util.LinkedHashSet<String>();
         for (var inst : active) {
             var def = catalog.stream()
-                .filter(c -> inst.name().equals(c.get("name")))
+                .filter(c -> c.get("name") instanceof String n && RuleNames.eq(inst.name(), n))
                 .findFirst().orElse(null);
             if (def == null) continue;
             if (def.get("blocks") instanceof List<?> blocks) {
@@ -126,14 +127,14 @@ public class ConditionService {
 
     public void add(GameEntity entity, ConditionInstance instance) {
         var list = new ArrayList<>(active(entity));
-        list.removeIf(c -> c.name().equals(instance.name()));
+        list.removeIf(c -> RuleNames.eq(c.name(), instance.name()));
         list.add(instance);
         write(entity, list);
     }
 
     public void remove(GameEntity entity, String name) {
         var list = new ArrayList<>(active(entity));
-        list.removeIf(c -> c.name().equals(name));
+        list.removeIf(c -> RuleNames.eq(c.name(), name));
         write(entity, list);
     }
 

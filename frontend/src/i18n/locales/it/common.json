@@ -420,6 +420,7 @@
   },
   "systems": {
     "owner": "Creatore",
+    "validWithWarnings": "Valido (avvisi: {{count}})",
     "sharedWithYou": "Condiviso con te",
     "backToList": "Torna alla lista",
     "updateHint": "Il salvataggio aggiorna questo sistema (nessuna copia). Con modifiche alle regole la versione aumenta.",

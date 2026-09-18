@@ -100,9 +100,13 @@ public class GameSystemController {
         // liefert ihn hier roh an. Ein JSON-Wrapper-Objekt würde zu falscher Validierung führen.
         // Leeres Schema "{}" bedeutet: gegen das Default-Schema prüfen (wie beim Speichern).
         var errors = validator.validate(rulesJson, RuleSchemaValidator.DEFAULT_SCHEMA);
-        if (errors.isEmpty()) return ResponseEntity.ok(new ValidationResponse(true, null));
+        // ADR-014: Art-Fehlgriffe sind Warnungen (kein Upload-Blocker), aber sichtbar.
+        var warnings = validator.warnings(rulesJson, RuleSchemaValidator.DEFAULT_SCHEMA).stream()
+            .map(e -> e.path() + ": " + e.message())
+            .toList();
+        if (errors.isEmpty()) return ResponseEntity.ok(new ValidationResponse(true, null, warnings));
         return ResponseEntity.ok(new ValidationResponse(false,
-            errors.stream().map(e -> e.path() + ": " + e.message()).toList()));
+            errors.stream().map(e -> e.path() + ": " + e.message()).toList(), warnings));
     }
 
     @PostMapping("/{id}/clone")
@@ -123,7 +127,7 @@ public class GameSystemController {
     public record UpdateRequest(@NotBlank String name, @Positive int version, String rulesJson,
                                 Boolean forceRename, Boolean bumpVersion) {}
     public record GameSystemDetailResponse(UUID id, String name, int version, String rulesJson, boolean active) {}
-    public record ValidationResponse(boolean valid, List<String> errors) {}
+    public record ValidationResponse(boolean valid, List<String> errors, List<String> warnings) {}
     public record ShareRequest(@NotBlank String user) {}
     public record ShareResponse(UUID userId, String email, String username, String createdAt) {
         static ShareResponse from(com.lwe.core.domain.GameSystemShare s,

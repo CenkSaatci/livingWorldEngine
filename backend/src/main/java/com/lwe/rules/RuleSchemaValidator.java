@@ -346,8 +346,9 @@ public class RuleSchemaValidator {
 
     /**
      * ADR-014: Semantik über reines JSON-Schema hinaus — case-insensitive
-     * Namenskollisionen (Attribute/Skills teilen den Formel-Namensraum) und
-     * Angriffs-Skills mit nicht-combat Art sind Fehler.
+     * Namenskollisionen (Attribute/Skills teilen den Formel-Namensraum) sind Fehler.
+     * Angriffs-Skills mit nicht-combat Art melden nur eine Warnung (siehe
+     * {@link #warnings(String, String)}), kein harter Upload-Blocker.
      */
     private List<ValidationError> semanticChecks(com.fasterxml.jackson.databind.JsonNode rules) {
         var out = new java.util.ArrayList<ValidationError>();
@@ -366,6 +367,23 @@ public class RuleSchemaValidator {
                 }
             }
         }
+        return out;
+    }
+
+    /**
+     * ADR-014: Warnungen (kein Fehler) — z. B. Angriffs-Skill mit Art != combat.
+     * Der Autor sieht sie, der Upload bleibt erlaubt.
+     */
+    public List<ValidationError> warnings(String rulesJson, String schemaJson) {
+        try {
+            return semanticWarnings(objectMapper.readTree(rulesJson));
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    private List<ValidationError> semanticWarnings(com.fasterxml.jackson.databind.JsonNode rules) {
+        var out = new java.util.ArrayList<ValidationError>();
         var kinds = new java.util.HashMap<String, String>();
         var skills = rules.path("skills");
         if (skills.isArray()) {
@@ -373,14 +391,14 @@ public class RuleSchemaValidator {
                 var name = s.path("name");
                 var kind = s.path("kind");
                 if (name.isTextual() && kind.isTextual()) {
-                    kinds.put(name.asText(), kind.asText());
+                    kinds.put(name.asText().toLowerCase(java.util.Locale.ROOT), kind.asText());
                 }
             }
         }
         var attackSkill = rules.path("dice_mechanics").path("combat").path("attack").path("skill");
         if (attackSkill.isTextual()) {
-            var kind = kinds.get(attackSkill.asText());
-            if (kind != null && !"combat".equals(kind)) {
+            var kind = kinds.get(attackSkill.asText().toLowerCase(java.util.Locale.ROOT));
+            if (kind != null && !"combat".equalsIgnoreCase(kind)) {
                 out.add(new ValidationError("$.dice_mechanics.combat.attack",
                     "Angriffs-Skill '" + attackSkill.asText() + "' hat Art '" + kind
                         + "' statt 'combat' (Angriff mit " + kind + "?)"));

@@ -1074,6 +1074,41 @@ class CombatServiceTest {
     }
 
     @Test
+    void attackSkillSourceIsCaseInsensitive() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "A");
+        attacker.setSkillsJson("{\"SCHWERTER\":30}");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        setId(defender, defenderId);
+
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        var pa = new CombatParticipant(sessionId, attackerId, 10, 2, "A");
+        var pd = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(pa, pd)));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of("dice_mechanics", Map.of("combat", Map.of(
+            "initiative", "1d20", "damage", "1d6",
+            "attack", Map.of("skill", "schwerter", "dice", "1d20", "comparison", "lte")))));
+
+        // ADR-014: Quelle "schwerter" trifft "SCHWERTER" aus skillsJson (30 => immer Treffer).
+        var result = combatService.executeAction(userId, sessionId, attackerId, "ATTACK", defenderId, null);
+
+        assertThat(result.success()).isTrue();
+    }
+
+    @Test
     void unknownActionTypeIsRejectedBeforeApIsSpent() {
         var sessionId = UUID.randomUUID();
         var attackerId = UUID.randomUUID();

@@ -420,6 +420,7 @@
   },
   "systems": {
     "owner": "Ersteller",
+    "validWithWarnings": "Gültig (Warnungen: {{count}})",
     "sharedWithYou": "Für dich freigegeben",
     "backToList": "Zurück zur Liste",
     "updateHint": "Speichern aktualisiert dieses System (keine Kopie). Bei Regeländerung steigt die Version automatisch.",

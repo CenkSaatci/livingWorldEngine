@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lwe.core.domain.GameEntity;
 import com.lwe.core.domain.GameSystem;
 import com.lwe.core.repository.GameEntityRepository;
+import com.lwe.core.util.RuleNames;
 import com.lwe.core.util.WorldAccess;
 import com.lwe.rules.DiceExpression;
 import com.lwe.core.util.EntityAccess;
@@ -92,9 +93,9 @@ public class RestService {
                 var restore = casting.get("restore") instanceof String r ? r : "long";
                 if (!restore.equals(restType)) continue;
                 var max = derivedValueService.evaluate(derived, attrs, traits).stream()
-                    .filter(dv -> dv.name().equals(resource))
+                    .filter(dv -> RuleNames.eq(dv.name(), resource))
                     .filter(dv -> dv.error() == null) // Audit P1: kaputte Formel => nicht ueberschreiben
-                    .map(dv -> (int) Math.round(dv.value()))
+                    .map(dv -> (int) Math.ceil(dv.value())) // eine Konvention: aufrunden (ADR-014)
                     .findFirst().orElse(null);
                 if (max == null) continue;
                 writeMetaCounter(entity, resource + "_current", max);

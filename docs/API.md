@@ -163,7 +163,8 @@ Liefert vollständiges Regelwerk.
 ### `POST /api/v1/game-systems/{id}/validate` (auth)
 Validiert ein geladenes Regelwerk erneut gegen das Schema.
 
-**Response 200:** `{ "valid": true }` bzw. `{ "valid": false, "errors": [...] }`
+**Response 200:** `{ "valid": true, "warnings": [...] }` bzw. `{ "valid": false, "errors": [...], "warnings": [...] }`.
+**ADR-014:** `warnings` enthält z. B. Angriffs-Skills mit Art ≠ `combat` (Warnung statt Upload-Blocker).
 
 ---
 
@@ -500,7 +501,7 @@ Chat-Verlauf (neueste 50, chronologisch). POST persistiert zusätzlich zur WS-Ü
 
 **Response 200:** Ergebnis + WS-Broadcast an `/topic/combat/{sessionId}`.
 
-**Fehlercodes:** `COMBAT_AP_INSUFFICIENT`, `COMBAT_RANGE_INVALID`, `COMBAT_LINE_OF_SIGHT_BLOCKED`, `COMBAT_TARGET_INVALID`, `COMBAT_ACTION_TYPE_INVALID`, `COMBAT_NOT_ACTIVE`, `COMBAT_NOT_YOUR_TURN`
+**Fehlercodes:** `COMBAT_AP_INSUFFICIENT`, `COMBAT_RANGE_INVALID`, `COMBAT_LINE_OF_SIGHT_BLOCKED`, `COMBAT_TARGET_INVALID`, `COMBAT_ACTION_TYPE_INVALID`, `COMBAT_ATTACK_UNRESOLVABLE`, `COMBAT_NOT_ACTIVE`, `COMBAT_NOT_YOUR_TURN`
 
 ### `POST /api/v1/combat/{sessionId}/maneuver`
 **Request:**

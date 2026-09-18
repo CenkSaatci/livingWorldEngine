@@ -158,7 +158,7 @@ export default function GameSystemPage() {
   const [version, setVersion] = useState(1);
   const [rulesJson, setRulesJson] = useState('');
   const [template, setTemplate] = useState('D20Lite');
-  const [validation, setValidation] = useState<{ valid: boolean; errors?: string[] } | null>(null);
+  const [validation, setValidation] = useState<{ valid: boolean; errors?: string[]; warnings?: string[] } | null>(null);
   const [validating, setValidating] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [sharing, setSharing] = useState<GameSystem | null>(null);
@@ -726,10 +726,17 @@ export default function GameSystemPage() {
 
                   {validation && (
                     <span
-                      className={`flex items-center gap-1 text-xs ${validation.valid ? 'text-success' : 'text-danger'}`}
+                      className={`flex items-center gap-1 text-xs ${validation.valid
+                        ? (validation.warnings?.length ? 'text-warning' : 'text-success')
+                        : 'text-danger'}`}
+                      title={validation.warnings?.join('\n')}
                     >
                       {validation.valid ? <Check size={14} /> : <X size={14} />}
-                      {validation.valid ? 'Valid' : (validation.errors?.[0] ?? 'Invalid')}
+                      {validation.valid
+                        ? (validation.warnings?.length
+                            ? `${t('systems.validWithWarnings', { count: validation.warnings.length })}`
+                            : 'Valid')
+                        : (validation.errors?.[0] ?? 'Invalid')}
                     </span>
                   )}
 

@@ -32,6 +32,30 @@ class DerivedValueServiceTest {
     }
 
     @Test
+    void tableValuesRoundUpLikeFormulas() {
+        // H-5: eine Rundungskonvention — auch Tabellenwerte werden im Service aufgerundet.
+        var defs = List.of(Map.<String, Object>of(
+            "name", "vw", "input", "geschick",
+            "table", List.of(Map.of("min", 0, "max", 100, "value", 7.4))));
+
+        var result = service.evaluate(defs, Map.of("geschick", 10));
+
+        assertThat(result.getFirst().value()).isEqualTo(8.0);
+        assertThat(result.getFirst().error()).isNull();
+    }
+
+    @Test
+    void requiresTraitMatchesCaseInsensitively() {
+        var defs = List.of(Map.<String, Object>of(
+            "name", "asp", "formula", "20+mut", "requiresTrait", "zauberer"));
+
+        var with = service.evaluate(defs, Map.of("mut", 12), List.of("ZAUBERER II"));
+
+        assertThat(with).hasSize(1);
+        assertThat(with.getFirst().value()).isEqualTo(32.0);
+    }
+
+    @Test
     void returnsEmptyForNullInput() {
         assertThat(service.evaluate(null, Map.of())).isEmpty();
     }

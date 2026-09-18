@@ -1,6 +1,7 @@
 package com.lwe.core.service;
 
 import com.lwe.api.dto.SheetResponse;
+import com.lwe.core.util.RuleNames;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -128,7 +129,9 @@ public class DerivedValueService {
                 "Overlapping table rows for value " + (long) value, description);
         }
         if (matches.size() == 1) {
-            return new SheetResponse.DerivedValueInfo(name, matches.getFirst(), null, description);
+            // ADR-014: eine Rundungskonvention — Derived Values werden hier (auf-)gerundet,
+            // Konsumenten (Sheet, Kampf, Rast) nutzen den Wert unveraendert.
+            return new SheetResponse.DerivedValueInfo(name, Math.ceil(matches.getFirst()), null, description);
         }
         // Audit P28: kaputte Zeilen (min > max) nicht als "Luecke" verkaufen.
         var reason = invalidRow
@@ -145,6 +148,6 @@ public class DerivedValueService {
 
     /** Tier-Suffixe werden ignoriert: "Zauberer II" erfüllt requiresTrait "Zauberer". */
     private static boolean hasTrait(List<String> selected, String name) {
-        return selected.stream().anyMatch(s -> s.equals(name) || s.startsWith(name + " "));
+        return RuleNames.hasTrait(selected, name);
     }
 }

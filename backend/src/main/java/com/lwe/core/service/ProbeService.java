@@ -8,6 +8,7 @@ import com.lwe.core.domain.World;
 import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.repository.GameSystemRepository;
 import com.lwe.core.repository.WorldRepository;
+import com.lwe.core.util.RuleNames;
 import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -120,10 +121,10 @@ public class ProbeService {
         var modifierFormula = (String) rules.getOrDefault("modifierFormula", "");
         var modifiers = modifierService.calculateModifiers(modifierFormula, attributes);
 
-        // Skill finden
+        // Skill finden (ADR-014: Namen case-insensitiv)
         var skills = (List<Map<String, Object>>) rules.getOrDefault("skills", List.of());
         var skill = skills.stream()
-            .filter(s -> s.getOrDefault("name", "").equals(skillName))
+            .filter(s -> s.get("name") instanceof String n && RuleNames.eq(n, skillName))
             .findFirst().orElse(null);
 
         int skillBonus = 0;
@@ -134,10 +135,11 @@ public class ProbeService {
             if (attrs != null) skillAttrs.addAll(attrs);
         }
 
-        // Per-Character Skill-Override aus entity.skillsJson
+        // Per-Character Skill-Override aus entity.skillsJson (case-insensitiv)
         var perCharSkills = parsePerCharacterSkills(entity);
-        if (perCharSkills.containsKey(skillName)) {
-            skillBonus = perCharSkills.get(skillName);
+        var perCharValue = RuleNames.get(perCharSkills, skillName);
+        if (perCharValue != null) {
+            skillBonus = perCharValue;
         }
 
         // Aktive Zustaende (P29-T01): Probe-Malus
@@ -194,7 +196,7 @@ public class ProbeService {
         switch (probeType) {
             case "d100_threshold": {
                 var baseSkill = skillBonus + conditionMalus + skillAttrs.stream()
-                    .mapToInt(a -> (int) Math.round(modifiers.getOrDefault(a, 0.0))).sum();
+                    .mapToInt(a -> (int) Math.round(RuleNames.getOr(modifiers, a, 0.0))).sum();
                 // P1: Difficulty-Multiplier (z.B. CoC hard 0.5) + Bonus-/Penalty-Würfel.
                 var effective = (int) Math.round(baseSkill * diff.multiplier()) + difficulty
                     + fateBonus + socialBonus;
@@ -242,7 +244,7 @@ public class ProbeService {
                 for (int i = 0; i < count; i++) {
                     rolls[i] = rng.nextInt(1, 21);
                     // Runde 1: Erschwernis/Erleichterung senkt/hebt die Attributsschwelle.
-                    var attrVal = attributes.getOrDefault(skillAttrs.get(i), 10) - difficulty;
+                    var attrVal = RuleNames.getOr(attributes, skillAttrs.get(i), 10) - difficulty;
                     var ok = rolls[i] <= attrVal;
                     if (!ok) fails += rolls[i] - attrVal;
                     details.add(new ProbeResponse.DieDetail(rolls[i], skillAttrs.get(i), attrVal, ok));
@@ -259,7 +261,7 @@ public class ProbeService {
                 var die = advantage ? Math.max(die1, die2) : die1;
                 dice = advantage ? new int[]{die1, die2} : new int[]{die};
                 var attrMod = skillAttrs.stream()
-                    .mapToDouble(a -> modifiers.getOrDefault(a, 0.0)).sum();
+                    .mapToDouble(a -> RuleNames.getOr(modifiers, a, 0.0)).sum();
                 modifierTotal = (int) Math.round(attrMod) + skillBonus + conditionMalus
                     + fateBonus + socialBonus;
                 total = die + modifierTotal;
@@ -292,7 +294,8 @@ public class ProbeService {
             if (rules.get("dice_mechanics") instanceof Map<?, ?> dm
                 && dm.get("difficulties") instanceof List<?> levels) {
                 for (var lvl : levels) {
-                    if (lvl instanceof Map<?, ?> m && opts.difficultyKey().equals(m.get("name"))) {
+                    if (lvl instanceof Map<?, ?> m && m.get("name") instanceof String name
+                        && RuleNames.eq(opts.difficultyKey(), name)) {
                         if (m.get("multiplier") instanceof Number n) multiplier = n.doubleValue();
                         if (m.get("delta") instanceof Number n) delta += n.intValue();
                         break;
@@ -321,7 +324,7 @@ public class ProbeService {
     private Map<String, Object> findSocialAction(Map<String, Object> rules, String name) {
         if (!(rules.get("social_actions") instanceof List<?> actions)) return null;
         for (var a : actions) {
-            if (a instanceof Map<?, ?> m && name.equals(m.get("name"))) {
+            if (a instanceof Map<?, ?> m && m.get("name") instanceof String n && RuleNames.eq(name, n)) {
                 return (Map<String, Object>) m;
             }
         }
@@ -406,7 +409,7 @@ public class ProbeService {
 
         var skills = (List<Map<String, Object>>) rules.getOrDefault("skills", List.of());
         var skill = skills.stream()
-            .filter(s -> s.getOrDefault("name", "").equals(skillName))
+            .filter(s -> s.get("name") instanceof String n && RuleNames.eq(n, skillName))
             .findFirst()
             .orElseThrow(() -> new CastException("CAST_SKILL_NOT_FOUND", "Skill not found"));
         var casting = (Map<String, Object>) skill.get("casting");
@@ -422,15 +425,16 @@ public class ProbeService {
             throw new CastException("CAST_NOT_CASTABLE", "Cast has no cost");
 
         var requiredTrait = (String) casting.get("requiresTrait");
-        if (requiredTrait != null && !requiredTrait.isBlank() && !entityTraits(entity).contains(requiredTrait))
+        if (requiredTrait != null && !requiredTrait.isBlank()
+            && !RuleNames.hasTrait(entityTraits(entity), requiredTrait))
             throw new CastException("CAST_MISSING_TRAIT", "Missing required trait: " + requiredTrait);
 
         var attributes = parseAttributes(entity);
         var max = derivedValueService
             .evaluate((List<Map<String, Object>>) rules.getOrDefault("derived_values", List.of()),
                 attributes, entityTraits(entity)).stream()
-            .filter(dv -> dv.name().equals(resource))
-            .map(dv -> (int) Math.round(dv.value()))
+            .filter(dv -> RuleNames.eq(dv.name(), resource))
+            .map(dv -> (int) Math.ceil(dv.value())) // eine Konvention: aufrunden (ADR-014)
             .findFirst().orElse(0);
         var meta = readMeta(entity);
         var key = resource + "_current";

@@ -401,7 +401,7 @@ class RuleSchemaValidatorTest {
     }
 
     @Test
-    void shouldRejectAttackSkillWithNonCombatKind() {
+    void attackSkillWithNonCombatKindIsWarningNotError() {
         var bad = """
             {"version":1,
              "attributes":[{"name":"mut","type":"INT","default":10}],
@@ -410,10 +410,14 @@ class RuleSchemaValidatorTest {
                "combat":{"initiative":"1d20","damage":"1d6",
                  "attack":{"skill":"Schmieden","dice":"1d20","comparison":"lte"}}}}
             """;
+        // ADR-014: Art-Fehlgriff ist eine Warnung, kein Upload-Blocker.
         assertThat(validator.validate(bad, RuleSchemaValidator.DEFAULT_SCHEMA))
-            .as("Angriff mit craft-Skill muss Fehler sein").isNotEmpty();
+            .as("kind-Fehlgriff darf den Upload nicht blockieren").isEmpty();
+        assertThat(validator.warnings(bad, RuleSchemaValidator.DEFAULT_SCHEMA))
+            .as("kind-Fehlgriff muss als Warnung gemeldet werden").hasSize(1);
 
         var ok = bad.replace("\"kind\":\"craft\"", "\"kind\":\"combat\"");
         assertThat(validator.validate(ok, RuleSchemaValidator.DEFAULT_SCHEMA)).isEmpty();
+        assertThat(validator.warnings(ok, RuleSchemaValidator.DEFAULT_SCHEMA)).isEmpty();
     }
 }

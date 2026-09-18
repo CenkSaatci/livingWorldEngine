@@ -420,6 +420,7 @@
   },
   "systems": {
     "owner": "Oluşturan",
+    "validWithWarnings": "Geçerli (uyarılar: {{count}})",
     "sharedWithYou": "Seninle paylaşıldı",
     "backToList": "Listeye dön",
     "updateHint": "Kaydetme bu sistemi günceller (kopya yok). Kural değişikliğinde sürüm otomatik artar.",

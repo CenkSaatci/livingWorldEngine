@@ -20,8 +20,8 @@
 | `probeType` | enum | `d20_target` \| `d100_threshold` \| `d20_3attr` |
 | `progressionType` | string | `level` \| `xp` \| `improvement` |
 | `features` / `magic` / `psionics` / `conditionals` / `abilities` / `progression` | object/array | Bestehende Blöcke |
-| `derived_values` | array | Formeln, Tabellen, `requiresTrait` (P28). **ADR-014:** Formeln lesen zusätzlich Fertigkeitswerte aus `skills[]` (Charakter-`skillsJson` → Regel-`bonus`, explizite 0 gültig); Lookup case-insensitiv, Attribute gewinnen bei Kollisionen. Namen mit Leerzeichen/Klammern sind in Formeln nicht referenzierbar. |
-| `skills[].kind` | string | **ADR-014:** freie Skill-Art (`combat`/`craft`/`social`/…) für Gruppierung; Angriffs-Skill mit gesetzter Art ≠ `combat` ist ein Validierungsfehler |
+| `derived_values` | array | Formeln, Tabellen, `requiresTrait` (P28). **ADR-014:** Formeln lesen zusätzlich Fertigkeitswerte aus `skills[]` (Charakter-`skillsJson` → Regel-`bonus`, explizite 0 gültig); Lookup case-insensitiv, Attribute gewinnen bei Kollisionen. Namen mit Leerzeichen/Klammern sind in Formeln nicht referenzierbar. Ergebnisse werden **aufgerundet (`ceil`)**, auch bei Tabellen-Lookups; Content nutzt explizites `floor` wo abgerundet werden soll. |
+| `skills[].kind` | string | **ADR-014:** freie Skill-Art (`combat`/`craft`/`social`/…) für Gruppierung; Angriffs-Skill mit gesetzter Art ≠ `combat` erzeugt eine **Warnung** (validierbar über `/game-systems/{id}/validate`, kein Upload-Blocker) |
 | `dice_mechanics.combat.damage` | string | **QA (T7-Nacharbeit):** Schadens-Ausdruck, z. B. `1d8+staerke` oder `1d6`. Der **Würfelteil wird wirklich gewürfelt**; ein angehängtes Attribut (`+staerke`, ohne Waffe) bzw. das Waffen-Attribut gibt den Bonus per `damage_attr_bonus`-Formel. Ohne Waffe/Attribut: reiner Würfel + Boni. **Fehlend = Default `1d6`, kaputt = `COMBAT_ATTACK_UNRESOLVABLE`.** |
 | `dice_mechanics.combat.damage_attr_bonus` | string | **ADR-014:** System-Formel mit Variable `attr` für den Attribut-Schadenbonus (Default `floor((attr-10)/2)`) |
 | `creationBudget` | object | AP-Topf + Caps (P28) |
@@ -31,7 +31,6 @@
 | `packages` | array | Pakete (P29): `name`, `kind` (species/culture/profession), `cost`, `attributeMods[]` (fest oder Choice `["MU","KK"]`/`"*"`), `autoTraits[]`, `baseValues[]` (T5: Untergrenze fuer Attribute/Skills, gratis — nur der Kauf darueber kostet AP), `recommended[]`, `restricted[]` |
 | `conditions` | array | Zustands-Katalog (P29): `name`, optional `rounds`, `effects[]` (`target`/`op`/`value`), optional `blocks[]` (T3: gesperrte Aktionstypen wie `ATTACK`, `MOVE`, `DEFEND`, `MANEUVER`, `ABILITY` → `COMBAT_ACTION_BLOCKED`) |
 | `dice_mechanics.combat.maneuvers` | array | Kampfmanöver (P29): `name`, `apCost` (≥1), optional `attackMalus`¹, `effects[]` |
-| `dice_mechanics.combat.damage` | string | **QA (T7-Nacharbeit):** Schadens-Ausdruck, z. B. `1d8+staerke` oder `1d6`. Der **Würfelteil wird wirklich gewürfelt**; ein angehängtes Attribut (`+staerke`, ohne Waffe) bzw. das Waffen-Attribut gibt `floor((Wert-10)/2)` Bonus (D&D-exakt, DSA-plausibel). Ohne Waffe/Attribut: reiner Würfel + Boni. |
 | `items[].metadata_json` | object | **QA:** Waffen-Felder `damage` (Würfel, z. B. `"1d6+2"`, Default `"1d6"`), `damage_attr` (Attribut je Waffe, z. B. `"ge"` Rapier / `"kk"` Axt), `damage_bonus` (flat, Default 0), `damage_type` (Resistenzen). Treffer-Schaden = Waffenwürfel + Flat + Bonus + Attributbonus + Zustands-/Merkmal-Boni. Beispiel Langschwert: `{"damage":"1d6+2","damage_attr":"koerperkraft","damage_type":"cut"}`. |
 | `traits[].effects` | array | Effekt `{"target":"damage","op":"add","value":N}` wirkt jetzt auch im Kampf (gewählte Merkmale, Tier-Suffix egal). |
 | `dice_mechanics.combat.attack` | object | **P1/T2** optionales Angriffswurf-Gate. Quelle (genau eine): `attribute` (Attribut des Angreifers, Engine-Modifikator wie gehabt), `value` (Name eines **abgeleiteten Werts** des Angreifers, z. B. DSA `at`) oder `skill` (Per-Charakter-Fertigkeitswert, z. B. CoC `Kampf (Raufen)`); `value`/`skill` sind finale Werte (reiner Wurf, kein Engine-Modifikator). `target` (Name eines abgeleiteten Werts des Verteidigers) ist Pflicht fuer `attribute`/`gte`, bei `value`/`skill`+`lte` nur Doku. `dice` (Default `1d20`), `comparison` (`gte` = Wurf ≥ Ziel, Default; `lte` = Wurf ≤ Ziel fuer d100/CoC/DSA). Fehlt der Zielwert (attribute-Pfad), greift das Gate nicht. **ADR-014:** Konfigurierte, aber nicht ableitbare Angriffs-/Zielwerte blockieren den Angriff (`COMBAT_ATTACK_UNRESOLVABLE`, 422) statt stiller Treffer. Manöver mit `attackMalus` laufen durch dasselbe Gate (Malus erschwert: `lte` addiert, `gte` subtrahiert). |
@@ -112,9 +111,9 @@ Response enthält: Würfelergebnis, Modifikator, Erfolg, Detail-Infos (z.B. bei 
 1. JSON-Schema-Validierung (strukturell)
 2. Semantische Validierung:
    - Jeder `skill.attribute`/`attributes`-Ref verweist auf existierendes Attribut
-   - Attributnamen sind case-sensitiv lower-snake-case
+   - **Namensregel (ADR-014):** Namen (Attribute, Skills, Zustände, Merkmale) werden beim Lookup **case-insensitiv** verglichen; kollidierende Namen (auch case-insensitiv) lehnt der Validator ab. Kanonische Schreibweise für Attribute ist lower-snake-case
 3. Bei Erfolg: Persistenz in `game_systems.rules_json`
-4. Bei Fehler: 400 mit strukturierten Errors
+4. Bei Fehler: 400 mit strukturierten Errors; Warnungen (z. B. Skill-`kind`-Fehlgriff) blockieren nicht
 
 ---
 

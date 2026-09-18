@@ -420,6 +420,7 @@
   },
   "systems": {
     "owner": "Owner",
+    "validWithWarnings": "Valid (warnings: {{count}})",
     "sharedWithYou": "Shared with you",
     "backToList": "Back to list",
     "updateHint": "Saving updates this system (no copy). On rules changes the version bumps automatically.",
