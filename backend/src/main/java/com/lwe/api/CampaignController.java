@@ -105,6 +105,16 @@ public class CampaignController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{id}/creator")
+    public ResponseEntity<CampaignResponse> transferCreator(@PathVariable UUID id,
+                                                             @Valid @RequestBody CreatorRequest req,
+                                                             @AuthenticationPrincipal User user) {
+        var campaign = memberService.transferCreator(id, user.getId(), req.userId());
+        return ResponseEntity.ok(CampaignResponse.from(campaign));
+    }
+
+    public record CreatorRequest(@NotNull UUID userId) {}
+
     public record CreateRequest(
         @NotNull UUID worldId,
         @NotNull UUID gameSystemId,
@@ -134,14 +144,14 @@ public class CampaignController {
     public record CampaignResponse(
         UUID id, UUID worldId, UUID gameSystemId, String name,
         String settingsJson, String stateJson, String createdAt, String updatedAt,
-        Integer gameSystemVersion
+        Integer gameSystemVersion, UUID creatorId
     ) {
         static CampaignResponse from(Campaign c) {
             return new CampaignResponse(
                 c.getId(), c.getWorldId(), c.getGameSystemId(), c.getName(),
                 c.getSettingsJson(), c.getStateJson(),
                 c.getCreatedAt().toString(), c.getUpdatedAt().toString(),
-                c.getGameSystemVersion());
+                c.getGameSystemVersion(), c.getCreatorId());
         }
     }
 }

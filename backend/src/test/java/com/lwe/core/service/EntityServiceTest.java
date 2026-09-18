@@ -336,8 +336,54 @@ class EntityServiceTest {
     }
 
     @Test
-    void conditionOwnerMayManageButStrangerMayNot() {
-        var ownerId = UUID.randomUUID();
+    void listHidesForeignOwnedCharactersFromPlayers() {
+        var stranger = UUID.randomUUID();
+        var mine = entityWithId("{}");
+        mine.setOwnerUserId(userId);
+        var theirs = entityWithId("{}");
+        theirs.setOwnerUserId(stranger);
+        var npc = entityWithId("{}");
+        when(entityRepo.findByWorldIdAndActiveTrue(worldId))
+            .thenReturn(java.util.List.of(mine, theirs, npc));
+        doNothing().when(worldAccess).requireRead(worldId, userId);
+        doThrow(new com.lwe.core.util.WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireDm(worldId, userId);
+
+        var result = service.list(worldId, userId, null);
+
+        assertThat(result).contains(mine, npc);
+        assertThat(result).doesNotContain(theirs);
+    }
+
+    @Test
+    void listShowsAllToDm() {
+        var stranger = UUID.randomUUID();
+        var theirs = entityWithId("{}");
+        theirs.setOwnerUserId(stranger);
+        when(entityRepo.findByWorldIdAndActiveTrue(worldId)).thenReturn(java.util.List.of(theirs));
+        doNothing().when(worldAccess).requireRead(worldId, userId);
+        doNothing().when(worldAccess).requireDm(worldId, userId);
+
+        assertThat(service.list(worldId, userId, null)).contains(theirs);
+    }
+
+    @Test
+    void getByIdDeniesForeignOwnedCharacterToPlayer() {
+        var stranger = UUID.randomUUID();
+        var theirs = entityWithId("{}");
+        theirs.setOwnerUserId(stranger);
+        when(entityRepo.findById(theirs.getId())).thenReturn(Optional.of(theirs));
+        doNothing().when(worldAccess).requireRead(worldId, userId);
+        doThrow(new com.lwe.core.util.WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireDm(worldId, userId);
+
+        assertThatThrownBy(() -> service.getById(theirs.getId(), userId))
+            .isInstanceOf(EntityService.EntityException.class)
+            .matches(e -> ((EntityService.EntityException) e).getErrorCode().equals("WORLD_ACCESS_DENIED"));
+    }
+
+    @Test
+    void conditionOwnerMayManageButStrangerMayNot() {        var ownerId = UUID.randomUUID();
         var strangerId = UUID.randomUUID();
         var campaignId = campaignInWorld();
         var entity = entityWithId("{\"staerke\":10}");

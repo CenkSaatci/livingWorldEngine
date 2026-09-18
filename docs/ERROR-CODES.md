@@ -311,6 +311,8 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `MEMBER_ALREADY` | 409 | User ist bereits Kampagnen-Mitglied |
 | `INVALID_AI_MODE` | 400 | `botMode` nicht autonom/suggest/off |
 | `DM_REQUIRED` | 403 | Nur der DM darf diese Aktion |
+| `CREATOR_REQUIRED` | 403 | Nur der Kampagnen-Ersteller verwaltet Leiter-Rollen (ADR-014) |
+| `CREATOR_TARGET_MUST_BE_DM` | 422 | Nur ein Leiter kann Ersteller werden |
 | `DM_REMOVAL_DENIED` | 403 | DM kann nicht entfernt/degradiert werden |
 
 ### 3.19 Fraktionen (`FACTION_*`)

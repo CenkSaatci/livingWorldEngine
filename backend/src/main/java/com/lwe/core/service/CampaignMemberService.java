@@ -97,8 +97,10 @@ public class CampaignMemberService {
         if (memberRepo.existsByCampaignIdAndUserId(campaignId, targetUserId)) {
             throw new CampaignMemberException("MEMBER_ALREADY", "User is already a campaign member");
         }
-        requireDm(campaignId, actorUserId);
         validateRole(role);
+        // ADR-014: DM-Rolle vergibt nur der Ersteller; Spieler laden DMs ein.
+        if ("DM".equals(role)) requireCreator(campaign, actorUserId);
+        else requireDm(campaignId, actorUserId);
         var saved = memberRepo.save(new CampaignMember(campaignId, targetUserId, role));
         syncWorldMember(campaign, targetUserId, role);
         return saved;
@@ -111,7 +113,9 @@ public class CampaignMemberService {
         worldAccess.requireAccess(campaign.getWorldId(), actorUserId);
         var member = memberRepo.findByCampaignIdAndUserId(campaignId, targetUserId)
             .orElseThrow(() -> new CampaignMemberException("MEMBER_NOT_FOUND", "Member not found"));
-        requireDm(campaignId, actorUserId);
+        // ADR-014: Leiter entfernt nur der Ersteller; Spieler jeder DM.
+        if ("DM".equals(member.getRole())) requireCreator(campaign, actorUserId);
+        else requireDm(campaignId, actorUserId);
         if (member.getRole().equals("DM") && memberRepo.countByCampaignIdAndRole(campaignId, "DM") <= 1) {
             throw new CampaignMemberException("DM_REMOVAL_DENIED", "The last DM cannot be removed");
         }
@@ -124,10 +128,12 @@ public class CampaignMemberService {
     public CampaignMember updateRole(UUID campaignId, UUID actorUserId, UUID targetUserId, String role) {
         var campaign = requireCampaignLocked(campaignId);
         worldAccess.requireAccess(campaign.getWorldId(), actorUserId);
-        requireDm(campaignId, actorUserId);
         validateRole(role);
         var member = memberRepo.findByCampaignIdAndUserId(campaignId, targetUserId)
             .orElseThrow(() -> new CampaignMemberException("MEMBER_NOT_FOUND", "Member not found"));
+        // ADR-014: jede Aenderung am Leiter-Set nur durch den Ersteller.
+        if ("DM".equals(role) || "DM".equals(member.getRole())) requireCreator(campaign, actorUserId);
+        else requireDm(campaignId, actorUserId);
         if (member.getRole().equals("DM") && role.equals("PLAYER")
             && memberRepo.countByCampaignIdAndRole(campaignId, "DM") <= 1) {
             throw new CampaignMemberException("LAST_DM", "At least one DM must remain");
@@ -136,6 +142,41 @@ public class CampaignMemberService {
         var saved = memberRepo.save(member);
         syncWorldMember(campaign, targetUserId, role);
         return saved;
+    }
+
+    /** ADR-014: Ersteller bestimmt einen Nachfolger (muss Leiter sein) und gibt ab. */
+    @Transactional
+    public Campaign transferCreator(UUID campaignId, UUID actorUserId, UUID targetUserId) {
+        var campaign = requireCampaignLocked(campaignId);
+        worldAccess.requireAccess(campaign.getWorldId(), actorUserId);
+        requireCreator(campaign, actorUserId);
+        var target = memberRepo.findByCampaignIdAndUserId(campaignId, targetUserId)
+            .orElseThrow(() -> new CampaignMemberException("MEMBER_NOT_FOUND", "Member not found"));
+        if (!"DM".equals(target.getRole())) {
+            throw new CampaignMemberException("CREATOR_TARGET_MUST_BE_DM",
+                "Only a DM can become creator");
+        }
+        campaign.setCreatorId(targetUserId);
+        return campaignRepo.save(campaign);
+    }
+
+    /**
+     * ADR-014: Nur der Kampagnen-Ersteller verwaltet das Leiter-Set.
+     * Legacy (creatorId null): der Welt-Owner tritt ein.
+     */
+    private void requireCreator(Campaign campaign, UUID actorUserId) {
+        if (campaign.getCreatorId() != null) {
+            if (!campaign.getCreatorId().equals(actorUserId)) {
+                throw new CampaignMemberException("CREATOR_REQUIRED",
+                    "Only the campaign creator may manage DM roles");
+            }
+            return;
+        }
+        var world = worldRepo.findById(campaign.getWorldId()).orElse(null);
+        if (world == null || !world.getOwnerId().equals(actorUserId)) {
+            throw new CampaignMemberException("CREATOR_REQUIRED",
+                "Only the campaign creator may manage DM roles");
+        }
     }
 
     public List<CampaignMember> listMembers(UUID campaignId, UUID actorUserId) {

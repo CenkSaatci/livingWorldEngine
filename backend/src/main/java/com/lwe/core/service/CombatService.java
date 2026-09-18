@@ -772,8 +772,15 @@ public class CombatService {
         return sessionRepo.findFirstByWorldIdAndStatusOrderByCreatedAtDesc(worldId, "ACTIVE");
     }
 
-    public List<ParticipantResponse> getParticipants(UUID sessionId) {
-        return participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId).stream()
+    public List<ParticipantResponse> getParticipants(UUID sessionId, UUID userId) {
+        var session = sessionRepo.findById(sessionId)
+            .orElseThrow(() -> new CombatException("COMBAT_NOT_FOUND", "Combat session not found"));
+        var parts = participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId);
+        // ADR-014: Aufstellung sehen nur Beteiligte + DM (kein Zuschauen fremder HP).
+        if (!involved(parts, userId) && !isDm(session.getWorldId(), userId)) {
+            throw new CombatException("WORLD_ACCESS_DENIED", "Not involved in this combat");
+        }
+        return parts.stream()
             .map(p -> {
                 var name = entityRepo.findById(p.getEntityId())
                     .map(e -> e.getName())
@@ -783,6 +790,29 @@ public class CombatService {
                     p.getApCurrent(), p.getApMax(), p.getHpCurrent(), p.getHpMax(), p.getSide());
             })
             .toList();
+    }
+
+    private boolean isDm(UUID worldId, UUID userId) {
+        try {
+            worldAccess.requireDm(worldId, userId);
+            return true;
+        } catch (com.lwe.core.util.WorldAccess.WorldAccessException e) {
+            return false;
+        }
+    }
+
+    private boolean involved(List<CombatParticipant> parts, UUID userId) {
+        for (var p : parts) {
+            var entity = entityRepo.findById(p.getEntityId()).orElse(null);
+            if (entity == null) continue;
+            try {
+                entityAccess.checkControl(entity, userId);
+                return true;
+            } catch (com.lwe.core.util.WorldAccess.WorldAccessException e) {
+                // weiter suchen
+            }
+        }
+        return false;
     }
 
     // -- Helpers --

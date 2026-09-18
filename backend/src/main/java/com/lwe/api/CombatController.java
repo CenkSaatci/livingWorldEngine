@@ -41,7 +41,7 @@ public class CombatController {
         var result = combatService.executeAction(user.getId(), sessionId,
             req.actorId(), req.actionType(), req.targetId(), req.itemId());
         var session = combatService.getSession(user.getId(), sessionId);
-        var participants = combatService.getParticipants(sessionId);
+        var participants = combatService.getParticipants(sessionId, user.getId());
         return ResponseEntity.ok(new CombatSessionWithParticipants(
             CombatSessionResponse.from(session), participants, ActionResultResponse.from(result)));
     }
@@ -52,7 +52,7 @@ public class CombatController {
                                                                    @AuthenticationPrincipal User user) {
         combatService.executeManeuver(user.getId(), sessionId, req.actorId(), req.targetId(), req.maneuver());
         var session = combatService.getSession(user.getId(), sessionId);
-        var participants = combatService.getParticipants(sessionId);
+        var participants = combatService.getParticipants(sessionId, user.getId());
         return ResponseEntity.ok(new CombatSessionWithParticipants(
             CombatSessionResponse.from(session), participants));
     }
@@ -71,7 +71,7 @@ public class CombatController {
         var opt = combatService.findActiveSession(user.getId(), worldId);
         if (opt.isEmpty()) return ResponseEntity.noContent().build();
         var session = opt.get();
-        var participants = combatService.getParticipants(session.getId());
+        var participants = combatService.getParticipants(session.getId(), user.getId());
         return ResponseEntity.ok(new CombatSessionWithParticipants(
             CombatSessionResponse.from(session), participants));
     }
@@ -80,7 +80,7 @@ public class CombatController {
     public ResponseEntity<CombatSessionWithParticipants> getSession(@PathVariable UUID sessionId,
                                                                      @AuthenticationPrincipal User user) {
         var session = combatService.getSession(user.getId(), sessionId);
-        var participants = combatService.getParticipants(sessionId);
+        var participants = combatService.getParticipants(sessionId, user.getId());
         return ResponseEntity.ok(new CombatSessionWithParticipants(
             CombatSessionResponse.from(session), participants));
     }
@@ -99,7 +99,7 @@ public class CombatController {
         combatService.useAbility(user.getId(), sessionId,
             req.actorId(), req.abilityId(), req.targetId());
         var session = combatService.getSession(user.getId(), sessionId);
-        var participants = combatService.getParticipants(sessionId);
+        var participants = combatService.getParticipants(sessionId, user.getId());
         return ResponseEntity.ok(new CombatSessionWithParticipants(
             CombatSessionResponse.from(session), participants));
     }

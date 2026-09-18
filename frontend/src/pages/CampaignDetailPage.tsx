@@ -14,6 +14,7 @@ interface CampaignDetail {
   worldId: string;
   gameSystemId: string;
   gameSystemVersion?: number | null;
+  creatorId?: string | null;
   name: string;
   settingsJson: string;
   stateJson: string;
@@ -79,6 +80,7 @@ export default function CampaignDetailPage() {
           worldId: cRes.data.worldId,
           gameSystemId: cRes.data.gameSystemId,
           gameSystemVersion: cRes.data.gameSystemVersion ?? null,
+          creatorId: cRes.data.creatorId ?? null,
           name: cRes.data.name,
           settingsJson: cRes.data.settingsJson,
           stateJson: cRes.data.stateJson,
@@ -137,8 +139,8 @@ export default function CampaignDetailPage() {
       await apiClient.delete(`/campaigns/${campaignId}/members/${member.userId}`);
       setMembers((prev) => prev.filter((m) => m.id !== member.id));
       addToast(t('campaign.memberRemoved'), 'success');
-    } catch {
-      addToast(t('campaign.memberRemoveFailed'), 'error');
+    } catch (e) {
+      addToast(serverMessage(e, t('campaign.memberRemoveFailed')), 'error');
     } finally {
       setRemovingId(null);
     }
@@ -146,6 +148,12 @@ export default function CampaignDetailPage() {
 
   const currentUser = useAuthStore((s2) => s2.user);
   const currentIsDm = members.some((m) => m.userId === currentUser?.id && m.role === 'DM');
+  // ADR-014: nur der Ersteller verwaltet das Leiter-Set.
+  const isCreator = campaign?.creatorId != null && campaign.creatorId === currentUser?.id;
+
+  const serverMessage = (e: unknown, fallback: string) =>
+    (e as { response?: { data?: { error?: { message?: string } } } })
+      ?.response?.data?.error?.message ?? fallback;
 
   const handleRoleChange = async (member: CampaignMember, role: 'DM' | 'PLAYER') => {
     setRoleChangingId(member.id);
@@ -153,8 +161,21 @@ export default function CampaignDetailPage() {
       await apiClient.patch(`/campaigns/${campaignId}/members/${member.userId}`, { role });
       setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, role } : m)));
       addToast(t('campaign.memberRoleChanged'), 'success');
-    } catch {
-      addToast(t('campaign.memberRoleChangeFailed'), 'error');
+    } catch (e) {
+      addToast(serverMessage(e, t('campaign.memberRoleChangeFailed')), 'error');
+    } finally {
+      setRoleChangingId(null);
+    }
+  };
+
+  const handleMakeCreator = async (member: CampaignMember) => {
+    setRoleChangingId(member.id);
+    try {
+      const res = await apiClient.post(`/campaigns/${campaignId}/creator`, { userId: member.userId });
+      setCampaign((prev) => (prev == null ? prev : { ...prev, creatorId: res.data.creatorId ?? member.userId }));
+      addToast(t('campaign.creatorChanged'), 'success');
+    } catch (e) {
+      addToast(serverMessage(e, t('campaign.creatorChangeFailed')), 'error');
     } finally {
       setRoleChangingId(null);
     }
@@ -338,24 +359,43 @@ export default function CampaignDetailPage() {
                     <span className="text-xs text-text-secondary">
                       {m.role === 'DM' ? t('campaign.dm') : t('campaign.player')}
                     </span>
+                    {campaign?.creatorId === m.userId && (
+                      <span className="rounded bg-warning/15 px-1.5 py-0.5 text-[10px] text-warning">
+                        {t('campaign.creator')}
+                      </span>
+                    )}
                   </div>
                   {currentIsDm && (
                     <span className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleRoleChange(m, m.role === 'DM' ? 'PLAYER' : 'DM')}
-                        disabled={roleChangingId === m.id}
-                        className="text-xs text-text-secondary hover:text-accent disabled:opacity-40"
-                      >
-                        {m.role === 'DM' ? t('campaign.makePlayer') : t('campaign.makeDm')}
-                      </button>
-                      <button
-                        onClick={() => handleRemove(m)}
-                        disabled={removingId === m.id}
-                        className="text-text-secondary hover:text-danger disabled:opacity-40"
-                        aria-label={t('actions.delete')}
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      {isCreator && (
+                        <button
+                          onClick={() => handleRoleChange(m, m.role === 'DM' ? 'PLAYER' : 'DM')}
+                          disabled={roleChangingId === m.id}
+                          title={t('campaign.onlyCreatorPromotes')}
+                          className="text-xs text-text-secondary hover:text-accent disabled:opacity-40"
+                        >
+                          {m.role === 'DM' ? t('campaign.makePlayer') : t('campaign.makeDm')}
+                        </button>
+                      )}
+                      {isCreator && m.role === 'DM' && m.userId !== currentUser?.id && (
+                        <button
+                          onClick={() => handleMakeCreator(m)}
+                          disabled={roleChangingId === m.id}
+                          className="text-xs text-text-secondary hover:text-accent disabled:opacity-40"
+                        >
+                          {t('campaign.makeCreator')}
+                        </button>
+                      )}
+                      {(isCreator || (m.role !== 'DM')) && (
+                        <button
+                          onClick={() => handleRemove(m)}
+                          disabled={removingId === m.id}
+                          className="text-text-secondary hover:text-danger disabled:opacity-40"
+                          aria-label={t('actions.delete')}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </span>
                   )}
                 </li>

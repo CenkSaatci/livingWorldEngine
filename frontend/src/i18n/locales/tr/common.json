@@ -411,7 +411,12 @@
     "botModeOff": "Kapalı (YZ eylemi yok)",
     "botModeHint": "Dünya modunu geçersiz kılar; bu kampanyanın intent’leri için geçerlidir (P27-T04).",
     "botModeSaved": "YZ modu kaydedildi",
-    "botModeFailed": "YZ modu kaydedilemedi"
+    "botModeFailed": "YZ modu kaydedilemedi",
+    "creator": "Oluşturan",
+    "makeCreator": "Oluşturan yap",
+    "creatorChanged": "Oluşturan aktarıldı",
+    "creatorChangeFailed": "Aktarım başarısız",
+    "onlyCreatorPromotes": "Yalnızca oluşturan DM rollerini yönetir"
   },
   "systems": {
     "owner": "Oluşturan",

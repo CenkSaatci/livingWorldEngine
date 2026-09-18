@@ -23,6 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -171,13 +172,13 @@ class CampaignMemberServiceTest {
     @Test
     void removeLastDmRejected() {
         var campaign = campaign();
+        campaign.setCreatorId(userId);
         var dmMember = new CampaignMember(campaignId, otherUserId, "DM");
         setId(dmMember, UUID.randomUUID());
         var actorDm = new CampaignMember(campaignId, userId, "DM");
         lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
         lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(Optional.of(dmMember));
-        when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
         when(memberRepo.countByCampaignIdAndRole(campaignId, "DM")).thenReturn(1L);
 
         assertThatThrownBy(() -> service.removeMember(campaignId, userId, otherUserId))
@@ -188,13 +189,13 @@ class CampaignMemberServiceTest {
     @Test
     void secondDmCanBeRemoved() {
         var campaign = campaign();
+        campaign.setCreatorId(userId);
         var dmMember = new CampaignMember(campaignId, otherUserId, "DM");
         setId(dmMember, UUID.randomUUID());
         var actorDm = new CampaignMember(campaignId, userId, "DM");
         lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
         lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(Optional.of(dmMember));
-        when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
         when(memberRepo.countByCampaignIdAndRole(campaignId, "DM")).thenReturn(2L);
 
         service.removeMember(campaignId, userId, otherUserId);
@@ -208,7 +209,6 @@ class CampaignMemberServiceTest {
         var actorDm = new CampaignMember(campaignId, userId, "DM");
         lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
         lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
-        when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
         when(userRepo.findById(otherUserId)).thenReturn(Optional.of(mock(User.class)));
         when(memberRepo.existsByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(false);
 
@@ -220,12 +220,12 @@ class CampaignMemberServiceTest {
     @Test
     void updateRolePromotesAndDemotes() {
         var campaign = campaign();
+        campaign.setCreatorId(userId);
         var actorDm = new CampaignMember(campaignId, userId, "DM");
         var player = new CampaignMember(campaignId, otherUserId, "PLAYER");
         setId(player, UUID.randomUUID());
         lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
         lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
-        when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(Optional.of(player));
         when(memberRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -240,6 +240,7 @@ class CampaignMemberServiceTest {
     @Test
     void updateRoleProtectsLastDm() {
         var campaign = campaign();
+        campaign.setCreatorId(userId);
         var actorDm = new CampaignMember(campaignId, userId, "DM");
         lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
         lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
@@ -276,13 +277,13 @@ class CampaignMemberServiceTest {
     @Test
     void promoteUpdatesWorldMemberRole() {
         var campaign = campaign();
+        campaign.setCreatorId(userId);
         campaign.setForkedWorld(true);
         var actorDm = new CampaignMember(campaignId, userId, "DM");
         var player = new CampaignMember(campaignId, otherUserId, "PLAYER");
         setId(player, UUID.randomUUID());
         lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
         lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
-        when(memberRepo.findByCampaignIdAndUserId(campaignId, userId)).thenReturn(Optional.of(actorDm));
         when(memberRepo.findByCampaignIdAndUserId(campaignId, otherUserId)).thenReturn(Optional.of(player));
         when(memberRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(worldRepo.findById(worldId)).thenReturn(Optional.empty());
@@ -383,5 +384,119 @@ class CampaignMemberServiceTest {
     private void setId(Object obj, UUID id) {
         try { var f = obj.getClass().getDeclaredField("id"); f.setAccessible(true); f.set(obj, id); }
         catch (Exception e) { throw new RuntimeException(e); }
+    }
+
+    private Campaign campaignWithCreator(UUID creatorId) {
+        var c = campaign();
+        c.setCreatorId(creatorId);
+        return c;
+    }
+
+    private void stubMembers(UUID... dmIds) {
+        var dms = java.util.Set.of(dmIds);
+        lenient().when(memberRepo.findByCampaignIdAndUserId(eq(campaignId), any()))
+            .thenAnswer(inv -> {
+                var uid = inv.getArgument(1, UUID.class);
+                return dms.contains(uid)
+                    ? Optional.of(new CampaignMember(campaignId, uid, "DM"))
+                    : Optional.of(new CampaignMember(campaignId, uid, "PLAYER"));
+            });
+    }
+
+    @Test
+    void onlyCreatorMayPromoteToDm() {
+        var creator = UUID.randomUUID();
+        var dm = UUID.randomUUID();
+        var player = UUID.randomUUID();
+        var campaign = campaignWithCreator(creator);
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
+        stubMembers(dm);
+        lenient().when(memberRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThatThrownBy(() -> service.updateRole(campaignId, dm, player, "DM"))
+            .isInstanceOf(CampaignMemberService.CampaignMemberException.class)
+            .matches(e -> ((CampaignMemberService.CampaignMemberException) e).getErrorCode()
+                .equals("CREATOR_REQUIRED"));
+
+        service.updateRole(campaignId, creator, player, "DM");
+    }
+
+    @Test
+    void dmMayAddPlayersButNotPromoteOnInvite() {
+        var creator = UUID.randomUUID();
+        var dm = UUID.randomUUID();
+        var fresh = UUID.randomUUID();
+        var campaign = campaignWithCreator(creator);
+        lenient().when(campaignRepo.findById(campaignId)).thenReturn(Optional.of(campaign));
+        stubMembers(dm);
+        lenient().when(memberRepo.existsByCampaignIdAndUserId(campaignId, fresh)).thenReturn(false);
+        lenient().when(userRepo.findById(fresh)).thenReturn(Optional.of(new User("e", "n", "h", "USER", "de")));
+        lenient().when(memberRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.addMember(campaignId, dm, fresh, "PLAYER");
+
+        assertThatThrownBy(() -> service.addMember(campaignId, dm, fresh, "DM"))
+            .isInstanceOf(CampaignMemberService.CampaignMemberException.class)
+            .matches(e -> ((CampaignMemberService.CampaignMemberException) e).getErrorCode()
+                .equals("CREATOR_REQUIRED"));
+    }
+
+    @Test
+    void onlyCreatorMayRemoveDm() {
+        var creator = UUID.randomUUID();
+        var dm = UUID.randomUUID();
+        var otherDm = UUID.randomUUID();
+        var campaign = campaignWithCreator(creator);
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
+        stubMembers(dm, otherDm);
+        lenient().when(memberRepo.countByCampaignIdAndRole(campaignId, "DM")).thenReturn(2L);
+
+        assertThatThrownBy(() -> service.removeMember(campaignId, dm, otherDm))
+            .isInstanceOf(CampaignMemberService.CampaignMemberException.class)
+            .matches(e -> ((CampaignMemberService.CampaignMemberException) e).getErrorCode()
+                .equals("CREATOR_REQUIRED"));
+
+        service.removeMember(campaignId, creator, otherDm);
+    }
+
+    @Test
+    void transferCreatorMovesCreatorshipToDm() {
+        var creator = UUID.randomUUID();
+        var dm = UUID.randomUUID();
+        var player = UUID.randomUUID();
+        var campaign = campaignWithCreator(creator);
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
+        stubMembers(dm);
+
+        assertThatThrownBy(() -> service.transferCreator(campaignId, dm, dm))
+            .isInstanceOf(CampaignMemberService.CampaignMemberException.class);
+        assertThatThrownBy(() -> service.transferCreator(campaignId, creator, player))
+            .isInstanceOf(CampaignMemberService.CampaignMemberException.class)
+            .matches(e -> ((CampaignMemberService.CampaignMemberException) e).getErrorCode()
+                .equals("CREATOR_TARGET_MUST_BE_DM"));
+
+        service.transferCreator(campaignId, creator, dm);
+        assertThat(campaign.getCreatorId()).isEqualTo(dm);
+    }
+
+    @Test
+    void legacyCampaignWorldOwnerActsAsCreator() {
+        var owner = UUID.randomUUID();
+        var dm = UUID.randomUUID();
+        var player = UUID.randomUUID();
+        var campaign = campaign();
+        var world = new World("W", owner, "{}");
+        setId(world, worldId);
+        lenient().when(campaignRepo.findByIdForUpdate(campaignId)).thenReturn(Optional.of(campaign));
+        lenient().when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        stubMembers(dm);
+        lenient().when(memberRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThatThrownBy(() -> service.updateRole(campaignId, dm, player, "DM"))
+            .isInstanceOf(CampaignMemberService.CampaignMemberException.class)
+            .matches(e -> ((CampaignMemberService.CampaignMemberException) e).getErrorCode()
+                .equals("CREATOR_REQUIRED"));
+
+        service.updateRole(campaignId, owner, player, "DM");
     }
 }

@@ -293,7 +293,12 @@
     "botModeOff": "Off (no AI actions)",
     "botModeHint": "Overrides the world mode for intents of this campaign (P27-T04).",
     "botModeSaved": "AI mode saved",
-    "botModeFailed": "Could not save AI mode"
+    "botModeFailed": "Could not save AI mode",
+    "creator": "Creator",
+    "makeCreator": "Make creator",
+    "creatorChanged": "Creator transferred",
+    "creatorChangeFailed": "Transfer failed",
+    "onlyCreatorPromotes": "Only the creator manages DM roles"
   },
   "settings": {
     "title": "Settings",

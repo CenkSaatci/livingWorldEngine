@@ -990,6 +990,60 @@ class CombatServiceTest {
     }
 
     @Test
+    void rosterDeniedForUninvolvedNonDm() {
+        var sessionId = UUID.randomUUID();
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        var aId = UUID.randomUUID();
+        var bId = UUID.randomUUID();
+        var stranger = UUID.randomUUID();
+        var a = new GameEntity(worldId, "PC", "A");
+        a.setOwnerUserId(aId);
+        setId(a, UUID.randomUUID());
+        var b = new GameEntity(worldId, "PC", "B");
+        b.setOwnerUserId(bId);
+        setId(b, UUID.randomUUID());
+
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(
+                new CombatParticipant(sessionId, a.getId(), 10, 2, "A"),
+                new CombatParticipant(sessionId, b.getId(), 10, 2, "B"))));
+        when(entityRepo.findById(a.getId())).thenReturn(Optional.of(a));
+        when(entityRepo.findById(b.getId())).thenReturn(Optional.of(b));
+        doThrow(new WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireDm(eq(worldId), eq(stranger));
+
+        assertThatThrownBy(() -> combatService.getParticipants(sessionId, stranger))
+            .isInstanceOf(CombatService.CombatException.class)
+            .matches(e -> ((CombatService.CombatException) e).getErrorCode().equals("WORLD_ACCESS_DENIED"));
+    }
+
+    @Test
+    void rosterVisibleForInvolvedPlayerAndDm() {
+        var sessionId = UUID.randomUUID();
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        var mine = new GameEntity(worldId, "PC", "Held");
+        mine.setOwnerUserId(userId);
+        setId(mine, UUID.randomUUID());
+        var foe = new GameEntity(worldId, "NPC", "Ork");
+        setId(foe, UUID.randomUUID());
+
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(
+                new CombatParticipant(sessionId, mine.getId(), 10, 2, "A"),
+                new CombatParticipant(sessionId, foe.getId(), 10, 2, "B"))));
+        when(entityRepo.findById(mine.getId())).thenReturn(Optional.of(mine));
+        when(entityRepo.findById(foe.getId())).thenReturn(Optional.of(foe));
+
+        // beteiligt (ohne DM-Stub) + DM (requireDm default no-op bei manuellem Mock)
+        assertThat(combatService.getParticipants(sessionId, userId)).hasSize(2);
+        assertThat(combatService.getParticipants(sessionId, UUID.randomUUID())).hasSize(2);
+    }
+
+    @Test
     void blockedConditionPreventsAttackAction() {        var sessionId = UUID.randomUUID();
         var attackerId = UUID.randomUUID();
         var defenderId = UUID.randomUUID();

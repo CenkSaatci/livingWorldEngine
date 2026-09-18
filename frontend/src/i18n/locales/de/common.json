@@ -293,7 +293,12 @@
     "botModeOff": "Aus (keine KI-Aktionen)",
     "botModeHint": "Überschreibt den Welt-Modus; gilt für Intents dieser Kampagne (P27-T04).",
     "botModeSaved": "KI-Modus gespeichert",
-    "botModeFailed": "KI-Modus konnte nicht gespeichert werden"
+    "botModeFailed": "KI-Modus konnte nicht gespeichert werden",
+    "creator": "Ersteller",
+    "makeCreator": "Zum Ersteller machen",
+    "creatorChanged": "Ersteller übertragen",
+    "creatorChangeFailed": "Übertragung fehlgeschlagen",
+    "onlyCreatorPromotes": "Nur der Ersteller vergibt Leiter-Rechte"
   },
   "settings": {
     "title": "Einstellungen",

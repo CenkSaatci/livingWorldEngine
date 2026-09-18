@@ -48,7 +48,7 @@ class CombatControllerActiveTest {
             f.set(session, UUID.randomUUID());
         } catch (Exception e) { throw new RuntimeException(e); }
         when(combatService.findActiveSession(userId, worldId)).thenReturn(Optional.of(session));
-        when(combatService.getParticipants(session.getId())).thenReturn(List.of());
+        when(combatService.getParticipants(eq(session.getId()), eq(userId))).thenReturn(List.of());
 
         var res = controller.getActiveSession(worldId, user());
 

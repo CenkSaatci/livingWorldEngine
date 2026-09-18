@@ -13,6 +13,7 @@ vi.mock('@stomp/stompjs', () => ({
 vi.mock('../api/client', () => ({
   getAccessToken: vi.fn(),
   apiClient: { get: vi.fn() },
+  backendWsUrl: () => 'ws://test/ws',
 }));
 
 import { Stomp } from '@stomp/stompjs';

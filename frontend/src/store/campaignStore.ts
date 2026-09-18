@@ -7,6 +7,7 @@ export interface CampaignSummary {
   worldId: string;
   gameSystemId: string;
   gameSystemVersion?: number | null;
+  creatorId?: string | null;
   name: string;
   settingsJson: string;
   stateJson: string;

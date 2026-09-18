@@ -59,6 +59,7 @@ public class CampaignService {
         var fork = worldService.cloneForCampaign(worldId, userId);
         var campaign = new Campaign(fork.getId(), gameSystemId, name);
         campaign.setForkedWorld(true);
+        campaign.setCreatorId(userId); // ADR-014: Ersteller vergibt Leiter-Rechte
         campaign.setRulesJsonSnapshot(system.getRulesJson());
         campaign.setGameSystemVersion(system.getVersion());
         campaign = repo.save(campaign);

@@ -131,17 +131,38 @@ public class EntityService {
 
     public List<GameEntity> list(UUID worldId, UUID userId, String entityType) {
         worldAccess.requireRead(worldId, userId); // T33-02
+        List<GameEntity> all;
         if (entityType != null) {
-            return entityRepo.findByWorldIdAndEntityTypeAndActiveTrue(worldId, entityType);
+            all = entityRepo.findByWorldIdAndEntityTypeAndActiveTrue(worldId, entityType);
+        } else {
+            all = entityRepo.findByWorldIdAndActiveTrue(worldId);
         }
-        return entityRepo.findByWorldIdAndActiveTrue(worldId);
+        // ADR-014: Spieler sehen nur eigene Charaktere (+ NPCs/Legacy ohne Owner); DM alles.
+        if (isPrivileged(worldId, userId)) return all;
+        return all.stream()
+            .filter(e -> e.getOwnerUserId() == null || e.getOwnerUserId().equals(userId))
+            .toList();
     }
 
     public GameEntity getById(UUID entityId, UUID userId) {
         var entity = entityRepo.findById(entityId)
             .orElseThrow(() -> new EntityException("ENTITY_NOT_FOUND", "Entity not found"));
         worldAccess.requireRead(entity.getWorldId(), userId); // T33-02
+        // ADR-014: fremde Charaktere (Owner gesetzt) sehen nur Owner/DM.
+        if (entity.getOwnerUserId() != null && !entity.getOwnerUserId().equals(userId)
+            && !isPrivileged(entity.getWorldId(), userId)) {
+            throw new EntityException("WORLD_ACCESS_DENIED", "Access denied");
+        }
         return entity;
+    }
+
+    private boolean isPrivileged(UUID worldId, UUID userId) {
+        try {
+            worldAccess.requireDm(worldId, userId);
+            return true;
+        } catch (WorldAccess.WorldAccessException e) {
+            return false;
+        }
     }
 
     @Transactional

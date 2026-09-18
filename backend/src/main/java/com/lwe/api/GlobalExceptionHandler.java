@@ -234,8 +234,10 @@ public class GlobalExceptionHandler {
             case CampaignMemberService.CampaignMemberException e -> switch (e.getErrorCode()) {
                 case "CAMPAIGN_NOT_FOUND", "USER_NOT_FOUND", "MEMBER_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 case "DM_REMOVAL_DENIED", "DM_REQUIRED", "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
+                case "CREATOR_REQUIRED" -> HttpStatus.FORBIDDEN;
                 case "MEMBER_ALREADY" -> HttpStatus.CONFLICT;
                 case "INVALID_ROLE" -> HttpStatus.BAD_REQUEST;
+                case "CREATOR_TARGET_MUST_BE_DM" -> HttpStatus.UNPROCESSABLE_ENTITY;
                 case "LAST_DM" -> HttpStatus.CONFLICT;
                 default -> HttpStatus.BAD_REQUEST;
             };

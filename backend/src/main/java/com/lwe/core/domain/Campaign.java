@@ -54,6 +54,10 @@ public class Campaign {
     @Column(name = "game_system_version")
     private Integer gameSystemVersion;
 
+    /** ADR-014: Ersteller der Kampagne — nur er vergibt/entzieht Leiter. NULL = Legacy. */
+    @Column(name = "creator_id")
+    private UUID creatorId;
+
     public Campaign(UUID worldId, UUID gameSystemId, String name) {
         this.worldId = worldId;
         this.gameSystemId = gameSystemId;
@@ -81,4 +85,7 @@ public class Campaign {
     public void setRulesJsonSnapshot(String v) { this.rulesJsonSnapshot = v; }
     public Integer getGameSystemVersion() { return gameSystemVersion; }
     public void setGameSystemVersion(Integer v) { this.gameSystemVersion = v; }
+
+    public UUID getCreatorId() { return creatorId; }
+    public void setCreatorId(UUID v) { this.creatorId = v; }
 }

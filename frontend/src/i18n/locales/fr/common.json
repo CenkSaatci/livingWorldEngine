@@ -411,7 +411,12 @@
     "botModeOff": "Désactivé (aucune action IA)",
     "botModeHint": "Remplace le mode du monde ; s’applique aux intents de cette campagne (P27-T04).",
     "botModeSaved": "Mode IA enregistré",
-    "botModeFailed": "Impossible d’enregistrer le mode IA"
+    "botModeFailed": "Impossible d’enregistrer le mode IA",
+    "creator": "Créateur",
+    "makeCreator": "Nommer créateur",
+    "creatorChanged": "Créateur transféré",
+    "creatorChangeFailed": "Transfert échoué",
+    "onlyCreatorPromotes": "Seul le créateur gère les rôles DM"
   },
   "systems": {
     "owner": "Créateur",
