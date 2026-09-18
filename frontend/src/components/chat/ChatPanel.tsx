@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useWorldStore } from '../../store/worldStore';
 import { useToast } from '../../hooks/useToast';
 import { DiceRollModal } from '../ui/DiceRollModal';
+import { formatDiceBreakdown } from '../../utils/dice';
 import { playChatMessage } from '../../utils/sound';
 
 interface ChatMessage {
@@ -148,7 +149,7 @@ export function ChatPanel({ worldId }: { worldId: string }) {
 
         setRollModal({ label: rawExpr, dice, modifier, total });
 
-        const rollText = `🎲 ${rawExpr} = ${total}`;
+        const rollText = `🎲 ${rawExpr}: ${formatDiceBreakdown(diceValues, modifier, total)}`;
         // QA-Audit: Echo VOR dem POST anhängen — sonst gewinnt das WS-Broadcast
         // das Rennen und die Nachricht erscheint doppelt. Sender setzt der Server.
         appendLocal(username, rollText);

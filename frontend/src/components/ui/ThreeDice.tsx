@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { formatDiceBreakdown } from '../../utils/dice';
 
 export interface DiceSkin {
   name: string;
@@ -273,12 +274,7 @@ export function ThreeDice({ results, modifier, total, skin = DICE_SKINS[0] }: Pr
     <div className="flex flex-col items-center gap-3">
       <div ref={containerRef} className="h-64 w-full" />
       <p className="text-2xl font-heading text-text-primary">
-        = {total}{' '}
-        {modifier !== 0 && (
-          <span className="text-accent text-lg">
-            ({modifier > 0 ? '+' : ''}{modifier})
-          </span>
-        )}
+        {formatDiceBreakdown(results.map((r) => r.value), modifier, total)}
       </p>
     </div>
   );

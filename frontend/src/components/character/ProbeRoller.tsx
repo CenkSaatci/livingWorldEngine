@@ -4,6 +4,7 @@ import { Dice1 as Dice } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useToast } from '../../hooks/useToast';
 import { useCampaignStore } from '../../store/campaignStore';
+import { formatDiceBreakdown } from '../../utils/dice';
 
 interface Props {
   entityId: string;
@@ -186,6 +187,18 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, c
                   ({result.dice.join(', ')})
                 </span>
               </span>
+            ) : result.probeType === 'd20_target' ? (
+              <>
+                {/* QA: Einzelwurf + Bonus statt nur Gesamtergebnis. */}
+                {formatDiceBreakdown(
+                  result.dice.length > 1 ? [Math.max(...result.dice)] : result.dice,
+                  result.modifier, result.total)}
+                {result.dice.length > 1 && (
+                  <span className="text-text-secondary text-[10px] ml-1">
+                    ({result.dice.join(', ')})
+                  </span>
+                )}
+              </>
             ) : (
               <>
                 {result.total}

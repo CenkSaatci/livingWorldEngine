@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { formatDiceBreakdown } from '../../utils/dice';
 
 const DICE_FACES: Record<number, Record<number, string>> = {
   4: { 1: '⚀', 2: '⚁', 3: '⚂', 4: '⚃' },
@@ -60,11 +61,10 @@ export function CssDice({ results, modifier, total, label }: Props) {
         {results.map((r, i) => (
           <SingleDie key={i} sides={r.sides} target={r.value} delay={i * 200} />
         ))}
-        {modifier !== 0 && (
-          <span className="text-lg text-accent">{modifier > 0 ? `+${modifier}` : modifier}</span>
-        )}
       </div>
-      <p className="text-2xl font-heading text-text-primary">= {total}</p>
+      <p className="text-2xl font-heading text-text-primary">
+        {formatDiceBreakdown(results.map((r) => r.value), modifier, total)}
+      </p>
     </div>
   );
 }

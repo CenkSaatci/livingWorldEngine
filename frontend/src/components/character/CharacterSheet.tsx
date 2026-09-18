@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Heart, Shield, Zap, Sparkles, Check, X, Plus, Loader2 } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useSheet, type SheetData } from '../../hooks/useSheet';
+import { formatDiceBreakdown } from '../../utils/dice';
 import { useToast } from '../../hooks/useToast';
 import { useCampaignStore } from '../../store/campaignStore';
 import { ProbeRoller } from './ProbeRoller';
@@ -396,7 +397,7 @@ function AbilityRow({ ability, attributes }: {
 }) {
   const { t } = useTranslation('character');
   const toast = useToast();
-  const [result, setResult] = useState<number | null>(null);
+  const [result, setResult] = useState<string | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -409,7 +410,11 @@ function AbilityRow({ ability, attributes }: {
     setFailed(false);
     try {
       const res = await apiClient.post('/rolls/free', { expression: expr });
-      setResult(res.data.total ?? 0);
+      // QA: Einzelwürfe + Bonus anzeigen, nicht nur die Summe.
+      setResult(formatDiceBreakdown(
+        (res.data.dice as number[]) ?? [],
+        (res.data.modifier as number) ?? 0,
+        (res.data.total as number) ?? 0));
     } catch {
       // Kein lokaler Fallback-Wurf: Ein fehlgeschlagener Server-Wurf darf nicht
       // wie ein echtes Ergebnis aussehen.
