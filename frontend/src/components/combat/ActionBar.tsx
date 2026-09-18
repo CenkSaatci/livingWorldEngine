@@ -6,6 +6,7 @@ import { useCombatStore } from '../../store/combatStore';
 import { useCampaignStore, useActiveCampaign } from '../../store/campaignStore';
 import { useToast } from '../../hooks/useToast';
 import { playCombatHit } from '../../utils/sound';
+import { formatRollBreakdown, type RollBreakdown } from '../../utils/dice';
 
 const ACTION_ICONS: Record<string, React.ReactNode> = {
   action: <Zap size={14} />,
@@ -162,21 +163,23 @@ export function ActionBar({ worldId }: Props) {
       // POST returns full session state → AP-Werte sind bereits korrekt
       useCombatStore.getState().setSession(res.data.session, res.data.participants);
       setUsedActions((prev) => ({ ...prev, [type]: (prev[type] ?? 0) + 1 }));
-      const result = res.data.result as { actionType?: string; totalDamage?: number } | null | undefined;
-      if (!abilityId) {
-        // QA/UX: Treffer, Miss und Schaden sichtbar machen (vorher stumm).
-        if (result?.actionType === 'MISS') {
-          toast.error(t('combat.missed', { name: targetName(targetEntityId) }));
-        } else {
-          playCombatHit();
-          if ((result?.totalDamage ?? 0) > 0) {
-            toast.success(t('combat.hitFor', {
-              name: targetName(targetEntityId), damage: result?.totalDamage,
-            }));
-          } else {
-            toast.success(t('combat.done'));
-          }
-        }
+      const result = res.data.result as {
+        actionType?: string; totalDamage?: number;
+        attack?: RollBreakdown | null; damage?: RollBreakdown | null;
+      } | null | undefined;
+      // QA/UX: Treffer, Miss und die Wurf-Aufstellung sichtbar machen.
+      if (result?.actionType === 'MISS') {
+        const detail = result.attack ? ` (${formatRollBreakdown(result.attack)})` : '';
+        toast.error(`${t('combat.missed', { name: targetName(targetEntityId) })}${detail}`);
+      } else if ((result?.totalDamage ?? 0) > 0) {
+        if (!abilityId) playCombatHit();
+        const detail = result?.damage ? ` · ${formatRollBreakdown(result.damage)}` : '';
+        toast.success(t('combat.hitFor', {
+          name: targetName(targetEntityId), damage: result?.totalDamage,
+        }) + detail);
+      } else {
+        if (!abilityId) playCombatHit();
+        toast.success(t('combat.done'));
       }
     } catch (e) {
       toast.error(errorText(e, t('combat.actionFailed', { defaultValue: 'Action failed' })));
@@ -195,7 +198,24 @@ export function ActionBar({ worldId }: Props) {
         maneuver,
       });
       useCombatStore.getState().setSession(res.data.session, res.data.participants);
-      playCombatHit();
+      const result = res.data.result as {
+        actionType?: string; totalDamage?: number;
+        attack?: RollBreakdown | null; damage?: RollBreakdown | null;
+      } | null | undefined;
+      if (result?.actionType === 'MISS') {
+        const detail = result.attack ? ` (${formatRollBreakdown(result.attack)})` : '';
+        toast.error(`${t('combat.missed', { name: targetName(targetEntityId) })}${detail}`);
+      } else {
+        playCombatHit();
+        if ((result?.totalDamage ?? 0) > 0) {
+          const detail = result?.damage ? ` · ${formatRollBreakdown(result.damage)}` : '';
+          toast.success(t('combat.hitFor', {
+            name: targetName(targetEntityId), damage: result?.totalDamage,
+          }) + detail);
+        } else {
+          toast.success(t('combat.done'));
+        }
+      }
     } catch (e) {
       toast.error(errorText(e, t('combat.maneuverFailed', { defaultValue: 'Maneuver failed' })));
     } finally {

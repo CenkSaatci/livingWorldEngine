@@ -198,24 +198,29 @@ public class CombatService {
         // (dice_mechanics.combat.attack). Ohne Config bleibt das Verhalten wie bisher.
         boolean damaging = isDamagingAction(rules, actionType);
         var attackCfg = damaging ? resolveAttackConfig(rules) : null;
+        RollBreakdown attackRoll = null;
         if (attackCfg != null && targetId != null) {
-            var hit = attackHits(userId, session, actorId, targetId, attackCfg, 0, rules);
-            if (Boolean.FALSE.equals(hit)) {
+            var outcome = attackHits(userId, session, actorId, targetId, attackCfg, 0, rules);
+            attackRoll = outcome.breakdown();
+            if (Boolean.FALSE.equals(outcome.hit())) {
                 deductAp(actor);
                 sendCombatMessage(session.getWorldId(), "🎯 " + entityName(actorId)
                     + " verfehlt " + entityName(targetId));
                 eventService.publish(session.getWorldId(), session.getCampaignId(),
                     COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
                         "actionType", "MISS", "damage", 0));
-                return new CombatActionResult("MISS", 0, actor.getApCurrent(), false, null);
+                return new CombatActionResult("MISS", 0, actor.getApCurrent(), false, null,
+                    attackRoll, null);
             }
         }
 
         var weapon = resolveWeaponDamage(actorId, itemId);
-        var damage = rollDamage(session.getWorldId(), actorId, actionType,
+        var damageRoll = rollDamage(session.getWorldId(), actorId, actionType,
             session.getCampaignId(), weapon, rules, damaging);
         var damageType = weapon != null ? weapon.type() : null;
-        damage = applyDamageModifiers(damage, targetId, damageType);
+        var mitigation = applyDamageModifiers(damageRoll.total(), targetId, damageType);
+        damageRoll = withMitigation(damageRoll, mitigation);
+        var damage = mitigation.total();
         deductAp(actor);
 
         // Death check
@@ -236,7 +241,8 @@ public class CombatService {
             + " Schaden" + (damageType != null ? " (" + damageType + ")" : ""));
         eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
             "actionType", actionType, "damage", damage));
-        return new CombatActionResult(actionType, damage, actor.getApCurrent(), true, null);
+        return new CombatActionResult(actionType, damage, actor.getApCurrent(), true, null,
+            attackRoll, damageRoll);
     }
 
     @Transactional
@@ -260,12 +266,14 @@ public class CombatService {
 
         // Parse damage from effects_json — läuft durch dieselben Stufen wie Angriffe (ADR-014).
         var effects = parseEffectsJson(ability.getEffectsJson());
+        RollBreakdown damageRoll = null;
         int damage = 0;
         if (effects.damageExpr != null) {
             var entity = entityRepo.findById(actorId)
                 .orElseThrow(() -> new CombatException("ENTITY_NOT_FOUND", "Actor not found"));
             var parts = parseDamageOrThrow(effects.damageExpr, "ability");
-            damage = computeDamage(entity, rules, parts.dice(), parts.flat(), parts.attr());
+            damageRoll = computeDamage(entity, rules, parts.dice(), parts.flat(), parts.attr());
+            damage = damageRoll.total();
         }
         // Heil-Ausdruck vorab validieren: kaputt = Fehler, BEVOR Schaden angewendet wird.
         int healAmount = 0;
@@ -286,7 +294,9 @@ public class CombatService {
                 // Schadende Abilities treffen keine Besiegten (Heilung schon).
                 if (target.getHpCurrent() <= 0)
                     throw new CombatException("COMBAT_TARGET_DEFEATED", "Target is already defeated");
-                damage = applyDamageModifiers(damage, targetId, effects.damageType());
+                var mitigation = applyDamageModifiers(damage, targetId, effects.damageType());
+                damageRoll = withMitigation(damageRoll, mitigation);
+                damage = mitigation.total();
                 target.setHpCurrent(Math.max(0, target.getHpCurrent() - damage));
                 participantRepo.save(target);
                 if (target.getHpCurrent() <= 0 && !tryAvoidDeath(userId, session, targetId, target)) {
@@ -308,7 +318,7 @@ public class CombatService {
         eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
             "actionType", "ABILITY_" + ability.getName(), "damage", damage));
         return new CombatActionResult("ABILITY_" + ability.getName(), damage,
-            actor.getApCurrent(), true, null);
+            actor.getApCurrent(), true, null, null, damageRoll);
     }
 
     private record Effects(String damageExpr, String healExpr, String damageType) {}
@@ -408,10 +418,26 @@ public class CombatService {
         return false;
     }
 
-    private int applyDamageModifiers(int damage, UUID targetEntityId, String damageType) {
-        if (damage <= 0 || targetEntityId == null) return damage;
+    /** Zielschutz-Ergebnis: Rüstung, Multiplikator, Zwischensumme (vor Multiplikator) und Endwert. */
+    private record Mitigation(int armor, double multiplier, int subtotal, int total) {}
+
+    /** Kopie der Aufstellung mit Zielschutz-Stufen (Rüstung additiv, Resistenz multiplikativ). */
+    private RollBreakdown withMitigation(RollBreakdown base, Mitigation mit) {
+        if (mit.armor() == 0 && mit.multiplier() == 1.0) return base;
+        var parts = new ArrayList<>(base.parts());
+        if (mit.armor() > 0) parts.add(new RollPart("Rüstung", -mit.armor()));
+        Double multiplier = mit.multiplier() == 1.0 ? null : mit.multiplier();
+        Integer subtotal = multiplier == null ? null : mit.subtotal();
+        return new RollBreakdown(base.kind(), base.dice(), parts, subtotal, mit.total(),
+            multiplier, base.target(), base.comparison());
+    }
+
+    private Mitigation applyDamageModifiers(int damage, UUID targetEntityId, String damageType) {
+        if (damage <= 0 || targetEntityId == null) {
+            return new Mitigation(0, 1.0, Math.max(0, damage), Math.max(0, damage));
+        }
         var target = entityRepo.findById(targetEntityId).orElse(null);
-        if (target == null) return damage;
+        if (target == null) return new Mitigation(0, 1.0, damage, damage);
         int armor = 0;
         List<String> resistances = List.of();
         List<String> vulnerabilities = List.of();
@@ -424,15 +450,18 @@ public class CombatService {
                 vulnerabilities = stringList(node.path("damage_vulnerabilities"));
             } catch (Exception ignored) {}
         }
-        int result = Math.max(0, damage - Math.max(0, armor));
+        int afterArmor = Math.max(0, damage - Math.max(0, armor));
+        double multiplier = 1.0;
         if (damageType != null) {
             var wanted = damageType.trim();
             boolean resistant = resistances.stream().anyMatch(r -> r != null && r.trim().equalsIgnoreCase(wanted));
             boolean vulnerable = vulnerabilities.stream().anyMatch(v -> v != null && v.trim().equalsIgnoreCase(wanted));
-            if (vulnerable && !resistant) result *= 2;
-            else if (resistant && !vulnerable) result /= 2;
+            if (vulnerable && !resistant) multiplier = 2.0;
+            else if (resistant && !vulnerable) multiplier = 0.5;
         }
-        return result;
+        // Integer-Halbierung wie bisher: floor(afterArmor * multiplier).
+        int total = (int) Math.floor(afterArmor * multiplier);
+        return new Mitigation(Math.max(0, armor), multiplier, afterArmor, total);
     }
 
     private List<String> stringList(com.fasterxml.jackson.databind.JsonNode node) {
@@ -488,13 +517,15 @@ public class CombatService {
      *  Flat + Attribut-Schwellenbonus (System-Formel) + Zustands-/Merkmal-Boni.
      *  Ohne Waffe gilt combat.damage als Fallback (Würfel wird wirklich gewürfelt).
      *  Fehlend = dokumentierter Default; kaputt = COMBAT_ATTACK_UNRESOLVABLE. */
-    private int rollDamage(UUID worldId, UUID actorId, String actionType, UUID campaignId,
+    private RollBreakdown rollDamage(UUID worldId, UUID actorId, String actionType, UUID campaignId,
                            WeaponDamage weapon, Map<String, Object> rules, boolean damaging) {
         var entity = entityRepo.findById(actorId)
             .orElseThrow(() -> new CombatException("ENTITY_NOT_FOUND", "Actor not found"));
         var world = worldRepo.findById(worldId)
             .orElseThrow(() -> new CombatException("WORLD_NOT_FOUND", "World not found"));
-        if (!damaging) return 0;
+        if (!damaging) {
+            return new RollBreakdown("damage", List.of(), List.of(), null, 0, null, null, null);
+        }
 
         DamageParts parts;
         String attrName;
@@ -512,24 +543,34 @@ public class CombatService {
         return computeDamage(entity, rules, parts.dice(), flatBonus, attrName);
     }
 
-    /** Gemeinsame Schadens-Stufen für Angriffe, Manöver und Fähigkeiten (ADR-014). */
-    private int computeDamage(GameEntity entity, Map<String, Object> rules,
-                              String dice, int flat, String attrName) {
-        int total = flat;
+    /** Gemeinsame Schadens-Stufen für Angriffe, Manöver und Fähigkeiten (ADR-014)
+     *  inkl. Aufstellung (Würfel + Boni = Summe) für die Anzeige. */
+    private RollBreakdown computeDamage(GameEntity entity, Map<String, Object> rules,
+                                        String dice, int flat, String attrName) {
+        var diceValues = new ArrayList<Integer>();
         try {
-            total += new com.lwe.rules.DiceExpression(dice).getTotal();
+            for (int r : new com.lwe.rules.DiceExpression(dice).getRolls()) diceValues.add(r);
         } catch (IllegalArgumentException e) {
             throw new CombatException("COMBAT_ATTACK_UNRESOLVABLE",
                 "Schadenswürfel '" + dice + "' nicht parsbar");
         }
+        var parts = new ArrayList<RollPart>();
+        if (flat != 0) parts.add(new RollPart("Bonus", flat));
         if (attrName != null) {
             int attrValue = AttributeUtils.extractAttribute(entity, attrName).orElse(10);
-            total += damageAttrBonus(attrValue, rules);
+            int bonus = damageAttrBonus(attrValue, rules);
+            if (bonus != 0) parts.add(new RollPart(attrName, bonus));
         }
         // Aktive Zustaende (P29-T01) + gewählte Merkmale: Schadens-Modifikator.
-        total += conditionService.modifier(entity, rules, "damage");
-        total += traitDamageBonus(entity, rules);
-        return Math.max(0, total);
+        int condition = conditionService.modifier(entity, rules, "damage");
+        if (condition != 0) parts.add(new RollPart("Zustände", condition));
+        int traits = traitDamageBonus(entity, rules);
+        if (traits != 0) parts.add(new RollPart("Merkmale", traits));
+
+        int sum = diceValues.stream().mapToInt(Integer::intValue).sum()
+            + parts.stream().mapToInt(RollPart::value).sum();
+        return new RollBreakdown("damage", diceValues, parts, null, Math.max(0, sum),
+            null, null, null);
     }
 
     /** Attribut-Schadenbonus per System-Formel (Default: D&D-Modifikator, ADR-014). */
@@ -640,10 +681,12 @@ public class CombatService {
 
         // T2: angriffsbasierte Manöver (attackMalus) laufen durch dasselbe Gate wie Angriffe.
         var attackCfg = isDamagingAction(rules, "ACTION") ? resolveAttackConfig(rules) : null;
+        RollBreakdown attackRoll = null;
         if (attackCfg != null && targetId != null) {
             int malus = def.get("attackMalus") instanceof Number n ? n.intValue() : 0;
-            var hit = attackHits(userId, session, actorId, targetId, attackCfg, malus, rules);
-            if (Boolean.FALSE.equals(hit)) {
+            var outcome = attackHits(userId, session, actorId, targetId, attackCfg, malus, rules);
+            attackRoll = outcome.breakdown();
+            if (Boolean.FALSE.equals(outcome.hit())) {
                 actor.setApCurrent(actor.getApCurrent() - apCost);
                 participantRepo.save(actor);
                 sendCombatMessage(session.getWorldId(), "\u2694\ufe0f " + entityName(actorId) + " \u2013 "
@@ -651,7 +694,8 @@ public class CombatService {
                 eventService.publish(session.getWorldId(), session.getCampaignId(),
                     COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
                         "actionType", "MISS", "maneuver", maneuverName, "damage", 0));
-                return new CombatActionResult("MISS", 0, actor.getApCurrent(), false, null);
+                return new CombatActionResult("MISS", 0, actor.getApCurrent(), false, null,
+                    attackRoll, null);
             }
         }
 
@@ -667,9 +711,13 @@ public class CombatService {
                 }
             }
         }
-        var damage = Math.max(0, base + bonus);
+        var damageRoll = bonus != 0
+            ? base.withExtraPart(new RollPart(maneuverName, bonus))
+            : base;
         String maneuverType = def.get("damageType") instanceof String dt ? dt : null;
-        damage = applyDamageModifiers(damage, targetId, maneuverType);
+        var mitigation = applyDamageModifiers(damageRoll.total(), targetId, maneuverType);
+        damageRoll = withMitigation(damageRoll, mitigation);
+        var damage = mitigation.total();
         actor.setApCurrent(actor.getApCurrent() - apCost);
         participantRepo.save(actor);
 
@@ -688,7 +736,8 @@ public class CombatService {
             + (maneuverType != null ? " (" + maneuverType + ")" : ""));
         eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED,
             actorId, targetId, Map.of("actionType", "MANEUVER", "maneuver", maneuverName, "damage", damage));
-        return new CombatActionResult("MANEUVER:" + maneuverName, damage, actor.getApCurrent(), true, null);
+        return new CombatActionResult("MANEUVER:" + maneuverName, damage, actor.getApCurrent(), true, null,
+            attackRoll, damageRoll);
     }
 
     @SuppressWarnings("unchecked")
@@ -900,11 +949,14 @@ public class CombatService {
      *  malus: positive Zahl erschwert den Angriff (Wuchtschlag etc.).
      *  ADR-014: konfigurierte, aber nicht ableitbare Werte werfen
      *  COMBAT_ATTACK_UNRESOLVABLE (fail-closed statt stiller Treffer). */
-    private Boolean attackHits(UUID userId, CombatSession session, UUID actorId, UUID targetId,
+    /** Angriffsergebnis mit Aufstellung (Einzelwürfe + Boni + Vergleichsziel). */
+    private record AttackOutcome(Boolean hit, RollBreakdown breakdown) {}
+
+    private AttackOutcome attackHits(UUID userId, CombatSession session, UUID actorId, UUID targetId,
                                Map<String, Object> cfg, int malus, Map<String, Object> rules) {
         var attacker = entityRepo.findById(actorId).orElse(null);
         var defender = entityRepo.findById(targetId).orElse(null);
-        if (attacker == null || defender == null) return null;
+        if (attacker == null || defender == null) return new AttackOutcome(null, null);
         var targetName = (String) cfg.get("target");
         var comparison = (String) cfg.get("comparison");
         var dice = (String) cfg.get("dice");
@@ -912,7 +964,7 @@ public class CombatService {
         var sourceName = (String) cfg.get("sourceName");
 
         if ("attribute".equals(source)) {
-            if (targetName == null) return null; // Legacy: kein target konfiguriert => Gate aus
+            if (targetName == null) return new AttackOutcome(null, null); // Legacy: Gate aus
             Integer targetValue = derivedValue(defender, rules, targetName);
             if (targetValue == null) {
                 throw new CombatException("COMBAT_ATTACK_UNRESOLVABLE",
@@ -923,11 +975,26 @@ public class CombatService {
             var engine = resolveEngine(world, session.getCampaignId());
             var probe = engine.executeProbe(new RuleEngine.ProbeRequest(
                 sourceName, attrValue, 0, targetValue, dice));
-            // P1: Vergleichsrichtung kommt aus der Config (gte = D&D, lte = d100/CoC) —
-            // damit sind Engine-Eigenheiten (Tier-Systeme) irrelevant.
-            return "lte".equals(comparison)
-                ? probe.total() + malus <= targetValue
-                : probe.total() - malus >= targetValue;
+            var rollDice = new ArrayList<Integer>();
+            for (int d : probe.dice()) rollDice.add(d);
+            int diceSum = rollDice.stream().mapToInt(Integer::intValue).sum();
+            var parts = new ArrayList<RollPart>();
+            int engineMod = probe.total() - diceSum;
+            if (engineMod != 0) parts.add(new RollPart("Mod", engineMod));
+            // P1: Vergleichsrichtung kommt aus der Config (gte = D&D, lte = d100/CoC).
+            boolean hit;
+            int total;
+            if ("lte".equals(comparison)) {
+                if (malus != 0) parts.add(new RollPart("Malus", malus));
+                total = probe.total() + malus;
+                hit = total <= targetValue;
+            } else {
+                if (malus != 0) parts.add(new RollPart("Malus", -malus));
+                total = probe.total() - malus;
+                hit = total >= targetValue;
+            }
+            return new AttackOutcome(hit, new RollBreakdown("attack", rollDice, parts, null,
+                total, null, targetValue, comparison));
         }
 
         // T2: value/skill sind bereits finale Werte — reiner Wurf, kein Engine-Modifikator.
@@ -941,15 +1008,27 @@ public class CombatService {
         }
         var roll = rollDice(dice);
         if ("lte".equals(comparison)) {
-            return roll + malus <= base;
+            var parts = new ArrayList<RollPart>();
+            if (malus != 0) parts.add(new RollPart("Malus", malus));
+            int total = roll + malus;
+            return new AttackOutcome(total <= base, new RollBreakdown("attack", List.of(roll),
+                parts, null, total, null, base, "lte"));
         }
-        if (targetName == null) return false; // Legacy: ohne Ziel kein Treffer-Vergleich möglich
+        if (targetName == null) {
+            // Legacy: ohne Ziel kein Treffer-Vergleich möglich (keine Aufstellung).
+            return new AttackOutcome(false, null);
+        }
         Integer targetValue = derivedValue(defender, rules, targetName);
         if (targetValue == null) {
             throw new CombatException("COMBAT_ATTACK_UNRESOLVABLE",
                 "Zielwert '" + targetName + "' nicht ableitbar");
         }
-        return roll + base - malus >= targetValue;
+        var parts = new ArrayList<RollPart>();
+        if (base != 0) parts.add(new RollPart(sourceName == null ? "Wert" : sourceName, base));
+        if (malus != 0) parts.add(new RollPart("Malus", -malus));
+        int total = roll + base - malus;
+        return new AttackOutcome(total >= targetValue, new RollBreakdown("attack", List.of(roll),
+            parts, null, total, null, targetValue, comparison));
     }
 
     private int rollDice(String expression) {
@@ -1101,7 +1180,30 @@ public class CombatService {
     }
 
     public record CombatActionResult(String actionType, int totalDamage,
-                                     int apRemaining, boolean success, String error) {}
+                                     int apRemaining, boolean success, String error,
+                                     RollBreakdown attack, RollBreakdown damage) {
+        /** Kompakt-Konstruktor für Aktionen ohne Wurf-Details. */
+        public CombatActionResult(String actionType, int totalDamage, int apRemaining,
+                                  boolean success, String error) {
+            this(actionType, totalDamage, apRemaining, success, error, null, null);
+        }
+    }
+
+    /** Anzeige-Detail: Einzelwürfe + Boni + Summe (QA: Aufstellung statt nur Gesamtwert). */
+    public record RollPart(String label, int value) {}
+
+    /** {@code op}-los additiv; {@code multiplier}/{@code subtotal} bilden Zielschutz-Stufen ab. */
+    public record RollBreakdown(String kind, List<Integer> dice, List<RollPart> parts,
+                                Integer subtotal, int total, Double multiplier,
+                                Integer target, String comparison) {
+        /** Kopie mit zusätzlichem Bonus (z. B. Manöver-Effekt). */
+        public RollBreakdown withExtraPart(RollPart part) {
+            var next = new ArrayList<>(parts);
+            next.add(part);
+            return new RollBreakdown(kind, dice, next, subtotal, total + part.value(),
+                multiplier, target, comparison);
+        }
+    }
 
     public static class CombatException extends RuntimeException {
         private final String errorCode;

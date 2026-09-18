@@ -142,10 +142,14 @@ public class CombatController {
         }
     }
 
-    /** P1: additiv — UI kann Treffer/Fehlschlag unterscheiden (MISS-Feedback). */
-    public record ActionResultResponse(String actionType, int totalDamage, int apCurrent) {
+    /** P1: additiv — UI kann Treffer/Fehlschlag unterscheiden (MISS-Feedback).
+     *  QA: attack/damage enthalten die Wurf-Aufstellung (Einzelwürfe + Boni + Summe). */
+    public record ActionResultResponse(String actionType, int totalDamage, int apCurrent,
+                                       CombatService.RollBreakdown attack,
+                                       CombatService.RollBreakdown damage) {
         static ActionResultResponse from(CombatService.CombatActionResult r) {
-            return r == null ? null : new ActionResultResponse(r.actionType(), r.totalDamage(), r.apRemaining());
+            return r == null ? null : new ActionResultResponse(r.actionType(), r.totalDamage(),
+                r.apRemaining(), r.attack(), r.damage());
         }
     }
 }

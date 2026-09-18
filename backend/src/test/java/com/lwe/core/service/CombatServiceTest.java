@@ -1089,6 +1089,15 @@ class CombatServiceTest {
         var result = combatService.executeAction(userId, sessionId, attackerId, "ATTACK", defenderId, null);
 
         assertThat(result.success()).isTrue();
+        // QA: Wurf-Aufstellungen sind Teil des Ergebnisses (Einzelwürfe + Boni + Summe).
+        assertThat(result.attack()).isNotNull();
+        assertThat(result.attack().dice()).hasSize(1);
+        assertThat(result.attack().total()).isEqualTo(result.attack().dice().getFirst());
+        assertThat(result.attack().target()).isEqualTo(30);
+        assertThat(result.attack().comparison()).isEqualTo("lte");
+        assertThat(result.damage()).isNotNull();
+        assertThat(result.damage().dice()).hasSize(1);
+        assertThat(result.damage().total()).isEqualTo(result.totalDamage());
     }
 
     @Test

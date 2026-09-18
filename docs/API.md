@@ -465,8 +465,10 @@ Erlaubte Werte: `pending|active|completed|cancelled` (case-insensitive, wird
 auf lowercase normalisiert). Sonst `QUEST_STATUS_INVALID` (400).
 
 ### Kampf-Aktion (P1)
-`POST /combat/{id}/action` liefert additiv `result: {actionType, totalDamage, apCurrent}`
-— bei verfehltem Angriffswurf `actionType: "MISS"` (kein Schaden, AP verbraucht).
+`POST /combat/{id}/action` liefert additiv `result: {actionType, totalDamage, apCurrent, attack?, damage?}`
+— bei verfehltem Angriffswurf `actionType: "MISS"` (kein Schaden, AP verbraucht). `attack`/`damage`
+enthalten die Wurf-Aufstellung (`{kind, dice[], parts[{label,value}], subtotal?, total, multiplier?, target?, comparison?}`),
+z. B. `14 + 3 = 17 ≥ 12` bzw. `4 + 2 - 1 = 5` (Manöver/Fähigkeiten ebenfalls).
 
 ### Handel (`/api/v1/trades`, B4)
 `POST /` (Angebot), `POST /{id}/counter` (Gegenangebot, schreibt aus Editor-Sicht),
