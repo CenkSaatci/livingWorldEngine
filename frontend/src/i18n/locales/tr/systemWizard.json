@@ -194,5 +194,6 @@
   "s4_difficulty_delta": "Delta",
   "s4_difficulty_add": "Seviye ekle",
   "sb_fateProbeBonus": "Kader: puan başına bonus",
-  "sb_fateAvoidDeath": "Kader: ölümü önleme maliyeti"
+  "sb_fateAvoidDeath": "Kader: ölümü önleme maliyeti",
+  "sa_kind": "Tür"
 }

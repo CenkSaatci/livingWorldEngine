@@ -571,6 +571,19 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 )}
               </div>
               <div>
+                <label className="block text-[10px] text-text-secondary mb-1">{t('sa_kind')}</label>
+                <input
+                  value={skill.kind ?? ''}
+                  placeholder="combat"
+                  onChange={(e) => {
+                    const s = [...data.skills];
+                    s[i] = { ...s[i], kind: e.target.value.trim() || undefined };
+                    update('skills', s);
+                  }}
+                  className="w-20 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                />
+              </div>
+              <div>
                 <label className="block text-[10px] text-text-secondary mb-1">Bonus</label>
                 <input
                   type="number"

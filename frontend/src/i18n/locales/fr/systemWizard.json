@@ -194,5 +194,6 @@
   "s4_difficulty_delta": "Delta",
   "s4_difficulty_add": "Ajouter un niveau",
   "sb_fateProbeBonus": "Destin : bonus par point",
-  "sb_fateAvoidDeath": "Destin : coût éviter la mort"
+  "sb_fateAvoidDeath": "Destin : coût éviter la mort",
+  "sa_kind": "Genre"
 }

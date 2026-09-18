@@ -145,11 +145,18 @@
     },
     {
       "name": "at",
-      "formula": "(mut+gewandtheit+koerperkraft)/3+4"
+      "formula": "Schwerter+max(0,floor((mut-8)/3))",
+      "description": "Attacke (Hauptwaffe): Kampftechnik + je 3 volle Punkte Mut über 8."
     },
     {
       "name": "pa",
-      "formula": "(mut+intuition+gewandtheit)/3+4"
+      "formula": "floor(Schwerter/2)+max(0,floor((gewandtheit-8)/3))",
+      "description": "Parade: halber Kampftechnikwert + je 3 volle Punkte Gewandtheit über 8."
+    },
+    {
+      "name": "ausweichen",
+      "formula": "floor(gewandtheit/2)",
+      "description": "Ausweichen (passiv, noch ohne Wurf im Kampf)."
     }
   ],
   "skills": [
@@ -582,6 +589,54 @@
       ],
       "bonus": 0,
       "costColumn": "B"
+    },
+    {
+      "name": "Schwerter",
+      "attributes": [
+        "mut",
+        "gewandtheit",
+        "koerperkraft"
+      ],
+      "bonus": 6,
+      "costColumn": "B",
+      "kind": "combat",
+      "description": "Kampf mit Schwertern und ähnlichen Klingenwaffen."
+    },
+    {
+      "name": "Dolche",
+      "attributes": [
+        "mut",
+        "gewandtheit",
+        "fingerfertigkeit"
+      ],
+      "bonus": 6,
+      "costColumn": "B",
+      "kind": "combat",
+      "description": "Kampf mit Dolchen und Messern."
+    },
+    {
+      "name": "Raufen",
+      "attributes": [
+        "mut",
+        "gewandtheit",
+        "koerperkraft"
+      ],
+      "bonus": 6,
+      "costColumn": "B",
+      "kind": "combat",
+      "description": "Unbewaffneter Nahkampf."
+    },
+    {
+      "name": "Schusswaffen",
+      "attributes": [
+        "intuition",
+        "fingerfertigkeit",
+        "koerperkraft"
+      ],
+      "bonus": 6,
+      "costColumn": "B",
+      "kind": "combat",
+      "description": "Bogen, Armbrust und Wurfwaffen."
     }
   ],
   "traits": [

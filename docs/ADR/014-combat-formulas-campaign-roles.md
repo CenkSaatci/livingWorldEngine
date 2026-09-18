@@ -41,7 +41,7 @@
 ## Finales Design
 
 **1. Skills als Formel-Variablen.** `derived_values`-Formeln lesen jeden Namen aus `skills[]` desselben Regel-JSON (z. B. `Schwerter`, `Dolche`). Wertquelle: Charakter-`skillsJson`, Fallback Regel-`bonus` (explizite 0 ist gültig), sonst klarer Formelfehler. Beispiel (Content): `at_schwerter = Schwerter + max(0, floor((mut-8)/3))`, `ausweichen = floor(gewandtheit/2)`.
-- Namensregeln (Review): Groß-/Kleinschreibung wird überall einheitlich **case-insensitiv** behandelt; Kollisionen (auch case-insensitiv) meldet der Validator als Fehler. Namen mit Leerzeichen/Klammern (z. B. `Kampf (Raufen)`) sind in Formeln **nicht** referenzierbar — der Validator verlangt formeltaugliche Namen (`[A-Za-z_][\w]*`, Umlaute ok) oder ein optionales `ref`-Alias-Feld; sonst Fehler statt stiller Bruch.
+- Namensregeln (Review): Groß-/Kleinschreibung wird überall einheitlich **case-insensitiv** behandelt; Kollisionen (auch case-insensitiv) meldet der Validator als Fehler. Namen mit Leerzeichen/Klammern (z. B. `Kampf (Raufen)`) sind in Formeln **nicht** referenzierbar (Bestand bleibt gültig, nur Formeln brauchen formeltaugliche Namen); ein `ref`-Alias ist zurückgestellt (YAGNI).
 - Skills werden dem Formelkontext explizit beigemischt (heute fehlen sie dort — Kern-Umsetzung). Korruptes `skillsJson` wird geloggt und fällt aufs Regel-`bonus` zurück (kein stiller Erfolg).
 - `DerivedValueService` rundet weiter auf (`ceil`); Content nutzt explizites `floor` wo abgerundet werden soll (Doku + Beispiele). Schwellen-Muster (`max(0, …)`) ist Content-Verantwortung, dokumentiert.
 - `FormulaEvaluator` bekommt Längen-/Tiefen-Limits (Validator + Evaluator, gegen `StackOverflow`/DoS).

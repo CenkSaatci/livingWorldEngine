@@ -337,5 +337,6 @@
   "s2_description_ph": "Short description (tooltip)",
   "s2_description_hint": "Explains the attribute on the character sheet.",
   "sdv_description_ph": "Short description (tooltip)",
-  "sdv_description_hint": "Explains the value to players on the character sheet."
+  "sdv_description_hint": "Explains the value to players on the character sheet.",
+  "sa_kind": "Kind"
 }

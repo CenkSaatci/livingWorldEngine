@@ -17,6 +17,8 @@ export interface SkillDef {
   name: string;
   /** QA: kurze Regelerklärung, erscheint als Tooltip im Charakterbogen. */
   description?: string;
+  /** ADR-014: freie Skill-Art (combat/craft/social/…) für Gruppierung + Angriffs-Prüfung. */
+  kind?: string;
   attributes: string[];
   bonus: number;
   costColumn?: string;
@@ -928,6 +930,7 @@ export function fromRulesJson(json: string): WizardData | null {
     const skills: SkillDef[] = ((parsed.skills as Record<string, unknown>[] | undefined) ?? []).map((s: Record<string, unknown>) => ({
       name: (s.name as string) ?? '',
       ...(s.description != null ? { description: s.description as string } : {}),
+      ...(s.kind != null ? { kind: s.kind as string } : {}),
       attributes: (s.attributes as string[]) ?? ((s.attribute as string) ? [s.attribute as string] : []),
       bonus: (s.bonus as number) ?? 0,
       ...(s.costColumn !== undefined ? { costColumn: s.costColumn as string } : {}),

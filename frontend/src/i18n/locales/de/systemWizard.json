@@ -337,5 +337,6 @@
   "s2_description_ph": "Kurzbeschreibung (Tooltip)",
   "s2_description_hint": "Erklärt das Attribut im Charakterbogen.",
   "sdv_description_ph": "Kurzbeschreibung (Tooltip)",
-  "sdv_description_hint": "Erklärt den Wert den Spielern im Charakterbogen."
+  "sdv_description_hint": "Erklärt den Wert den Spielern im Charakterbogen.",
+  "sa_kind": "Art"
 }

@@ -136,12 +136,13 @@ describe('gameSystem roundtrip', () => {
 
   it('roundtrip preserves QA descriptions (skills, traits)', () => {
     const data = defaultWizardData();
-    data.skills = [{ name: 'Klettern', attributes: ['mut'], bonus: 0, description: 'Bergsteigen und Abseilen' }];
+    data.skills = [{ name: 'Klettern', attributes: ['mut'], bonus: 0, description: 'Bergsteigen und Abseilen', kind: 'combat' }];
     data.traits = [{ name: 'Zauberer', kind: 'advantage', description: 'Darf zaubern' }];
 
     const restored = fromRulesJson(toRulesJson(data));
 
     expect(restored!.skills[0].description).toBe('Bergsteigen und Abseilen');
+    expect(restored!.skills[0].kind).toBe('combat');
     expect(restored!.traits![0].description).toBe('Darf zaubern');
   });
 

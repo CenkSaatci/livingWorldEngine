@@ -351,6 +351,9 @@ function SkillRow({ skill, entityId, skillOverrides, setSkillOverrides, onSaved,
   return (
     <div className="flex items-center justify-between rounded bg-bg-primary/30 px-2 py-1">
       <span className="text-xs text-text-primary" title={skill.description ?? undefined}>{skill.name}</span>
+      {skill.kind != null && skill.kind !== '' && (
+        <span className="rounded bg-bg-elevated px-1 text-[10px] text-text-secondary">{skill.kind}</span>
+      )}
       <div className="flex items-center gap-2">
         {editing ? (
           <div className="flex items-center gap-1">

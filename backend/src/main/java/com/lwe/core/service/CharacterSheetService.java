@@ -162,8 +162,9 @@ public class CharacterSheetService {
                 var perCharVal = perCharSkills.get(name);
                 var advanceCost = skillAdvanceCost(rules, s, effectiveBonus);
                 var description = s.get("description") instanceof String d ? d : null;
+                var kind = s.get("kind") instanceof String k ? k : null;
                 return new SheetResponse.SkillInfo(name, total, perCharVal, advanceCost,
-                    castingInfo(s), description);
+                    castingInfo(s), description, kind);
             })
             .collect(Collectors.toList());
 
