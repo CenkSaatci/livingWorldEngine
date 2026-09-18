@@ -130,6 +130,15 @@ public class EntityService {
     }
 
     public List<GameEntity> list(UUID worldId, UUID userId, String entityType) {
+        return list(worldId, userId, entityType, false);
+    }
+
+    /**
+     * @param forTrade Handelskandidaten: konsensbasierter Handel braucht wählbare
+     *                 Partner — fremde Charaktere sind hier sichtbar (Sheets/Aktionen
+     *                 bleiben Owner/DM-gated).
+     */
+    public List<GameEntity> list(UUID worldId, UUID userId, String entityType, boolean forTrade) {
         worldAccess.requireRead(worldId, userId); // T33-02
         List<GameEntity> all;
         if (entityType != null) {
@@ -138,7 +147,7 @@ public class EntityService {
             all = entityRepo.findByWorldIdAndActiveTrue(worldId);
         }
         // ADR-014: Spieler sehen nur eigene Charaktere (+ NPCs/Alles ohne Owner); DM alles.
-        if (isPrivileged(worldId, userId)) return all;
+        if (forTrade || isPrivileged(worldId, userId)) return all;
         return all.stream()
             .filter(e -> !"PC".equalsIgnoreCase(e.getEntityType())
                 || e.getOwnerUserId() == null || e.getOwnerUserId().equals(userId))

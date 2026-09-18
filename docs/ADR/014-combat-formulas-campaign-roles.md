@@ -1,6 +1,6 @@
 # ADR-014: Generische Kampfwert-Formeln und Kampagnen-Leiterrechte
 
-- **Status:** Akzeptiert (Design, 2026-09-18)
+- **Status:** Umgesetzt (2026-09-18, entwickeln)
 - **Kontext:** AT/PA aus simplen Attributsmitteln (+4) sind zu hoch (AT/PA ~17), Parade wird gar nicht gewürfelt; Schaden ignoriert den Würfelteil von `combat.damage`; jeder DM konnte jeden zum Leiter befördern und Spieler sahen fremde Charaktere.
 
 ## Understanding Summary

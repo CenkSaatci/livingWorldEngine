@@ -2644,3 +2644,12 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **B8:** `createAdventure` DM-only — ✅ fertig
 - **B9:** Aufrunden (Engine + Anzeige + HP) — ✅ fertig
 - **B10:** Factions-Verlinkung aus Game View prüfen — 📋
+
+## Phase 38: ADR-014 — Generische Kampfwert-Formeln + Leiterrechte (✅ 2026-09-18)
+
+- **Formel-Kern:** Skills im `derived_values`-Kontext (skillsJson → Regel-bonus, explizite 0 gültig), case-insensitiv, Attribute gewinnen Kollisionen; `FormulaEvaluator`-Limits (1000 Zeichen, Tiefe 64).
+- **Fail-closed:** `COMBAT_ATTACK_UNRESOLVABLE` (422) bei konfigurierten, aber nicht ableitbaren Angriffs-/Ziel-/Schadenswerten; Legacy Gate-aus ohne `target` bleibt.
+- **Schaden:** Stufen-Pipeline für Angriffe/Manöver (ausgerüstete Waffe)/Fähigkeiten; `damage_attr_bonus`-Formel (Default `floor((attr-10)/2)`); fehlend = Default, kaputt = Fehler; Regeln 1× je Aktion.
+- **Schema:** `skills[].kind`, `combat.damage_attr_bonus`; Semantik-Checks (case-insensitive Kollisionen, Angriffs-Art ≠ combat); DSA-Beispiele mit Kampf-Skills + KTW/Schwellen-Formeln + `ausweichen`.
+- **Rechte (V106 `creator_id`):** nur Ersteller verwaltet Leiter-Set (+ Übergabe-Endpunkt, Legacy-Fallback Welt-Owner); Spieler sehen nur eigene PCs (+ NPCs), Sheets/Roster entsprechend gegatet; `?forTrade=true` für Handelskandidaten.
+- **Nachweise:** Backend 550, Frontend 192, E2E 25, tsc clean; live verifiziert (Mira at 17→7/pa 17→4, CREATOR_REQUIRED, 403 Sheets/Roster, Handel).

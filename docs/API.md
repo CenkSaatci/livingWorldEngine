@@ -241,21 +241,27 @@ Body (optional): `name`, `stateJson`
 
 ### `DELETE /api/v1/campaigns/{id}` (auth, Welt-Zugriff)
 
-### `POST /api/v1/campaigns/{id}/members` (auth, nur DM)
-**Request:** `{ "userId": "uuid", "role": "PLAYER" }` (role: `PLAYER` | `DM`)
-**Fehlercodes:** `USER_NOT_FOUND`, `MEMBER_ALREADY`, `DM_REQUIRED`
+### `POST /api/v1/campaigns/{id}/members` (auth, DM für Spieler, Ersteller für Leiter)
+**Request:** `{ "userId": "uuid", "role": "PLAYER" }` (role: `PLAYER` | `DM`).
+**ADR-014:** Die `DM`-Rolle vergibt nur der Ersteller (`creatorId`); Spieler lädt jeder DM ein.
+**Fehlercodes:** `USER_NOT_FOUND`, `MEMBER_ALREADY`, `DM_REQUIRED`, `CREATOR_REQUIRED` (403)
+
+### `POST /api/v1/campaigns/{id}/creator` (auth, nur Ersteller)
+Übergibt die Ersteller-Rolle an einen Leiter. **Request:** `{ "userId": "uuid" }`.
+**Fehlercodes:** `MEMBER_NOT_FOUND` (404), `CREATOR_REQUIRED` (403), `CREATOR_TARGET_MUST_BE_DM` (422)
 
 ### `POST /api/v1/campaigns/{id}/pull-system` (auth, nur DM)
 Zieht die aktuelle System-Version nach (P27-T05, Snapshot-Pin). **Fehlercodes:** `DM_REQUIRED`, `GAME_SYSTEM_NOT_FOUND`
 
-### `PATCH /api/v1/campaigns/{id}/members/{userId}` (auth, nur DM)
+### `PATCH /api/v1/campaigns/{id}/members/{userId}` (auth, Ersteller für Leiter-Set, DM für Spieler)
 **Request:** `{ "role": "DM" | "PLAYER" }` — Promote/Demote; letzter DM geschützt.
-**Fehlercodes:** `INVALID_ROLE` (400), `LAST_DM` (409), `DM_REQUIRED` (403)
+**ADR-014:** Jede Änderung am Leiter-Set nur durch den Ersteller.
+**Fehlercodes:** `INVALID_ROLE` (400), `LAST_DM` (409), `DM_REQUIRED` (403), `CREATOR_REQUIRED` (403)
 
 ### `GET /api/v1/campaigns/{id}/members` (auth, Welt-Zugriff)
 
-### `DELETE /api/v1/campaigns/{id}/members/{memberId}` (auth, nur DM)
-**Fehlercodes:** `MEMBER_NOT_FOUND`, `DM_REMOVAL_DENIED`, `DM_REQUIRED`
+### `DELETE /api/v1/campaigns/{id}/members/{memberId}` (auth, DM für Spieler, Ersteller für Leiter)
+**Fehlercodes:** `MEMBER_NOT_FOUND`, `DM_REMOVAL_DENIED`, `DM_REQUIRED`, `CREATOR_REQUIRED`
 
 ---
 
@@ -310,7 +316,8 @@ Zieht die aktuelle System-Version nach (P27-T05, Snapshot-Pin). **Fehlercodes:**
 **Fehlercodes:** `ENTITY_TYPE_INVALID`, `ENTITY_ATTRIBUTES_INVALID`, `ENTITY_POSITION_INVALID`, `ENTITY_FACTION_NOT_FOUND`
 
 ### `GET /api/v1/worlds/{worldId}/entities?type=NPC` → Filter
-### `GET /api/v1/worlds/{worldId}/entities/{id}` (**Fehlercodes:** `ENTITY_NOT_FOUND`)
+**ADR-014:** Spieler sehen nur eigene Charaktere (+ NPCs); DM alles. `?forTrade=true` → zusätzlich fremde Charaktere als Handelskandidaten (Sheets bleiben zu).
+### `GET /api/v1/worlds/{worldId}/entities/{id}` (**Fehlercodes:** `ENTITY_NOT_FOUND`, `WORLD_ACCESS_DENIED` für fremde PCs)
 ### `PATCH /api/v1/worlds/{worldId}/entities/{id}` → Update attributes/inventory/metadata
 
 ### `POST /api/v1/entities/{entityId}/conditions?campaignId=uuid`

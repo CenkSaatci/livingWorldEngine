@@ -63,7 +63,7 @@ test.describe('SystemWizard — P29-T05 Pakete', () => {
     await expect(paketeHeading).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue('Elfe');
     await expect(page.getByRole('spinbutton', { name: 'Kosten' })).toHaveValue('18');
-    await expect(page.getByRole('textbox', { name: 'Auto-Merkmale' })).toHaveValue('Nachtsicht');
+    await expect(page.getByRole('combobox', { name: 'Auto-Merkmale' })).toHaveValue('Nachtsicht');
     await expect(page.getByRole('textbox', { name: 'Eingeschränkt' })).toHaveValue('Zwerg');
 
     await page.getByRole('combobox', { name: 'Spezies' }).selectOption('Elfe');

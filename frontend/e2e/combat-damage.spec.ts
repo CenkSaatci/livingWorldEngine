@@ -140,9 +140,9 @@ test.describe('Kampf-Zustände + Schadensart (T33-01)', () => {
       ? `E2E Held ${stamp}` : `E2E Golem ${stamp}`;
 
     // Angriff: Ziel waehlen, Aktion ausfuehren
-    await expect(page.getByRole('button', { name: /action/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('button', { name: /Angreifen|action/i })).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: new RegExp(targetName) }).first().click({ force: true });
-    await page.getByRole('button', { name: /action/i }).click();
+    await page.getByRole('button', { name: /Angreifen|action/i }).click();
 
     // Chat-Log: Schadensart + deterministisch 0 Schaden (Ruestung 100)
     await expect(page.getByText(/\(fire\)/)).toBeVisible({ timeout: 10_000 });

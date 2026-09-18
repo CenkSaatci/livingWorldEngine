@@ -383,6 +383,21 @@ class EntityServiceTest {
     }
 
     @Test
+    void listForTradeShowsForeignCharactersAsCandidates() {
+        var stranger = UUID.randomUUID();
+        var theirs = entityWithId("{}");
+        theirs.setOwnerUserId(stranger);
+        when(entityRepo.findByWorldIdAndActiveTrue(worldId)).thenReturn(java.util.List.of(theirs));
+        doNothing().when(worldAccess).requireRead(worldId, userId);
+        doThrow(new com.lwe.core.util.WorldAccess.WorldAccessException("WORLD_ACCESS_DENIED", "denied"))
+            .when(worldAccess).requireDm(worldId, userId);
+
+        // Handel ist konsensbasiert: Partner muessen waehlbar sein (Sheets bleiben zu).
+        assertThat(service.list(worldId, userId, null, true)).contains(theirs);
+        assertThat(service.list(worldId, userId, null, false)).doesNotContain(theirs);
+    }
+
+    @Test
     void conditionOwnerMayManageButStrangerMayNot() {        var ownerId = UUID.randomUUID();
         var strangerId = UUID.randomUUID();
         var campaignId = campaignInWorld();

@@ -69,7 +69,7 @@ export function TradeModal({ entityId, entityName, onClose }: Props) {
     apiClient.get(`/entities/${entityId}`).then((res) => {
       const wid = res.data.worldId as string;
       setWorldId(wid);
-      apiClient.get(`/worlds/${wid}/entities`).then((r) => {
+      apiClient.get(`/worlds/${wid}/entities?forTrade=true`).then((r) => {
         setEntities(
           (r.data as (EntityRef & { entityType: string })[])
             .filter((e) => e.id !== entityId && e.entityType !== 'FACTION'),

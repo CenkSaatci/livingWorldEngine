@@ -43,8 +43,9 @@ public class EntityController {
     @GetMapping
     public ResponseEntity<?> list(@PathVariable UUID worldId,
                                   @RequestParam(required = false) String type,
+                                  @RequestParam(required = false, defaultValue = "false") boolean forTrade,
                                   @AuthenticationPrincipal User user) {
-        var entities = entityService.list(worldId, user.getId(), type)
+        var entities = entityService.list(worldId, user.getId(), type, forTrade)
             .stream().map(EntityResponse::from).toList();
         return ResponseEntity.ok(entities);
     }
