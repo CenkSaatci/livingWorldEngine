@@ -122,6 +122,7 @@ public class RuleSchemaValidator {
               "properties": {
                 "name":       { "type": "string" },
                 "description": { "type": "string" },
+                "kind":       { "type": "string", "description": "Freie Skill-Art (z.B. combat/craft/social), Engine kennt nur Gleichheit" },
                 "attribute":  { "type": "string", "description": "Legacy single attribute reference" },
                 "attributes": { "type": "array", "items": { "type": "string" }, "description": "Multi-attribute reference" },
                 "bonus":      { "type": "integer", "default": 0 },
@@ -141,6 +142,7 @@ public class RuleSchemaValidator {
               "properties": {
                 "initiative":        { "type": "string" },
                 "damage":            { "type": "string" },
+                "damage_attr_bonus": { "type": "string", "description": "System-Formel mit Variable attr (Default: floor((attr-10)/2))" },
                 "action_points":     { "$ref": "#/$defs/actionPoints" },
                 "action_types":      { "type": "array", "items": { "type": "string" } },
                 "actions_per_turn":  { "type": "object" },
@@ -332,12 +334,59 @@ public class RuleSchemaValidator {
             var rulesNode = objectMapper.readTree(rulesJson);
             var errors = schema.validate(rulesNode);
 
-            return errors.stream()
+            var result = new java.util.ArrayList<>(errors.stream()
                 .map(e -> new ValidationError(e.getInstanceLocation().toString(), e.getMessage()))
-                .toList();
+                .toList());
+            result.addAll(semanticChecks(rulesNode));
+            return result;
         } catch (Exception e) {
             return List.of(new ValidationError("(root)", "Parsing error: " + e.getMessage()));
         }
+    }
+
+    /**
+     * ADR-014: Semantik über reines JSON-Schema hinaus — case-insensitive
+     * Namenskollisionen (Attribute/Skills teilen den Formel-Namensraum) und
+     * Angriffs-Skills mit nicht-combat Art sind Fehler.
+     */
+    private List<ValidationError> semanticChecks(com.fasterxml.jackson.databind.JsonNode rules) {
+        var out = new java.util.ArrayList<ValidationError>();
+        var seen = new java.util.HashMap<String, String>();
+        for (var kind : new String[]{"attributes", "skills"}) {
+            var list = rules.path(kind);
+            if (!list.isArray()) continue;
+            for (var entry : list) {
+                var name = entry.path("name");
+                if (!name.isTextual() || name.asText().isBlank()) continue;
+                var key = name.asText().toLowerCase(java.util.Locale.ROOT);
+                var prev = seen.putIfAbsent(key, kind + "/" + name.asText());
+                if (prev != null) {
+                    out.add(new ValidationError("$." + kind,
+                        "Name '" + name.asText() + "' kollidiert (case-insensitiv) mit " + prev));
+                }
+            }
+        }
+        var kinds = new java.util.HashMap<String, String>();
+        var skills = rules.path("skills");
+        if (skills.isArray()) {
+            for (var s : skills) {
+                var name = s.path("name");
+                var kind = s.path("kind");
+                if (name.isTextual() && kind.isTextual()) {
+                    kinds.put(name.asText(), kind.asText());
+                }
+            }
+        }
+        var attackSkill = rules.path("dice_mechanics").path("combat").path("attack").path("skill");
+        if (attackSkill.isTextual()) {
+            var kind = kinds.get(attackSkill.asText());
+            if (kind != null && !"combat".equals(kind)) {
+                out.add(new ValidationError("$.dice_mechanics.combat.attack",
+                    "Angriffs-Skill '" + attackSkill.asText() + "' hat Art '" + kind
+                        + "' statt 'combat' (Angriff mit " + kind + "?)"));
+            }
+        }
+        return out;
     }
 
     /**

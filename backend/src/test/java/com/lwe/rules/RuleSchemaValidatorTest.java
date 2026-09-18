@@ -361,4 +361,59 @@ class RuleSchemaValidatorTest {
     private String loadFixture(String name) throws IOException {
         return Files.readString(Path.of("src/test/resources/rules/" + name));
     }
+
+    @Test
+    void shouldAcceptSkillKindAndDamageAttrBonus() {
+        var ok = """
+            {"version":1,
+             "attributes":[{"name":"mut","type":"INT","default":10}],
+             "skills":[{"name":"Schwerter","attributes":["mut"],"bonus":0,"kind":"combat"}],
+             "dice_mechanics":{"probe":"1d20+mod",
+               "combat":{"initiative":"1d20","damage":"1d6",
+                 "damage_attr_bonus":"max(0,floor((attr-13)/2))"}}}
+            """;
+        assertThat(validator.validate(ok, RuleSchemaValidator.DEFAULT_SCHEMA)).isEmpty();
+    }
+
+    @Test
+    void shouldAllowFreeFormSkillNames() {
+        // ADR-014-Revision: Namen bleiben frei (Content wie "Kampf (Raufen)" bricht nicht);
+        // nur Kollisionen und Art-Fehlgriffe sind Fehler.
+        var ok = """
+            {"version":1,
+             "attributes":[{"name":"mut","type":"INT","default":10}],
+             "skills":[{"name":"Kampf (Raufen)","attributes":["mut"],"bonus":0}],
+             "dice_mechanics":{"probe":"1d100"}}
+            """;
+        assertThat(validator.validate(ok, RuleSchemaValidator.DEFAULT_SCHEMA)).isEmpty();
+    }
+
+    @Test
+    void shouldRejectCaseInsensitiveNameCollisions() {
+        var collision = """
+            {"version":1,
+             "attributes":[{"name":"MU","type":"INT","default":10}],
+             "skills":[{"name":"mu","attributes":["MU"],"bonus":0}],
+             "dice_mechanics":{"probe":"1d20+mod"}}
+            """;
+        assertThat(validator.validate(collision, RuleSchemaValidator.DEFAULT_SCHEMA))
+            .as("case-insensitive Kollision muss Fehler sein").isNotEmpty();
+    }
+
+    @Test
+    void shouldRejectAttackSkillWithNonCombatKind() {
+        var bad = """
+            {"version":1,
+             "attributes":[{"name":"mut","type":"INT","default":10}],
+             "skills":[{"name":"Schmieden","attributes":["mut"],"bonus":5,"kind":"craft"}],
+             "dice_mechanics":{"probe":"1d20+mod",
+               "combat":{"initiative":"1d20","damage":"1d6",
+                 "attack":{"skill":"Schmieden","dice":"1d20","comparison":"lte"}}}}
+            """;
+        assertThat(validator.validate(bad, RuleSchemaValidator.DEFAULT_SCHEMA))
+            .as("Angriff mit craft-Skill muss Fehler sein").isNotEmpty();
+
+        var ok = bad.replace("\"kind\":\"craft\"", "\"kind\":\"combat\"");
+        assertThat(validator.validate(ok, RuleSchemaValidator.DEFAULT_SCHEMA)).isEmpty();
+    }
 }

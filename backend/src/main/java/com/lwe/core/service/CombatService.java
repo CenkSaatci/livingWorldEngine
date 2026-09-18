@@ -156,7 +156,9 @@ public class CombatService {
         if (actor.getHpCurrent() <= 0)
             throw new CombatException("COMBAT_ACTOR_DEFEATED", "Actor is defeated");
         requireAp(actor);
-        requireActionAllowed(session, actorId, actionType); // T3
+        // ADR-014: Regeln einmal je Aktion laden und durchreichen (kein N+1).
+        var rules = rulesLoader.loadRules(session.getCampaignId(), session.getWorldId());
+        requireActionAllowed(session, actorId, rules, actionType); // T3
 
         if ("MOVE".equals(actionType)) {
             deductAp(actor);
@@ -185,12 +187,10 @@ public class CombatService {
 
         // P1: generisches Angriffswurf-Modell — nur wenn das System es konfiguriert
         // (dice_mechanics.combat.attack). Ohne Config bleibt das Verhalten wie bisher.
-        var attackWorld = worldRepo.findById(session.getWorldId()).orElse(null);
-        var attackCfg = isDamagingAction(attackWorld, session.getCampaignId(), actionType)
-            ? resolveAttackConfig(attackWorld, session.getCampaignId())
-            : null;
+        boolean damaging = isDamagingAction(rules, actionType);
+        var attackCfg = damaging ? resolveAttackConfig(rules) : null;
         if (attackCfg != null && targetId != null) {
-            var hit = attackHits(userId, session, actorId, targetId, attackCfg, 0);
+            var hit = attackHits(userId, session, actorId, targetId, attackCfg, 0, rules);
             if (Boolean.FALSE.equals(hit)) {
                 deductAp(actor);
                 sendCombatMessage(session.getWorldId(), "🎯 " + entityName(actorId)
@@ -203,7 +203,8 @@ public class CombatService {
         }
 
         var weapon = resolveWeaponDamage(actorId, itemId);
-        var damage = rollDamage(session.getWorldId(), actorId, actionType, session.getCampaignId(), weapon);
+        var damage = rollDamage(session.getWorldId(), actorId, actionType,
+            session.getCampaignId(), weapon, rules, damaging);
         var damageType = weapon != null ? weapon.type() : null;
         damage = applyDamageModifiers(damage, targetId, damageType);
         deductAp(actor);
@@ -243,21 +244,19 @@ public class CombatService {
             .orElseThrow(() -> new CombatException("ABILITY_NOT_FOUND", "Ability not found"));
         if (ability.getType() != Ability.AbilityType.ACTIVE)
             throw new CombatException("ABILITY_NOT_ACTIVE", "Ability is not an active ability");
-        requireActionAllowed(session, actorId, "ABILITY"); // T3
+        var rules = rulesLoader.loadRules(session.getCampaignId(), session.getWorldId());
+        requireActionAllowed(session, actorId, rules, "ABILITY"); // T3
         if (actor.getApCurrent() < ability.getApCost())
             throw new CombatException("COMBAT_AP_INSUFFICIENT", "Not enough AP");
 
-        // Parse damage from effects_json
+        // Parse damage from effects_json — läuft durch dieselben Stufen wie Angriffe (ADR-014).
         var effects = parseEffectsJson(ability.getEffectsJson());
         int damage = 0;
         if (effects.damageExpr != null) {
             var entity = entityRepo.findById(actorId)
                 .orElseThrow(() -> new CombatException("ENTITY_NOT_FOUND", "Actor not found"));
-            var world = worldRepo.findById(session.getWorldId())
-                .orElseThrow(() -> new CombatException("WORLD_NOT_FOUND", "World not found"));
-            var rollResult = rollService.executeRoll(userId, session.getWorldId(), actorId,
-                effects.damageExpr, 0, 0);
-            damage = rollResult != null ? rollResult.total() : 0;
+            var parts = parseDamageOrThrow(effects.damageExpr, "ability");
+            damage = computeDamage(entity, rules, parts.dice(), parts.flat(), parts.attr());
         }
 
         // Apply damage to target
@@ -320,24 +319,57 @@ public class CombatService {
         if (itemId == null) return null;
         var actor = entityRepo.findById(actorId).orElse(null);
         if (actor == null || !inventoryContains(actor, itemId)) return null;
-        return itemRepo.findById(itemId)
-            .map(i -> {
-                if (i.getMetadataJson() == null || i.getMetadataJson().isBlank()) return null;
-                try {
-                    var t = objectMapper.readTree(i.getMetadataJson());
-                    var type = t.path("damage_type");
-                    var typeStr = type.isTextual() && !type.asText().isBlank() ? type.asText() : null;
-                    var dice = t.path("damage").isTextual() && !t.path("damage").asText().isBlank()
-                        ? t.path("damage").asText() : "1d6";
-                    var attr = t.path("damage_attr").isTextual() && !t.path("damage_attr").asText().isBlank()
-                        ? t.path("damage_attr").asText() : null;
-                    var bonus = t.path("damage_bonus").isNumber() ? t.path("damage_bonus").asInt() : 0;
-                    return new WeaponDamage(dice, attr, bonus, typeStr);
-                } catch (Exception e) {
-                    return null;
-                }
-            })
-            .orElse(null);
+        return itemRepo.findById(itemId).map(this::readWeaponDamage).orElse(null);
+    }
+
+    /** Ausgerüstete Waffe des Actors (erstes equipped Item mit Schadens-Feldern, ADR-014). */
+    private WeaponDamage equippedWeapon(UUID actorId) {
+        var actor = entityRepo.findById(actorId).orElse(null);
+        if (actor == null || actor.getInventoryJson() == null || actor.getInventoryJson().isBlank()) return null;
+        try {
+            var arr = objectMapper.readTree(actor.getInventoryJson());
+            if (!arr.isArray()) return null;
+            for (var n : arr) {
+                if (!n.path("equipped").asBoolean(false)) continue;
+                var itemId = n.path("itemId").asText(null);
+                if (itemId == null) continue;
+                var item = itemRepo.findById(UUID.fromString(itemId)).orElse(null);
+                if (item == null || !hasDamageFields(item)) continue;
+                return readWeaponDamage(item);
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    /** true wenn die Metadata echte Schadens-Felder trägt (reiner Typ reicht nicht). */
+    private boolean hasDamageFields(com.lwe.core.domain.GameItem item) {
+        if (item.getMetadataJson() == null || item.getMetadataJson().isBlank()) return false;
+        try {
+            var t = objectMapper.readTree(item.getMetadataJson());
+            return (t.path("damage").isTextual() && !t.path("damage").asText().isBlank())
+                || (t.path("damage_attr").isTextual() && !t.path("damage_attr").asText().isBlank())
+                || t.path("damage_bonus").isNumber();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** @return null nur ohne/nicht parsbare Metadata (keine Waffe). */
+    private WeaponDamage readWeaponDamage(com.lwe.core.domain.GameItem i) {
+        if (i.getMetadataJson() == null || i.getMetadataJson().isBlank()) return null;
+        try {
+            var t = objectMapper.readTree(i.getMetadataJson());
+            var type = t.path("damage_type");
+            var typeStr = type.isTextual() && !type.asText().isBlank() ? type.asText() : null;
+            var dice = t.path("damage").isTextual() && !t.path("damage").asText().isBlank()
+                ? t.path("damage").asText() : "1d6";
+            var attr = t.path("damage_attr").isTextual() && !t.path("damage_attr").asText().isBlank()
+                ? t.path("damage_attr").asText() : null;
+            var bonus = t.path("damage_bonus").isNumber() ? t.path("damage_bonus").asInt() : 0;
+            return new WeaponDamage(dice, attr, bonus, typeStr);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /** Ruestung (flat) + Resistenz/Vulnerabilitaet auf den Schaden (P23-T04/P29-T04).
@@ -429,42 +461,47 @@ public class CombatService {
             throw new CombatException("COMBAT_RANGE_INVALID", "Target out of range (" + range + " tiles)");
     }
 
-    /** QA: Item-basierter Schaden — Waffenwürfel + Waffenbonus + Attributbonus
-     *  (floor((Attribut-10)/2): D&D-exakt, DSA-plausibel) + Zustands-/Merkmal-Boni.
-     *  Ohne Waffe (oder ohne damage-Ausdruck) gilt combat.damage als Fallback —
-     *  dessen Würfelteil wird jetzt WIRKLICH gewürfelt (vorher ignoriert). */
+    /** ADR-014: Item-/Aktions-basierter Schaden in Stufen — Waffen-/Aktionswürfel +
+     *  Flat + Attribut-Schwellenbonus (System-Formel) + Zustands-/Merkmal-Boni.
+     *  Ohne Waffe gilt combat.damage als Fallback (Würfel wird wirklich gewürfelt).
+     *  Fehlend = dokumentierter Default; kaputt = COMBAT_ATTACK_UNRESOLVABLE. */
     private int rollDamage(UUID worldId, UUID actorId, String actionType, UUID campaignId,
-                           WeaponDamage weapon) {
+                           WeaponDamage weapon, Map<String, Object> rules, boolean damaging) {
         var entity = entityRepo.findById(actorId)
             .orElseThrow(() -> new CombatException("ENTITY_NOT_FOUND", "Actor not found"));
         var world = worldRepo.findById(worldId)
             .orElseThrow(() -> new CombatException("WORLD_NOT_FOUND", "World not found"));
-        if (!isDamagingAction(world, campaignId, actionType)) return 0;
-        var rules = rulesLoader.loadRules(campaignId, worldId);
+        if (!damaging) return 0;
 
-        String diceExpr;
+        DamageParts parts;
         String attrName;
         int flatBonus;
         if (weapon != null) {
-            diceExpr = weapon.dice();
+            parts = parseDamageOrThrow(weapon.dice(), "Waffe");
             attrName = weapon.attr();
-            flatBonus = weapon.bonus();
+            flatBonus = weapon.bonus() + parts.flat();
         } else {
-            var fallback = parseDamageExpr(combatDamageExpr(rules));
-            diceExpr = fallback.dice();
-            attrName = fallback.attr();
-            flatBonus = fallback.flat();
+            var raw = combatDamageExpr(rules);
+            parts = raw == null ? new DamageParts("1d6", null, 0) : parseDamageOrThrow(raw, "combat.damage");
+            attrName = parts.attr();
+            flatBonus = parts.flat();
         }
+        return computeDamage(entity, rules, parts.dice(), flatBonus, attrName);
+    }
 
-        int total = flatBonus;
+    /** Gemeinsame Schadens-Stufen für Angriffe, Manöver und Fähigkeiten (ADR-014). */
+    private int computeDamage(GameEntity entity, Map<String, Object> rules,
+                              String dice, int flat, String attrName) {
+        int total = flat;
         try {
-            total += new com.lwe.rules.DiceExpression(diceExpr).getTotal();
+            total += new com.lwe.rules.DiceExpression(dice).getTotal();
         } catch (IllegalArgumentException e) {
-            // Kaputter Ausdruck: kein Würfelschaden statt Crash (Fallback: Boni).
+            throw new CombatException("COMBAT_ATTACK_UNRESOLVABLE",
+                "Schadenswürfel '" + dice + "' nicht parsbar");
         }
         if (attrName != null) {
             int attrValue = AttributeUtils.extractAttribute(entity, attrName).orElse(10);
-            total += (int) Math.floor((attrValue - 10) / 2.0);
+            total += damageAttrBonus(attrValue, rules);
         }
         // Aktive Zustaende (P29-T01) + gewählte Merkmale: Schadens-Modifikator.
         total += conditionService.modifier(entity, rules, "damage");
@@ -472,14 +509,42 @@ public class CombatService {
         return Math.max(0, total);
     }
 
+    /** Attribut-Schadenbonus per System-Formel (Default: D&D-Modifikator, ADR-014). */
+    private int damageAttrBonus(int attrValue, Map<String, Object> rules) {
+        String formula = "floor((attr-10)/2)";
+        if (rules.get("dice_mechanics") instanceof Map<?, ?> dm
+            && dm.get("combat") instanceof Map<?, ?> combat
+            && combat.get("damage_attr_bonus") instanceof String f && !f.isBlank()) {
+            formula = f;
+        }
+        try {
+            var variables = java.util.Map.of("attr", attrValue);
+            return (int) Math.floor(FormulaEvaluator.eval(
+                formula, variables, java.util.Set.of("attr")));
+        } catch (FormulaEvaluator.EvaluationException e) {
+            throw new CombatException("COMBAT_ATTACK_UNRESOLVABLE",
+                "damage_attr_bonus nicht auswertbar: " + e.getMessage());
+        }
+    }
+
     /** Zerlegt "1d6+2" / "1d8+staerke" / "2d6" in Würfel + Flat + Attributname. */
     private record DamageParts(String dice, String attr, int flat) {}
 
+    private DamageParts parseDamageOrThrow(String expr, String what) {
+        var parts = parseDamageExpr(expr);
+        if (parts == null) {
+            throw new CombatException("COMBAT_ATTACK_UNRESOLVABLE",
+                "Schadensausdruck (" + what + ") '" + expr + "' nicht parsbar");
+        }
+        return parts;
+    }
+
+    /** @return null bei unparsbarem Ausdruck (Aufrufer entscheidet: Default vs. Fehler). */
     private DamageParts parseDamageExpr(String expr) {
-        if (expr == null || expr.isBlank()) return new DamageParts("1d6", null, 0);
+        if (expr == null || expr.isBlank()) return null;
         var m = java.util.regex.Pattern.compile("^(\\d+d\\d+)(.*)$")
             .matcher(expr.strip());
-        if (!m.matches()) return new DamageParts("1d6", null, 0);
+        if (!m.matches()) return null;
         var dice = m.group(1);
         var rest = m.group(2).strip();
         if (rest.isEmpty()) return new DamageParts(dice, null, 0);
@@ -491,16 +556,17 @@ public class CombatService {
         var attr = java.util.regex.Pattern.compile("^[+-]?([A-Za-z_äöüÄÖÜß][\\wäöüÄÖÜß]*)$")
             .matcher(rest);
         if (attr.matches()) return new DamageParts(dice, attr.group(1), 0);
-        return new DamageParts(dice, null, 0);
+        return null;
     }
 
+    /** @return null wenn kein Schadensausdruck konfiguriert (dann gilt Default 1d6). */
     private String combatDamageExpr(Map<String, Object> rules) {
         if (rules.get("dice_mechanics") instanceof Map<?, ?> dm
             && dm.get("combat") instanceof Map<?, ?> combat
             && combat.get("damage") instanceof String d && !d.isBlank()) {
             return d;
         }
-        return "1d6";
+        return null;
     }
 
     /** Merkmal-Boni aufs Ziel "damage" (gewählte Merkmale, Tier-Suffixe ignoriert). */
@@ -525,21 +591,15 @@ public class CombatService {
         return sum;
     }
 
-    private boolean isDamagingAction(World world, UUID campaignId, String actionType) {
-        var gs = rulesLoader.loadSystemByCampaign(campaignId);
-        if (gs == null) gs = rulesLoader.loadSystem(world);
-        if (gs != null) {
-            try {
-                var tree = objectMapper.readTree(gs.getRulesJson());
-                var types = tree.path("dice_mechanics").path("combat").path("action_types");
-                if (types.isArray() && !types.isEmpty()) {
-                    for (var t : types) {
-                        // Wizard schreibt Typen klein ("action"), UI sendet groß ("ACTION").
-                        if (actionType.equalsIgnoreCase(t.asText())) return true;
-                    }
-                    return false;
-                }
-            } catch (Exception ignored) {}
+    private boolean isDamagingAction(Map<String, Object> rules, String actionType) {
+        if (rules.get("dice_mechanics") instanceof Map<?, ?> dm
+            && dm.get("combat") instanceof Map<?, ?> combat
+            && combat.get("action_types") instanceof List<?> types && !types.isEmpty()) {
+            for (var t : types) {
+                // Wizard schreibt Typen klein ("action"), UI sendet groß ("ACTION").
+                if (t instanceof String s && actionType.equalsIgnoreCase(s)) return true;
+            }
+            return false;
         }
         return "ATTACK".equals(actionType) || "ACTION".equals(actionType);
     }
@@ -549,8 +609,7 @@ public class CombatService {
         participantRepo.save(actor);
     }
 
-    /** Kampfmanoever (P29-T03): Schadens-Effekte + AP-Kosten aus dem System.
-     *  attackMalus ist dokumentiert, aber noch nicht angewandt (kein Attack-Roll-Modell). */
+    /** Kampfmanoever (P29-T03): Schadens-Effekte + AP-Kosten aus dem System. */
     @Transactional
     public CombatActionResult executeManeuver(UUID userId, UUID sessionId, UUID actorId,
                                               UUID targetId, String maneuverName) {
@@ -558,8 +617,6 @@ public class CombatService {
         entityAccess.requireControl(actorId, userId); // Runde 1
         var participants = participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId);
         var actor = findActor(participants, actorId);
-        var world = worldRepo.findById(session.getWorldId())
-            .orElseThrow(() -> new CombatException("WORLD_NOT_FOUND", "World not found"));
         var rules = rulesLoader.loadRules(session.getCampaignId(), session.getWorldId());
         var def = findManeuver(rules, maneuverName)
             .orElseThrow(() -> new CombatException("COMBAT_MANEUVER_UNKNOWN",
@@ -569,16 +626,14 @@ public class CombatService {
         int apCost = def.get("apCost") instanceof Number n ? Math.max(1, n.intValue()) : 1;
         if (actor.getApCurrent() < apCost)
             throw new CombatException("COMBAT_AP_INSUFFICIENT", "Not enough AP");
-        requireActionAllowed(session, actorId, "MANEUVER", "ACTION"); // T3
+        requireActionAllowed(session, actorId, rules, "MANEUVER", "ACTION"); // T3
         checkRange("ACTION", targetId, actorId);
 
         // T2: angriffsbasierte Manöver (attackMalus) laufen durch dasselbe Gate wie Angriffe.
-        var attackCfg = isDamagingAction(world, session.getCampaignId(), "ACTION")
-            ? resolveAttackConfig(world, session.getCampaignId())
-            : null;
+        var attackCfg = isDamagingAction(rules, "ACTION") ? resolveAttackConfig(rules) : null;
         if (attackCfg != null && targetId != null) {
             int malus = def.get("attackMalus") instanceof Number n ? n.intValue() : 0;
-            var hit = attackHits(userId, session, actorId, targetId, attackCfg, malus);
+            var hit = attackHits(userId, session, actorId, targetId, attackCfg, malus, rules);
             if (Boolean.FALSE.equals(hit)) {
                 actor.setApCurrent(actor.getApCurrent() - apCost);
                 participantRepo.save(actor);
@@ -591,7 +646,9 @@ public class CombatService {
             }
         }
 
-        var base = rollDamage(session.getWorldId(), actorId, "ACTION", session.getCampaignId(), null);
+        var base = rollDamage(session.getWorldId(), actorId, "ACTION",
+            session.getCampaignId(), equippedWeapon(actorId), rules,
+            isDamagingAction(rules, "ACTION"));
         int bonus = 0;
         if (def.get("effects") instanceof List<?> effects) {
             for (var e : effects) {
@@ -785,9 +842,7 @@ public class CombatService {
      *  T2: Quelle ist genau eine von attribute (Engine-Modifikator), value
      *  (abgeleiteter Wert des Angreifers) oder skill (Per-Charakter-Fertigkeitswert). */
     @SuppressWarnings("unchecked")
-    private Map<String, Object> resolveAttackConfig(com.lwe.core.domain.World world, UUID campaignId) {
-        if (world == null) return null;
-        var rules = rulesLoader.loadRules(campaignId, world.getId());
+    private Map<String, Object> resolveAttackConfig(Map<String, Object> rules) {
         if (!(rules.get("dice_mechanics") instanceof Map<?, ?> dm)) return null;
         if (!(dm.get("combat") instanceof Map<?, ?> combat)) return null;
         if (!(combat.get("attack") instanceof Map<?, ?> attack)) return null;
@@ -810,7 +865,7 @@ public class CombatService {
      *  ADR-014: konfigurierte, aber nicht ableitbare Werte werfen
      *  COMBAT_ATTACK_UNRESOLVABLE (fail-closed statt stiller Treffer). */
     private Boolean attackHits(UUID userId, CombatSession session, UUID actorId, UUID targetId,
-                               Map<String, Object> cfg, int malus) {
+                               Map<String, Object> cfg, int malus, Map<String, Object> rules) {
         var attacker = entityRepo.findById(actorId).orElse(null);
         var defender = entityRepo.findById(targetId).orElse(null);
         if (attacker == null || defender == null) return null;
@@ -822,7 +877,7 @@ public class CombatService {
 
         if ("attribute".equals(source)) {
             if (targetName == null) return null; // Legacy: kein target konfiguriert => Gate aus
-            Integer targetValue = derivedValue(defender, session, targetName);
+            Integer targetValue = derivedValue(defender, rules, targetName);
             if (targetValue == null) {
                 throw new CombatException("COMBAT_ATTACK_UNRESOLVABLE",
                     "Zielwert '" + targetName + "' nicht ableitbar");
@@ -842,8 +897,8 @@ public class CombatService {
         // T2: value/skill sind bereits finale Werte — reiner Wurf, kein Engine-Modifikator.
         // lte = Wurf auf den eigenen Wert (DSA AT, CoC Fighting); target ist dann nur Doku.
         Integer base = "value".equals(source)
-            ? derivedValue(attacker, session, sourceName)
-            : skillValue(attacker, session, sourceName);
+            ? derivedValue(attacker, rules, sourceName)
+            : skillValue(attacker, rules, sourceName);
         if (base == null) {
             throw new CombatException("COMBAT_ATTACK_UNRESOLVABLE",
                 "Angriffswert '" + sourceName + "' nicht ableitbar");
@@ -853,7 +908,7 @@ public class CombatService {
             return roll + malus <= base;
         }
         if (targetName == null) return false; // Legacy: ohne Ziel kein Treffer-Vergleich möglich
-        Integer targetValue = derivedValue(defender, session, targetName);
+        Integer targetValue = derivedValue(defender, rules, targetName);
         if (targetValue == null) {
             throw new CombatException("COMBAT_ATTACK_UNRESOLVABLE",
                 "Zielwert '" + targetName + "' nicht ableitbar");
@@ -873,7 +928,7 @@ public class CombatService {
     }
 
     /** Per-Charakter-Fertigkeitswert (skillsJson), sonst Regel-Bonus; null = nicht vorhanden. */
-    private Integer skillValue(GameEntity entity, CombatSession session, String name) {
+    private Integer skillValue(GameEntity entity, Map<String, Object> rules, String name) {
         if (entity.getSkillsJson() != null && !entity.getSkillsJson().isBlank()) {
             try {
                 var map = objectMapper.readValue(entity.getSkillsJson(),
@@ -883,9 +938,6 @@ public class CombatService {
                 // fall through to rules
             }
         }
-        var world = worldRepo.findById(session.getWorldId()).orElse(null);
-        if (world == null) return null;
-        var rules = rulesLoader.loadRules(session.getCampaignId(), world.getId());
         if (rules.get("skills") instanceof List<?> skills) {
             for (var s : skills) {
                 if (s instanceof Map<?, ?> m && name.equals(m.get("name"))
@@ -897,10 +949,7 @@ public class CombatService {
         return null;
     }
 
-    private Integer derivedValue(GameEntity entity, CombatSession session, String name) {
-        var world = worldRepo.findById(session.getWorldId()).orElse(null);
-        if (world == null) return null;
-        var rules = rulesLoader.loadRules(session.getCampaignId(), world.getId());
+    private Integer derivedValue(GameEntity entity, Map<String, Object> rules, String name) {
         var raw = (java.util.List<java.util.Map<String, Object>>)
             rules.getOrDefault("derived_values", java.util.List.of());
         var attrs = parseAttributes(entity);
@@ -991,10 +1040,10 @@ public class CombatService {
     }
 
     /** T3: aktive Zustände (rules.conditions[].blocks) können Aktionstypen sperren. */
-    private void requireActionAllowed(CombatSession session, UUID actorId, String... actionTypes) {
+    private void requireActionAllowed(CombatSession session, UUID actorId,
+                                      Map<String, Object> rules, String... actionTypes) {
         var entity = entityRepo.findById(actorId).orElse(null);
         if (entity == null) return;
-        var rules = rulesLoader.loadRules(session.getCampaignId(), session.getWorldId());
         var blocked = conditionService.blockedActions(entity, rules);
         if (blocked.isEmpty()) return;
         for (var t : actionTypes) {
