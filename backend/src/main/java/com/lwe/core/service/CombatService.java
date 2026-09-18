@@ -805,22 +805,28 @@ public class CombatService {
         return cfg;
     }
 
-    /** null = kein Zielwert ableitbar (dann greift das Gate nicht).
-     *  malus: positive Zahl erschwert den Angriff (Wuchtschlag etc.). */
+    /** null = Legacy Gate-aus (Attribut-Pfad ohne konfiguriertes target).
+     *  malus: positive Zahl erschwert den Angriff (Wuchtschlag etc.).
+     *  ADR-014: konfigurierte, aber nicht ableitbare Werte werfen
+     *  COMBAT_ATTACK_UNRESOLVABLE (fail-closed statt stiller Treffer). */
     private Boolean attackHits(UUID userId, CombatSession session, UUID actorId, UUID targetId,
                                Map<String, Object> cfg, int malus) {
         var attacker = entityRepo.findById(actorId).orElse(null);
         var defender = entityRepo.findById(targetId).orElse(null);
         if (attacker == null || defender == null) return null;
         var targetName = (String) cfg.get("target");
-        Integer targetValue = targetName == null ? null : derivedValue(defender, session, targetName);
         var comparison = (String) cfg.get("comparison");
         var dice = (String) cfg.get("dice");
         var source = (String) cfg.getOrDefault("source", "attribute");
         var sourceName = (String) cfg.get("sourceName");
 
         if ("attribute".equals(source)) {
-            if (targetValue == null) return null;
+            if (targetName == null) return null; // Legacy: kein target konfiguriert => Gate aus
+            Integer targetValue = derivedValue(defender, session, targetName);
+            if (targetValue == null) {
+                throw new CombatException("COMBAT_ATTACK_UNRESOLVABLE",
+                    "Zielwert '" + targetName + "' nicht ableitbar");
+            }
             var attrValue = AttributeUtils.extractAttribute(attacker, sourceName).orElse(10);
             var world = worldRepo.findById(session.getWorldId()).orElse(null);
             var engine = resolveEngine(world, session.getCampaignId());
@@ -838,12 +844,21 @@ public class CombatService {
         Integer base = "value".equals(source)
             ? derivedValue(attacker, session, sourceName)
             : skillValue(attacker, session, sourceName);
-        if (base == null) return null;
+        if (base == null) {
+            throw new CombatException("COMBAT_ATTACK_UNRESOLVABLE",
+                "Angriffswert '" + sourceName + "' nicht ableitbar");
+        }
         var roll = rollDice(dice);
         if ("lte".equals(comparison)) {
             return roll + malus <= base;
         }
-        return targetValue != null && roll + base - malus >= targetValue;
+        if (targetName == null) return false; // Legacy: ohne Ziel kein Treffer-Vergleich möglich
+        Integer targetValue = derivedValue(defender, session, targetName);
+        if (targetValue == null) {
+            throw new CombatException("COMBAT_ATTACK_UNRESOLVABLE",
+                "Zielwert '" + targetName + "' nicht ableitbar");
+        }
+        return roll + base - malus >= targetValue;
     }
 
     private int rollDice(String expression) {
@@ -914,7 +929,7 @@ public class CombatService {
         }
         return derivedValueService.evaluate(raw, attrs, traits, skillValues).stream()
             .filter(dv -> dv.name().equalsIgnoreCase(name))
-            .filter(dv -> dv.error() == null) // Audit P1: kaputte Formel => Gate aus
+            .filter(dv -> dv.error() == null) // Fehlerhafte Formeln fallen raus; Aufrufer entscheiden (Angriff: fail-closed)
             .map(dv -> (int) Math.round(dv.value()))
             .findFirst().orElse(null);
     }

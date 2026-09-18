@@ -155,7 +155,8 @@ public class GlobalExceptionHandler {
                 case "COMBAT_NOT_ACTIVE", "COMBAT_NOT_YOUR_TURN", "COMBAT_AP_INSUFFICIENT",
                      "COMBAT_RANGE_INVALID", "COMBAT_TARGET_INVALID",
                      "COMBAT_TARGET_DEFEATED", "COMBAT_ACTOR_DEFEATED",
-                     "COMBAT_MANEUVER_UNKNOWN", "COMBAT_ACTION_BLOCKED" -> HttpStatus.UNPROCESSABLE_ENTITY;
+                     "COMBAT_MANEUVER_UNKNOWN", "COMBAT_ACTION_BLOCKED",
+                     "COMBAT_ATTACK_UNRESOLVABLE" -> HttpStatus.UNPROCESSABLE_ENTITY;
                 case "COMBAT_INSUFFICIENT_PARTICIPANTS" -> HttpStatus.BAD_REQUEST;
                 default -> HttpStatus.BAD_REQUEST;
             };

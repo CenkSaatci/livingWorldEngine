@@ -176,6 +176,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `COMBAT_INSUFFICIENT_PARTICIPANTS` | 400 | Weniger als 2 Teilnehmer beim Kampfstart |
 | `COMBAT_MANEUVER_UNKNOWN` | 422 | Manöver nicht in `dice_mechanics.combat.maneuvers` konfiguriert |
 | `COMBAT_ACTION_BLOCKED` | 422 | Aktion durch aktiven Zustand gesperrt (`conditions[].blocks`, T3) |
+| `COMBAT_ATTACK_UNRESOLVABLE` | 422 | Konfigurierter Angriffs-/Zielwert nicht ableitbar (kaputte Formel/fehlender Skill) — Angriff blockiert statt stiller Treffer (ADR-014) |
 | `COMBAT_TARGET_DEFEATED` | 422 | Ziel bereits besiegt (Heilung weiter erlaubt) |
 | `COMBAT_ACTOR_DEFEATED` | 422 | Actor besiegt — kann nicht handeln |
 
