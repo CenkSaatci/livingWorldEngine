@@ -4,6 +4,7 @@ import com.lwe.api.dto.ApiResponse;
 import com.lwe.core.domain.ChatMessage;
 import com.lwe.core.domain.User;
 import com.lwe.core.repository.ChatMessageRepository;
+import com.lwe.core.repository.UserRepository;
 import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.util.WorldAccess;
 import org.springframework.http.ResponseEntity;
@@ -27,13 +28,16 @@ public class ChatController {
     private final SimpMessagingTemplate messaging;
     private final ChatMessageRepository chatRepo;
     private final WorldRepository worldRepo;
+    private final UserRepository userRepo;
     private final WorldAccess worldAccess;
 
     public ChatController(SimpMessagingTemplate messaging, ChatMessageRepository chatRepo,
-                          WorldRepository worldRepo, WorldAccess worldAccess) {
+                          WorldRepository worldRepo, UserRepository userRepo,
+                          WorldAccess worldAccess) {
         this.messaging = messaging;
         this.chatRepo = chatRepo;
         this.worldRepo = worldRepo;
+        this.userRepo = userRepo;
         this.worldAccess = worldAccess;
     }
 
@@ -46,8 +50,9 @@ public class ChatController {
             throw new WorldAccess.WorldAccessException("WS_AUTH_REQUIRED", "Authentication required");
         }
         var wid = parseWorldId(worldId);
-        worldAccess.requireAccess(wid, UUID.fromString(principal.getName()));
-        var message = sanitizeMessage(payload);
+        var userId = UUID.fromString(principal.getName());
+        worldAccess.requireAccess(wid, userId);
+        var message = sanitizeMessage(payload, usernameOf(userId));
         if (message == null) return;
         persist(wid, message);
         broadcast(wid, message);
@@ -59,7 +64,8 @@ public class ChatController {
                                                  @AuthenticationPrincipal User user) {
         var wid = parseWorldId(worldId);
         worldAccess.requireAccess(wid, user.getId()); // Audit: Schreiben = Mitglied
-        var message = sanitizeMessage(body);
+        // Sender ist serverseitig der authentifizierte User — Client-Angaben werden ignoriert.
+        var message = sanitizeMessage(body, user.getUsername());
         if (message == null) return ResponseEntity.ok(new ApiResponse("ignored (empty)"));
         persist(wid, message);
         broadcast(wid, message);
@@ -99,18 +105,22 @@ public class ChatController {
             .orElseThrow(() -> new WorldAccess.WorldAccessException("WORLD_NOT_FOUND", "World not found"));
     }
 
-    /** Null-sichere Nachricht; leere Texte werden ignoriert (kein Broadcast). */
-    private Map<String, Object> sanitizeMessage(Map<String, Object> payload) {
+    /** Null-sichere Nachricht; leere Texte werden ignoriert (kein Broadcast).
+     *  Der Sender kommt immer vom Server (Authentifizierung), nie aus dem Payload. */
+    private Map<String, Object> sanitizeMessage(Map<String, Object> payload, String sender) {
         if (payload == null) return null;
         var rawText = payload.get("text");
         var text = rawText == null ? "" : String.valueOf(rawText);
         if (text.isBlank()) return null;
-        var rawSender = payload.get("sender");
-        var sender = rawSender == null ? "Player" : String.valueOf(rawSender);
+        var name = sender == null || sender.isBlank() ? "Player" : sender;
         return Map.of(
-            "sender", sender,
+            "sender", name,
             "text", text,
             "timestamp", Instant.now().toString());
+    }
+
+    private String usernameOf(UUID userId) {
+        return userRepo.findById(userId).map(User::getUsername).orElse("Player");
     }
 
     private void broadcast(UUID worldId, Map<String, Object> message) {

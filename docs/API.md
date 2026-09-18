@@ -475,6 +475,7 @@ auf lowercase normalisiert). Sonst `QUEST_STATUS_INVALID` (400).
 
 ### `GET /api/v1/chat/{worldId}` (B5)
 Chat-Verlauf (neueste 50, chronologisch). POST persistiert zusätzlich zur WS-Übertragung.
+**Sender:** serverseitig immer der authentifizierte Username — ein `sender` im Payload wird ignoriert (kein Spoofing).
 
 **Fehlercodes:** `ROLL_EXPRESSION_INVALID`, `ROLL_ATTRIBUTE_NOT_FOUND`, `ROLL_ENTITY_NOT_CHARACTER`, `ROLL_TARGET_REQUIRED`
 
@@ -735,7 +736,7 @@ Gibt neue Events seit `eventId` zurück. Wird vom Bot gepollt.
 
 | Channel | Richtung | Payload | Zweck |
 |---|---|---|---|
-| `/app/chat/{worldId}` | Client → Server | `{ message: "..." }` | Chat-Nachricht |
+| `/app/chat/{worldId}` | Client → Server | `{ text: "..." }` (Sender = Auth-User) | Chat-Nachricht |
 | `/app/token/move/{worldId}` | Client → Server | `{ entityId, x, y }` | Token-Bewegung (auth: JWT-User muss Zugriff auf die Welt haben; sonst STOMP-ERROR-Frame) |
 
 ### Server → Client Topics (`/topic/...`)

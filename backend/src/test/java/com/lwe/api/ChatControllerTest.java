@@ -24,9 +24,10 @@ class ChatControllerTest {
     private final SimpMessagingTemplate messaging = mock();
     private final ChatMessageRepository chatRepo = mock();
     private final WorldRepository worldRepo = mock();
+    private final com.lwe.core.repository.UserRepository userRepo = mock();
     private final WorldAccess worldAccess = mock();
     private final ChatController controller =
-        new ChatController(messaging, chatRepo, worldRepo, worldAccess);
+        new ChatController(messaging, chatRepo, worldRepo, userRepo, worldAccess);
 
     private final UUID worldId = UUID.randomUUID();
     private final UUID userId = UUID.randomUUID();
@@ -62,14 +63,20 @@ class ChatControllerTest {
     @Test
     void wsChatPersistsAndBroadcasts() {
         stubWorld();
+        stubUser();
         when(chatRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         controller.handleChat(worldId.toString(), Map.of("sender", "X", "text", "hallo"),
             () -> userId.toString());
 
         verify(worldAccess).requireAccess(worldId, userId);
-        verify(chatRepo).save(any());
+        // Sender kommt vom Server (Username "t"), nicht aus dem Payload.
+        verify(chatRepo).save(argThat((ChatMessage m) -> "t".equals(m.getSender())));
         verify(messaging).convertAndSend(eq("/topic/world/" + worldId), org.mockito.ArgumentMatchers.<Object>any());
+    }
+
+    private void stubUser() {
+        when(userRepo.findById(userId)).thenReturn(Optional.of(user()));
     }
 
     private void stubWorld() {
@@ -85,13 +92,16 @@ class ChatControllerTest {
     @Test
     void postPersistsAndBroadcasts() {
         stubWorld();
+        stubUser();
         when(chatRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var res = controller.postChat(worldId.toString(), Map.of("sender", "Lysander", "text", "Hallo"), user());
 
         assertThat(res.getStatusCode().is2xxSuccessful()).isTrue();
+        // Spoofing-Schutz: Client-Sender "Lysander" wird ignoriert, Server-Username "t" gewinnt.
         verify(chatRepo).save(argThat((ChatMessage m) ->
-            m.getWorldId().equals(worldId) && m.getText().equals("Hallo")));
+            m.getWorldId().equals(worldId) && m.getText().equals("Hallo")
+                && "t".equals(m.getSender())));
         verify(messaging).convertAndSend(eq("/topic/world/" + worldId), org.mockito.ArgumentMatchers.<Object>any());
     }
 
