@@ -145,4 +145,24 @@ class FormulaEvaluatorTest {
         assertEquals(14.0, eval("max( mut , klugheit )", Map.of("mut", 14, "klugheit", 6)));
         assertEquals(3.0, eval("floor( mut / 4 )", Map.of("mut", 14)));
     }
+
+    @Test
+    void variableLookupIsCaseInsensitive() {
+        assertEquals(14.0, eval("MUT", Map.of("mut", 14)));
+        assertEquals(14.0, eval("@{Mut}", Map.of("mut", 14)));
+    }
+
+    @Test
+    void deepNestingIsRejected() {
+        var deep = "(".repeat(200) + "1" + ")".repeat(200);
+        assertThrows(FormulaEvaluator.EvaluationException.class,
+            () -> eval(deep, Map.of()));
+    }
+
+    @Test
+    void overlongExpressionIsRejected() {
+        var longExpr = "1+".repeat(2000) + "1";
+        assertThrows(FormulaEvaluator.EvaluationException.class,
+            () -> eval(longExpr, Map.of()));
+    }
 }

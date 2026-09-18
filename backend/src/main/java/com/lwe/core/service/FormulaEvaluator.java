@@ -22,18 +22,31 @@ public class FormulaEvaluator {
         public EvaluationException(String message) { super(message); }
     }
 
+    /** Schutz gegen DoS über Regel-JSON (ADR-014): lange/tief verschachtelte Ausdrücke. */
+    public static final int MAX_LENGTH = 1000;
+    public static final int MAX_DEPTH = 64;
+
     private final String input;
     private int pos;
+    private int depth;
     private final Set<String> allowedVariables;
 
     public FormulaEvaluator(String input, Set<String> allowedVariables) {
         this.input = input.strip();
+        if (this.input.length() > MAX_LENGTH) {
+            throw new EvaluationException("Ausdruck zu lang (max " + MAX_LENGTH + " Zeichen)");
+        }
         this.pos = 0;
-        this.allowedVariables = allowedVariables;
+        // Vergleich case-insensitiv (ADR-014): alles auf Kleinbuchstaben normalisieren.
+        var lower = new HashSet<String>();
+        for (var v : allowedVariables) lower.add(v.toLowerCase(Locale.ROOT));
+        this.allowedVariables = lower;
     }
 
     public double evaluate(Map<String, Integer> variables) {
-        var result = expr(variables);
+        var lower = new HashMap<String, Integer>();
+        variables.forEach((k, v) -> lower.putIfAbsent(k.toLowerCase(Locale.ROOT), v));
+        var result = expr(lower);
         if (pos < input.length()) {
             throw new EvaluationException("Unerwartetes Zeichen '" + input.charAt(pos) + "' an Position " + pos);
         }
@@ -86,12 +99,17 @@ public class FormulaEvaluator {
         // '(' expr ')'
         if (c == '(') {
             pos++;
-            var result = expr(variables);
-            skipSpace();
-            if (pos >= input.length() || input.charAt(pos) != ')')
-                throw new EvaluationException("Fehlende schließende Klammer");
-            pos++;
-            return result;
+            enterNested();
+            try {
+                var result = expr(variables);
+                skipSpace();
+                if (pos >= input.length() || input.charAt(pos) != ')')
+                    throw new EvaluationException("Fehlende schließende Klammer");
+                pos++;
+                return result;
+            } finally {
+                depth--;
+            }
         }
 
         // Funktion: min(, max(, floor(
@@ -155,32 +173,49 @@ public class FormulaEvaluator {
     }
 
     private double resolveVariable(String name, Map<String, Integer> variables) {
-        if (!allowedVariables.contains(name))
+        var key = name.toLowerCase(Locale.ROOT);
+        if (!allowedVariables.contains(key))
             throw new EvaluationException("Unbekannte Variable '" + name + "'. Erlaubt: " + allowedVariables);
-        return variables.getOrDefault(name, 0);
+        return variables.getOrDefault(key, 0);
+    }
+
+    private void enterNested() {
+        if (++depth > MAX_DEPTH) {
+            throw new EvaluationException("Ausdruck zu tief verschachtelt (max " + MAX_DEPTH + ")");
+        }
     }
 
     private double func1(Map<String, Integer> variables, java.util.function.DoubleUnaryOperator op) {
-        var arg = expr(variables);
-        skipSpace();
-        if (pos >= input.length() || input.charAt(pos) != ')')
-            throw new EvaluationException("Fehlende schließende Klammer bei Funktion");
-        pos++;
-        return op.applyAsDouble(arg);
+        enterNested();
+        try {
+            var arg = expr(variables);
+            skipSpace();
+            if (pos >= input.length() || input.charAt(pos) != ')')
+                throw new EvaluationException("Fehlende schließende Klammer bei Funktion");
+            pos++;
+            return op.applyAsDouble(arg);
+        } finally {
+            depth--;
+        }
     }
 
     private double func2(Map<String, Integer> variables, BinaryOperator<Double> op) {
-        var a = expr(variables);
-        skipSpace();
-        if (pos >= input.length() || input.charAt(pos) != ',')
-            throw new EvaluationException("Erwarte ',' zwischen Funktionsargumenten");
-        pos++;
-        var b = expr(variables);
-        skipSpace();
-        if (pos >= input.length() || input.charAt(pos) != ')')
-            throw new EvaluationException("Fehlende schließende Klammer bei Funktion");
-        pos++;
-        return op.apply(a, b);
+        enterNested();
+        try {
+            var a = expr(variables);
+            skipSpace();
+            if (pos >= input.length() || input.charAt(pos) != ',')
+                throw new EvaluationException("Erwarte ',' zwischen Funktionsargumenten");
+            pos++;
+            var b = expr(variables);
+            skipSpace();
+            if (pos >= input.length() || input.charAt(pos) != ')')
+                throw new EvaluationException("Fehlende schließende Klammer bei Funktion");
+            pos++;
+            return op.apply(a, b);
+        } finally {
+            depth--;
+        }
     }
 
     private void skipSpace() {

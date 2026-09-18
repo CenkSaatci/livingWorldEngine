@@ -37,8 +37,7 @@ class DerivedValueServiceTest {
     }
 
     @Test
-    void marksInvalidFormulaInsteadOfThrowing() {
-        var defs = List.of(Map.<String, Object>of("name", "Kaputt", "formula", "staerke+"));
+    void marksInvalidFormulaInsteadOfThrowing() {        var defs = List.of(Map.<String, Object>of("name", "Kaputt", "formula", "staerke+"));
 
         var result = service.evaluate(defs, Map.of("staerke", 5));
 
@@ -141,5 +140,60 @@ class DerivedValueServiceTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().error()).isNotNull();
+    }
+
+    @Test
+    void formulasCanReferenceSkills() {
+        var defs = List.of(Map.<String, Object>of(
+            "name", "at_schwerter", "formula", "Schwerter+max(0,floor((mut-8)/3))"));
+
+        var result = service.evaluate(defs, Map.of("mut", 14), List.of(),
+            Map.of("Schwerter", 12));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().error()).isNull();
+        assertThat(result.getFirst().value()).isEqualTo(14.0); // 12 + floor(6/3)
+    }
+
+    @Test
+    void variableLookupIsCaseInsensitive() {
+        var defs = List.of(Map.<String, Object>of("name", "x", "formula", "MUT+schwerter"));
+
+        var result = service.evaluate(defs, Map.of("mut", 10), List.of(),
+            Map.of("Schwerter", 4));
+
+        assertThat(result.getFirst().error()).isNull();
+        assertThat(result.getFirst().value()).isEqualTo(14.0);
+    }
+
+    @Test
+    void explicitZeroSkillIsValid() {
+        var defs = List.of(Map.<String, Object>of("name", "x", "formula", "Dolche+1"));
+
+        var result = service.evaluate(defs, Map.of(), List.of(), Map.of("Dolche", 0));
+
+        assertThat(result.getFirst().error()).isNull();
+        assertThat(result.getFirst().value()).isEqualTo(1.0);
+    }
+
+    @Test
+    void unknownSkillReportsErrorInsteadOfThrowing() {
+        var defs = List.of(Map.<String, Object>of("name", "x", "formula", "Schwertter+1"));
+
+        var result = service.evaluate(defs, Map.of(), List.of(), Map.of());
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().error()).contains("Schwertter");
+    }
+
+    @Test
+    void attributesWinOverCollidingSkillNames() {
+        var defs = List.of(Map.<String, Object>of("name", "x", "formula", "mut+1"));
+
+        var result = service.evaluate(defs, Map.of("mut", 10), List.of(),
+            Map.of("mut", 99));
+
+        assertThat(result.getFirst().error()).isNull();
+        assertThat(result.getFirst().value()).isEqualTo(11.0);
     }
 }

@@ -900,7 +900,19 @@ public class CombatService {
             }
         }
         var traits = selectedTraits(entity);
-        return derivedValueService.evaluate(raw, attrs, traits).stream()
+        // ADR-014: Fertigkeitswerte in den Formelkontext (skillsJson → Regel-bonus).
+        var skillValues = new java.util.HashMap<String, Integer>();
+        var perChar = parsePerCharacterSkills(entity);
+        if (rules.get("skills") instanceof List<?> skillDefs) {
+            for (var s : skillDefs) {
+                if (s instanceof Map<?, ?> m && m.get("name") instanceof String n) {
+                    int v = perChar.containsKey(n) ? perChar.get(n)
+                        : (m.get("bonus") instanceof Number b ? b.intValue() : 0);
+                    skillValues.put(n, v);
+                }
+            }
+        }
+        return derivedValueService.evaluate(raw, attrs, traits, skillValues).stream()
             .filter(dv -> dv.name().equalsIgnoreCase(name))
             .filter(dv -> dv.error() == null) // Audit P1: kaputte Formel => Gate aus
             .map(dv -> (int) Math.round(dv.value()))
@@ -920,8 +932,17 @@ public class CombatService {
         }
     }
 
-    private java.util.Map<String, Integer> parseAttributes(GameEntity entity) {
-        if (entity.getAttributesJson() == null || entity.getAttributesJson().isBlank()) return java.util.Map.of();
+    private java.util.Map<String, Integer> parsePerCharacterSkills(GameEntity entity) {
+        if (entity.getSkillsJson() == null || entity.getSkillsJson().isBlank()) return java.util.Map.of();
+        try {
+            return objectMapper.readValue(entity.getSkillsJson(),
+                new com.fasterxml.jackson.core.type.TypeReference<>() {});
+        } catch (Exception e) {
+            return java.util.Map.of();
+        }
+    }
+
+    private java.util.Map<String, Integer> parseAttributes(GameEntity entity) {        if (entity.getAttributesJson() == null || entity.getAttributesJson().isBlank()) return java.util.Map.of();
         try {
             return objectMapper.readValue(entity.getAttributesJson(),
                 new com.fasterxml.jackson.core.type.TypeReference<>() {});

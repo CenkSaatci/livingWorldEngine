@@ -29,14 +29,39 @@ public class DerivedValueService {
             List<Map<String, Object>> derivedValues,
             Map<String, Integer> attributeValues,
             List<String> selectedTraits) {
+        return evaluate(derivedValues, attributeValues, selectedTraits, Map.of());
+    }
+
+    /**
+     * Wie {@link #evaluate(List, Map, List)}, mischt zusätzlich Fertigkeitswerte
+     * (Namen aus {@code skills[]}, Werte aus Charakter-{@code skillsJson} mit
+     * Regel-{@code bonus}-Fallback) in den Formelkontext (ADR-014).
+     * Attribute gewinnen bei (case-insensitiven) Namenskollisionen.
+     */
+    public List<SheetResponse.DerivedValueInfo> evaluate(
+            List<Map<String, Object>> derivedValues,
+            Map<String, Integer> attributeValues,
+            List<String> selectedTraits,
+            Map<String, Integer> skillValues) {
 
         if (derivedValues == null) return List.of();
-        var allowed = attributeValues.keySet();
+        var variables = new java.util.LinkedHashMap<String, Integer>();
+        if (attributeValues != null) {
+            attributeValues.forEach((k, v) -> variables.put(lower(k), v));
+        }
+        if (skillValues != null) {
+            skillValues.forEach((k, v) -> variables.putIfAbsent(lower(k), v));
+        }
+        var allowed = variables.keySet();
 
         return derivedValues.stream()
-            .map(dv -> evaluateOne(dv, attributeValues, allowed, selectedTraits))
+            .map(dv -> evaluateOne(dv, variables, allowed, selectedTraits))
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
+    }
+
+    private static String lower(String s) {
+        return s == null ? "" : s.toLowerCase(java.util.Locale.ROOT);
     }
 
     @SuppressWarnings("unchecked")

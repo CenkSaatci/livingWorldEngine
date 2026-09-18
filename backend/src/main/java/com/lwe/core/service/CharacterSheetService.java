@@ -113,9 +113,20 @@ public class CharacterSheetService {
             })
             .collect(Collectors.toList());
 
-        // Derived Values
+        // Derived Values (ADR-014: mit Fertigkeitswerten im Formelkontext)
         var derivedRaw = (List<Map<String, Object>>) rules.getOrDefault("derived_values", List.of());
-        var derivedValues = derivedValueService.evaluate(derivedRaw, attributeValues, selectedTraits(entity));
+        var perCharSkills = parsePerCharacterSkills(entity);
+        var skillsRaw = (List<Map<String, Object>>) rules.getOrDefault("skills", List.of());
+        var skillValues = new java.util.HashMap<String, Integer>();
+        for (var s : skillsRaw) {
+            if (s.get("name") instanceof String n) {
+                int v = perCharSkills.containsKey(n) ? perCharSkills.get(n)
+                    : (s.get("bonus") instanceof Number b ? b.intValue() : 0);
+                skillValues.put(n, v);
+            }
+        }
+        var derivedValues = derivedValueService.evaluate(derivedRaw, attributeValues,
+            selectedTraits(entity), skillValues);
 
         // Formula Overrides aus metadata_json
         var overrides = parseOverrides(entity);
@@ -136,8 +147,6 @@ public class CharacterSheetService {
         derivedValues = applyTraitDerivedEffects(rules, entity, derivedValues);
 
         // Skills (total = Basis + Attribut-Modifier)
-        var perCharSkills = parsePerCharacterSkills(entity);
-        var skillsRaw = (List<Map<String, Object>>) rules.getOrDefault("skills", List.of());
         var skills = skillsRaw.stream()
             .map(s -> {
                 var name = (String) s.getOrDefault("name", "");

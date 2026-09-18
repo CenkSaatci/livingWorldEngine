@@ -384,7 +384,7 @@ class CombatServiceTest {
     }
 
     private void stubDerivedAc(double ac) {
-        when(derivedValueService.evaluate(any(), any(), any())).thenReturn(
+        when(derivedValueService.evaluate(any(), any(), any(), any())).thenReturn(
             List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("ac", ac, null, null)));
     }
 
@@ -902,7 +902,7 @@ class CombatServiceTest {
         when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of("dice_mechanics", Map.of("combat", Map.of(
             "initiative", "1d20", "damage", "1d8",
             "attack", Map.of("value", "at", "target", "pa", "dice", "1d20", "comparison", "lte")))));
-        when(derivedValueService.evaluate(any(), any(), any())).thenAnswer(inv -> {
+        when(derivedValueService.evaluate(any(), any(), any(), any())).thenAnswer(inv -> {
             java.util.Map<String, Integer> attrs = inv.getArgument(1);
             return attrs.containsKey("at")
                 ? List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("at", 30, null, null))
@@ -954,7 +954,7 @@ class CombatServiceTest {
             "maneuvers", List.of(Map.of(
                 "name", "Wuchtschlag", "apCost", 2, "attackMalus", 21,
                 "effects", List.of(Map.of("target", "damage", "op", "add", "value", 3))))))));
-        when(derivedValueService.evaluate(any(), any(), any())).thenAnswer(inv -> {
+        when(derivedValueService.evaluate(any(), any(), any(), any())).thenAnswer(inv -> {
             java.util.Map<String, Integer> attrs = inv.getArgument(1);
             return attrs.containsKey("at")
                 ? List.of(new com.lwe.api.dto.SheetResponse.DerivedValueInfo("at", 20, null, null))
