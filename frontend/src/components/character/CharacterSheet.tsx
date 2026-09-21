@@ -364,10 +364,10 @@ function SkillRow({ skill, entityId, skillOverrides, setSkillOverrides, onSaved,
               className="w-14 rounded border border-accent bg-bg-primary px-1 py-0.5 text-xs text-text-primary text-right outline-none"
               disabled={saving}
             />
-            <button onClick={save} className="text-success" disabled={saving}>
+            <button onClick={save} aria-label={t('sheet.save')!} className="text-success" disabled={saving}>
               {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
             </button>
-            <button onClick={() => { setEditVal(String(skill.total)); setEditing(false); }} className="text-danger"><X size={12} /></button>
+            <button onClick={() => { setEditVal(String(skill.total)); setEditing(false); }} aria-label={t('sheet.cancel')!} className="text-danger"><X size={12} /></button>
           </div>
         ) : (
           <button onClick={() => setEditing(true)} className="group flex items-center gap-1 hover:bg-bg-elevated/30 rounded px-1 transition-colors">

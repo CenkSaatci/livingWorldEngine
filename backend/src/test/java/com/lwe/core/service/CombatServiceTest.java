@@ -1062,6 +1062,35 @@ class CombatServiceTest {
     }
 
     @Test
+    void damagingAbilityWithoutTargetIsRejected() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var abilityId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Magier");
+        setId(attacker, attackerId);
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        var ability = new Ability(worldId, "Blitz", Ability.AbilityType.ACTIVE);
+        ability.setEffectsJson("{\"damage\":\"1d2\"}");
+        var participant = new CombatParticipant(session.getId(), attackerId, 15, 2, "A");
+        when(sessionRepo.findById(session.getId())).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(abilityRepo.findById(abilityId)).thenReturn(Optional.of(ability));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(session.getId()))
+            .thenReturn(new java.util.ArrayList<>(List.of(participant)));
+
+        // R3: Schaden ohne Ziel darf nicht still verpuffen.
+        assertThatThrownBy(() -> combatService.useAbility(userId, session.getId(), attackerId, abilityId, null))
+            .isInstanceOf(CombatService.CombatException.class)
+            .matches(e -> ((CombatService.CombatException) e).getErrorCode().equals("COMBAT_TARGET_INVALID"));
+    }
+
+    @Test
     void rosterDeniedForUninvolvedNonDm() {
         var sessionId = UUID.randomUUID();
         var session = new CombatSession(worldId, null);

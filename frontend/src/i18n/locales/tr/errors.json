@@ -19,5 +19,15 @@
   "INTENT_VALIDATION_RANGE": "Out of range.",
   "TIME_PAUSED": "Operation not possible, time is paused.",
   "TIME_DM_OVERRIDE_REQUIRED": "Automatic advance in manual mode is forbidden.",
-  "SYSTEM_INTERNAL_ERROR": "An unexpected error occurred."
+  "SYSTEM_INTERNAL_ERROR": "An unexpected error occurred.",
+  "COMBAT_TARGET_INVALID": "Geçersiz hedef",
+  "COMBAT_AP_INSUFFICIENT": "Yeterli AP yok",
+  "COMBAT_NOT_YOUR_TURN": "Sıra sende değil",
+  "COMBAT_ACTION_BLOCKED": "Eylem bir durum tarafından engellendi",
+  "COMBAT_RANGE_INVALID": "Hedef menzil dışında",
+  "COMBAT_TARGET_DEFEATED": "Hedef zaten yenilmiş",
+  "COMBAT_ATTACK_UNRESOLVABLE": "Saldırı değeri hesaplanamıyor",
+  "COMBAT_EFFECTS_INVALID": "Yetenek etkileri geçersiz",
+  "COMBAT_NOT_ACTIVE": "Dövüş bitti",
+  "CONFLICT": "Eşzamanlı değişiklik — tekrar dene"
 }

@@ -32,7 +32,7 @@ beforeEach(() => {
 describe('LoginPage (auth smoke)', () => {
   it('rendert Login-Formular mit Validierungsattributen', () => {
     renderLogin();
-    const email = screen.getByLabelText(/email/i) as HTMLInputElement;
+    const email = screen.getByLabelText(/e-?mail/i) as HTMLInputElement;
     const password = document.getElementById('password') as HTMLInputElement;
     expect(email).toBeRequired();
     expect(email).toHaveAttribute('type', 'email');
@@ -48,7 +48,7 @@ describe('LoginPage (auth smoke)', () => {
     const user = userEvent.setup();
     renderLogin();
 
-    await user.type(screen.getByLabelText(/email/i), 'a@b.c');
+    await user.type(screen.getByLabelText(/e-?mail/i), 'a@b.c');
     await user.type(document.getElementById('password') as HTMLInputElement, 'falsch12');
     await user.click(screen.getByRole('button', { name: /sign in|anmelden/i }));
 

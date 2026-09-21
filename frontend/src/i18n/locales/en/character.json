@@ -50,7 +50,8 @@
     "rounds": "rounds",
     "difficulty": "Difficulty",
     "probeDetails3d20": "Individual dice count, total is informational — expand details",
-    "closeDetails": "Close details"
+    "closeDetails": "Close details",
+    "cancel": "Cancel"
   },
   "attribute": {
     "modifier": "Modifier"

@@ -140,6 +140,7 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, c
       <button
         onClick={handleRoll}
         disabled={rolling}
+        aria-label={t('sheet.rollProbe')!}
         className="rounded p-1 text-text-secondary hover:text-accent hover:bg-bg-elevated disabled:opacity-40"
         title={t('sheet.rollProbe')!}
       >
@@ -218,8 +219,11 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, c
           </button>
 
           {showDetails && (
-            <div className="absolute mt-8 right-0 z-10 w-64 rounded border border-bg-elevated bg-bg-surface p-2 shadow-lg text-[10px]">
-              <div className="mb-1 flex items-center justify-between">
+            <div
+              role="dialog"
+              aria-label={result.probeType}
+              className="absolute mt-8 right-0 z-10 w-64 rounded border border-bg-elevated bg-bg-surface p-2 shadow-lg text-[10px]"
+            >              <div className="mb-1 flex items-center justify-between">
                 <p className="text-text-secondary">{result.probeType}</p>
                 <button
                   onClick={() => setShowDetails(false)}

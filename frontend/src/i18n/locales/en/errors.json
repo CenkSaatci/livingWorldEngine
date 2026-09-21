@@ -19,5 +19,15 @@
   "INTENT_VALIDATION_RANGE": "Out of range.",
   "TIME_PAUSED": "Operation not possible, time is paused.",
   "TIME_DM_OVERRIDE_REQUIRED": "Automatic advance in manual mode is forbidden.",
-  "SYSTEM_INTERNAL_ERROR": "An unexpected error occurred."
+  "SYSTEM_INTERNAL_ERROR": "An unexpected error occurred.",
+  "COMBAT_TARGET_INVALID": "Invalid target",
+  "COMBAT_AP_INSUFFICIENT": "Not enough AP",
+  "COMBAT_NOT_YOUR_TURN": "Not your turn",
+  "COMBAT_ACTION_BLOCKED": "Action blocked by a condition",
+  "COMBAT_RANGE_INVALID": "Target out of range",
+  "COMBAT_TARGET_DEFEATED": "Target is already defeated",
+  "COMBAT_ATTACK_UNRESOLVABLE": "Attack value cannot be resolved",
+  "COMBAT_EFFECTS_INVALID": "Ability effects invalid",
+  "COMBAT_NOT_ACTIVE": "Combat has ended",
+  "CONFLICT": "Concurrent change — please retry"
 }

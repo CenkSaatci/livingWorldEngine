@@ -105,7 +105,12 @@
     "done": "Action performed",
     "actionFailed": "Action failed",
     "noActiveCombat": "No active combat — start one from the game view.",
-    "startFromWorld": "Start combat from the game view"
+    "startFromWorld": "Start combat from the game view",
+    "nextTurnFailed": "Next turn failed",
+    "endFailed": "Failed to end combat",
+    "endConfirm": "Really end the combat?",
+    "hitNoDamage": "{{name}}: hit, but no damage",
+    "back": "Back"
   },
   "entityTimeline": {
     "today": "today",
@@ -182,7 +187,8 @@
     "editTitle": "Edit Location",
     "deleteTitle": "Delete Location?",
     "mapX": "Map X",
-    "mapY": "Map Y"
+    "mapY": "Map Y",
+    "deleteConfirm": "Delete location \"{{name}}\"? All related data will be removed."
   },
   "session": {
     "title": "Session",
@@ -436,5 +442,6 @@
     "renameHint": "Another system already has this name. Rename anyway? (Duplicate names are confusing.)",
     "cancel": "Cancel",
     "renameConfirm": "Rename anyway"
-  }
+  },
+  "rollResult": "Roll result: {{total}}"
 }

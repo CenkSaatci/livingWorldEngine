@@ -50,7 +50,8 @@
     "armor": "Armadura",
     "difficulty": "Dificultad",
     "probeDetails3d20": "Cuentan los dados individuales — desplegar detalles",
-    "closeDetails": "Cerrar detalles"
+    "closeDetails": "Cerrar detalles",
+    "cancel": "Cancelar"
   },
   "attribute": {
     "modifier": "Modifier"

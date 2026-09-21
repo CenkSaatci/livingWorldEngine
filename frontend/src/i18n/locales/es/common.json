@@ -105,7 +105,12 @@
     "missed": "Ataque fallido contra {{name}}",
     "done": "Acción realizada",
     "actionFailed": "Acción fallida",
-    "startFromWorld": "Iniciar combate desde la vista de juego"
+    "startFromWorld": "Iniciar combate desde la vista de juego",
+    "nextTurnFailed": "Error al pasar turno",
+    "endFailed": "Error al terminar el combate",
+    "endConfirm": "¿Terminar el combate?",
+    "hitNoDamage": "{{name}}: impacto sin daño",
+    "back": "Volver"
   },
   "entityTimeline": {
     "today": "today",
@@ -182,7 +187,8 @@
     "editTitle": "Editar lugar",
     "deleteTitle": "¿Eliminar lugar?",
     "mapX": "Mapa X",
-    "mapY": "Mapa Y"
+    "mapY": "Mapa Y",
+    "deleteConfirm": "¿Eliminar el lugar «{{name}}»? Se eliminarán todos los datos relacionados."
   },
   "session": {
     "title": "Session",
@@ -436,5 +442,6 @@
     "renameHint": "Otro sistema ya tiene este nombre. ¿Renombrar igualmente?",
     "cancel": "Cancelar",
     "renameConfirm": "Renombrar igualmente"
-  }
+  },
+  "rollResult": "Resultado: {{total}}"
 }

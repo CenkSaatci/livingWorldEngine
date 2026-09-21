@@ -19,5 +19,15 @@
   "INTENT_VALIDATION_RANGE": "Out of range.",
   "TIME_PAUSED": "Operation not possible, time is paused.",
   "TIME_DM_OVERRIDE_REQUIRED": "Automatic advance in manual mode is forbidden.",
-  "SYSTEM_INTERNAL_ERROR": "An unexpected error occurred."
+  "SYSTEM_INTERNAL_ERROR": "An unexpected error occurred.",
+  "COMBAT_TARGET_INVALID": "Bersaglio non valido",
+  "COMBAT_AP_INSUFFICIENT": "PA insufficienti",
+  "COMBAT_NOT_YOUR_TURN": "Non è il tuo turno",
+  "COMBAT_ACTION_BLOCKED": "Azione bloccata da una condizione",
+  "COMBAT_RANGE_INVALID": "Bersaglio fuori portata",
+  "COMBAT_TARGET_DEFEATED": "Il bersaglio è già sconfitto",
+  "COMBAT_ATTACK_UNRESOLVABLE": "Impossibile calcolare l'attacco",
+  "COMBAT_EFFECTS_INVALID": "Effetti abilità non validi",
+  "COMBAT_NOT_ACTIVE": "Il combattimento è finito",
+  "CONFLICT": "Modifica simultanea — riprova"
 }

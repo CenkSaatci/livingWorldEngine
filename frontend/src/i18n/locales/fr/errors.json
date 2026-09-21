@@ -19,5 +19,15 @@
   "INTENT_VALIDATION_RANGE": "Out of range.",
   "TIME_PAUSED": "Operation not possible, time is paused.",
   "TIME_DM_OVERRIDE_REQUIRED": "Automatic advance in manual mode is forbidden.",
-  "SYSTEM_INTERNAL_ERROR": "An unexpected error occurred."
+  "SYSTEM_INTERNAL_ERROR": "An unexpected error occurred.",
+  "COMBAT_TARGET_INVALID": "Cible invalide",
+  "COMBAT_AP_INSUFFICIENT": "Pas assez de PA",
+  "COMBAT_NOT_YOUR_TURN": "Ce n'est pas ton tour",
+  "COMBAT_ACTION_BLOCKED": "Action bloquée par un état",
+  "COMBAT_RANGE_INVALID": "Cible hors de portée",
+  "COMBAT_TARGET_DEFEATED": "La cible est déjà vaincue",
+  "COMBAT_ATTACK_UNRESOLVABLE": "Impossible de calculer l'attaque",
+  "COMBAT_EFFECTS_INVALID": "Effets de capacité invalides",
+  "COMBAT_NOT_ACTIVE": "Le combat est terminé",
+  "CONFLICT": "Modification simultanée — réessaie"
 }

@@ -50,7 +50,8 @@
     "armor": "Armure",
     "difficulty": "Difficulté",
     "probeDetails3d20": "Les dés individuels comptent — déplier les détails",
-    "closeDetails": "Fermer les détails"
+    "closeDetails": "Fermer les détails",
+    "cancel": "Annuler"
   },
   "attribute": {
     "modifier": "Modifier"

@@ -74,13 +74,17 @@ export const I18N_NAMESPACES = [
 ] as const;
 export type I18nNamespace = (typeof I18N_NAMESPACES)[number];
 
-void i18n
-  .use(LanguageDetector)
-  .use(initReactI18next)
-  .init({
-    lng: FALLBACK_LOCALE,
-    fallbackLng: FALLBACK_LOCALE,
-    supportedLngs: SUPPORTED_LOCALES,
+// Test-Setup (`src/test/setup.ts`) initialisiert bereits eine feste Instanz —
+// dann nicht überschreiben (sonst wechselt die Sprache je nach Import-Graph).
+if (!i18n.isInitialized) {
+  void i18n
+    .use(LanguageDetector)
+    .use(initReactI18next)
+    .init({
+      // Kein hartes `lng`: der Detector liest `lwe:locale` (localStorage), sonst navigator,
+      // sonst Fallback. (R2/R3-Finding H-10)
+      fallbackLng: FALLBACK_LOCALE,
+      supportedLngs: SUPPORTED_LOCALES,
     ns: I18N_NAMESPACES,
     defaultNS: 'common',
     resources: {
@@ -133,6 +137,7 @@ void i18n
       caches: ['localStorage'],
       lookupLocalStorage: 'lwe:locale',
     },
-  });
+    });
+}
 
 export default i18n;

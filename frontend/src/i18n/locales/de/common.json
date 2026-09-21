@@ -105,7 +105,12 @@
     "done": "Aktion ausgeführt",
     "actionFailed": "Aktion fehlgeschlagen",
     "noActiveCombat": "Kein aktiver Kampf — starte einen aus der Spielansicht.",
-    "startFromWorld": "Kampf aus der Spielansicht starten"
+    "startFromWorld": "Kampf aus der Spielansicht starten",
+    "nextTurnFailed": "Nächster Zug fehlgeschlagen",
+    "endFailed": "Kampf beenden fehlgeschlagen",
+    "endConfirm": "Kampf wirklich beenden?",
+    "hitNoDamage": "{{name}}: Treffer, aber kein Schaden",
+    "back": "Zurück"
   },
   "entityTimeline": {
     "today": "heute",
@@ -182,7 +187,8 @@
     "editTitle": "Ort bearbeiten",
     "deleteTitle": "Ort löschen?",
     "mapX": "Karte X",
-    "mapY": "Karte Y"
+    "mapY": "Karte Y",
+    "deleteConfirm": "Ort „{{name}}“ löschen? Alle zugehörigen Daten werden entfernt."
   },
   "session": {
     "title": "Sitzung",
@@ -436,5 +442,6 @@
     "renameHint": "Ein anderes System trägt diesen Namen bereits. Trotzdem umbenennen? (Doppelte Namen sind verwirrend.)",
     "cancel": "Abbrechen",
     "renameConfirm": "Trotzdem umbenennen"
-  }
+  },
+  "rollResult": "Wurfergebnis: {{total}}"
 }

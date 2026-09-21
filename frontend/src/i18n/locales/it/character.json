@@ -50,7 +50,8 @@
     "armor": "Armatura",
     "difficulty": "Difficoltà",
     "probeDetails3d20": "Contano i dadi individuali — espandi dettagli",
-    "closeDetails": "Chiudi dettagli"
+    "closeDetails": "Chiudi dettagli",
+    "cancel": "Annulla"
   },
   "attribute": {
     "modifier": "Modifier"

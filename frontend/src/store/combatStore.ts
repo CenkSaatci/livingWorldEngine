@@ -50,7 +50,19 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       if (session) localStorage.setItem(COMBAT_ID_KEY, session.id);
       else localStorage.removeItem(COMBAT_ID_KEY);
     }
-    set({ session, participants, targetEntityId: null });
+    set(
+      (state) => {
+        if (typeof localStorage !== 'undefined') {
+          if (session) localStorage.setItem(COMBAT_ID_KEY, session.id);
+          else localStorage.removeItem(COMBAT_ID_KEY);
+        }
+        // Ziel behalten, solange es noch lebt (spart Re-Klick nach jeder Aktion);
+        // bei Niederlage/Kampfende wird es verworfen. (R3-Finding)
+        const keepTarget = state.targetEntityId != null
+          && participants.some((p) => p.entityId === state.targetEntityId && p.hpCurrent > 0);
+        return { session, participants, targetEntityId: keepTarget ? state.targetEntityId : null };
+      },
+    );
   },
 
   updateParticipantAp: (entityId, apCurrent) =>

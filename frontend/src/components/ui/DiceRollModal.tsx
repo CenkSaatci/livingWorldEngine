@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../../store/settingsStore';
 import { CssDice } from './CssDice';
 import { ThreeDice } from './ThreeDice';
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function DiceRollModal({ label, dice, modifier, total, onClose }: Props) {
+  const { t } = useTranslation('common');
   const diceMode = useSettingsStore((s) => s.diceMode);
   const diceSkin = useSettingsStore((s) => s.diceSkin);
   const [visible, setVisible] = useState(false);
@@ -40,11 +42,16 @@ export function DiceRollModal({ label, dice, modifier, total, onClose }: Props) 
       onClick={onClose}
     >
       <div
-        className="relative rounded-xl border border-bg-elevated bg-bg-surface p-8 shadow-2xl min-w-[360px]"
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+        className="relative mx-4 w-full max-w-md rounded-xl border border-bg-elevated bg-bg-surface p-8 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
+          aria-label={t('close')}
+          title={t('close')}
           className="absolute right-3 top-3 text-text-secondary hover:text-text-primary"
         >
           <X size={18} />
@@ -66,7 +73,7 @@ export function DiceRollModal({ label, dice, modifier, total, onClose }: Props) 
           />
         )}
         <p className="sr-only" role="status" aria-live="polite">
-          Roll result: {total}
+          {t('rollResult', { total })}
         </p>
       </div>
     </div>

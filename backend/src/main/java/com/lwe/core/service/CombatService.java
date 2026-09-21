@@ -294,6 +294,11 @@ public class CombatService {
             }
         }
 
+        if (damage > 0 && targetId == null) {
+            // Schadende Fähigkeit ohne Ziel: nicht still verpuffen lassen (R3).
+            throw new CombatException("COMBAT_TARGET_INVALID",
+                "Target required for damaging abilities");
+        }
         // Apply damage to target
         if (damage > 0 && targetId != null) {
             var target = participants.stream()

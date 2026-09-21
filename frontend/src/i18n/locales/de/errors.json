@@ -19,5 +19,15 @@
   "INTENT_VALIDATION_RANGE": "Außerhalb Reichweite.",
   "TIME_PAUSED": "Operation nicht möglich, die Zeit ist pausiert.",
   "TIME_DM_OVERRIDE_REQUIRED": "Im manuellen Modus ist automatisches Advance verboten.",
-  "SYSTEM_INTERNAL_ERROR": "Ein unerwarteter Fehler ist aufgetreten."
+  "SYSTEM_INTERNAL_ERROR": "Ein unerwarteter Fehler ist aufgetreten.",
+  "COMBAT_TARGET_INVALID": "Ungültiges Ziel",
+  "COMBAT_AP_INSUFFICIENT": "Nicht genug AP",
+  "COMBAT_NOT_YOUR_TURN": "Nicht dein Zug",
+  "COMBAT_ACTION_BLOCKED": "Aktion durch einen Zustand gesperrt",
+  "COMBAT_RANGE_INVALID": "Ziel außer Reichweite",
+  "COMBAT_TARGET_DEFEATED": "Ziel ist bereits besiegt",
+  "COMBAT_ATTACK_UNRESOLVABLE": "Angriffswert nicht ableitbar",
+  "COMBAT_EFFECTS_INVALID": "Fähigkeitseffekte ungültig",
+  "COMBAT_NOT_ACTIVE": "Kampf ist beendet",
+  "CONFLICT": "Gleichzeitige Änderung — bitte erneut versuchen"
 }

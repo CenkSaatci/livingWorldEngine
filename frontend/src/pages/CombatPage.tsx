@@ -38,6 +38,8 @@ export default function CombatPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/dashboard')}
+            aria-label={tc('combat.back')}
+            title={tc('combat.back')}
             className="text-text-secondary hover:text-accent"
           >
             <ArrowLeft size={20} />

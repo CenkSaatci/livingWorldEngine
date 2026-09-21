@@ -105,7 +105,12 @@
     "missed": "Attaque manquée contre {{name}}",
     "done": "Action effectuée",
     "actionFailed": "Action échouée",
-    "startFromWorld": "Lancer le combat depuis la vue de jeu"
+    "startFromWorld": "Lancer le combat depuis la vue de jeu",
+    "nextTurnFailed": "Échec du passage de tour",
+    "endFailed": "Échec de la fin du combat",
+    "endConfirm": "Terminer le combat ?",
+    "hitNoDamage": "{{name}} : touché, mais aucun dégât",
+    "back": "Retour"
   },
   "entityTimeline": {
     "today": "today",
@@ -182,7 +187,8 @@
     "editTitle": "Modifier le lieu",
     "deleteTitle": "Supprimer le lieu ?",
     "mapX": "Carte X",
-    "mapY": "Carte Y"
+    "mapY": "Carte Y",
+    "deleteConfirm": "Supprimer le lieu « {{name}} » ? Toutes les données associées seront supprimées."
   },
   "session": {
     "title": "Session",
@@ -436,5 +442,6 @@
     "renameHint": "Un autre système porte déjà ce nom. Renommer quand même ?",
     "cancel": "Annuler",
     "renameConfirm": "Renommer quand même"
-  }
+  },
+  "rollResult": "Résultat : {{total}}"
 }

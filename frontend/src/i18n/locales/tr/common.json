@@ -105,7 +105,12 @@
     "missed": "Saldırı {{name}} hedefini ıskaladı",
     "done": "Eylem gerçekleştirildi",
     "actionFailed": "Eylem başarısız",
-    "startFromWorld": "Savaşı oyun görünümünden başlat"
+    "startFromWorld": "Savaşı oyun görünümünden başlat",
+    "nextTurnFailed": "Sıra geçilemedi",
+    "endFailed": "Dövüş bitirilemedi",
+    "endConfirm": "Dövüş bitirilsin mi?",
+    "hitNoDamage": "{{name}}: isabet, ancak hasar yok",
+    "back": "Geri"
   },
   "entityTimeline": {
     "today": "today",
@@ -182,7 +187,8 @@
     "editTitle": "Konumu düzenle",
     "deleteTitle": "Konum silinsin mi?",
     "mapX": "Harita X",
-    "mapY": "Harita Y"
+    "mapY": "Harita Y",
+    "deleteConfirm": "\"{{name}}\" yeri silinsin mi? İlgili tüm veriler kaldırılacak."
   },
   "session": {
     "title": "Session",
@@ -436,5 +442,6 @@
     "renameHint": "Başka bir sistem bu adı taşıyor. Yine de yeniden adlandır?",
     "cancel": "İptal",
     "renameConfirm": "Yine de adlandır"
-  }
+  },
+  "rollResult": "Sonuç: {{total}}"
 }

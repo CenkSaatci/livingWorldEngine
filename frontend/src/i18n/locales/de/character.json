@@ -50,7 +50,8 @@
     "rounds": "Runden",
     "difficulty": "Schwierigkeit",
     "probeDetails3d20": "Einzelwürfe zählen, Summe ist nur Info — Details aufklappen",
-    "closeDetails": "Details schließen"
+    "closeDetails": "Details schließen",
+    "cancel": "Abbrechen"
   },
   "attribute": {
     "modifier": "Modifikator"

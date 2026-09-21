@@ -202,6 +202,8 @@ export function ChatPanel({ worldId }: { worldId: string }) {
         />
         <button
           onClick={handleSend}
+          aria-label={t('send')}
+          title={t('send')}
           className="rounded bg-accent p-1.5 text-white hover:bg-accent/80"
         >
           <Send size={16} />

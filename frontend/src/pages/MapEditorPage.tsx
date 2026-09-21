@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Upload, X } from 'lucide-react';
+import { ArrowLeft, Save, Upload, X, Pencil, Trash2, Undo2, Move } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as PIXI from 'pixi.js';
@@ -8,14 +8,11 @@ import { drawGrid } from '../components/map/Grid';
 import { apiClient, BACKEND_ORIGIN } from '../api/client';
 import { useToast } from '../hooks/useToast';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { POI_TYPES, locationTypeIcon, regionColor, validateMapFile } from '../utils/mapEditor';
 
 const COLS = 20;
 const ROWS = 15;
 const TILE = 48;
-
-const POLY_COLORS = [
-  0x3b82f6, 0x22c55e, 0xf59e0b, 0xa855f7, 0xef4444, 0x06b6d4, 0x84cc16, 0xf97316,
-];
 
 interface Region {
   id: string;
@@ -34,6 +31,8 @@ interface Location {
   positionJson?: string;
 }
 
+type LocModal = { mode: 'create' | 'edit' | 'info'; location?: Location } | null;
+
 export default function MapEditorPage() {
   const { t } = useTranslation('map');
   const { id } = useParams<{ id: string }>();
@@ -51,41 +50,52 @@ export default function MapEditorPage() {
   const [mode, setMode] = useState<'view' | 'draw' | 'place'>('view');
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
   const [renderTick, setRenderTick] = useState(0);
-  const redraw = useCallback(() => {
-    setRenderTick(t => t + 1);
-  }, []);
   const [loading, setLoading] = useState(true);
-  const [showLocModal, setShowLocModal] = useState<'create' | 'info' | null>(null);
-  const [infoLocation, setInfoLocation] = useState<Location | null>(null);
-  const [locForm, setLocForm] = useState({ name: '', type: 'village', regionName: '', description: '', population: 0, wealth: 5 });
+  const [uploading, setUploading] = useState(false);
+  const [locModal, setLocModal] = useState<LocModal>(null);
+  const [locForm, setLocForm] = useState({
+    name: '', type: 'village', regionName: '', description: '', population: 0, wealth: 5,
+  });
 
-  const LOCATION_TYPES = ['village', 'town', 'city', 'hamlet', 'fortress', 'ruin', 'dungeon', 'tower', 'shrine', 'camp', 'mine', 'farm', 'inn', 'harbor', 'bridge'];
+  const redraw = useCallback(() => setRenderTick((tick) => tick + 1), []);
 
   const regionsLayerRef = useRef<PIXI.Graphics | null>(null);
   const locationsLayerRef = useRef<PIXI.Container | null>(null);
   const drawingLayerRef = useRef<PIXI.Graphics | null>(null);
   const bgLayerRef = useRef<PIXI.Sprite | null>(null);
 
+  const refreshRegions = useCallback(async (): Promise<Region[]> => {
+    if (!id) return [];
+    const res = await apiClient.get(`/worlds/${id}/regions`);
+    const next: Region[] = res.data ?? [];
+    setRegions(next);
+    return next;
+  }, [id]);
+
+  const refreshLocations = useCallback(async (regionsArg?: Region[]) => {
+    const list = regionsArg ?? regions;
+    if (list.length === 0) {
+      setLocations([]);
+      return;
+    }
+    const results = await Promise.all(list.map((r) => apiClient.get(`/regions/${r.id}/locations`)));
+    setLocations(results.flatMap((r) => r.data ?? []));
+  }, [regions]);
+
   useEffect(() => {
     if (!id) return;
     const fetchData = async () => {
       try {
-        const [regionsRes, mapRes] = await Promise.all([
-          apiClient.get(`/worlds/${id}/regions`),
-          apiClient.get(`/worlds/${id}/map`),
-        ]);
-        const regions = regionsRes.data ?? [];
-        setRegions(regions);
+        const regionsRes = await apiClient.get(`/worlds/${id}/regions`);
+        const nextRegions: Region[] = regionsRes.data ?? [];
+        setRegions(nextRegions);
+        const mapRes = await apiClient.get(`/worlds/${id}/map`);
         if (mapRes.data?.imageUrl) {
-          setBackgroundImage(
-           BACKEND_ORIGIN + mapRes.data.imageUrl,
-          );
+          setBackgroundImage(BACKEND_ORIGIN + mapRes.data.imageUrl);
         }
-        const locPromises = regions.map((r: Region) => apiClient.get(`/regions/${r.id}/locations`));
-        const locResults = await Promise.all(locPromises);
-        setLocations(locResults.flatMap((r) => r.data ?? []));
+        await refreshLocations(nextRegions);
       } catch {
-        toast.error(t("editor.failed_load_map"));
+        toast.error(t('editor.failed_load_map'));
       } finally {
         setLoading(false);
       }
@@ -137,12 +147,12 @@ export default function MapEditorPage() {
     }
 
     const regionsGfx = new PIXI.Graphics();
-    regions.forEach((region, index) => {
+    regions.forEach((region) => {
       if (!region.polygonPoints) return;
       try {
         const pts = JSON.parse(region.polygonPoints) as { x: number; y: number }[];
         if (pts.length < 3) return;
-        const color = POLY_COLORS[index % POLY_COLORS.length];
+        const color = regionColor(region.id);
         regionsGfx.beginFill(color, 0.25);
         regionsGfx.lineStyle(3, color, 0.9);
         regionsGfx.moveTo(pts[0].x, pts[0].y);
@@ -151,8 +161,8 @@ export default function MapEditorPage() {
         }
         regionsGfx.closePath();
         regionsGfx.endFill();
-      } catch (e) {
-        console.warn('Polygon draw error:', e);
+      } catch {
+        // korrupte Polygondaten ignorieren (Region bleibt ohne Form sichtbar)
       }
     });
 
@@ -173,19 +183,21 @@ export default function MapEditorPage() {
       try {
         const pos = JSON.parse(loc.positionJson) as { x: number; y: number };
         const circle = new PIXI.Graphics();
-        circle.beginFill(0xe74c3c);
-        circle.drawCircle(0, 0, 6);
+        circle.beginFill(0x111827, 0.75);
+        circle.drawCircle(0, 0, 10);
         circle.endFill();
-        circle.lineStyle(2, 0xffffff, 0.8);
-        circle.drawCircle(0, 0, 6);
+        circle.lineStyle(2, 0xffffff, 0.9);
+        circle.drawCircle(0, 0, 10);
         circle.position.set(pos.x, pos.y);
         circle.eventMode = 'static';
         circle.cursor = 'pointer';
-        circle.on('pointerdown', () => {
-          setInfoLocation(loc);
-          setShowLocModal('info');
-        });
+        circle.on('pointerdown', () => setLocModal({ mode: 'info', location: loc }));
         locsContainer.addChild(circle);
+
+        const icon = new PIXI.Text(locationTypeIcon(loc.type), { fontSize: 14 });
+        icon.anchor.set(0.5);
+        icon.position.set(pos.x, pos.y);
+        locsContainer.addChild(icon);
 
         const text = new PIXI.Text(loc.name, {
           fontSize: 11,
@@ -195,10 +207,10 @@ export default function MapEditorPage() {
           dropShadowBlur: 2,
         });
         text.anchor.set(0.5, 1);
-        text.position.set(pos.x, pos.y - 10);
+        text.position.set(pos.x, pos.y - 12);
         locsContainer.addChild(text);
-      } catch (e) {
-        console.warn('Location draw error:', e);
+      } catch {
+        // korrupte Positionsdaten ignorieren
       }
     });
 
@@ -236,6 +248,25 @@ export default function MapEditorPage() {
     drawingLayerRef.current = drawingGfx;
   }, [getApp, regions, locations, drawingPoints, renderTick]);
 
+  // Escape schließt Modals bzw. bricht Zeichnen/Platzieren ab.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (locModal) {
+        setLocModal(null);
+      } else if (mode === 'draw') {
+        setDrawingPoints([]);
+        setSelectedRegion(null);
+        setMode('view');
+      } else if (mode === 'place') {
+        setSelectedLocation(null);
+        setMode('view');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [locModal, mode]);
+
   const handleCanvasClick = (e: React.MouseEvent) => {
     const canvas = containerRef.current?.querySelector('canvas');
     if (!canvas) return;
@@ -255,22 +286,37 @@ export default function MapEditorPage() {
 
   const saveLocationPosition = async (locationId: string, x: number, y: number) => {
     if (!id) return;
-    const loc = locations.find(l => l.id === locationId);
-    console.log('Place:', { loc, x, y });
-    if (!loc?.regionId) { toast.error(t("editor.location_no_region")); return; }
+    const loc = locations.find((l) => l.id === locationId);
+    if (!loc?.regionId) { toast.error(t('editor.location_no_region')); return; }
     try {
-      const patchRes = await apiClient.patch(`/regions/${loc.regionId}/locations/${locationId}`, {
+      await apiClient.patch(`/regions/${loc.regionId}/locations/${locationId}`, {
         positionJson: JSON.stringify({ x, y }),
       });
-      console.log('PATCH response:', patchRes.status, patchRes.data);
-      const locPromises = regions.map((r) => apiClient.get(`/regions/${r.id}/locations`));
-      const locResults = await Promise.all(locPromises);
-      setLocations(locResults.flatMap((r) => r.data ?? []));
-      toast.success(t("editor.location_placed"));
+      await refreshLocations();
+      toast.success(t('editor.location_placed'));
       setMode('view');
       setSelectedLocation(null);
     } catch {
-      toast.error(t("editor.failed_place_location"));
+      toast.error(t('editor.failed_place_location'));
+    }
+  };
+
+  const handleSavePolygon = async () => {
+    if (!id || !selectedRegion || drawingPoints.length < 3) {
+      toast.error(t('editor.select_region_draw'));
+      return;
+    }
+    try {
+      await apiClient.patch(`/worlds/${id}/regions/${selectedRegion}`, {
+        polygonPoints: JSON.stringify(drawingPoints),
+      });
+      toast.success(t('editor.polygon_saved'));
+      setDrawingPoints([]);
+      setSelectedRegion(null);
+      setMode('view');
+      await refreshRegions();
+    } catch {
+      toast.error(t('editor.failed_save_polygon'));
     }
   };
 
@@ -279,30 +325,10 @@ export default function MapEditorPage() {
     if (mode !== 'draw') return;
     if (drawingPoints.length >= 3) {
       await handleSavePolygon();
-    }
-    setDrawingPoints([]);
-    setSelectedRegion(null);
-    setMode('view');
-  };
-
-  const handleSavePolygon = async () => {
-    if (!id || !selectedRegion || drawingPoints.length < 3) {
-      toast.error(t("editor.select_region_draw"));
-      return;
-    }
-    try {
-      await apiClient.patch(`/worlds/${id}/regions/${selectedRegion}`, {
-        polygonPoints: JSON.stringify(drawingPoints),
-      });
-      toast.success(t("editor.polygon_saved"));
+    } else {
       setDrawingPoints([]);
       setSelectedRegion(null);
       setMode('view');
-      const res = await apiClient.get(`/worlds/${id}/regions`);
-      console.log('Regions after save:', res.data);
-      setRegions(res.data ?? []);
-    } catch {
-      toast.error(t("editor.failed_save_polygon"));
     }
   };
 
@@ -318,21 +344,152 @@ export default function MapEditorPage() {
     setMode('view');
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !id) return;
-    const formData = new FormData();
-    formData.append('file', file);
-    setBackgroundImage(URL.createObjectURL(file));
+  const handleUndoPoint = () => setDrawingPoints((prev) => prev.slice(0, -1));
+
+  const handleCreateRegion = async () => {
+    if (!id) return;
+    const name = window.prompt(t('editor.region_name_prompt'));
+    if (!name) return;
     try {
-      const res = await apiClient.post(`/worlds/${id}/map/upload`, formData);
-      setBackgroundImage(
-      BACKEND_ORIGIN + res.data.imageUrl,
-      );
-    } catch (err) {
-      console.error('Upload failed:', err);
+      await apiClient.post(`/worlds/${id}/regions`, { name, dangerLevel: 5 });
+      await refreshRegions();
+    } catch {
+      toast.error(t('editor.failed_create_region'));
     }
   };
+
+  const handleRenameRegion = async (region: Region) => {
+    if (!id) return;
+    const name = window.prompt(t('editor.region_rename_prompt'), region.name);
+    if (!name || name === region.name) return;
+    try {
+      await apiClient.patch(`/worlds/${id}/regions/${region.id}`, { name });
+      await refreshRegions();
+      toast.success(t('editor.region_renamed'));
+    } catch {
+      toast.error(t('editor.failed_rename_region'));
+    }
+  };
+
+  const handleClearPolygon = async (region: Region) => {
+    if (!id) return;
+    try {
+      await apiClient.patch(`/worlds/${id}/regions/${region.id}`, { polygonPoints: '[]' });
+      await refreshRegions();
+      toast.success(t('editor.polygon_cleared'));
+    } catch {
+      toast.error(t('editor.failed_save_polygon'));
+    }
+  };
+
+  const handleDeleteRegion = async (region: Region) => {
+    if (!id) return;
+    if (!window.confirm(t('editor.confirm_delete_region', { name: region.name }))) return;
+    try {
+      await apiClient.delete(`/worlds/${id}/regions/${region.id}`);
+      const next = await refreshRegions();
+      await refreshLocations(next);
+    } catch {
+      toast.error(t('editor.failed_delete_region'));
+    }
+  };
+
+  const openCreateLocation = () => {
+    setLocForm({
+      name: '', type: 'village', regionName: regions[0]?.name ?? '',
+      description: '', population: 0, wealth: 5,
+    });
+    setLocModal({ mode: 'create' });
+  };
+
+  const openEditLocation = (loc: Location) => {
+    setLocForm({
+      name: loc.name,
+      type: loc.type ?? 'village',
+      regionName: regions.find((r) => r.id === loc.regionId)?.name ?? '',
+      description: loc.description ?? '',
+      population: loc.population ?? 0,
+      wealth: loc.wealth ?? 5,
+    });
+    setLocModal({ mode: 'edit', location: loc });
+  };
+
+  const handleSubmitLocation = async () => {
+    if (!locForm.name || !locForm.regionName) return;
+    const editing = locModal?.mode === 'edit' ? locModal.location : null;
+    const region = regions.find((r) => r.name === locForm.regionName);
+    if (!editing && !region) { toast.error(t('editor.region_not_found')); return; }
+    const regionId = editing?.regionId ?? region?.id;
+    if (!regionId) { toast.error(t('editor.region_not_found')); return; }
+    const body = {
+      name: locForm.name,
+      type: locForm.type,
+      description: locForm.description,
+      population: locForm.population,
+      wealth: locForm.wealth,
+    };
+    try {
+      if (editing) {
+        await apiClient.patch(`/regions/${regionId}/locations/${editing.id}`, body);
+        toast.success(t('editor.location_updated'));
+      } else {
+        await apiClient.post(`/regions/${regionId}/locations`, body);
+        toast.success(t('editor.location_created'));
+      }
+      setLocModal(null);
+      await refreshLocations();
+    } catch {
+      toast.error(editing ? t('editor.failed_update_location') : t('editor.failed_create_location'));
+    }
+  };
+
+  const handleDeleteLocation = async (loc: Location) => {
+    if (!loc.regionId) { toast.error(t('editor.location_no_region')); return; }
+    if (!window.confirm(t('editor.confirm_delete_location', { name: loc.name }))) return;
+    try {
+      await apiClient.delete(`/regions/${loc.regionId}/locations/${loc.id}`);
+      setLocModal(null);
+      await refreshLocations();
+    } catch {
+      toast.error(t('editor.failed_delete_location'));
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !id) return;
+    const invalid = validateMapFile(file);
+    if (invalid) {
+      toast.error(invalid === 'size' ? t('editor.upload_too_large') : t('editor.upload_wrong_type'));
+      return;
+    }
+    const previous = backgroundImage;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await apiClient.post(`/worlds/${id}/map/upload`, formData);
+      setBackgroundImage(BACKEND_ORIGIN + res.data.imageUrl);
+      toast.success(t('editor.image_loaded'));
+    } catch {
+      // Kein stiller Fehlschlag: Vorschau zurücksetzen und melden.
+      setBackgroundImage(previous);
+      toast.error(t('editor.failed_upload'));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    const next = await refreshRegions();
+    await refreshLocations(next);
+    redraw();
+  };
+
+  const modalTitle = locModal?.mode === 'edit'
+    ? t('editor.edit_location_title')
+    : t('editor.create_location_title');
 
   return (
     <div className="flex h-screen flex-col bg-bg-primary">
@@ -345,31 +502,44 @@ export default function MapEditorPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(`/worlds/${id}/edit`)}
+            aria-label={t('editor.back')}
+            title={t('editor.back')}
             className="text-text-secondary hover:text-accent"
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-lg font-heading text-text-primary">{t("editor.heading")}</h1>
+          <h1 className="text-lg font-heading text-text-primary">{t('editor.heading')}</h1>
           {(mode === 'draw' || mode === 'place') && (
             <span className="rounded bg-accent/20 px-2 py-0.5 text-xs text-accent">
-              {mode === 'draw' ? t("editor.mode_drawing") : t("editor.mode_placing")}
+              {mode === 'draw' ? t('editor.mode_drawing') : t('editor.mode_placing')}
             </span>
           )}
         </div>
         <div className="flex items-center gap-2">
           {mode === 'draw' && (
             <>
+              <span className="text-xs text-text-secondary">
+                {t('editor.points', { count: drawingPoints.length })}
+              </span>
+              <button
+                onClick={handleUndoPoint}
+                disabled={drawingPoints.length === 0}
+                className="flex items-center gap-1 rounded border border-bg-elevated px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary disabled:opacity-40"
+              >
+                <Undo2 size={14} /> {t('editor.undo_point')}
+              </button>
               <button
                 onClick={handleSavePolygon}
-                className="flex items-center gap-1 rounded bg-accent px-3 py-1.5 text-xs text-white hover:bg-accent/80"
+                disabled={drawingPoints.length < 3}
+                className="flex items-center gap-1 rounded bg-accent px-3 py-1.5 text-xs text-white hover:bg-accent/80 disabled:opacity-40"
               >
-                <Save size={14} /> Save Polygon
+                <Save size={14} /> {t('editor.save_polygon')}
               </button>
               <button
                 onClick={handleCancelDraw}
                 className="rounded border border-bg-elevated px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary"
               >
-                Cancel
+                {t('editor.cancel')}
               </button>
             </>
           )}
@@ -380,18 +550,24 @@ export default function MapEditorPage() {
         <aside className="flex w-64 flex-col gap-4 overflow-y-auto border-r border-bg-elevated bg-bg-surface p-4">
           {/* Upload */}
           <div>
-            <label className="mb-1 block text-xs text-text-secondary">{t("editor.map_image")}</label>
+            <label className="mb-1 block text-xs text-text-secondary">{t('editor.map_image')}</label>
             <label className="flex cursor-pointer items-center gap-2 rounded border border-bg-elevated px-3 py-2 text-sm text-text-secondary hover:text-text-primary">
               <Upload size={14} />
-              Upload
-              <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              {uploading ? t('editor.uploading') : t('editor.upload')}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={handleImageUpload}
+                disabled={uploading}
+                className="hidden"
+              />
             </label>
-            {backgroundImage && <p className="mt-1 text-xs text-text-secondary">Image loaded</p>}
+            <p className="mt-1 text-[10px] text-text-secondary">{t('editor.upload_hint')}</p>
           </div>
 
           {/* Mode toggle */}
           <div>
-            <label className="mb-1 block text-xs text-text-secondary">{t("editor.mode")}</label>
+            <label className="mb-1 block text-xs text-text-secondary">{t('editor.mode')}</label>
             <div className="flex gap-1">
               {(['view', 'draw', 'place'] as const).map((m) => (
                 <button
@@ -414,48 +590,67 @@ export default function MapEditorPage() {
           {/* Regions list */}
           <div>
             <h3 className="mb-2 text-xs font-heading uppercase tracking-wider text-text-secondary">
-              Regions
+              {t('editor.regions')}
             </h3>
             <div className="space-y-1">
-              {regions.length === 0 && <p className="text-xs text-text-secondary">{t("editor.no_regions")}</p>}
-              {regions.map((region, idx) => {
-                const color = POLY_COLORS[idx % POLY_COLORS.length];
-                return (
+              {regions.length === 0 && <p className="text-xs text-text-secondary">{t('editor.no_regions')}</p>}
+              {regions.map((region) => (
                 <div
                   key={region.id}
-                  className={`flex items-center justify-between rounded px-2 py-1 hover:bg-bg-elevated/50 ${
+                  className={`rounded px-2 py-1 hover:bg-bg-elevated/50 ${
                     selectedRegion === region.id ? 'bg-accent/10' : ''
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
-                      style={{ backgroundColor: `#${color.toString(16).padStart(6, '0')}` }}
-                    />
-                    <span className="text-sm text-text-primary">{region.name}</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span
+                        className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: `#${regionColor(region.id).toString(16).padStart(6, '0')}` }}
+                      />
+                      <span className="truncate text-sm text-text-primary">{region.name}</span>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        onClick={() => handleRenameRegion(region)}
+                        aria-label={t('editor.rename')}
+                        title={t('editor.rename')}
+                        className="text-text-secondary hover:text-accent"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteRegion(region)}
+                        aria-label={t('editor.delete')}
+                        title={t('editor.delete')}
+                        className="text-text-secondary hover:text-danger"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => handleStartDraw(region.id)}
-                    className="text-xs text-accent hover:text-accent/80"
-                  >
-                    {region.polygonPoints ? t("editor.redraw_polygon") : t("editor.draw_polygon")}
-                  </button>
+                  <div className="mt-0.5 flex items-center gap-2 text-xs">
+                    <button
+                      onClick={() => handleStartDraw(region.id)}
+                      className="text-accent hover:text-accent/80"
+                    >
+                      {region.polygonPoints ? t('editor.redraw_polygon') : t('editor.draw_polygon')}
+                    </button>
+                    {region.polygonPoints && (
+                      <button
+                        onClick={() => handleClearPolygon(region)}
+                        className="text-text-secondary hover:text-danger"
+                      >
+                        {t('editor.clear_polygon')}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                );
-              })}
+              ))}
               <button
-                onClick={async () => {
-                  const name = prompt(t("editor.region_name_prompt"));
-                  if (!name || !id) return;
-                  try {
-                    await apiClient.post(`/worlds/${id}/regions`, { name, dangerLevel: 5 });
-                    const res = await apiClient.get(`/worlds/${id}/regions`);
-                    setRegions(res.data ?? []);
-                  } catch { toast.error(t("editor.failed_create_region")); }
-                }}
+                onClick={handleCreateRegion}
                 className="w-full rounded border border-dashed border-bg-elevated py-1 text-xs text-text-secondary hover:text-accent hover:border-accent/50"
               >
-                + Create Region
+                {t('editor.create_region')}
               </button>
             </div>
           </div>
@@ -463,57 +658,71 @@ export default function MapEditorPage() {
           {/* Locations list */}
           <div>
             <h3 className="mb-2 text-xs font-heading uppercase tracking-wider text-text-secondary">
-              Locations
+              {t('editor.locations')}
             </h3>
             <div className="space-y-1">
               {locations.length === 0 && (
-                <p className="text-xs text-text-secondary">{t("editor.no_locations")}</p>
+                <p className="text-xs text-text-secondary">{t('editor.no_locations')}</p>
               )}
               {locations.map((loc) => (
                 <div
                   key={loc.id}
+                  className={`flex items-center justify-between gap-2 rounded px-2 py-1 ${
+                    selectedLocation === loc.id ? 'bg-accent/20 text-accent' : 'text-text-primary hover:bg-bg-elevated/50'
+                  } ${mode === 'place' ? 'cursor-pointer' : ''}`}
                   onClick={() => {
                     if (mode === 'place') {
                       setSelectedLocation(loc.id);
-                      toast.info(`Click on map to place "${loc.name}"`);
+                      toast.info(t('editor.place_location', { name: loc.name }));
                     }
                   }}
-                  className={`flex items-center justify-between rounded px-2 py-1 text-sm ${
-                    selectedLocation === loc.id
-                      ? 'bg-accent/20 text-accent'
-                      : 'text-text-primary hover:bg-bg-elevated/50'
-                  } ${mode === 'place' ? 'cursor-pointer' : ''}`}
                 >
-                  <span>{loc.name}</span>
-                  {loc.positionJson && (
-                    <span className="text-xs text-text-secondary">{'\u2713'}</span>
-                  )}
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span aria-hidden="true">{locationTypeIcon(loc.type)}</span>
+                    <span className="truncate">{loc.name}</span>
+                    {loc.positionJson && <span className="text-xs text-success" aria-hidden="true">✓</span>}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openEditLocation(loc); }}
+                      aria-label={t('editor.edit')}
+                      title={t('editor.edit')}
+                      className="text-text-secondary hover:text-accent"
+                    >
+                      <Pencil size={12} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteLocation(loc); }}
+                      aria-label={t('editor.delete')}
+                      title={t('editor.delete')}
+                      className="text-text-secondary hover:text-danger"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </span>
                 </div>
               ))}
               <button
-                onClick={() => {
-                  setLocForm({ name: '', type: 'village', regionName: regions[0]?.name ?? '', description: '', population: 0, wealth: 5 });
-                  setShowLocModal('create');
-                }}
+                onClick={openCreateLocation}
                 className="w-full rounded border border-dashed border-bg-elevated py-1 text-xs text-text-secondary hover:text-accent hover:border-accent/50"
               >
-                + Create Location
+                {t('editor.create_location')}
               </button>
             </div>
           </div>
 
-          {/* Instructions */}
           <button
-            onClick={redraw}
+            onClick={handleRefresh}
             className="w-full rounded border border-bg-elevated py-1.5 text-xs text-text-secondary hover:text-accent hover:border-accent/50"
           >
-            Refresh Map ({regions.length}r / {locations.length}l / {backgroundImage ? 'bg' : 'no bg'})
+            {t('editor.refresh_map', {
+              r: regions.length, l: locations.length,
+              bg: backgroundImage ? t('editor.bg_yes') : t('editor.bg_no'),
+            })}
           </button>
           {mode === 'draw' && (
             <div className="mt-auto rounded bg-accent/10 p-3">
-              <p className="text-xs text-text-secondary">
-                {t('editor.draw_help')}
-              </p>
+              <p className="text-xs text-text-secondary">{t('editor.draw_help')}</p>
             </div>
           )}
           {mode === 'place' && (
@@ -542,73 +751,109 @@ export default function MapEditorPage() {
         </main>
       </div>
 
-      {/* Create Location Modal */}
-      {showLocModal === 'create' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-80 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl">
+      {/* Create/Edit Location Modal */}
+      {(locModal?.mode === 'create' || locModal?.mode === 'edit') && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setLocModal(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={modalTitle}
+            className="w-80 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-heading text-text-primary">{t("editor.create_location_title")}</h3>
-              <button onClick={() => setShowLocModal(null)} className="text-text-secondary hover:text-text-primary"><X size={16} /></button>
+              <h3 className="font-heading text-text-primary">{modalTitle}</h3>
+              <button
+                onClick={() => setLocModal(null)}
+                aria-label={t('editor.cancel')}
+                title={t('editor.cancel')}
+                className="text-text-secondary hover:text-text-primary"
+              >
+                <X size={16} />
+              </button>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Name</label>
-                <input value={locForm.name} onChange={(e) => setLocForm(f => ({ ...f, name: e.target.value }))}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" />
+                <label className="block text-xs text-text-secondary mb-1">{t('editor.name')}</label>
+                <input
+                  value={locForm.name}
+                  onChange={(e) => setLocForm((f) => ({ ...f, name: e.target.value }))}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Type</label>
-                <select value={locForm.type} onChange={(e) => setLocForm(f => ({ ...f, type: e.target.value }))}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent">
-                  {LOCATION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                <label className="block text-xs text-text-secondary mb-1">{t('editor.type')}</label>
+                <select
+                  value={locForm.type}
+                  onChange={(e) => setLocForm((f) => ({ ...f, type: e.target.value }))}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                >
+                  {POI_TYPES.map((type) => (
+                    <option key={type} value={type}>{locationTypeIcon(type)} {type}</option>
+                  ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Region</label>
-                <select value={locForm.regionName} onChange={(e) => setLocForm(f => ({ ...f, regionName: e.target.value }))}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent">
-                  {regions.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
-                </select>
+                <label className="block text-xs text-text-secondary mb-1">{t('editor.region')}</label>
+                {locModal?.mode === 'edit' ? (
+                  <p className="text-sm text-text-primary">{locForm.regionName || '—'}</p>
+                ) : (
+                  <select
+                    value={locForm.regionName}
+                    onChange={(e) => setLocForm((f) => ({ ...f, regionName: e.target.value }))}
+                    className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                  >
+                    {regions.map((r) => <option key={r.id} value={r.name}>{r.name}</option>)}
+                  </select>
+                )}
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Description</label>
-                <textarea value={locForm.description} onChange={(e) => setLocForm(f => ({ ...f, description: e.target.value }))} rows={2}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none" />
+                <label className="block text-xs text-text-secondary mb-1">{t('editor.description')}</label>
+                <textarea
+                  value={locForm.description}
+                  onChange={(e) => setLocForm((f) => ({ ...f, description: e.target.value }))}
+                  rows={2}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none"
+                />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs text-text-secondary mb-1">Population</label>
-                  <input type="number" min={0} value={locForm.population} onChange={(e) => setLocForm(f => ({ ...f, population: Number(e.target.value) }))}
-                    className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" />
+                  <label className="block text-xs text-text-secondary mb-1">{t('editor.population')}</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={locForm.population}
+                    onChange={(e) => setLocForm((f) => ({ ...f, population: Number(e.target.value) }))}
+                    className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs text-text-secondary mb-1">Wealth (1-10)</label>
-                  <input type="number" min={1} max={10} value={locForm.wealth} onChange={(e) => setLocForm(f => ({ ...f, wealth: Number(e.target.value) }))}
-                    className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" />
+                  <label className="block text-xs text-text-secondary mb-1">{t('editor.wealth')}</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={locForm.wealth}
+                    onChange={(e) => setLocForm((f) => ({ ...f, wealth: Number(e.target.value) }))}
+                    className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                  />
                 </div>
               </div>
-              <button onClick={async () => {
-                if (!locForm.name || !locForm.regionName) return;
-                const region = regions.find(r => r.name === locForm.regionName);
-                if (!region) { toast.error(t("editor.region_not_found")); return; }
-                try {
-                  await apiClient.post(`/regions/${region.id}/locations`, {
-                    name: locForm.name, type: locForm.type, description: locForm.description || undefined,
-                    population: locForm.population, wealth: locForm.wealth,
-                  });
-                  const locPromises = regions.map((r) => apiClient.get(`/regions/${r.id}/locations`));
-                  const locResults = await Promise.all(locPromises);
-                  setLocations(locResults.flatMap((r) => r.data ?? []));
-                  setShowLocModal(null);
-                  toast.success(t("editor.location_created"));
-                } catch { toast.error(t("editor.failed_create_location")); }
-              }}
-                className="w-full rounded bg-accent py-2 text-sm text-white hover:bg-accent/80">
-                Create
+              <button
+                onClick={handleSubmitLocation}
+                disabled={!locForm.name || !locForm.regionName}
+                className="w-full rounded bg-accent py-2 text-sm text-white hover:bg-accent/80 disabled:opacity-40"
+              >
+                {locModal?.mode === 'edit' ? t('editor.apply') : t('editor.create')}
               </button>
-              <button onClick={() => setShowLocModal(null)}
-                className="w-full rounded border border-bg-elevated py-2 text-sm text-text-secondary hover:text-text-primary">
-                Cancel
+              <button
+                onClick={() => setLocModal(null)}
+                className="w-full rounded border border-bg-elevated py-2 text-sm text-text-secondary hover:text-text-primary"
+              >
+                {t('editor.cancel')}
               </button>
             </div>
           </div>
@@ -616,17 +861,72 @@ export default function MapEditorPage() {
       )}
 
       {/* Location Info Modal */}
-      {showLocModal === 'info' && infoLocation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-72 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl">
+      {locModal?.mode === 'info' && locModal.location && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setLocModal(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={locModal.location.name}
+            className="w-72 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-heading text-text-primary">{infoLocation.name}</h3>
-              <button onClick={() => { setShowLocModal(null); setInfoLocation(null); }} className="text-text-secondary hover:text-text-primary"><X size={16} /></button>
+              <h3 className="font-heading text-text-primary">
+                {locationTypeIcon(locModal.location.type)} {locModal.location.name}
+              </h3>
+              <button
+                onClick={() => setLocModal(null)}
+                aria-label={t('editor.cancel')}
+                title={t('editor.cancel')}
+                className="text-text-secondary hover:text-text-primary"
+              >
+                <X size={16} />
+              </button>
             </div>
-            <p className="text-xs text-text-secondary mb-2">Type: {infoLocation.type}</p>
-            {infoLocation.description && <p className="text-sm text-text-primary mb-2">{infoLocation.description}</p>}
-            <p className="text-xs text-text-secondary">Population: {infoLocation.population} · Wealth: {infoLocation.wealth}/10</p>
-            {infoLocation.positionJson && <p className="text-xs text-text-secondary mt-1">{t('editor.placed_on_map')}</p>}
+            <p className="text-xs text-text-secondary mb-2">
+              {t('editor.type_label', { type: locModal.location.type })}
+            </p>
+            {locModal.location.description && (
+              <p className="text-sm text-text-primary mb-2">{locModal.location.description}</p>
+            )}
+            <p className="text-xs text-text-secondary">
+              {t('editor.population_wealth', {
+                pop: locModal.location.population ?? 0,
+                w: locModal.location.wealth ?? 5,
+              })}
+            </p>
+            {locModal.location.positionJson && (
+              <p className="text-xs text-text-secondary mt-1">{t('editor.placed_on_map')}</p>
+            )}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                onClick={() => openEditLocation(locModal.location!)}
+                className="flex items-center gap-1 rounded bg-accent px-3 py-1.5 text-xs text-white hover:bg-accent/80"
+              >
+                <Pencil size={12} /> {t('editor.edit')}
+              </button>
+              <button
+                onClick={() => {
+                  const loc = locModal.location!;
+                  setLocModal(null);
+                  setSelectedLocation(loc.id);
+                  setMode('place');
+                  toast.info(t('editor.place_location', { name: loc.name }));
+                }}
+                className="flex items-center gap-1 rounded border border-bg-elevated px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary"
+              >
+                <Move size={12} /> {t('editor.move')}
+              </button>
+              <button
+                onClick={() => handleDeleteLocation(locModal.location!)}
+                className="flex items-center gap-1 rounded border border-danger/40 px-3 py-1.5 text-xs text-danger hover:bg-danger/10"
+              >
+                <Trash2 size={12} /> {t('editor.delete')}
+              </button>
+            </div>
           </div>
         </div>
       )}

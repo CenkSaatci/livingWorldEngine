@@ -137,16 +137,21 @@ export function ActionBar({ worldId }: Props) {
   if (!session || session.status !== 'ACTIVE') return null;
 
   const aliveTargets = participants.filter(
-    (p) => p.entityId !== session.currentTurnEntityId && p.apCurrent > 0,
+    (p) => p.entityId !== session.currentTurnEntityId && p.hpCurrent > 0,
   );
 
   const targetName = (id: string | null) =>
     id ? (participants.find((p) => p.entityId === id)?.name ?? id.slice(0, 8)) : '';
 
   const errorText = (e: unknown, fallback: string) => {
-    const msg = (e as { response?: { data?: { error?: { message?: string } } } })
-      ?.response?.data?.error?.message;
-    return msg ?? fallback;
+    const err = (e as { response?: { data?: { error?: { code?: string; message?: string } } } })
+      ?.response?.data?.error;
+    if (err?.code) {
+      // Server-Fehlercode -> übersetzte Meldung; Roh-Message nur als Fallback.
+      const translated = t(err.code, { ns: 'errors', defaultValue: '' });
+      if (translated && translated !== err.code) return translated;
+    }
+    return err?.message ?? fallback;
   };
 
   const handleAction = async (type: string, abilityId?: string) => {
@@ -173,15 +178,16 @@ export function ActionBar({ worldId }: Props) {
         const detail = result.attack ? ` (${formatRollBreakdown(result.attack)})` : '';
         toast.error(`${t('combat.missed', { name: targetName(targetEntityId) })}${detail}`);
       } else {
-        if (!abilityId) playCombatHit();
         const damage = result?.totalDamage ?? 0;
         const healing = result?.healing ?? 0;
+        if (!abilityId && (damage > 0 || healing > 0)) playCombatHit();
         const messages: string[] = [];
         if (damage > 0) {
           const detail = result?.damage ? ` · ${formatRollBreakdown(result.damage)}` : '';
-          messages.push(t('combat.hitFor', {
-            name: targetName(targetEntityId), damage,
-          }) + detail);
+          messages.push(t('combat.hitFor', { name: targetName(targetEntityId), damage }) + detail);
+        } else if (result?.attack) {
+          // Angriff traf, aber Schaden auf 0 reduziert (Rüstung/Resistenz).
+          messages.push(t('combat.hitNoDamage', { name: targetName(targetEntityId) }));
         }
         if (healing > 0) {
           messages.push(t('combat.healedFor', {
@@ -214,19 +220,44 @@ export function ActionBar({ worldId }: Props) {
       if (result?.actionType === 'MISS') {
         const detail = result.attack ? ` (${formatRollBreakdown(result.attack)})` : '';
         toast.error(`${t('combat.missed', { name: targetName(targetEntityId) })}${detail}`);
-      } else {
+      } else if ((result?.totalDamage ?? 0) > 0) {
         playCombatHit();
-        if ((result?.totalDamage ?? 0) > 0) {
-          const detail = result?.damage ? ` · ${formatRollBreakdown(result.damage)}` : '';
-          toast.success(t('combat.hitFor', {
-            name: targetName(targetEntityId), damage: result?.totalDamage,
-          }) + detail);
-        } else {
-          toast.success(t('combat.done'));
-        }
+        const detail = result?.damage ? ` · ${formatRollBreakdown(result.damage)}` : '';
+        toast.success(t('combat.hitFor', {
+          name: targetName(targetEntityId), damage: result?.totalDamage,
+        }) + detail);
+      } else if (result?.attack) {
+        toast.success(t('combat.hitNoDamage', { name: targetName(targetEntityId) }));
+      } else {
+        toast.success(t('combat.done'));
       }
     } catch (e) {
       toast.error(errorText(e, t('combat.maneuverFailed', { defaultValue: 'Maneuver failed' })));
+    } finally {
+      setActing(false);
+    }
+  };
+
+  const handleNextTurn = async () => {
+    if (acting) return;
+    setActing(true);
+    try {
+      await apiClient.post(`/combat/${session.id}/next-turn`);
+    } catch (e) {
+      toast.error(errorText(e, t('combat.nextTurnFailed')));
+    } finally {
+      setActing(false);
+    }
+  };
+
+  const handleEndCombat = async () => {
+    if (acting) return;
+    if (!window.confirm(t('combat.endConfirm'))) return;
+    setActing(true);
+    try {
+      await apiClient.post(`/combat/${session.id}/end`);
+    } catch (e) {
+      toast.error(errorText(e, t('combat.endFailed')));
     } finally {
       setActing(false);
     }
@@ -290,7 +321,7 @@ export function ActionBar({ worldId }: Props) {
         {abilities.map((a) => (
           <button key={a.abilityId}
             onClick={() => handleAction('ability', a.abilityId)}
-            disabled={!targetEntityId || acting}
+            disabled={acting}
             className="flex items-center gap-1 rounded bg-warning/20 px-3 py-1.5 text-xs text-warning hover:bg-warning/30 disabled:opacity-40"
             title={t('combat.apCost', { cost: a.apCost })}
           >
@@ -299,12 +330,12 @@ export function ActionBar({ worldId }: Props) {
         ))}
 
         {/* Turn Controls */}
-          <button onClick={async () => { try { await apiClient.post(`/combat/${session.id}/next-turn`); } catch { toast.error('Next turn failed'); } }}
-            className="flex items-center gap-1 rounded bg-bg-elevated px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary ml-auto">
+          <button onClick={handleNextTurn} disabled={acting}
+            className="flex items-center gap-1 rounded bg-bg-elevated px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary ml-auto disabled:opacity-40">
           <SkipForward size={14} /> {t('combat.nextTurn')}
         </button>
-        <button onClick={async () => { try { await apiClient.post(`/combat/${session.id}/end`); } catch { toast.error('Failed to end combat'); } }}
-          className="flex items-center gap-1 rounded bg-danger/20 px-3 py-1.5 text-xs text-danger hover:bg-danger/30">
+        <button onClick={handleEndCombat} disabled={acting}
+          className="flex items-center gap-1 rounded bg-danger/20 px-3 py-1.5 text-xs text-danger hover:bg-danger/30 disabled:opacity-40">
           <LogOut size={14} /> {t('combat.end')}
         </button>
       </div>

@@ -50,7 +50,8 @@
     "armor": "Zırh",
     "difficulty": "Zorluk",
     "probeDetails3d20": "Tek zarlar sayılır — ayrıntıları aç",
-    "closeDetails": "Ayrıntıları kapat"
+    "closeDetails": "Ayrıntıları kapat",
+    "cancel": "İptal"
   },
   "attribute": {
     "modifier": "Modifier"
