@@ -16,15 +16,6 @@ public final class RuleNames {
         return a != null && b != null && a.equalsIgnoreCase(b);
     }
 
-    public static <V> boolean containsKey(Map<String, V> map, String key) {
-        if (map == null || key == null) return false;
-        if (map.containsKey(key)) return true;
-        for (var k : map.keySet()) {
-            if (eq(k, key)) return true;
-        }
-        return false;
-    }
-
     public static <V> V get(Map<String, V> map, String key) {
         if (map == null || key == null) return null;
         if (map.containsKey(key)) return map.get(key);
@@ -37,14 +28,6 @@ public final class RuleNames {
     public static <V> V getOr(Map<String, V> map, String key, V fallback) {
         var value = get(map, key);
         return value != null ? value : fallback;
-    }
-
-    public static boolean contains(List<String> list, String name) {
-        if (list == null || name == null) return false;
-        for (var s : list) {
-            if (eq(s, name)) return true;
-        }
-        return false;
     }
 
     /** Merkmalsname inkl. Tier-Suffix ("Hohe Lebenskraft III" erfüllt "Hohe Lebenskraft"). */

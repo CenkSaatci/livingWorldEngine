@@ -121,13 +121,7 @@ public class RestService {
     }
 
     private Map<String, Integer> parseAttrs(GameEntity entity) {
-        try {
-            if (entity.getAttributesJson() == null || entity.getAttributesJson().isBlank()) return Map.of();
-            return mapper.readValue(entity.getAttributesJson(),
-                new com.fasterxml.jackson.core.type.TypeReference<>() {});
-        } catch (Exception e) {
-            return Map.of();
-        }
+        return EntityJson.attributes(mapper, entity.getAttributesJson());
     }
 
     private List<String> selectedTraits(GameEntity entity) {

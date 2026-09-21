@@ -4,6 +4,7 @@ import com.lwe.core.domain.GameEntity;
 import com.lwe.core.repository.GameEntityRepository;
 import com.lwe.core.repository.WorldRepository;
 import com.lwe.core.util.EntityAccess;
+import com.lwe.core.util.EntityJson;
 import com.lwe.core.util.RuleNames;
 import com.lwe.core.util.WorldAccess;
 import org.springframework.stereotype.Service;
@@ -111,26 +112,11 @@ public class EntityService {
     }
 
     private java.util.Map<String, Integer> parseAttributeMap(String json) {
-        if (json == null || json.isBlank()) return java.util.Map.of();
-        try {
-            return objectMapper.readValue(json, ATTR_MAP);
-        } catch (Exception e) {
-            return java.util.Map.of();
-        }
+        return EntityJson.attributes(objectMapper, json);
     }
 
     private java.util.List<String> selectedTraits(GameEntity entity) {
-        if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank())
-            return java.util.List.of();
-        try {
-            var node = objectMapper.readTree(entity.getMetadataJson()).path("traits");
-            if (!node.isArray()) return java.util.List.of();
-            var out = new java.util.ArrayList<String>();
-            node.forEach(n -> { if (n.isTextual()) out.add(n.asText()); });
-            return out;
-        } catch (Exception e) {
-            return java.util.List.of();
-        }
+        return EntityJson.traits(objectMapper, entity.getMetadataJson());
     }
 
     public List<GameEntity> list(UUID worldId, UUID userId, String entityType) {
@@ -241,14 +227,6 @@ public class EntityService {
     }
 
     @Transactional
-    public GameEntity updateProgression(UUID entityId, UUID userId, int experiencePoints, Integer level) {
-        var entity = getById(entityId, userId);
-        entityAccess.checkControl(entity, userId); // F1
-        entity.setExperiencePoints(experiencePoints);
-        return entityRepo.save(entity);
-    }
-
-    @Transactional
     public GameEntity updateSkills(UUID entityId, UUID userId, Map<String, Integer> skills) {
         return updateSkills(entityId, userId, skills, null);
     }
@@ -338,13 +316,7 @@ public class EntityService {
     }
 
     private Map<String, Integer> parseAttrs(GameEntity entity) {
-        try {
-            var raw = entity.getAttributesJson();
-            if (raw == null || raw.isBlank()) return Map.of();
-            return objectMapper.readValue(raw, ATTR_MAP);
-        } catch (Exception e) {
-            return Map.of();
-        }
+        return EntityJson.attributes(objectMapper, entity.getAttributesJson());
     }
 
     /** Entity mit Schreib-Lock laden (verhindert Metadata-Races bei fate/conditions). */

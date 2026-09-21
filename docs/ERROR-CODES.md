@@ -115,6 +115,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `ENTITY_POSITION_INVALID` | 400 | Position außerhalb der Karte oder belegt |
 | `ENTITY_FACTION_NOT_FOUND` | 400 | Referenzierter `faction_id` existiert nicht |
 | `UNKNOWN_CONDITION` | 422 | Zustand nicht im Katalog des Systems (`rules.conditions`) |
+| `SKILL_MAX_EXCEEDED` | 422 | Skill-Wert über `advancement.maxRule` (z. B. höchstes beteiligtes Attribut + 2) |
 | `FATE_NONE_LEFT` | 422 | Keine Schicksalspunkte mehr zum Ausgeben |
 
 ### 3.5 Game Systems (`GAME_SYSTEM_*`)
@@ -158,6 +159,8 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `ROLL_ENTITY_NOT_CHARACTER` | 422 | Entity ist keine Probe-fähige Figur (z. B. Fraktion) |
 | `ROLL_TARGET_REQUIRED` | 400 | Probe benötigt ein Target-Wert, aber keins übergeben |
 | `ROLL_SKILL_NOT_FOUND` | 422 | Skill ist im Regelwerk nicht definiert (3W20-Probe ohne Attribut-Zuordnung) |
+
+> **Hinweis:** Der Endpunkt `POST /rolls` liefert Fehler wie `ENTITY_NOT_FOUND`/`WORLD_NOT_FOUND` im 200er-Response-Feld `error` (kein HTTP-Fehler); die `ROLL_*`-Codes gelten für Probe-/Würfel-Validierung.
 | `INVALID_INPUT` | 400 | Ungültiges Argument/Parameter (z. B. nicht parsebare Dice-Expression, malformed UUID) |
 
 ### 3.8 Combat (`COMBAT_*`)
@@ -178,10 +181,9 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `COMBAT_ACTION_BLOCKED` | 422 | Aktion durch aktiven Zustand gesperrt (`conditions[].blocks`, T3) |
 | `COMBAT_ATTACK_UNRESOLVABLE` | 422 | Konfigurierter Angriffs-/Zielwert nicht ableitbar (kaputte Formel/fehlender Skill) — Angriff blockiert statt stiller Treffer (ADR-014) |
 | `COMBAT_EFFECTS_INVALID` | 422 | Ability-Effekte/Heil-Ausdruck nicht lesbar oder nicht parsbar — Aktion blockiert statt stiller 0-Wirkung |
-| `COMBAT_TARGET_DEFEATED` | 422 | Ziel bereits besiegt (Heilung weiter erlaubt) |
-| `COMBAT_ACTOR_DEFEATED` | 422 | Actor besiegt — kann nicht handeln |
-
 | `SOCIAL_ACTION_UNKNOWN` | 422 | `socialAction` nicht in `social_actions[]` konfiguriert (T7) |
+| `SOCIAL_SKILL_MISMATCH` | 422 | `skillName` passt nicht zum Skill der sozialen Aktion |
+| `SOCIAL_TARGET_INVALID` | 422 | Sozialziel fehlt oder gehört nicht zur Welt |
 
 ### 3.8a Zauber (`CAST_*`)
 
@@ -213,6 +215,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `NODE_NOT_FOUND` | 400 | Adventure-Node existiert nicht |
 | `NODE_NOT_IN_ADVENTURE` | 422 | Node gehört nicht zu diesem Abenteuer |
 | `ADVENTURE_CHOICE_INVALID` | 422 | Choice gehört nicht zum aktuellen Node (Runde 1, F2) |
+| `ADVENTURE_SKILLCHECK_INVALID` | 422 | Skillcheck-JSON unlesbar oder ohne Skill und System ohne Skills (R3) |
 
 ### 3.10 NPC Intents (`INTENT_*`)
 
@@ -237,6 +240,7 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `INTENT_NOT_PENDING` | 409 | Intent wurde bereits approved/rejected/executed |
 | `INTENT_APPROVAL_REQUIRED` | 422 | Welt ist im `suggest`-Modus, DM-Approval fehlt |
 | `INTENT_REJECTED_BY_DM` | 422 | DM hat Intent abgelehnt (in `rejection_reason` begründet) |
+| `INVALID_BULK_ACTION` | 400 | Bulk-Aktion im DM-Queue-Panel unbekannt |
 
 ### 3.11 Events (`EVENT_*`)
 

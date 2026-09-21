@@ -342,10 +342,6 @@ public class CharacterSheetService {
         return map;
     }
 
-    private GameSystem resolveGameSystem(World world) {
-        return rulesLoader.loadSystem(world);
-    }
-
     private List<SheetResponse.AbilityInfo> parseAbilities(Map<String, Object> rules) {
         var raw = (List<Map<String, Object>>) rules.getOrDefault("abilities", List.of());
         return raw.stream().map(a -> {

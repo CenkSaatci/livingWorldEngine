@@ -131,9 +131,6 @@ public class CombatController {
         UUID targetId
     ) {}
 
-    public record CombatActionResultResponse(String actionType, int totalDamage,
-                                              int apRemaining, boolean success) {}
-
     public record CombatSessionWithParticipants(CombatSessionResponse session,
                                                   List<ParticipantResponse> participants,
                                                   ActionResultResponse result) {
