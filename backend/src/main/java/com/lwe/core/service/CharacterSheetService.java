@@ -33,6 +33,7 @@ public class CharacterSheetService {
     private final ConditionService conditionService;
     private final com.lwe.core.util.EntityAccess entityAccess;
     private final CampaignMemberService campaignMemberService;
+    private final CurrencyService currencyService;
 
     private static final TypeReference<Map<String, Object>> OVERRIDE_TYPE = new TypeReference<>() {};
 
@@ -45,7 +46,8 @@ public class CharacterSheetService {
                                   RulesLoader rulesLoader,
                                   ObjectMapper objectMapper,
                                   ConditionService conditionService,
-                                  CampaignMemberService campaignMemberService) {
+                                  CampaignMemberService campaignMemberService,
+                                  CurrencyService currencyService) {
         this.objectMapper = objectMapper;
         this.entityRepo = entityRepo;
         this.worldRepo = worldRepo;
@@ -57,6 +59,7 @@ public class CharacterSheetService {
         this.rulesLoader = rulesLoader;
         this.conditionService = conditionService;
         this.campaignMemberService = campaignMemberService;
+        this.currencyService = currencyService;
     }
 
     public SheetResponse getSheet(UUID entityId, UUID userId) {
@@ -209,11 +212,13 @@ public class CharacterSheetService {
             .map(Object::toString)
             .toList();
 
+        int money = currencyService.money(entity);
         return new SheetResponse(
             new SheetResponse.EntityInfo(entity.getId().toString(), entity.getName(), entity.getEntityType()),
             entity.getExperiencePoints(), level, fateCurrent, fateMax, damageArmor(entity),
             attributes, derivedValues, skills, conditionals, abilities,
-            activeConditions, conditionCatalog, difficultyLevels(rules)
+            activeConditions, conditionCatalog, difficultyLevels(rules),
+            money, currencyService.format(money, rules)
         );
     }
 

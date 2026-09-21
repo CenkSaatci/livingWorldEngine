@@ -73,6 +73,8 @@ public class RuleSchemaValidator {
             "psionics":         { "type": "object" },
             "conditionals":     { "type": "array", "items": { "type": "object" } },
             "conditions":       { "type": "array", "items": { "$ref": "#/$defs/condition" } },
+            "currency":         { "$ref": "#/$defs/currency" },
+            "poi_actions":      { "type": "array", "items": { "$ref": "#/$defs/poiAction" } },
             "attributes": {
               "type": "array",
               "minItems": 1,
@@ -308,6 +310,71 @@ public class RuleSchemaValidator {
               "type": "string",
               "pattern": "^[0-9]+d[0-9]+([+-][a-z_0-9]+)?$",
               "description": "Ausdr\u00fccke wie '1d20+mod', '2d6+intelligenz', '1d8+st\u00e4rke', '1d20'"
+            },
+            "currency": {
+              "type": "object",
+              "required": ["denominations"],
+              "properties": {
+                "name": { "type": "string" },
+                "denominations": {
+                  "type": "array", "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "required": ["name", "factor"],
+                    "properties": {
+                      "name":   { "type": "string", "minLength": 1 },
+                      "abbr":   { "type": "string" },
+                      "factor": { "type": "integer", "minimum": 1 }
+                    }
+                  }
+                }
+              }
+            },
+            "poiAction": {
+              "type": "object",
+              "required": ["name"],
+              "properties": {
+                "name":          { "type": "string", "minLength": 1 },
+                "description":   { "type": "string" },
+                "chat":          { "type": "string", "enum": ["none", "public", "actor"] },
+                "requiresTrait": { "type": "string", "minLength": 1 },
+                "dmOnly":        { "type": "boolean" },
+                "probe":         { "$ref": "#/$defs/poiProbe" },
+                "trade":         { "$ref": "#/$defs/poiTrade" },
+                "effects":       { "type": "array", "items": { "$ref": "#/$defs/poiEffect" } }
+              }
+            },
+            "poiProbe": {
+              "type": "object",
+              "required": ["skill"],
+              "properties": {
+                "skill":      { "type": "string", "minLength": 1 },
+                "difficulty": { "type": "integer" },
+                "onSuccess":  { "type": "array", "items": { "$ref": "#/$defs/poiEffect" } },
+                "onFailure":  { "type": "array", "items": { "$ref": "#/$defs/poiEffect" } }
+              }
+            },
+            "poiTrade": {
+              "type": "object",
+              "properties": {
+                "buy":      { "type": "boolean" },
+                "sell":     { "type": "boolean" },
+                "sellRate": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+              }
+            },
+            "poiEffect": {
+              "type": "object",
+              "required": ["type"],
+              "properties": {
+                "type":   { "enum": ["money", "item", "heal", "condition", "fate", "rest", "text"] },
+                "amount": { },
+                "name":   { "type": "string" },
+                "qty":    { "type": "integer" },
+                "rounds": { "type": "integer", "minimum": 1 },
+                "remove": { "type": "boolean" },
+                "mode":   { "type": "string", "enum": ["short", "long"] },
+                "text":   { "type": "string" }
+              }
             }
           }
         }
@@ -375,7 +442,110 @@ public class RuleSchemaValidator {
             out.add(new ValidationError("$.dice_mechanics.combat.damage",
                 "Schadensausdruck '" + combatDamage.asText() + "' nicht parsbar"));
         }
+        checkCurrency(rules.path("currency"), out);
+        checkPoiActions(rules.path("poi_actions"), out);
         return out;
+    }
+
+    /** ADR-015: Währung — Sorten eindeutig (case-insensitiv). */
+    private void checkCurrency(com.fasterxml.jackson.databind.JsonNode currency,
+                               List<ValidationError> out) {
+        var denominations = currency.path("denominations");
+        if (!denominations.isArray()) return;
+        var seen = new java.util.HashSet<String>();
+        for (var d : denominations) {
+            for (var key : new String[]{"name", "abbr"}) {
+                var value = d.path(key);
+                if (!value.isTextual() || value.asText().isBlank()) continue;
+                if (!seen.add(key + ":" + value.asText().toLowerCase(java.util.Locale.ROOT))) {
+                    out.add(new ValidationError("$.currency.denominations",
+                        "Doppelte Sorte '" + value.asText() + "' (" + key + ", case-insensitiv)"));
+                }
+            }
+        }
+    }
+
+    /** ADR-015: POI-Aktionen — Namen eindeutig, Effekte vollständig (fehlend ok, kaputt Fehler). */
+    private void checkPoiActions(com.fasterxml.jackson.databind.JsonNode actions,
+                                 List<ValidationError> out) {
+        if (!actions.isArray()) return;
+        var seen = new java.util.HashSet<String>();
+        for (var action : actions) {
+            var name = action.path("name");
+            if (name.isTextual() && !name.asText().isBlank()
+                && !seen.add(name.asText().toLowerCase(java.util.Locale.ROOT))) {
+                out.add(new ValidationError("$.poi_actions",
+                    "Doppelte Aktion '" + name.asText() + "' (case-insensitiv)"));
+            }
+            checkPoiEffects(action.path("effects"), "$.poi_actions.effects", out);
+            var probe = action.path("probe");
+            if (probe.isObject()) {
+                checkPoiEffects(probe.path("onSuccess"), "$.poi_actions.probe.onSuccess", out);
+                checkPoiEffects(probe.path("onFailure"), "$.poi_actions.probe.onFailure", out);
+            }
+        }
+    }
+
+    private void checkPoiEffects(com.fasterxml.jackson.databind.JsonNode effects, String path,
+                                 List<ValidationError> out) {
+        if (!effects.isArray()) return;
+        for (var effect : effects) {
+            var type = effect.path("type");
+            if (!type.isTextual()) continue; // Schema deckt fehlenden Typ ab
+            var t = type.asText();
+            switch (t) {
+                case "money", "fate" -> requireNumber(effect, "amount", path, out);
+                case "heal" -> {
+                    var amount = effect.path("amount");
+                    if (amount.isNumber()) break;
+                    var expr = amount.isTextual() ? amount.asText() : null;
+                    if (expr == null || (!"full".equalsIgnoreCase(expr)
+                        && !isParseableDice(expr))) {
+                        out.add(new ValidationError(path,
+                            "heal-Effekt braucht Zahl, Würfelausdruck oder 'full'"));
+                    }
+                }
+                case "item" -> {
+                    if (!isNonBlank(effect.path("name"))) {
+                        out.add(new ValidationError(path, "item-Effekt braucht einen Namen"));
+                    }
+                    var qty = effect.path("qty");
+                    if (qty.isMissingNode() || qty.isNull() || !qty.isNumber() || qty.asInt() == 0) {
+                        out.add(new ValidationError(path, "item-Effekt braucht qty != 0"));
+                    }
+                }
+                case "condition" -> {
+                    if (!isNonBlank(effect.path("name"))) {
+                        out.add(new ValidationError(path, "condition-Effekt braucht einen Namen"));
+                    }
+                }
+                case "rest" -> {
+                    var mode = effect.path("mode");
+                    if (!mode.isTextual() || mode.asText().isBlank()) {
+                        out.add(new ValidationError(path, "rest-Effekt braucht mode (short|long)"));
+                    }
+                }
+                default -> { /* text: Freitext, Schema prüft den Typ */ }
+            }
+        }
+    }
+
+    private static void requireNumber(com.fasterxml.jackson.databind.JsonNode effect, String field,
+                                      String path, List<ValidationError> out) {
+        var node = effect.path(field);
+        if (!node.isNumber()) {
+            out.add(new ValidationError(path, effect.path("type").asText()
+                + "-Effekt braucht eine Zahl in '" + field + "'"));
+        }
+    }
+
+    private static boolean isNonBlank(com.fasterxml.jackson.databind.JsonNode node) {
+        return node.isTextual() && !node.asText().isBlank();
+    }
+
+    private static boolean isParseableDice(String expr) {
+        // Nur Form prüfen — Konstruktion würde würfeln (RNG) und ist hier unnötig.
+        return expr.strip().matches("^\\d+d\\d+([+-]\\d+)?$");
     }
 
     /**

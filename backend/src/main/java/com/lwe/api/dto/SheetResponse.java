@@ -17,7 +17,9 @@ public record SheetResponse(
     List<AbilityInfo> abilities,
     List<ConditionInfo> activeConditions,
     List<String> conditionCatalog,
-    List<DifficultyInfo> difficultyLevels
+    List<DifficultyInfo> difficultyLevels,
+    int money,
+    String moneyText
 ) {
     public record EntityInfo(String id, String name, String entityType) {}
     public record AttributeInfo(String name, int value, double modifier, int min, int max, String description) {}

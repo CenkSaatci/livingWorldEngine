@@ -202,6 +202,29 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `TRADE_WORLD_MISMATCH` / `TRADE_NOT_PARTICIPANT` | 403 | Weltfremd / kein Teilnehmer |
 | `TRADE_SELF` / `TRADE_SELF_ACCEPT` / `TRADE_NOT_PROPOSED` / `TRADE_INVALID_QUANTITY` / `TRADE_INSUFFICIENT_QUANTITY` | 422 | Selbsthandel, Annahme des eigenen Angebots, geschlossen, Menge ungültig/fehlend |
 
+### 3.8c POI-Aktionen & Händler (`POI_*`, `MERCHANT_*`, `MONEY_*`) — ADR-015
+
+| Code | HTTP | Bedeutung |
+|---|---|---|
+| `POI_ACTION_UNKNOWN` | 404 | Aktion nicht im Regel-Katalog |
+| `POI_ACTION_NOT_AVAILABLE` | 422 | Aktion nicht an diesem Ort/NPC gebunden |
+| `POI_ACTION_FORBIDDEN` | 403 | `dmOnly`-Aktion ohne Leiterrechte |
+| `POI_ACTION_TRAIT_REQUIRED` | 422 | `requiresTrait` fehlt am Charakter |
+| `POI_ACTION_INVALID` | 422 | Kaputter Katalog-Eintrag zur Laufzeit (Effekt/Probe unvollständig) |
+| `POI_ITEM_UNKNOWN` | 422 | Item-Effekt verweist auf unbekanntes Item |
+| `POI_ITEM_NOT_OWNED` | 422 | Item-Effekt verlangt mehr, als der Charakter hat |
+| `MONEY_INSUFFICIENT` | 422 | Kosten nicht leistbar (auch beim Kauf) |
+| `MERCHANT_NOT_FOUND` | 404 | NPC ist kein Händler / nicht an diesem Ort |
+| `MERCHANT_ITEM_UNKNOWN` | 422 | Sortiments-Item existiert nicht im System |
+| `ITEM_NOT_IN_ASSORTMENT` | 422 | Item steht nicht im Sortiment |
+| `ITEM_NOT_OWNED` | 422 | Verkauf ohne Bestand beim Charakter |
+| `TRADE_INVALID_QUANTITY` | 422 | Menge < 1 |
+| `UNKNOWN_CONDITION` | 422 | Zustands-Effekt verweist auf unbekannten Zustand (Katalog) |
+
+> `chat: actor` erzeugt **keine** persistierte Chat-Nachricht, sondern eine transiente
+> Direktnachricht (`/user/queue/poi`) plus Ergebnis-Payload — der Welt-Chatverlauf
+> bleibt öffentlich.
+
 ### 3.9 Adventures (`ADVENTURE_*`)
 
 | Code | HTTP | Bedeutung |

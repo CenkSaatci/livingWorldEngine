@@ -49,7 +49,8 @@ class CharacterSheetServiceTest {
         service = new CharacterSheetService(entityRepo, worldRepo, worldAccess,
             new com.lwe.core.util.EntityAccess(entityRepo, worldAccess),
             modifierService, derivedValueService, levelUpService, rulesLoader, objectMapper,
-            new ConditionService(objectMapper), campaignMemberService);
+            new ConditionService(objectMapper), campaignMemberService,
+            new CurrencyService(objectMapper));
         lenient().doNothing().when(worldAccess).requireAccess(any(), any());
         lenient().when(levelUpService.getLevel(any(), any())).thenReturn(1);
     }

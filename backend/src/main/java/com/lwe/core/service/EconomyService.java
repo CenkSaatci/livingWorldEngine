@@ -44,7 +44,7 @@ public class EconomyService {
         var worldId = regionRepo.findById(loc.getRegionId())
             .orElseThrow(() -> new RuntimeException("REGION_NOT_FOUND")).getWorldId();
         worldAccess.requireRead(worldId, userId);
-        var wealthFactor = 1.0 + (loc.getWealth() - 5) * 0.1;
+        var wealthFactor = wealthFactor(loc.getWealth());
 
         var filter = "{\"location_id\":\"" + locationId + "\"}";
         var npcs = entityRepo.findByWorldIdAndMetadataJsonFilter(worldId, filter);
@@ -76,6 +76,11 @@ public class EconomyService {
         }
 
         return market;
+    }
+
+    /** Wohlstandsfaktor (ADR-015: einzige Preisformel-Quelle für Markt und Händler). */
+    public double wealthFactor(int wealth) {
+        return 1.0 + (wealth - 5) * 0.1;
     }
 
     private static final Map<String, Integer> BASE_PRICES = Map.ofEntries(
