@@ -55,4 +55,27 @@ describe('combatStore', () => {
     useCombatStore.getState().clearCombat();
     expect(useCombatStore.getState().session).toBeNull();
   });
+
+  it('behält ein lebendes Ziel über setSession hinweg', () => {
+    useCombatStore.getState().setSession(mockSession, mockParticipants);
+    useCombatStore.getState().setTargetEntityId('e1');
+
+    useCombatStore.getState().setSession(mockSession, mockParticipants);
+
+    expect(useCombatStore.getState().targetEntityId).toBe('e1');
+  });
+
+  it('verwirft ein besiebtes oder fehlendes Ziel', () => {
+    useCombatStore.getState().setSession(mockSession, mockParticipants);
+    useCombatStore.getState().setTargetEntityId('e1');
+
+    // Ziel ist besiegt (0 HP) -> Auswahl fällt weg.
+    useCombatStore.getState().setSession(mockSession, [{ ...mockParticipants[0], hpCurrent: 0 }]);
+    expect(useCombatStore.getState().targetEntityId).toBeNull();
+
+    useCombatStore.getState().setTargetEntityId('e1');
+    // Ziel ist nicht mehr in der Aufstellung.
+    useCombatStore.getState().setSession(mockSession, []);
+    expect(useCombatStore.getState().targetEntityId).toBeNull();
+  });
 });

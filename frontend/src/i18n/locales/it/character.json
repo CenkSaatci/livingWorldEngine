@@ -51,7 +51,13 @@
     "difficulty": "Difficoltà",
     "probeDetails3d20": "Contano i dadi individuali — espandi dettagli",
     "closeDetails": "Chiudi dettagli",
-    "cancel": "Annulla"
+    "cancel": "Annulla",
+    "attrSaveFailed": "Salvataggio attributo non riuscito",
+    "skillSaveFailed": "Salvataggio abilità non riuscito",
+    "overrideTag": "Override",
+    "useAbility": "Usa",
+    "active": "attivo",
+    "passive": "passivo"
   },
   "attribute": {
     "modifier": "Modifier"

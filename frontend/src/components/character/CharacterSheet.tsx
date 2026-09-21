@@ -17,6 +17,7 @@ const VALUE_ICONS: Record<string, React.ReactNode> = {
 };
 
 function AttrInput({ name, value, min, max, entityId, campaignId, allAttributes, onSaved }: { name: string; value: number; min: number; max: number; entityId: string; campaignId: string | null; allAttributes: Record<string, number>; onSaved: () => void }) {
+  const { t } = useTranslation('character');
   const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [editVal, setEditVal] = useState(String(value));
@@ -38,7 +39,7 @@ function AttrInput({ name, value, min, max, entityId, campaignId, allAttributes,
       );
       onSaved();
       setEditing(false);
-    } catch { toast.error('Failed to save attribute'); setEditVal(String(value)); setEditing(false); }
+    } catch { toast.error(t('sheet.attrSaveFailed')!); setEditVal(String(value)); setEditing(false); }
     finally { setSaving(false); }
   };
 
@@ -345,7 +346,7 @@ function SkillRow({ skill, entityId, skillOverrides, setSkillOverrides, onSaved,
       setSkillOverrides(updated);
       onSaved();
       setEditing(false);
-    } catch { toast.error('Failed to save skill'); setEditVal(String(skill.total)); setEditing(false); }
+    } catch { toast.error(t('sheet.skillSaveFailed')!); setEditVal(String(skill.total)); setEditing(false); }
     finally { setSaving(false); }
   };
 
@@ -375,7 +376,7 @@ function SkillRow({ skill, entityId, skillOverrides, setSkillOverrides, onSaved,
               {skill.total > 0 ? '+' : ''}{skill.total}
             </span>
             {skill.perCharacterValue != null && (
-              <span className="text-[9px] text-accent/60 italic">override</span>
+              <span className="text-[9px] text-accent/60 italic">{t('sheet.overrideTag')}</span>
             )}
             {skill.advanceCost != null && (
               <span className="text-[9px] text-text-secondary">{t('sheet.advanceCost', { cost: skill.advanceCost })}</span>
@@ -431,7 +432,7 @@ function AbilityRow({ ability, attributes }: {
       <div className="flex items-center justify-between rounded bg-bg-primary/30 px-2 py-1 text-xs">
         <div className="flex items-center gap-2">
           <span className="text-text-primary font-medium">{ability.name}</span>
-          <span className="text-[9px] uppercase text-text-secondary">passive</span>
+          <span className="text-[9px] uppercase text-text-secondary">{t('sheet.passive')}</span>
         </div>
         {ability.effect && (
           <span className="text-[10px] text-text-secondary truncate max-w-[200px]">{ability.effect}</span>
@@ -444,7 +445,7 @@ function AbilityRow({ ability, attributes }: {
     <div className="flex items-center justify-between rounded bg-accent/10 px-2 py-1 text-xs">
       <div className="flex items-center gap-2">
         <span className="text-text-primary font-medium">{ability.name}</span>
-        <span className="text-[9px] uppercase text-accent">active</span>
+        <span className="text-[9px] uppercase text-accent">{t('sheet.active')}</span>
         {ability.apCost > 0 && (
           <span className="text-[10px] text-text-secondary">AP: {ability.apCost}</span>
         )}
@@ -456,7 +457,7 @@ function AbilityRow({ ability, attributes }: {
         <button onClick={handleUse}
           className="rounded bg-accent px-2 py-0.5 text-[10px] text-white hover:bg-accent/80 disabled:opacity-40"
         >
-          Use
+          {t('sheet.useAbility')}
         </button>
           {showDetail && result !== null && (
             <span className="text-xs font-mono text-accent font-bold">{result}</span>

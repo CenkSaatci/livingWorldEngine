@@ -51,7 +51,13 @@
     "difficulty": "Zorluk",
     "probeDetails3d20": "Tek zarlar sayılır — ayrıntıları aç",
     "closeDetails": "Ayrıntıları kapat",
-    "cancel": "İptal"
+    "cancel": "İptal",
+    "attrSaveFailed": "Özellik kaydedilemedi",
+    "skillSaveFailed": "Yetenek kaydedilemedi",
+    "overrideTag": "Geçersiz kılma",
+    "useAbility": "Kullan",
+    "active": "etkin",
+    "passive": "pasif"
   },
   "attribute": {
     "modifier": "Modifier"

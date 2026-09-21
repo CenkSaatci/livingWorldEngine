@@ -51,7 +51,13 @@
     "difficulty": "Difficulty",
     "probeDetails3d20": "Individual dice count, total is informational — expand details",
     "closeDetails": "Close details",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "attrSaveFailed": "Failed to save attribute",
+    "skillSaveFailed": "Failed to save skill",
+    "overrideTag": "Override",
+    "useAbility": "Use",
+    "active": "active",
+    "passive": "passive"
   },
   "attribute": {
     "modifier": "Modifier"

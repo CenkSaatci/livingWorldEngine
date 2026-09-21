@@ -51,7 +51,13 @@
     "difficulty": "Schwierigkeit",
     "probeDetails3d20": "Einzelwürfe zählen, Summe ist nur Info — Details aufklappen",
     "closeDetails": "Details schließen",
-    "cancel": "Abbrechen"
+    "cancel": "Abbrechen",
+    "attrSaveFailed": "Fehler beim Speichern des Attributs",
+    "skillSaveFailed": "Fehler beim Speichern der Fertigkeit",
+    "overrideTag": "Override",
+    "useAbility": "Anwenden",
+    "active": "aktiv",
+    "passive": "passiv"
   },
   "attribute": {
     "modifier": "Modifikator"

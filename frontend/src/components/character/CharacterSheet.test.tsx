@@ -104,7 +104,7 @@ describe('CharacterSheet', () => {
     (useSheet as any).mockReturnValue({ data: mockSheet, loading: false, error: null, refetch: vi.fn() });
     const { container } = render(<CharacterSheet entityId="e1" />);
     expect(container.textContent).toContain('Angriff');
-    expect(container.textContent).toContain('active');
+    expect(container.textContent).toContain('aktiv');
     expect(container.textContent).toContain('AP: 1');
   });
 

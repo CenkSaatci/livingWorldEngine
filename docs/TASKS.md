@@ -2653,3 +2653,29 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Schema:** `skills[].kind`, `combat.damage_attr_bonus`; Semantik-Checks (case-insensitive Kollisionen, Angriffs-Art ≠ combat); DSA-Beispiele mit Kampf-Skills + KTW/Schwellen-Formeln + `ausweichen`.
 - **Rechte (V106 `creator_id`):** nur Ersteller verwaltet Leiter-Set (+ Übergabe-Endpunkt, Legacy-Fallback Welt-Owner); Spieler sehen nur eigene PCs (+ NPCs), Sheets/Roster entsprechend gegatet; `?forTrade=true` für Handelskandidaten.
 - **Nachweise:** Backend 550, Frontend 192, E2E 25, tsc clean; live verifiziert (Mira at 17→7/pa 17→4, CREATOR_REQUIRED, 403 Sheets/Roster, Handel).
+
+---
+
+## Polish-Runde 2026-09-21 (UI/Editor/A11y/Vision)
+
+> Durchgeführt während der Testpause (keine UI-Tests möglich). Stand: Backend 588, Frontend 212, `tsc` clean.
+
+### Erledigt
+- **Karten-Editor:** POIs bearbeiten/löschen/verschieben, Typ-Icons (Stadt/Dorf/Ruine/…), Regionen umbenennen/löschen/Fläche leeren, stabile Regionsfarben (ID-Hash), Zeichen-Undo + Punktzähler, Upload-Validierung (Typ/10 MB) mit Fehler-Toast + Preview-Rollback, Modals mit `role=dialog`/Escape/Backdrop, alle Texte über `map.*`-i18n, Debug-`console.*` entfernt (+14 Tests: `mapEditor`-Helfer, `MapEditorPage`).
+- **i18n:** App-Init respektiert Speicher/Detector (kein hartes EN mehr) und überschreibt das Test-Setup nicht; neue Keys (`map.editor.*`, `combat.*`, `errors.COMBAT_*`/`CONFLICT`, `rollResult`, `sheet.*`) in allen 6 Sprachen; fehlende Keys `location.deleteConfirm`, `editor.draw_help`/`place_help_*` ergänzt.
+- **Kampf-UI:** Ziel bleibt nach Aktionen erhalten (Store-Test), Ziel-Filter nach HP statt AP, Fähigkeiten ohne Pflichtziel, „Treffer ohne Schaden"-Feedback, Server-Fehlercodes → `errors.*`-i18n, Kampf-Ende mit Confirm + Sperre, `bonus_action`/`reaction`-Labels.
+- **A11y:** `aria-label` (Chat-Send, Combat-Back, DiceModal-X, ProbeRoller-Würfel, Skill-Save/Cancel), `role=dialog` (DiceModal, Probe-Details), responsives DiceModal.
+- **Vision:** Wurf-Posten als stabile Codes (`RollPart.kind`) + Frontend-i18n statt deutscher Payload-Labels.
+- **Aufräumen:** `EntityJson` überall, Dead Code entfernt (`RuleNames.containsKey/contains`, `resolveGameSystem`, toter `updateProgression`/DTO), Utils-Tests (`EntityJson`/`RuleNames`/`EngineResolver`), ERROR-CODES-Drift bereinigt.
+
+### Offen (priorisiert für die nächste Runde)
+1. **Wizard:** Save-Flags (`forceRename`/`bumpVersion`), Validierungsliste + Step-Sprung/Feld-Highlight, fehlende `v_*`-Keys (H-7/H-8).
+2. **GameSystemPage** vollständig i18n (Buttons, Toasts, Delete-Dialog; Warnungen als Liste statt Tooltip).
+3. **d100-Anzeige:** Schwellwert im `ProbeResponse` + UI „43 ≤ 55 ✓" (CoC).
+4. **Fail-open-Reste:** korruptes Regel-JSON (geloggt, aber Defaults), Engine-Fallback (geloggt), NPC-Intent wendet Schaden nicht auf HP an.
+5. **Backend-Texte i18n-fähig:** Kampf-Chat-Meldungen + Wetter-Labels als Codes statt deutscher Strings.
+6. **Initiative-Fallback `geschicklichkeit`** (letzter Systemname im Engine-Pfad); seedbarer RNG (ADR-014) oder ADR anpassen.
+7. **Weitere i18n-Hardcodes:** QuestDetailPage (komplett EN + Endlos-Spinner), RollLog-JSON-Dump, ErrorBoundary, Kontrast „override"-Tag.
+8. **Lint/Format-Gate:** 42 `no-explicit-any` (`types/gameSystem.ts` + Tests) + 10 `exhaustive-deps`; Prettier repo-weit rot.
+9. **Kontrakte:** V106-Constraint „Creator muss DM sein"; Paginierungs-/Response-Vereinheitlichung.
+10. **Vision-Kleinigkeiten:** Legacy-Creator-UI-Gate, `kind`-Gruppierung statt Badge, Formel-Hilfe mit Skills, Ersteller-Übergabe-Dialog.

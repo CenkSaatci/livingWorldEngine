@@ -51,7 +51,13 @@
     "difficulty": "Dificultad",
     "probeDetails3d20": "Cuentan los dados individuales — desplegar detalles",
     "closeDetails": "Cerrar detalles",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "attrSaveFailed": "Error al guardar el atributo",
+    "skillSaveFailed": "Error al guardar la habilidad",
+    "overrideTag": "Anulación",
+    "useAbility": "Usar",
+    "active": "activo",
+    "passive": "pasivo"
   },
   "attribute": {
     "modifier": "Modifier"
