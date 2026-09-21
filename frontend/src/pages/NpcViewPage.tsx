@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Briefcase, Heart, HeartOff, Swords, Handshake, Minus } from 'lucide-react';
+import { ArrowLeft, Briefcase, Heart, HeartOff, Swords, Handshake, Minus, ShoppingCart } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { useApiGet } from '../hooks/useApiGet';
 import { useActiveCampaign } from '../store/campaignStore';
@@ -72,6 +72,22 @@ const NPC_SERVICES = [
   'identification',
 ];
 
+/** Sortiment-Editor (ADR-015): eine Zeile pro Item, optional `Name = Preis`. */
+function parseShopList(raw: string): { item: string; price?: number }[] {
+  return raw
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [item, priceRaw] = line.split('=').map((p) => p.trim());
+      const price = Number(priceRaw);
+      return priceRaw !== undefined && priceRaw !== '' && !Number.isNaN(price)
+        ? { item, price }
+        : { item };
+    })
+    .filter((o) => o.item.length > 0);
+}
+
 export default function NpcViewPage() {
   const { t } = useTranslation('common');
   const { id, npcId } = useParams<{ id: string; npcId: string }>();
@@ -124,6 +140,8 @@ export default function NpcViewPage() {
   const [editGoals, setEditGoals] = useState('');
   const [editServices, setEditServices] = useState<string[]>([]);
   const [editPriceMod, setEditPriceMod] = useState('');
+  const [editIsMerchant, setEditIsMerchant] = useState(false);
+  const [editShop, setEditShop] = useState('');
   const [saving, setSaving] = useState(false);
 
   const [factions, setFactions] = useState<FactionSummary[]>([]);
@@ -175,9 +193,9 @@ export default function NpcViewPage() {
 
   if (loading || !npc) return <LoadingSpinner size="lg" text="Loading NPC…" />;
 
-  let meta: Record<string, string | string[] | number | undefined> = {};
+  let meta: Record<string, unknown> = {};
   try {
-    meta = JSON.parse(npc.metadataJson) as Record<string, string | string[] | number | undefined>;
+    meta = JSON.parse(npc.metadataJson) as Record<string, unknown>;
   } catch {
     /* */
   }
@@ -187,6 +205,8 @@ export default function NpcViewPage() {
   const priceMod = meta.price_modifier as number | undefined;
   const relationships = (meta.relationships ?? {}) as Record<string, string>;
   const services = (meta.services_offered ?? []) as string[];
+  const isMerchant = meta.is_merchant === true;
+  const shopInventory = (meta.shop_inventory ?? []) as { item: string; price?: number }[];
 
   const pcs = (worldEntities ?? []).filter((e) => e.entityType === 'PC');
   const socialActions = socialRules?.socialActions ?? [];
@@ -232,6 +252,12 @@ export default function NpcViewPage() {
     setEditGoals(((meta.goals as string[]) ?? []).join(', '));
     setEditServices(((meta.services_offered as string[]) ?? []).filter((s) => typeof s === 'string'));
     setEditPriceMod(meta.price_modifier !== undefined ? String(meta.price_modifier) : '');
+    setEditIsMerchant(meta.is_merchant === true);
+    setEditShop(
+      (((meta.shop_inventory as { item: string; price?: number }[]) ?? []))
+        .map((o) => (o.price !== undefined ? `${o.item} = ${o.price}` : o.item))
+        .join('\n'),
+    );
     setEditing(true);
   };
 
@@ -266,6 +292,9 @@ export default function NpcViewPage() {
         'price_modifier',
         editPriceMod.trim() !== '' && !Number.isNaN(Number(editPriceMod)) ? Number(editPriceMod) : undefined,
       );
+      setOrDelete('is_merchant', editIsMerchant ? true : undefined);
+      const shop = parseShopList(editShop);
+      setOrDelete('shop_inventory', shop.length > 0 ? shop : undefined);
 
       await apiClient.patch(`/worlds/${worldId}/entities/${npc.id}`, {
         name: editName.trim(),
@@ -463,6 +492,29 @@ export default function NpcViewPage() {
               <p className="text-xs text-text-secondary">{t('entity.servicesEmpty')}</p>
             )}
           </section>
+
+          {/* Händler (ADR-015) */}
+          {isMerchant && (
+            <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
+              <h2 className="mb-3 flex items-center gap-2 font-heading text-text-primary">
+                <ShoppingCart size={16} className="text-accent" /> {t('entity.merchant')}
+              </h2>
+              {shopInventory.length > 0 ? (
+                <ul className="space-y-1 text-sm">
+                  {shopInventory.map((o) => (
+                    <li key={o.item} className="flex justify-between text-text-primary">
+                      <span>{o.item}</span>
+                      <span className="text-text-secondary">
+                        {o.price !== undefined ? o.price : t('entity.merchantPriceAuto')}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs text-text-secondary">{t('entity.merchantEmpty')}</p>
+              )}
+            </section>
+          )}
         </div>
 
         {/* Right: Relationships + Timeline */}
@@ -708,6 +760,29 @@ export default function NpcViewPage() {
                   inputMode="decimal"
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
                 />
+              </div>
+              <div>
+                <label className="flex items-center gap-2 text-xs text-text-secondary mb-1">
+                  <input
+                    type="checkbox"
+                    checked={editIsMerchant}
+                    onChange={(e) => setEditIsMerchant(e.target.checked)}
+                    className="accent-accent"
+                  />
+                  {t('entity.isMerchant')}
+                </label>
+                {editIsMerchant && (
+                  <>
+                    <textarea
+                      value={editShop}
+                      onChange={(e) => setEditShop(e.target.value)}
+                      rows={4}
+                      placeholder={t('entity.shopPlaceholder')}
+                      className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none"
+                    />
+                    <p className="mt-1 text-[10px] text-text-secondary">{t('entity.shopHint')}</p>
+                  </>
+                )}
               </div>
               <div className="flex gap-2 pt-2">
                 <button

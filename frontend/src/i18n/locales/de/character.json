@@ -57,7 +57,8 @@
     "overrideTag": "Override",
     "useAbility": "Anwenden",
     "active": "aktiv",
-    "passive": "passiv"
+    "passive": "passiv",
+    "money": "Geld"
   },
   "attribute": {
     "modifier": "Modifikator"

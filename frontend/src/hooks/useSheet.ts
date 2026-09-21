@@ -9,6 +9,8 @@ export interface SheetData {
   fatePoints?: number;
   fateMax?: number;
   damageArmor?: number;
+  money?: number;
+  moneyText?: string;
   attributes: { name: string; value: number; modifier: number; min: number; max: number; description?: string | null }[];
   derivedValues: { name: string; value: number; error?: string | null; description?: string | null }[];
   skills: { name: string; total: number; perCharacterValue?: number | null; advanceCost?: number | null; casting?: { resource: string; cost: number; requiresTrait?: string } | null; description?: string | null; kind?: string | null }[];

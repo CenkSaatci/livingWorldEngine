@@ -65,6 +65,15 @@ export function useWorldSocket(worldId: string | undefined) {
         },
         onConnect: () => {
           retryRef.current = 0;
+          // ADR-015: transiente POI-Direktnachrichten (chat: actor) an den Ausführenden.
+          client.subscribe('/user/queue/poi', (msg) => {
+            try {
+              const data = JSON.parse(msg.body) as { text?: string };
+              if (data.text) useToastStore.getState().addToast(data.text, 'info');
+            } catch {
+              /* ignore */
+            }
+          });
           subRef.current = client.subscribe(`/topic/world/${worldId}`, (msg) => {
             try {
               const event = JSON.parse(msg.body) as WorldEvent;

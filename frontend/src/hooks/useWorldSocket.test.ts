@@ -40,6 +40,13 @@ function getClient(): MockClient {
   return results[results.length - 1].value as MockClient;
 }
 
+/** World-Topic-Handler aus den subscribe-Aufrufen (ADR-015: davor kommt /user/queue/poi). */
+function worldHandler(client: MockClient): (msg: { body: string }) => void {
+  const call = client.subscribe.mock.calls.find((c) => String(c[0]).startsWith('/topic/world/'));
+  if (!call) throw new Error('world topic subscription missing');
+  return call[1];
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   (Stomp.client as ReturnType<typeof vi.fn>).mockImplementation(makeClient);
@@ -108,7 +115,7 @@ describe('useWorldSocket', () => {
     config.beforeConnect();
     config.onConnect();
 
-    const onMessage = client.subscribe.mock.calls[0][1];
+    const onMessage = worldHandler(client);
     onMessage({
       body: JSON.stringify({
         event_type: 'COMBAT_STARTED',
@@ -144,7 +151,7 @@ describe('useWorldSocket', () => {
     config.beforeConnect();
     config.onConnect();
 
-    const onMessage = client.subscribe.mock.calls[0][1];
+    const onMessage = worldHandler(client);
     onMessage({
       body: JSON.stringify({
         event_type: 'COMBAT_STARTED',

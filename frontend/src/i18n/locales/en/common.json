@@ -172,7 +172,13 @@
     "socialSuccess": "{{name}} reacts positively.",
     "socialFailure": "{{name}} reacts dismissively.",
     "socialUnknown": "Unknown social action",
-    "servicesEmpty": "No services — add via “Edit”."
+    "servicesEmpty": "No services — add via “Edit”.",
+    "merchant": "Merchant",
+    "merchantEmpty": "No assortment configured.",
+    "merchantPriceAuto": "auto price",
+    "isMerchant": "Merchant (assortment)",
+    "shopPlaceholder": "Healing potion\nLongsword = 120",
+    "shopHint": "One item per line: name, or name = price (fixed final price)."
   },
   "faction": {
     "create": "Create Faction",
@@ -389,20 +395,17 @@
   },
   "market": {
     "title": "Market",
-    "noServices": "No services available at this location.",
-    "service": "Service",
-    "base": "Base",
-    "price": "Price",
-    "svc_sell_weapons": "⚔️ Weapons",
-    "svc_repair": "🔧 Repair",
-    "svc_buy_ore": "⛏️ Ore",
-    "svc_sell_potions": "🧪 Potions",
-    "svc_training": "🏋️ Training",
-    "svc_healing": "❤️‍🩹 Healing",
-    "svc_inn_stay": "🍺 Inn",
-    "svc_buy_food": "🍞 Food",
-    "svc_sell_scrolls": "📜 Scrolls",
-    "svc_identification": "🔍 Identification"
+    "noMerchants": "No merchants at this location.",
+    "noAssortment": "No assortment.",
+    "item": "Item",
+    "buy": "Buy",
+    "sell": "Sell",
+    "quantity": "Qty",
+    "bought": "Bought",
+    "sold": "Sold",
+    "tradeDone": "{label}: {qty}× {item} for {total} ({money})",
+    "failed": "Trade failed",
+    "unresolved": "unknown item"
   },
   "adventure": {
     "success": "✅ Success!",
@@ -453,5 +456,33 @@
     "cancel": "Cancel",
     "renameConfirm": "Rename anyway"
   },
-  "rollResult": "Roll result: {{total}}"
+  "rollResult": "Roll result: {{total}}",
+  "poi": {
+    "title": "Actions",
+    "actor": "Character",
+    "empty": "No actions at this location.",
+    "cost": "Cost",
+    "failed": "Action failed",
+    "reasonDmOnly": "Game master only",
+    "reasonTrait": "Trait missing",
+    "reasonNotHere": "Not available here",
+    "money": "Money",
+    "probe": "{skill} check: {dice} = {total}",
+    "probeSuccess": "success",
+    "probeFailure": "failure",
+    "effect": {
+      "money": "Money {text} ({amount})",
+      "itemAdd": "received {qty}× {name}",
+      "itemRemove": "gave {qty}× {name}",
+      "heal": "healed {amount} HP",
+      "condition": "condition {name}",
+      "conditionRemove": "condition {name} removed",
+      "fate": "fate points {amount}",
+      "restShort": "Short rest",
+      "restLong": "Long rest"
+    }
+  },
+  "editor": {
+    "actions": "Actions"
+  }
 }

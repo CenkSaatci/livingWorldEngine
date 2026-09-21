@@ -5,6 +5,7 @@ import { ArrowLeft, MapPin } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { LocationDetail, type LocationData } from '../components/world/LocationDetail';
 import { EntityTimeline } from '../components/world/EntityTimeline';
+import { LocationActionsPanel } from '../components/world/LocationActionsPanel';
 
 const LOCATION_TYPES = [
   'village',
@@ -115,6 +116,11 @@ export default function LocationViewPage() {
           />
         </div>
         <div className="space-y-6">
+          <LocationActionsPanel
+            worldId={worldId}
+            locationId={locationId ?? ''}
+            onOpenMarket={() => navigate(`/worlds/${worldId}/locations/${locationId}/market`)}
+          />
           <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
             <EntityTimeline entityType="location" entityId={locationId ?? ''} />
           </section>

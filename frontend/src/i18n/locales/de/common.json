@@ -172,7 +172,13 @@
     "socialSuccess": "{{name}} reagiert positiv.",
     "socialFailure": "{{name}} reagiert ablehnend.",
     "socialUnknown": "Unbekannte soziale Aktion",
-    "servicesEmpty": "Keine Dienste — über „Bearbeiten“ hinzufügen."
+    "servicesEmpty": "Keine Dienste — über „Bearbeiten“ hinzufügen.",
+    "merchant": "Händler",
+    "merchantEmpty": "Kein Sortiment hinterlegt.",
+    "merchantPriceAuto": "Auto-Preis",
+    "isMerchant": "Händler (Sortiment)",
+    "shopPlaceholder": "Heiltrank\nLangschwert = 120",
+    "shopHint": "Eine Zeile pro Item: Name oder Name = Preis (fester Endpreis)."
   },
   "faction": {
     "create": "Fraktion erstellen",
@@ -389,20 +395,17 @@
   },
   "market": {
     "title": "Markt",
-    "noServices": "Keine Dienste an diesem Ort verfügbar.",
-    "service": "Dienst",
-    "base": "Basis",
-    "price": "Preis",
-    "svc_sell_weapons": "⚔️ Waffen",
-    "svc_repair": "🔧 Reparatur",
-    "svc_buy_ore": "⛏️ Erz",
-    "svc_sell_potions": "🧪 Tränke",
-    "svc_training": "🏋️ Training",
-    "svc_healing": "❤️‍🩹 Heilung",
-    "svc_inn_stay": "🍺 Herberge",
-    "svc_buy_food": "🍞 Essen",
-    "svc_sell_scrolls": "📜 Schriftrollen",
-    "svc_identification": "🔍 Identifikation"
+    "noMerchants": "Keine Händler an diesem Ort.",
+    "noAssortment": "Kein Sortiment.",
+    "item": "Ware",
+    "buy": "Kaufen",
+    "sell": "Verkaufen",
+    "quantity": "Menge",
+    "bought": "Gekauft",
+    "sold": "Verkauft",
+    "tradeDone": "{label}: {qty}× {item} für {total} ({money})",
+    "failed": "Handel fehlgeschlagen",
+    "unresolved": "Item unbekannt"
   },
   "adventure": {
     "success": "✅ Erfolg!",
@@ -453,5 +456,33 @@
     "cancel": "Abbrechen",
     "renameConfirm": "Trotzdem umbenennen"
   },
-  "rollResult": "Wurfergebnis: {{total}}"
+  "rollResult": "Wurfergebnis: {{total}}",
+  "poi": {
+    "title": "Aktionen",
+    "actor": "Charakter",
+    "empty": "Keine Aktionen an diesem Ort.",
+    "cost": "Kosten",
+    "failed": "Aktion fehlgeschlagen",
+    "reasonDmOnly": "Nur für die Spielleitung",
+    "reasonTrait": "Merkmal fehlt",
+    "reasonNotHere": "Hier nicht verfügbar",
+    "money": "Geld",
+    "probe": "Probe {skill}: {dice} = {total}",
+    "probeSuccess": "gelungen",
+    "probeFailure": "misslungen",
+    "effect": {
+      "money": "Geld {text} ({amount})",
+      "itemAdd": "{qty}× {name} erhalten",
+      "itemRemove": "{qty}× {name} abgegeben",
+      "heal": "{amount} HP geheilt",
+      "condition": "Zustand {name}",
+      "conditionRemove": "Zustand {name} entfernt",
+      "fate": "Schicksalspunkte {amount}",
+      "restShort": "Kurze Rast",
+      "restLong": "Lange Rast"
+    }
+  },
+  "editor": {
+    "actions": "Aktionen"
+  }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Heart, Shield, Zap, Sparkles, Check, X, Plus, Loader2 } from 'lucide-react';
+import { Heart, Shield, Zap, Sparkles, Check, X, Plus, Loader2, Coins } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useSheet, type SheetData } from '../../hooks/useSheet';
 import { formatDiceBreakdown } from '../../utils/dice';
@@ -164,6 +164,9 @@ export function CharacterSheet({ entityId }: Props) {
               <Shield size={12} /> {data.damageArmor}
             </span>
           )}
+          <span className="flex items-center gap-1" title={t('sheet.money')!}>
+            <Coins size={12} className="text-warning" /> {data.moneyText ?? data.money ?? 0}
+          </span>
         </p>
       </div>
 

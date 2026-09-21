@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Upload, X, Pencil, Trash2, Undo2, Move } from 'lucide-react';
+import { ArrowLeft, Save, Upload, X, Pencil, Trash2, Undo2, Move, Sparkles } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as PIXI from 'pixi.js';
@@ -903,8 +903,18 @@ export default function MapEditorPage() {
             )}
             <div className="mt-4 flex flex-wrap gap-2">
               <button
-                onClick={() => openEditLocation(locModal.location!)}
+                onClick={() => {
+                  const loc = locModal.location!;
+                  setLocModal(null);
+                  navigate(`/worlds/${id}/locations/${loc.id}`);
+                }}
                 className="flex items-center gap-1 rounded bg-accent px-3 py-1.5 text-xs text-white hover:bg-accent/80"
+              >
+                <Sparkles size={12} /> {t('editor.actions')}
+              </button>
+              <button
+                onClick={() => openEditLocation(locModal.location!)}
+                className="flex items-center gap-1 rounded border border-bg-elevated px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary"
               >
                 <Pencil size={12} /> {t('editor.edit')}
               </button>
