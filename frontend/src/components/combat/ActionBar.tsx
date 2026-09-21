@@ -175,7 +175,7 @@ export function ActionBar({ worldId }: Props) {
       } | null | undefined;
       // QA/UX: Treffer, Miss, Heilung und die Wurf-Aufstellung sichtbar machen.
       if (result?.actionType === 'MISS') {
-        const detail = result.attack ? ` (${formatRollBreakdown(result.attack)})` : '';
+        const detail = result.attack ? ` (${formatRollBreakdown(result.attack, t)})` : '';
         toast.error(`${t('combat.missed', { name: targetName(targetEntityId) })}${detail}`);
       } else {
         const damage = result?.totalDamage ?? 0;
@@ -183,7 +183,7 @@ export function ActionBar({ worldId }: Props) {
         if (!abilityId && (damage > 0 || healing > 0)) playCombatHit();
         const messages: string[] = [];
         if (damage > 0) {
-          const detail = result?.damage ? ` · ${formatRollBreakdown(result.damage)}` : '';
+          const detail = result?.damage ? ` · ${formatRollBreakdown(result.damage, t)}` : '';
           messages.push(t('combat.hitFor', { name: targetName(targetEntityId), damage }) + detail);
         } else if (result?.attack) {
           // Angriff traf, aber Schaden auf 0 reduziert (Rüstung/Resistenz).
@@ -218,11 +218,11 @@ export function ActionBar({ worldId }: Props) {
         attack?: RollBreakdown | null; damage?: RollBreakdown | null;
       } | null | undefined;
       if (result?.actionType === 'MISS') {
-        const detail = result.attack ? ` (${formatRollBreakdown(result.attack)})` : '';
+        const detail = result.attack ? ` (${formatRollBreakdown(result.attack, t)})` : '';
         toast.error(`${t('combat.missed', { name: targetName(targetEntityId) })}${detail}`);
       } else if ((result?.totalDamage ?? 0) > 0) {
         playCombatHit();
-        const detail = result?.damage ? ` · ${formatRollBreakdown(result.damage)}` : '';
+        const detail = result?.damage ? ` · ${formatRollBreakdown(result.damage, t)}` : '';
         toast.success(t('combat.hitFor', {
           name: targetName(targetEntityId), damage: result?.totalDamage,
         }) + detail);

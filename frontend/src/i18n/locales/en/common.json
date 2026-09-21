@@ -110,7 +110,17 @@
     "endFailed": "Failed to end combat",
     "endConfirm": "Really end the combat?",
     "hitNoDamage": "{{name}}: hit, but no damage",
-    "back": "Back"
+    "back": "Back",
+    "part_flat": "Bonus",
+    "part_condition": "Conditions",
+    "part_trait": "Traits",
+    "part_armor": "Armor",
+    "part_malus": "Penalty",
+    "part_mod": "Mod",
+    "part_value": "Value",
+    "part_maneuver": "Maneuver",
+    "action_bonus_action": "Bonus action",
+    "action_reaction": "Reaction"
   },
   "entityTimeline": {
     "today": "today",

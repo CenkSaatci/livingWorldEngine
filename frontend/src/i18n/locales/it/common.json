@@ -110,7 +110,17 @@
     "endFailed": "Fine combattimento non riuscita",
     "endConfirm": "Terminare il combattimento?",
     "hitNoDamage": "{{name}}: colpito, ma nessun danno",
-    "back": "Indietro"
+    "back": "Indietro",
+    "part_flat": "Bonus",
+    "part_condition": "Stati",
+    "part_trait": "Tratti",
+    "part_armor": "Armatura",
+    "part_malus": "Penalità",
+    "part_mod": "Mod",
+    "part_value": "Valore",
+    "part_maneuver": "Manovra",
+    "action_bonus_action": "Azione bonus",
+    "action_reaction": "Reazione"
   },
   "entityTimeline": {
     "today": "today",

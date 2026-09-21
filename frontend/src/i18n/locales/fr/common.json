@@ -110,7 +110,17 @@
     "endFailed": "Échec de la fin du combat",
     "endConfirm": "Terminer le combat ?",
     "hitNoDamage": "{{name}} : touché, mais aucun dégât",
-    "back": "Retour"
+    "back": "Retour",
+    "part_flat": "Bonus",
+    "part_condition": "États",
+    "part_trait": "Traits",
+    "part_armor": "Armure",
+    "part_malus": "Malus",
+    "part_mod": "Mod",
+    "part_value": "Valeur",
+    "part_maneuver": "Manœuvre",
+    "action_bonus_action": "Action bonus",
+    "action_reaction": "Réaction"
   },
   "entityTimeline": {
     "today": "today",

@@ -16,21 +16,30 @@ describe('formatDiceBreakdown', () => {
 describe('formatRollBreakdown', () => {
   it('formatiert Angriff mit Vergleichsziel', () => {
     expect(formatRollBreakdown({
-      kind: 'attack', dice: [14], parts: [{ label: 'Mod', value: 3 }],
+      kind: 'attack', dice: [14], parts: [{ kind: 'mod', value: 3 }],
       total: 17, target: 12, comparison: 'gte',
     })).toBe('14 + 3 = 17 ≥ 12');
   });
 
-  it('formatiert Schaden mit Attribut und Rüstung', () => {
+  it('benennt Attribut- und Rüstungsposten', () => {
     expect(formatRollBreakdown({
-      kind: 'damage', dice: [4], parts: [{ label: 'staerke', value: 2 }, { label: 'Rüstung', value: -1 }],
+      kind: 'damage', dice: [4],
+      parts: [{ kind: 'attr', label: 'staerke', value: 2 }, { kind: 'armor', value: -1 }],
       total: 5,
-    })).toBe('4 + 2 - 1 = 5');
+    })).toBe('4 + 2 (staerke) - 1 = 5');
+  });
+
+  it('übersetzt Posten-Codes über den übergebenen Übersetzer', () => {
+    const t = (key: string) => (key === 'combat.part_armor' ? 'Rüstung' : key);
+    expect(formatRollBreakdown({
+      kind: 'damage', dice: [4], parts: [{ kind: 'armor', value: -1 }],
+      total: 3,
+    }, t)).toBe('4 - 1 (Rüstung) = 3');
   });
 
   it('zeigt Zielschutz-Multiplikator als eigene Stufe', () => {
     expect(formatRollBreakdown({
-      kind: 'damage', dice: [4], parts: [{ label: 'Rüstung', value: -1 }],
+      kind: 'damage', dice: [4], parts: [{ kind: 'armor', value: -1 }],
       subtotal: 3, total: 1, multiplier: 0.5,
     })).toBe('4 - 1 = 3 × 0.5 = 1');
   });

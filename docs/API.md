@@ -467,8 +467,10 @@ auf lowercase normalisiert). Sonst `QUEST_STATUS_INVALID` (400).
 ### Kampf-Aktion (P1)
 `POST /combat/{id}/action` liefert additiv `result: {actionType, totalDamage, apCurrent, healing, attack?, damage?}`
 — bei verfehltem Angriffswurf `actionType: "MISS"` (kein Schaden, AP verbraucht), bei Heil-Fähigkeiten `healing > 0`.
-`attack`/`damage` enthalten die Wurf-Aufstellung (`{kind, dice[], parts[{label,value}], subtotal?, total, multiplier?, target?, comparison?}`),
-z. B. `14 + 3 = 17 ≥ 12` bzw. `4 + 2 - 1 = 5` (Manöver/Fähigkeiten ebenfalls).
+`attack`/`damage` enthalten die Wurf-Aufstellung (`{kind, dice[], parts[{kind, label?, value}], subtotal?, total, multiplier?, target?, comparison?}`);
+`parts[].kind` ist ein stabiler Code (`flat`/`attr`/`condition`/`trait`/`armor`/`malus`/`mod`/`value`/`maneuver`), `label` optional
+(Attribut-/Manövername) — die Anzeige-Texte kommen aus dem Frontend-i18n (`combat.part_*`).
+Beispiele: `14 + 3 = 17 ≥ 12` (Angriff), `4 + 2 (staerke) - 1 (Rüstung) = 5` (Schaden, Manöver/Fähigkeiten ebenso).
 Teilnehmer sind optimistic-locked; parallele Aktionen liefern `409 CONFLICT`.
 
 ### Handel (`/api/v1/trades`, B4)

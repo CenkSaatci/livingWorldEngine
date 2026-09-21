@@ -440,7 +440,7 @@ public class CombatService {
     private RollBreakdown withMitigation(RollBreakdown base, Mitigation mit) {
         if (mit.armor() == 0 && mit.multiplier() == 1.0) return base;
         var parts = new ArrayList<>(base.parts());
-        if (mit.armor() > 0) parts.add(new RollPart("Rüstung", -mit.armor()));
+        if (mit.armor() > 0) parts.add(RollPart.of("armor", -mit.armor()));
         Double multiplier = mit.multiplier() == 1.0 ? null : mit.multiplier();
         Integer subtotal = multiplier == null ? null : mit.subtotal();
         return new RollBreakdown(base.kind(), base.dice(), parts, subtotal, mit.total(),
@@ -575,17 +575,17 @@ public class CombatService {
                 "Schadenswürfel '" + dice + "' nicht parsbar");
         }
         var parts = new ArrayList<RollPart>();
-        if (flat != 0) parts.add(new RollPart("Bonus", flat));
+        if (flat != 0) parts.add(RollPart.of("flat", flat));
         if (attrName != null) {
             int attrValue = AttributeUtils.extractAttribute(entity, attrName).orElse(10);
             int bonus = damageAttrBonus(attrValue, rules) * (attrBonusSign < 0 ? -1 : 1);
-            if (bonus != 0) parts.add(new RollPart(attrName, bonus));
+            if (bonus != 0) parts.add(RollPart.attr(attrName, bonus));
         }
         // Aktive Zustaende (P29-T01) + gewählte Merkmale: Schadens-Modifikator.
         int condition = conditionService.modifier(entity, rules, "damage");
-        if (condition != 0) parts.add(new RollPart("Zustände", condition));
+        if (condition != 0) parts.add(RollPart.of("condition", condition));
         int traits = traitDamageBonus(entity, rules);
-        if (traits != 0) parts.add(new RollPart("Merkmale", traits));
+        if (traits != 0) parts.add(RollPart.of("trait", traits));
 
         int sum = diceValues.stream().mapToInt(Integer::intValue).sum()
             + parts.stream().mapToInt(RollPart::value).sum();
@@ -733,7 +733,7 @@ public class CombatService {
             }
         }
         var damageRoll = bonus != 0
-            ? base.withExtraPart(new RollPart(maneuverName, bonus))
+            ? base.withExtraPart(RollPart.named("maneuver", maneuverName, bonus))
             : base;
         String maneuverType = def.get("damageType") instanceof String dt ? dt : null;
         var mitigation = applyDamageModifiers(damageRoll.total(), targetId, maneuverType);
@@ -1004,16 +1004,16 @@ public class CombatService {
             int diceSum = rollDice.stream().mapToInt(Integer::intValue).sum();
             var parts = new ArrayList<RollPart>();
             int engineMod = probe.total() - diceSum;
-            if (engineMod != 0) parts.add(new RollPart("Mod", engineMod));
+            if (engineMod != 0) parts.add(RollPart.of("mod", engineMod));
             // P1: Vergleichsrichtung kommt aus der Config (gte = D&D, lte = d100/CoC).
             boolean hit;
             int total;
             if ("lte".equals(comparison)) {
-                if (malus != 0) parts.add(new RollPart("Malus", malus));
+                if (malus != 0) parts.add(RollPart.of("malus", malus));
                 total = probe.total() + malus;
                 hit = total <= targetValue;
             } else {
-                if (malus != 0) parts.add(new RollPart("Malus", -malus));
+                if (malus != 0) parts.add(RollPart.of("malus", -malus));
                 total = probe.total() - malus;
                 hit = total >= targetValue;
             }
@@ -1033,7 +1033,7 @@ public class CombatService {
         var roll = rollDice(dice);
         if ("lte".equals(comparison)) {
             var parts = new ArrayList<RollPart>();
-            if (malus != 0) parts.add(new RollPart("Malus", malus));
+            if (malus != 0) parts.add(RollPart.of("malus", malus));
             int total = roll + malus;
             return new AttackOutcome(total <= base, new RollBreakdown("attack", List.of(roll),
                 parts, null, total, null, base, "lte"));
@@ -1048,8 +1048,8 @@ public class CombatService {
                 "Zielwert '" + targetName + "' nicht ableitbar");
         }
         var parts = new ArrayList<RollPart>();
-        if (base != 0) parts.add(new RollPart(sourceName == null ? "Wert" : sourceName, base));
-        if (malus != 0) parts.add(new RollPart("Malus", -malus));
+        if (base != 0) parts.add(RollPart.named("value", sourceName, base));
+        if (malus != 0) parts.add(RollPart.of("malus", -malus));
         int total = roll + base - malus;
         return new AttackOutcome(total >= targetValue, new RollBreakdown("attack", List.of(roll),
             parts, null, total, null, targetValue, comparison));
@@ -1214,7 +1214,15 @@ public class CombatService {
     }
 
     /** Anzeige-Detail: Einzelwürfe + Boni + Summe (QA: Aufstellung statt nur Gesamtwert). */
-    public record RollPart(String label, int value) {}
+    /** Anzeige-Posten: {@code kind} ist ein stabiler Code (Frontend-i18n), {@code label}
+     *  optional (Attribut-/Manövername). */
+    public record RollPart(String kind, String label, int value) {
+        public static RollPart of(String kind, int value) { return new RollPart(kind, null, value); }
+        public static RollPart attr(String name, int value) { return new RollPart("attr", name, value); }
+        public static RollPart named(String kind, String label, int value) {
+            return new RollPart(kind, label, value);
+        }
+    }
 
     /** {@code op}-los additiv; {@code multiplier}/{@code subtotal} bilden Zielschutz-Stufen ab. */
     public record RollBreakdown(String kind, List<Integer> dice, List<RollPart> parts,

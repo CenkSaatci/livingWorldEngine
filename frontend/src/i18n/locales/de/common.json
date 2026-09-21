@@ -110,7 +110,17 @@
     "endFailed": "Kampf beenden fehlgeschlagen",
     "endConfirm": "Kampf wirklich beenden?",
     "hitNoDamage": "{{name}}: Treffer, aber kein Schaden",
-    "back": "Zurück"
+    "back": "Zurück",
+    "part_flat": "Bonus",
+    "part_condition": "Zustände",
+    "part_trait": "Merkmale",
+    "part_armor": "Rüstung",
+    "part_malus": "Malus",
+    "part_mod": "Mod",
+    "part_value": "Wert",
+    "part_maneuver": "Manöver",
+    "action_bonus_action": "Bonusaktion",
+    "action_reaction": "Reaktion"
   },
   "entityTimeline": {
     "today": "heute",

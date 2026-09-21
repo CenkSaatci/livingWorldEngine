@@ -64,7 +64,7 @@ class CombatControllerActiveTest {
         var targetId = UUID.randomUUID();
         setId(session, sessionId);
         var damage = new CombatService.RollBreakdown("damage", List.of(4),
-            List.of(new CombatService.RollPart("Bonus", 1)), null, 5, null, null, null);
+            List.of(CombatService.RollPart.of("flat", 1)), null, 5, null, null, null);
         var action = new CombatService.CombatActionResult("MANEUVER:Wuchtschlag", 5, 1, true, null,
             null, damage, 0);
         when(combatService.executeManeuver(userId, sessionId, actorId, targetId, "Wuchtschlag"))

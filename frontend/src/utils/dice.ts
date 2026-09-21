@@ -13,7 +13,10 @@ export function formatDiceBreakdown(dice: number[], modifier: number, total: num
 }
 
 export interface RollPart {
-  label: string;
+  /** Stabiler Code (Frontend-i18n), z. B. flat/attr/armor/condition/trait/malus/mod/value/maneuver. */
+  kind: string;
+  /** Optionaler Eigenname (Attribut-/Manövername). */
+  label?: string | null;
   value: number;
 }
 
@@ -31,13 +34,31 @@ export interface RollBreakdown {
 
 /**
  * Formatiert einen Kampfwurf als Aufstellung:
- * "14 + 3 = 17 ≥ 12" (Angriff), "4 + 2 - 1 = 5" (Schaden),
+ * "14 + 3 = 17 ≥ 12" (Angriff), "4 + 2 (staerke) - 1 (Rüstung) = 5" (Schaden),
  * mit Zielschutz "4 + 2 - 1 = 3 × 0.5 = 1".
+ * @param t optionaler Übersetzer für die Posten-Codes (`combat.part_*`).
  */
-export function formatRollBreakdown(rb: RollBreakdown): string {
-  const addends = [...rb.dice, ...(rb.parts ?? []).map((p) => p.value)];
+export function formatRollBreakdown(
+  rb: RollBreakdown,
+  t?: (key: string) => string,
+): string {
+  const labelFor = (p: RollPart): string => {
+    if (p.label) return p.label;
+    if (!t) return '';
+    return t(`combat.part_${p.kind}`);
+  };
+  const addends = [
+    ...rb.dice,
+    ...(rb.parts ?? []).map((p) => ({ value: p.value, label: labelFor(p) })),
+  ];
   const lhs = addends
-    .map((v, i) => (i === 0 ? String(v) : v >= 0 ? `+ ${v}` : `- ${Math.abs(v)}`))
+    .map((a, i) => {
+      const n = typeof a === 'number' ? a : a.value;
+      const label = typeof a === 'number' ? '' : a.label;
+      const sign = i === 0 ? '' : n >= 0 ? '+ ' : '- ';
+      const amount = i === 0 ? String(n) : String(Math.abs(n));
+      return `${sign}${amount}${label ? ` (${label})` : ''}`;
+    })
     .join(' ') || '0';
   let out = `${lhs} = ${rb.subtotal ?? rb.total}`;
   if (rb.multiplier != null && rb.multiplier !== 1) {

@@ -110,7 +110,17 @@
     "endFailed": "Error al terminar el combate",
     "endConfirm": "¿Terminar el combate?",
     "hitNoDamage": "{{name}}: impacto sin daño",
-    "back": "Volver"
+    "back": "Volver",
+    "part_flat": "Bonificación",
+    "part_condition": "Estados",
+    "part_trait": "Rasgos",
+    "part_armor": "Armadura",
+    "part_malus": "Penalización",
+    "part_mod": "Mod",
+    "part_value": "Valor",
+    "part_maneuver": "Maniobra",
+    "action_bonus_action": "Acción adicional",
+    "action_reaction": "Reacción"
   },
   "entityTimeline": {
     "today": "today",

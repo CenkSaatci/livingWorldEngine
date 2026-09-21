@@ -100,7 +100,7 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, c
   };
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="relative flex items-center gap-1">
       {(difficultyLevels?.length ?? 0) > 0 && !casting && (
         <select
           value={difficultyKey}
