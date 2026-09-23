@@ -70,29 +70,30 @@ public class RulesLoader {
     }
 
     /** Liefert die rulesJson einer Kampagne als Map oder leere Map.
-     *  P27-T05: gepinnter Snapshot hat Vorrang vor der lebenden System-Zeile. */
+     *  P27-T05: gepinnter Snapshot hat Vorrang vor der lebenden System-Zeile.
+     *  Fehlend = leere Map (legitimer Fall); vorhanden-aber-kaputt = Fehler (ADR-014). */
     public Map<String, Object> loadRulesByCampaign(UUID campaignId) {
         if (campaignId == null) return Map.of();
         var campaign = campaignRepo.findById(campaignId).orElse(null);
         if (campaign == null) return Map.of();
         var snapshot = campaign.getRulesJsonSnapshot();
         if (snapshot != null && !snapshot.isBlank()) {
-            try {
-                return objectMapper.readValue(snapshot, RULES_MAP);
-            } catch (Exception e) {
-                log.warn("Regel-Snapshot der Kampagne {} nicht lesbar: {}", campaignId, e.getMessage());
-                return Map.of();
-            }
+            return parseOrThrow(snapshot, "Kampagnen-Snapshot " + campaignId);
         }
         var system = systemRepo.findById(campaign.getGameSystemId()).orElse(null);
         if (system == null || system.getRulesJson() == null || system.getRulesJson().isBlank()) {
             return Map.of();
         }
+        return parseOrThrow(system.getRulesJson(), "System " + system.getId());
+    }
+
+    /** A4: kaputtes Regel-JSON ist ein Fehler statt stiller Defaults. */
+    private Map<String, Object> parseOrThrow(String json, String source) {
         try {
-            return objectMapper.readValue(system.getRulesJson(), RULES_MAP);
+            return objectMapper.readValue(json, RULES_MAP);
         } catch (Exception e) {
-            log.warn("Regel-JSON des Systems {} nicht lesbar: {}", system.getId(), e.getMessage());
-            return Map.of();
+            log.error("Regel-JSON nicht lesbar ({}): {}", source, e.getMessage());
+            throw new RulesLoadException("RULES_UNREADABLE", "Regel-JSON nicht lesbar: " + source);
         }
     }
 
@@ -130,22 +131,27 @@ public class RulesLoader {
         return loadSystem(worldRepo.findById(worldId).orElse(null));
     }
 
-    /** Liefert die rulesJson als Map oder leere Map bei Fehler/fehlendem System. */
+    /** Liefert die rulesJson als Map oder leere Map bei fehlendem System.
+     *  Vorhandenes, aber kaputtes JSON ist ein Fehler (ADR-014). */
     public Map<String, Object> loadRules(World world) {
         var system = loadSystem(world);
         if (system == null || system.getRulesJson() == null || system.getRulesJson().isBlank()) {
             return Map.of();
         }
-        try {
-            return objectMapper.readValue(system.getRulesJson(), RULES_MAP);
-        } catch (Exception e) {
-            log.warn("Regel-JSON nicht lesbar: {}", e.getMessage());
-            return Map.of();
-        }
+        return parseOrThrow(system.getRulesJson(), "System " + system.getId());
     }
 
     /** Liefert die rulesJson zur worldId als Map oder leere Map. */
     public Map<String, Object> loadRules(UUID worldId) {
         return loadRules(worldRepo.findById(worldId).orElse(null));
+    }
+
+    public static class RulesLoadException extends RuntimeException {
+        private final String errorCode;
+        public RulesLoadException(String errorCode, String message) {
+            super(message);
+            this.errorCode = errorCode;
+        }
+        public String getErrorCode() { return errorCode; }
     }
 }

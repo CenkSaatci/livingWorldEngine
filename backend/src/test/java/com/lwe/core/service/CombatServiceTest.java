@@ -46,7 +46,7 @@ class CombatServiceTest {
         combatService = new CombatService(sessionRepo, participantRepo, entityRepo,
             worldRepo, gameSystemRepo, eventService, abilityRepo, messaging, worldAccess,
             new com.lwe.core.util.EntityAccess(entityRepo, worldAccess),
-            new com.lwe.rules.EngineResolver(rulesLoader, List.of(new D20RuleEngine())),
+            new com.lwe.rules.EngineResolver(rulesLoader, List.of(new D20RuleEngine()), new ObjectMapper()),
             new ObjectMapper(), rulesLoader, campaignMemberService, conditionService, itemRepo,
             derivedValueService, entityService);
     }

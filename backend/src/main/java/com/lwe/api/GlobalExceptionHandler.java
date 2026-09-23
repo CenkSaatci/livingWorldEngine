@@ -127,6 +127,7 @@ public class GlobalExceptionHandler {
             case CurrencyService.CurrencyException e -> e.getErrorCode();
             case EntityAbilityService.EntityAbilityException e -> e.getErrorCode();
             case RestService.RestException e -> e.getErrorCode();
+            case RulesLoader.RulesLoadException e -> e.getErrorCode();
             case CampaignService.CampaignException e -> e.getErrorCode();
             case CampaignMemberService.CampaignMemberException e -> e.getErrorCode();
             case GameSystemService.GameSystemException e -> e.getErrorCode();
@@ -273,6 +274,7 @@ public class GlobalExceptionHandler {
                 case "ENTITY_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 default -> HttpStatus.BAD_REQUEST;
             };
+            case RulesLoader.RulesLoadException e -> HttpStatus.INTERNAL_SERVER_ERROR;
             case GameSystemService.GameSystemException e -> switch (e.getErrorCode()) {
                 case "GAME_SYSTEM_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 case "GAME_SYSTEM_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;

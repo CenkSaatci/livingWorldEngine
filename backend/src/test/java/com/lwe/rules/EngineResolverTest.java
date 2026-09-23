@@ -17,7 +17,8 @@ class EngineResolverTest {
 
     private final RulesLoader rulesLoader = mock();
     private final D20RuleEngine d20 = new D20RuleEngine();
-    private final EngineResolver resolver = new EngineResolver(rulesLoader, List.of(d20));
+    private final EngineResolver resolver = new EngineResolver(rulesLoader, List.of(d20),
+        new com.fasterxml.jackson.databind.ObjectMapper());
 
     private final UUID campaignId = UUID.randomUUID();
     private final World world = new World("W", UUID.randomUUID(), "{}");
@@ -38,10 +39,22 @@ class EngineResolverTest {
     }
 
     @Test
-    void fallsBackToD20OnInvalidProbe() {
+    void blankProbeFallsBackToD20() {
+        // Fehlendes/leeres probe = dokumentierter Default.
+        when(rulesLoader.resolveSystem(any(UUID.class), any(World.class)))
+            .thenReturn(new GameSystem("OhneProbe", 1, "{}", "{}"));
+
+        assertThat(resolver.resolve(world, campaignId)).isSameAs(d20);
+    }
+
+    @Test
+    void invalidProbeFailsClosed() {
+        // A4: vorhandenes, aber ungültiges probe ist ein Fehler statt stiller D20-Fallback.
         when(rulesLoader.resolveSystem(any(UUID.class), any(World.class)))
             .thenReturn(new GameSystem("Kaputt", 1, "{\"dice_mechanics\":{\"probe\":\"wuerfel\"}}", "{}"));
 
-        assertThat(resolver.resolve(world, campaignId)).isSameAs(d20);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> resolver.resolve(world, campaignId))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Würfelsystem");
     }
 }

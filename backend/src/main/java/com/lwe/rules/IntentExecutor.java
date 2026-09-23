@@ -124,13 +124,35 @@ public class IntentExecutor {
         }
         damage = Math.max(0, damage);
 
+        // A4: Schaden tatsächlich auf die Ziel-HP anwenden (Ziel steht als `target_id` in den Params).
+        UUID targetId = parseUuid(parseParams(intent).get("target_id"));
+        int applied = 0;
+        if (targetId != null) {
+            var target = entityRepo.findById(targetId).orElse(null);
+            if (target != null && intent.getWorldId().equals(target.getWorldId())) {
+                applied = Math.min(damage, Math.max(0, target.getHpCurrent()));
+                target.setHpCurrent(Math.max(0, target.getHpCurrent() - damage));
+                entityRepo.save(target);
+            }
+        }
+
+        var payload = new java.util.HashMap<String, Object>();
+        payload.put("actionType", "ATTACK");
+        payload.put("damage", applied);
+        if (targetId != null) payload.put("targetEntityId", targetId.toString());
+        if (intent.getReasoning() != null) payload.put("reasoning", intent.getReasoning());
         eventService.publish(intent.getWorldId(), COMBAT_ACTION_EXECUTED,
-            intent.getNpcId(), null, Map.of(
-                "actionType", "ATTACK",
-                "damage", damage,
-                "reasoning", intent.getReasoning()
-            ));
-        log.info("NPC {} attacks for {} damage", npc.getName(), damage);
+            intent.getNpcId(), targetId, payload);
+        log.info("NPC {} attacks {} for {} damage", npc.getName(), targetId, applied);
+    }
+
+    private static UUID parseUuid(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            return UUID.fromString(raw);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     /** System-Schadensausdruck; fehlend = Default 1d6 (ADR-014). */
