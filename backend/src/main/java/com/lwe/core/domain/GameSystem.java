@@ -74,6 +74,8 @@ public class GameSystem {
     void onUpdate() { this.updatedAt = Instant.now(); }
 
     public UUID getId() { return id; }
+    /** Snapshot-Sicht (RulesLoader) braucht die ID des Live-Systems für FK-Lookups. */
+    public void setId(UUID v) { this.id = v; }
     public String getName() { return name; }
     public void setName(String v) { this.name = v; }
     public int getVersion() { return version; }

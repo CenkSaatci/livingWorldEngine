@@ -25,9 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -60,6 +58,7 @@ public class PoiActionService {
     private final RestService restService;
     private final InventoryService inventoryService;
     private final CampaignMemberService campaignMemberService;
+    private final PoiBindings bindings;
     private final ChatMessageRepository chatRepo;
     private final SimpMessagingTemplate messaging;
     private final ObjectMapper mapper;
@@ -72,6 +71,7 @@ public class PoiActionService {
                             ProbeService probeService, RestService restService,
                             InventoryService inventoryService,
                             CampaignMemberService campaignMemberService,
+                            PoiBindings bindings,
                             ChatMessageRepository chatRepo,
                             SimpMessagingTemplate messaging, ObjectMapper mapper) {
         this.locationRepo = locationRepo;
@@ -88,6 +88,7 @@ public class PoiActionService {
         this.restService = restService;
         this.inventoryService = inventoryService;
         this.campaignMemberService = campaignMemberService;
+        this.bindings = bindings;
         this.chatRepo = chatRepo;
         this.messaging = messaging;
         this.mapper = mapper;
@@ -99,19 +100,31 @@ public class PoiActionService {
                              boolean dmOnly, String requiresTrait, boolean available,
                              String reason, List<Map<String, Object>> costs) {}
 
-    /** Verfügbare Aktionen eines Ortes für einen Charakter (inkl. Sperrgrund). */
-    public List<ActionInfo> list(UUID locationId, UUID actorId, UUID userId, UUID campaignId) {
+    /**
+     * Verfügbare Aktionen eines Ortes für einen Charakter (inkl. Sperrgrund).
+     * Standardmäßig nur die an diesem Ort gebundenen Aktionen; {@code includeAll}
+     * (nur Leiter) liefert den ganzen Katalog für die Autoren-Vorschau.
+     */
+    public List<ActionInfo> list(UUID locationId, UUID actorId, UUID userId, UUID campaignId,
+                                 boolean includeAll) {
         var ctx = context(locationId, userId, campaignId);
         var actor = actorId == null ? null : loadActor(actorId, userId, ctx.worldId());
-        var bound = boundActionNames(ctx.location(), ctx.worldId());
+        var bound = bindings.boundNames(ctx.location(), ctx.worldId());
+        boolean dm = isDm(ctx.worldId(), ctx.campaignId(), userId);
         var out = new ArrayList<ActionInfo>();
         for (var action : catalog(ctx.rules())) {
             var name = text(action.get("name"));
             if (name == null) continue;
+            // M-1: dmOnly-Aktionen (inkl. Beschreibung) nicht an Nicht-Leiter ausliefern.
+            boolean dmOnly = Boolean.TRUE.equals(action.get("dmOnly"));
+            if (dmOnly && !dm) continue;
+            boolean isBound = PoiBindings.isBound(name, bound);
+            // M-5: ungebundene Aktionen nur in der Leiter-Vorschau.
+            if (!isBound && !(includeAll && dm)) continue;
             var reasons = availabilityReasons(action, bound, actor, ctx, userId);
             out.add(new ActionInfo(name, text(action.get("description")),
                 chatMode(action, hasEffects(action)), action.get("trade") instanceof Map,
-                Boolean.TRUE.equals(action.get("dmOnly")), text(action.get("requiresTrait")),
+                dmOnly, text(action.get("requiresTrait")),
                 reasons.isEmpty(), reasons.isEmpty() ? null : reasons.get(0),
                 costs(action, ctx.rules())));
         }
@@ -132,8 +145,8 @@ public class PoiActionService {
         var ctx = context(locationId, userId, campaignId);
         var action = findAction(ctx.rules(), actionName);
         if (action == null) throw new PoiException("POI_ACTION_UNKNOWN", "Unknown action: " + actionName);
-        var bound = boundActionNames(ctx.location(), ctx.worldId());
-        if (!isBound(actionName, bound)) {
+        var bound = bindings.boundNames(ctx.location(), ctx.worldId());
+        if (!PoiBindings.isBound(actionName, bound)) {
             throw new PoiException("POI_ACTION_NOT_AVAILABLE", "Action not available here");
         }
         if (Boolean.TRUE.equals(action.get("dmOnly")) && !isDm(ctx.worldId(), ctx.campaignId(), userId)) {
@@ -149,12 +162,12 @@ public class PoiActionService {
             .orElseThrow(() -> new PoiException("ENTITY_NOT_FOUND", "Actor not found"));
 
         int moneyBefore = currencyService.money(actor);
+        var moneyBeforeText = currencyService.format(moneyBefore, ctx.rules());
 
         // Händler-Aktion: keine Effekte, die UI öffnet die Händlerliste.
         if (action.get("trade") instanceof Map) {
             return new ActionResult(actionName, true, true, text(action.get("description")),
-                moneyBefore, moneyBefore, currencyService.format(moneyBefore, ctx.rules()),
-                currencyService.format(moneyBefore, ctx.rules()), List.of(), null);
+                moneyBefore, moneyBefore, moneyBeforeText, moneyBeforeText, List.of(), null);
         }
 
         // 1) Probe (falls konfiguriert) — Ergebnis wählt den Effekt-Zweig.
@@ -163,8 +176,11 @@ public class PoiActionService {
         if (action.get("probe") instanceof Map<?, ?> probeDef) {
             var skill = text(probeDef.get("skill"));
             if (skill == null) throw new PoiException("POI_ACTION_INVALID", "Probe without skill");
+            // M-3: fail-closed bei unbekanntem Skill (d20/d100 würfelten sonst still mit Mod 0).
+            requireKnownSkill(skill, ctx.rules());
+            int target = probeDef.get("target") instanceof Number n ? n.intValue() : 10;
             int difficulty = probeDef.get("difficulty") instanceof Number n ? n.intValue() : 0;
-            var response = probeService.executeProbe(actor.getId(), userId, skill, 10, false,
+            var response = probeService.executeProbe(actor.getId(), userId, skill, target, false,
                 ctx.campaignId(), difficulty);
             probe = new ProbeInfo(skill, response.success(), response.total(),
                 response.dice(), response.modifier());
@@ -172,13 +188,13 @@ public class PoiActionService {
         }
 
         // 2) Vorvalidierung ohne Wirkung.
-        validate(actor, effects, ctx, userId);
+        validate(actor, effects, ctx);
 
         // 3) Anwenden (transaktional).
         var applied = new ArrayList<Map<String, Object>>();
         var texts = new ArrayList<String>();
         for (var effect : effects) {
-            applyEffect(actor, effect, ctx, userId, applied, texts);
+            applyEffect(actor, effect, ctx, applied, texts);
         }
         // Rast zuletzt: RestService lädt dieselbe (gemanagte) Entity und speichert.
         for (var effect : effects) {
@@ -198,7 +214,7 @@ public class PoiActionService {
         chat(action, actor, ctx, text, applied);
 
         return new ActionResult(actionName, true, false, text,
-            moneyBefore, moneyAfter, currencyService.format(moneyBefore, ctx.rules()),
+            moneyBefore, moneyAfter, moneyBeforeText,
             currencyService.format(moneyAfter, ctx.rules()), applied, probe);
     }
 
@@ -207,7 +223,7 @@ public class PoiActionService {
     private List<String> availabilityReasons(Map<String, Object> action, Set<String> bound,
                                              GameEntity actor, Ctx ctx, UUID userId) {
         var reasons = new ArrayList<String>();
-        if (!isBound(text(action.get("name")), bound)) reasons.add("NOT_HERE");
+        if (!PoiBindings.isBound(text(action.get("name")), bound)) reasons.add("NOT_HERE");
         if (Boolean.TRUE.equals(action.get("dmOnly")) && !isDm(ctx.worldId(), ctx.campaignId(), userId)) {
             reasons.add("DM_ONLY");
         }
@@ -219,39 +235,9 @@ public class PoiActionService {
         return reasons;
     }
 
-    private boolean isBound(String name, Set<String> bound) {
-        return name != null && bound.contains(name.toLowerCase(Locale.ROOT));
-    }
-
-    /** Aktionsnamen, die an diesem Ort hängen: Ort-`services` + NPC-`services_offered`. */
-    private Set<String> boundActionNames(Location location, UUID worldId) {
-        var out = new LinkedHashSet<String>();
-        try {
-            if (location.getServices() != null && !location.getServices().isBlank()) {
-                for (var node : mapper.readTree(location.getServices())) {
-                    if (node.isTextual()) out.add(node.asText().toLowerCase(Locale.ROOT));
-                }
-            }
-        } catch (Exception e) {
-            log.warn("location.services nicht lesbar: {}", e.getMessage());
-        }
-        var filter = "{\"location_id\":\"" + location.getId() + "\"}";
-        for (var npc : entityRepo.findByWorldIdAndMetadataJsonFilter(worldId, filter)) {
-            try {
-                var offered = mapper.readTree(npc.getMetadataJson()).path("services_offered");
-                if (offered.isArray()) {
-                    for (var s : offered) if (s.isTextual()) out.add(s.asText().toLowerCase(Locale.ROOT));
-                }
-            } catch (Exception ignored) {
-                // NPC-Metadata kaputt → überspringen (Ort bleibt nutzbar)
-            }
-        }
-        return out;
-    }
-
     // ------------------------------------------------------------- Validation
 
-    private void validate(GameEntity actor, List<Map<String, Object>> effects, Ctx ctx, UUID userId) {
+    private void validate(GameEntity actor, List<Map<String, Object>> effects, Ctx ctx) {
         int moneyCost = 0;
         for (var effect : effects) {
             var type = text(effect.get("type"));
@@ -292,7 +278,7 @@ public class PoiActionService {
 
     // -------------------------------------------------------------- Application
 
-    private void applyEffect(GameEntity actor, Map<String, Object> effect, Ctx ctx, UUID userId,
+    private void applyEffect(GameEntity actor, Map<String, Object> effect, Ctx ctx,
                              List<Map<String, Object>> applied, List<String> texts) {
         var type = text(effect.get("type"));
         var row = new LinkedHashMap<String, Object>();
@@ -578,6 +564,14 @@ public class PoiActionService {
         boolean known = catalog.stream().anyMatch(c -> c instanceof Map<?, ?> m
             && m.get("name") instanceof String n && RuleNames.eq(name, n));
         if (!known) throw new PoiException("UNKNOWN_CONDITION", "Unknown condition: " + name);
+    }
+
+    /** M-3: konfigurierter, aber unbekannter Probe-Skill ist ein Fehler (fail-closed). */
+    private void requireKnownSkill(String skill, Map<String, Object> rules) {
+        if (!(rules.get("skills") instanceof List<?> catalog) || catalog.isEmpty()) return;
+        boolean known = catalog.stream().anyMatch(s -> s instanceof Map<?, ?> m
+            && m.get("name") instanceof String n && RuleNames.eq(skill, n));
+        if (!known) throw new PoiException("ROLL_SKILL_NOT_FOUND", "Unknown skill: " + skill);
     }
 
     private static int intAmount(Map<String, Object> effect) {

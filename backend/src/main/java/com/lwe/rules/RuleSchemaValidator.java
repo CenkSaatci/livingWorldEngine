@@ -349,6 +349,7 @@ public class RuleSchemaValidator {
               "required": ["skill"],
               "properties": {
                 "skill":      { "type": "string", "minLength": 1 },
+                "target":     { "type": "integer" },
                 "difficulty": { "type": "integer" },
                 "onSuccess":  { "type": "array", "items": { "$ref": "#/$defs/poiEffect" } },
                 "onFailure":  { "type": "array", "items": { "$ref": "#/$defs/poiEffect" } }
@@ -443,7 +444,7 @@ public class RuleSchemaValidator {
                 "Schadensausdruck '" + combatDamage.asText() + "' nicht parsbar"));
         }
         checkCurrency(rules.path("currency"), out);
-        checkPoiActions(rules.path("poi_actions"), out);
+        checkPoiActions(rules, out);
         return out;
     }
 
@@ -465,10 +466,13 @@ public class RuleSchemaValidator {
         }
     }
 
-    /** ADR-015: POI-Aktionen — Namen eindeutig, Effekte vollständig (fehlend ok, kaputt Fehler). */
-    private void checkPoiActions(com.fasterxml.jackson.databind.JsonNode actions,
+    /** ADR-015: POI-Aktionen — Namen eindeutig, Effekte vollständig, Referenzen bekannt. */
+    private void checkPoiActions(com.fasterxml.jackson.databind.JsonNode rules,
                                  List<ValidationError> out) {
+        var actions = rules.path("poi_actions");
         if (!actions.isArray()) return;
+        var skillNames = lowerNames(rules.path("skills"));
+        var conditionNames = lowerNames(rules.path("conditions"));
         var seen = new java.util.HashSet<String>();
         for (var action : actions) {
             var name = action.path("name");
@@ -477,17 +481,36 @@ public class RuleSchemaValidator {
                 out.add(new ValidationError("$.poi_actions",
                     "Doppelte Aktion '" + name.asText() + "' (case-insensitiv)"));
             }
-            checkPoiEffects(action.path("effects"), "$.poi_actions.effects", out);
+            checkPoiEffects(action.path("effects"), "$.poi_actions.effects", conditionNames, out);
             var probe = action.path("probe");
             if (probe.isObject()) {
-                checkPoiEffects(probe.path("onSuccess"), "$.poi_actions.probe.onSuccess", out);
-                checkPoiEffects(probe.path("onFailure"), "$.poi_actions.probe.onFailure", out);
+                // M-3: konfigurierter, unbekannter Skill ist ein Fehler (kein stiller Mod-0-Wurf).
+                var skill = probe.path("skill");
+                if (skill.isTextual() && !skill.asText().isBlank() && !skillNames.isEmpty()
+                    && !skillNames.contains(skill.asText().toLowerCase(java.util.Locale.ROOT))) {
+                    out.add(new ValidationError("$.poi_actions.probe.skill",
+                        "Probe-Skill '" + skill.asText() + "' ist nicht in skills[] definiert"));
+                }
+                checkPoiEffects(probe.path("onSuccess"), "$.poi_actions.probe.onSuccess", conditionNames, out);
+                checkPoiEffects(probe.path("onFailure"), "$.poi_actions.probe.onFailure", conditionNames, out);
             }
         }
     }
 
+    private static java.util.Set<String> lowerNames(com.fasterxml.jackson.databind.JsonNode list) {
+        var out = new java.util.HashSet<String>();
+        if (!list.isArray()) return out;
+        for (var entry : list) {
+            var name = entry.path("name");
+            if (name.isTextual() && !name.asText().isBlank()) {
+                out.add(name.asText().toLowerCase(java.util.Locale.ROOT));
+            }
+        }
+        return out;
+    }
+
     private void checkPoiEffects(com.fasterxml.jackson.databind.JsonNode effects, String path,
-                                 List<ValidationError> out) {
+                                 java.util.Set<String> conditionNames, List<ValidationError> out) {
         if (!effects.isArray()) return;
         for (var effect : effects) {
             var type = effect.path("type");
@@ -517,6 +540,10 @@ public class RuleSchemaValidator {
                 case "condition" -> {
                     if (!isNonBlank(effect.path("name"))) {
                         out.add(new ValidationError(path, "condition-Effekt braucht einen Namen"));
+                    } else if (!conditionNames.isEmpty() && !conditionNames.contains(
+                        effect.path("name").asText().toLowerCase(java.util.Locale.ROOT))) {
+                        out.add(new ValidationError(path,
+                            "Zustand '" + effect.path("name").asText() + "' ist nicht in conditions[] definiert"));
                     }
                 }
                 case "rest" -> {

@@ -22,6 +22,8 @@ interface MerchantInfo {
   occupation?: string | null;
   greeting?: string | null;
   sellRate: number;
+  buyEnabled: boolean;
+  sellEnabled: boolean;
   offers: Offer[];
 }
 
@@ -122,7 +124,9 @@ export function MerchantPanel({ worldId, locationId }: { worldId: string; locati
             {merchant.greeting && (
               <p className="mb-3 text-xs italic text-text-secondary">„{merchant.greeting}"</p>
             )}
-            {merchant.offers.length === 0 ? (
+            {!merchant.buyEnabled && !merchant.sellEnabled ? (
+              <p className="text-xs text-warning">{t('market.noTrade')}</p>
+            ) : merchant.offers.length === 0 ? (
               <p className="text-xs text-text-secondary">{t('market.noAssortment')}</p>
             ) : (
               <table className="w-full text-sm">
@@ -165,14 +169,16 @@ export function MerchantPanel({ worldId, locationId }: { worldId: string; locati
                           <div className="flex justify-end gap-1">
                             <button
                               onClick={() => trade(merchant, offer, 'buy')}
-                              disabled={!actorId || !offer.resolved || busy !== null}
+                              disabled={!actorId || !offer.resolved || !merchant.buyEnabled || busy !== null}
+                              title={!merchant.buyEnabled ? t('market.noTrade') : undefined}
                               className="rounded bg-accent px-2 py-1 text-xs text-white hover:bg-accent/80 disabled:opacity-40"
                             >
                               {t('market.buy')}
                             </button>
                             <button
                               onClick={() => trade(merchant, offer, 'sell')}
-                              disabled={!actorId || !offer.resolved || busy !== null}
+                              disabled={!actorId || !offer.resolved || !merchant.sellEnabled || busy !== null}
+                              title={!merchant.sellEnabled ? t('market.noTrade') : undefined}
                               className="rounded border border-bg-elevated px-2 py-1 text-xs text-text-secondary hover:text-text-primary disabled:opacity-40"
                             >
                               {t('market.sell')}

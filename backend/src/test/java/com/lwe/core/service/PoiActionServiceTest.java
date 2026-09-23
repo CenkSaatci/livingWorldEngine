@@ -60,10 +60,11 @@ class PoiActionServiceTest {
     void setUp() {
         service = new PoiActionService(locationRepo, regionRepo, campaignRepo, entityRepo, itemRepo,
             rulesLoader, worldAccess, entityAccess, currencyService, conditionService, probeService,
-            restService, inventoryService, campaignMemberService, chatRepo, messaging, mapper);
+            restService, inventoryService, campaignMemberService,
+            new PoiBindings(entityRepo, mapper), chatRepo, messaging, mapper);
 
         var location = new Location(regionId, "village", "Bree");
-        location.setServices("[\"Medicus\",\"Wirtshaus\",\"Handeln\",\"Aussichtspunkt\",\"Geheim\",\"Ruine\",\"Probe\"]");
+        location.setServices("[\"Medicus\",\"Wirtshaus\",\"Handeln\",\"Aussichtspunkt\",\"Geheim\",\"Ruine\",\"Probe\",\"FalscherSkill\"]");
         when(locationRepo.findById(locationId)).thenReturn(Optional.of(location));
         when(regionRepo.findById(regionId)).thenReturn(Optional.of(new Region(worldId, "Mittelreich")));
         when(campaignRepo.findByWorldId(worldId)).thenReturn(List.of());
@@ -76,6 +77,7 @@ class PoiActionServiceTest {
                 Map.of("name", "Kupfer", "abbr", "K", "factor", 1),
                 Map.of("name", "Gold", "abbr", "G", "factor", 100))),
             "conditions", List.of(Map.of("name", "Wunde")),
+            "skills", List.of(Map.of("name", "Sinnesschärfe", "attributes", List.of("klugheit"))),
             "poi_actions", List.of(
                 Map.of("name", "Medicus", "chat", "actor", "effects", List.of(
                     Map.of("type", "money", "amount", -15),
@@ -90,9 +92,11 @@ class PoiActionServiceTest {
                 Map.of("name", "Ruine", "requiresTrait", "Mutig", "effects", List.of()),
                 Map.of("name", "Fund", "effects", List.of(
                     Map.of("type", "item", "name", "Alter Schlüssel", "qty", 1))),
-                Map.of("name", "Probe", "probe", Map.of("skill", "Sinnesschärfe", "difficulty", 0,
+                Map.of("name", "Probe", "probe", Map.of("skill", "Sinnesschärfe", "target", 15, "difficulty", 0,
                     "onSuccess", List.of(Map.of("type", "text", "text", "Du findest etwas.")),
-                    "onFailure", List.of(Map.of("type", "text", "text", "Nur Schutt."))))));
+                    "onFailure", List.of(Map.of("type", "text", "text", "Nur Schutt.")))),
+                Map.of("name", "FalscherSkill", "probe", Map.of("skill", "Nix",
+                    "onSuccess", List.of(), "onFailure", List.of()))));
         when(rulesLoader.loadRules(any(), eq(worldId))).thenReturn(rules);
         when(rulesLoader.resolveSystem(any(), eq(worldId))).thenReturn(null);
 
@@ -212,6 +216,16 @@ class PoiActionServiceTest {
 
         assertThat(result.probe().success()).isFalse();
         assertThat(result.text()).isEqualTo("Nur Schutt.");
+        // M-2: konfiguriertes Ziel wird durchgereicht (Default wäre 10).
+        verify(probeService).executeProbe(actorId, userId, "Sinnesschärfe", 15, false, null, 0);
+    }
+
+    @Test
+    void probeWithUnknownSkillRejected() {
+        assertThatThrownBy(() -> execute("FalscherSkill"))
+            .isInstanceOf(PoiActionService.PoiException.class)
+            .extracting(e -> ((PoiActionService.PoiException) e).getErrorCode())
+            .isEqualTo("ROLL_SKILL_NOT_FOUND");
     }
 
     @Test
@@ -231,16 +245,32 @@ class PoiActionServiceTest {
     }
 
     @Test
-    void listMarksAvailabilityAndReasons() {
-        var list = service.list(locationId, actorId, userId, null);
+    void listReturnsBoundActionsAndHidesDmOnlyAndUnbound() {
+        var list = service.list(locationId, actorId, userId, null, false);
         var byName = list.stream().collect(java.util.stream.Collectors.toMap(
             PoiActionService.ActionInfo::name, a -> a));
 
         assertThat(byName.get("Medicus").available()).isTrue();
-        assertThat(byName.get("Fund").available()).isFalse();
-        assertThat(byName.get("Fund").reason()).isEqualTo("NOT_HERE");
-        assertThat(byName.get("Geheim").reason()).isEqualTo("DM_ONLY");
         assertThat(byName.get("Handeln").trade()).isTrue();
         assertThat(byName.get("Medicus").costs()).isNotEmpty();
+        // M-5: ungebundene Aktionen erscheinen nicht mehr.
+        assertThat(byName).doesNotContainKey("Fund");
+        // M-1: dmOnly-Aktionen (inkl. Beschreibung) nicht an Nicht-Leiter.
+        assertThat(byName).doesNotContainKey("Geheim");
+    }
+
+    @Test
+    void listAllShowsUnboundAndDmOnlyForDm() {
+        // Leiter: requireDm wirft nicht → isDm true.
+        org.mockito.Mockito.doNothing().when(worldAccess).requireDm(any(), any());
+
+        var list = service.list(locationId, actorId, userId, null, true);
+        var byName = list.stream().collect(java.util.stream.Collectors.toMap(
+            PoiActionService.ActionInfo::name, a -> a));
+
+        assertThat(byName).containsKey("Fund");
+        assertThat(byName.get("Fund").available()).isFalse();
+        assertThat(byName.get("Fund").reason()).isEqualTo("NOT_HERE");
+        assertThat(byName).containsKey("Geheim");
     }
 }

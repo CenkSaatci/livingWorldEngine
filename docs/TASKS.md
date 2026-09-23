@@ -2696,3 +2696,12 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Karten-POI:** der Info-Dialog navigiert zur Ortsansicht (dort liegt das Panel), statt das Panel direkt im Dialog zu rendern — gleiche Komponente, ein Klick mehr. Bei Bedarf als Sheet nachziehen.
 - **Nicht-Ziele v1:** keine Bestände/Lager, kein Feilschen, keine Ziel-Auswahl (`targetId`) für Effekte, keine persistierten Flüster-Nachrichten.
 - **Manueller Test offen:** `poi_actions`/`currency` im Spielsystem anlegen, Aktion an Ort/NPC binden, Medicus/Wirtshaus/Handeln durchklicken (GP-Block).
+
+### Nacharbeit 2026-09-23 (Audit-Fixes)
+
+- **Hoch:** Snapshot-Sicht trägt jetzt die System-ID (Item-/Händler-Auflösung, `RulesLoader`); Mengengrenze 1–10 000 + Overflow-Schutz beim Handel; `trade.buy/sell` + Aktionsbindung werden durchgesetzt (`PoiBindings`, `TRADE_DISABLED`).
+- **Mittel:** `dmOnly` nicht mehr an Spieler ausgeliefert; `probe.target` (Default 10) konfigurierbar; unbekannter Probe-Skill/Condition fail-closed (Runtime + Validator); `map.editor.actions`-Key; Aktionsliste nur gebunden (`?all=true` für Leiter).
+- **Niedrig/UX/A11y:** Wohlstandsformel wiederverwendet, Items einmal geladen, tote Parameter raus, Währungs-Rest → rohe Zahl, Geldzeile beschriftet, Karten-Sidebar-Aktionslink, `aria-label`/`role=dialog`.
+- **Beiläufig:** `POST /campaigns` dedupliziert Beziehungen beim Welt-Klon (kein 500 mehr bei Mehrfach-Kampagnen).
+- Offen: Refactor der 17-Abhängigkeiten (`PoiActionService`), Modal-Reihenfolge (UX-2), doppeltes Markt-Konzept (UX-4).
+- Details: `docs/AUDIT-2026-09-23-poi.md` (inkl. Fix-Status).

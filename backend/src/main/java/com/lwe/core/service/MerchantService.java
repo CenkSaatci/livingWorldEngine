@@ -31,6 +31,9 @@ import java.util.UUID;
 @Service
 public class MerchantService {
 
+    /** H-2: harte Obergrenze gegen Overflow/Wirtschaftsexploit. */
+    static final int MAX_QTY = 10_000;
+
     private final LocationRepository locationRepo;
     private final RegionRepository regionRepo;
     private final CampaignRepository campaignRepo;
@@ -42,6 +45,7 @@ public class MerchantService {
     private final InventoryService inventoryService;
     private final CurrencyService currencyService;
     private final EconomyService economyService;
+    private final PoiBindings bindings;
     private final ObjectMapper mapper;
 
     public MerchantService(LocationRepository locationRepo, RegionRepository regionRepo,
@@ -49,7 +53,7 @@ public class MerchantService {
                            GameItemRepository itemRepo, RulesLoader rulesLoader,
                            WorldAccess worldAccess, EntityAccess entityAccess,
                            InventoryService inventoryService, CurrencyService currencyService,
-                           EconomyService economyService, ObjectMapper mapper) {
+                           EconomyService economyService, PoiBindings bindings, ObjectMapper mapper) {
         this.locationRepo = locationRepo;
         this.regionRepo = regionRepo;
         this.campaignRepo = campaignRepo;
@@ -61,12 +65,14 @@ public class MerchantService {
         this.inventoryService = inventoryService;
         this.currencyService = currencyService;
         this.economyService = economyService;
+        this.bindings = bindings;
         this.mapper = mapper;
     }
 
     public record Offer(String item, String itemId, int price, int sellPrice, boolean resolved) {}
     public record MerchantInfo(String npcId, String name, String occupation, String greeting,
-                               double sellRate, List<Offer> offers) {}
+                               double sellRate, boolean buyEnabled, boolean sellEnabled,
+                               List<Offer> offers) {}
     public record TradeResult(String npcId, String item, int qty, int unitPrice, int total,
                               int moneyBefore, int moneyAfter,
                               String moneyBeforeText, String moneyAfterText) {}
@@ -77,20 +83,23 @@ public class MerchantService {
         var resolvedCampaign = resolveCampaign(worldId, campaignId);
         var rules = rulesLoader.loadRules(resolvedCampaign, worldId);
         var system = rulesLoader.resolveSystem(resolvedCampaign, worldId);
-        var items = system == null ? List.<GameItem>of() : itemRepo.findByGameSystemId(system.getId());
+        var items = itemsOf(system);
         var sellRate = defaultSellRate(rules);
+        var trade = bindings.tradeConfig(rules, bindings.boundNames(loc, worldId));
+        boolean buyEnabled = PoiBindings.tradeAllows(trade, true);
+        boolean sellEnabled = PoiBindings.tradeAllows(trade, false);
 
         var out = new ArrayList<MerchantInfo>();
         for (var npc : merchantsAt(loc)) {
             var meta = meta(npc);
             var offers = new ArrayList<Offer>();
-            var wealthFactor = 1.0 + (loc.getWealth() - 5) * 0.1;
+            var wealthFactor = economyService.wealthFactor(loc.getWealth());
             var priceMod = meta.get("price_modifier") instanceof Number n ? n.doubleValue() : 1.0;
             var npcSellRate = meta.get("sell_rate") instanceof Number n ? n.doubleValue() : sellRate;
             for (var raw : assortment(meta)) {
                 var name = text(raw.get("item"));
                 if (name == null) continue;
-                var item = items.stream().filter(i -> RuleNames.eq(i.getName(), name)).findFirst().orElse(null);
+                var item = findItem(items, name);
                 int base = raw.get("price") instanceof Number n ? n.intValue()
                     : (item != null ? item.getValue() : 0);
                 int price = raw.get("price") instanceof Number
@@ -100,7 +109,8 @@ public class MerchantService {
                     price, sellPrice, item != null));
             }
             out.add(new MerchantInfo(npc.getId().toString(), npc.getName(),
-                text(meta.get("occupation")), text(meta.get("greeting")), npcSellRate, offers));
+                text(meta.get("occupation")), text(meta.get("greeting")), npcSellRate,
+                buyEnabled, sellEnabled, offers));
         }
         return out;
     }
@@ -108,17 +118,18 @@ public class MerchantService {
     @Transactional
     public TradeResult buy(UUID locationId, UUID npcId, UUID actorId, UUID userId,
                            String itemName, int qty, UUID campaignId) {
-        if (qty < 1) throw new MerchantException("TRADE_INVALID_QUANTITY", "Quantity must be >= 1");
+        requireQty(qty);
         var loc = location(locationId, userId);
         var worldId = worldIdOf(loc);
         var merchant = requireMerchant(npcId, loc, worldId);
         var resolvedCampaign = resolveCampaign(worldId, campaignId);
         var rules = rulesLoader.loadRules(resolvedCampaign, worldId);
-        var system = rulesLoader.resolveSystem(resolvedCampaign, worldId);
-        var offer = findOffer(loc, merchant, rules, system, itemName);
-        var item = resolveItem(system, offer.item());
+        requireTrade(loc, worldId, rules, true);
+        var items = itemsOf(rulesLoader.resolveSystem(resolvedCampaign, worldId));
+        var offer = findOffer(loc, merchant, rules, items, itemName);
+        var item = resolveItem(items, offer.item());
         var actor = lockedActor(actorId, userId, worldId);
-        int total = offer.price() * qty;
+        int total = totalPrice(offer.price(), qty);
         int before = currencyService.money(actor);
         currencyService.requirePayable(actor, total);
         currencyService.pay(actor, total);
@@ -130,21 +141,22 @@ public class MerchantService {
     @Transactional
     public TradeResult sell(UUID locationId, UUID npcId, UUID actorId, UUID userId,
                             String itemName, int qty, UUID campaignId) {
-        if (qty < 1) throw new MerchantException("TRADE_INVALID_QUANTITY", "Quantity must be >= 1");
+        requireQty(qty);
         var loc = location(locationId, userId);
         var worldId = worldIdOf(loc);
         var merchant = requireMerchant(npcId, loc, worldId);
         var resolvedCampaign = resolveCampaign(worldId, campaignId);
         var rules = rulesLoader.loadRules(resolvedCampaign, worldId);
-        var system = rulesLoader.resolveSystem(resolvedCampaign, worldId);
-        var offer = findOffer(loc, merchant, rules, system, itemName);
-        var item = resolveItem(system, offer.item());
+        requireTrade(loc, worldId, rules, false);
+        var items = itemsOf(rulesLoader.resolveSystem(resolvedCampaign, worldId));
+        var offer = findOffer(loc, merchant, rules, items, itemName);
+        var item = resolveItem(items, offer.item());
         var actor = lockedActor(actorId, userId, worldId);
         int have = inventoryQuantity(actor, item.getId());
         if (have < qty) {
             throw new MerchantException("ITEM_NOT_OWNED", "Has only " + have + "x " + item.getName());
         }
-        int total = offer.sellPrice() * qty;
+        int total = totalPrice(offer.sellPrice(), qty);
         int before = currencyService.money(actor);
         inventoryService.removeItemInternal(actor, item.getId(), qty);
         currencyService.credit(actor, total);
@@ -154,6 +166,42 @@ public class MerchantService {
 
     // -------------------------------------------------------------- Helpers
 
+    private static void requireQty(int qty) {
+        if (qty < 1 || qty > MAX_QTY) {
+            throw new MerchantException("TRADE_INVALID_QUANTITY",
+                "Quantity must be between 1 and " + MAX_QTY);
+        }
+    }
+
+    /** H-2: kein stiller Integer-Überlauf. */
+    private static int totalPrice(int unitPrice, int qty) {
+        try {
+            return Math.multiplyExact(unitPrice, qty);
+        } catch (ArithmeticException e) {
+            throw new MerchantException("TRADE_INVALID_QUANTITY", "Quantity too large");
+        }
+    }
+
+    /** H-3: Handel nur über die gebundene „Handeln"-Aktion und deren Flags. */
+    private void requireTrade(Location loc, UUID worldId, Map<String, Object> rules, boolean buying) {
+        var trade = bindings.tradeConfig(rules, bindings.boundNames(loc, worldId));
+        if (trade == null) {
+            throw new MerchantException("POI_ACTION_NOT_AVAILABLE", "No trade action bound here");
+        }
+        if (!PoiBindings.tradeAllows(trade, buying)) {
+            throw new MerchantException("TRADE_DISABLED",
+                buying ? "Buying is disabled here" : "Selling is disabled here");
+        }
+    }
+
+    private List<GameItem> itemsOf(com.lwe.core.domain.GameSystem system) {
+        return system == null ? List.of() : itemRepo.findByGameSystemId(system.getId());
+    }
+
+    private static GameItem findItem(List<GameItem> items, String name) {
+        return items.stream().filter(i -> RuleNames.eq(i.getName(), name)).findFirst().orElse(null);
+    }
+
     private TradeResult result(GameEntity merchant, Offer offer, int qty, int total,
                                int before, int after, Map<String, Object> rules) {
         return new TradeResult(merchant.getId().toString(), offer.item(), qty,
@@ -162,7 +210,7 @@ public class MerchantService {
     }
 
     private Offer findOffer(Location loc, GameEntity merchant, Map<String, Object> rules,
-                            com.lwe.core.domain.GameSystem system, String itemName) {
+                            List<GameItem> items, String itemName) {
         if (itemName == null || itemName.isBlank()) {
             throw new MerchantException("ITEM_NOT_IN_ASSORTMENT", "Item name missing");
         }
@@ -173,8 +221,7 @@ public class MerchantService {
         for (var raw : assortment(meta)) {
             var name = text(raw.get("item"));
             if (name == null || !RuleNames.eq(name, itemName)) continue;
-            var item = system == null ? null : itemRepo.findByGameSystemId(system.getId()).stream()
-                .filter(i -> RuleNames.eq(i.getName(), name)).findFirst().orElse(null);
+            var item = findItem(items, name);
             if (item == null) {
                 throw new MerchantException("MERCHANT_ITEM_UNKNOWN", "Unknown item: " + name);
             }
@@ -186,11 +233,12 @@ public class MerchantService {
         throw new MerchantException("ITEM_NOT_IN_ASSORTMENT", "Not in assortment: " + itemName);
     }
 
-    private GameItem resolveItem(com.lwe.core.domain.GameSystem system, String name) {
-        if (system == null) throw new MerchantException("MERCHANT_ITEM_UNKNOWN", "No game system for items");
-        return itemRepo.findByGameSystemId(system.getId()).stream()
-            .filter(i -> RuleNames.eq(i.getName(), name)).findFirst()
-            .orElseThrow(() -> new MerchantException("MERCHANT_ITEM_UNKNOWN", "Unknown item: " + name));
+    private GameItem resolveItem(List<GameItem> items, String name) {
+        var item = findItem(items, name);
+        if (item == null) {
+            throw new MerchantException("MERCHANT_ITEM_UNKNOWN", "Unknown item: " + name);
+        }
+        return item;
     }
 
     private GameEntity requireMerchant(UUID npcId, Location loc, UUID worldId) {

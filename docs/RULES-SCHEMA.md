@@ -214,7 +214,8 @@ Neue optionale Properties können jederzeit ergänzt werden. Aktuell nutzbar:
 }
 ```
 
-- **Bindung:** Eine Aktion ist an einem Ort verfügbar, wenn ihr Name in `location.services[]` oder in `services_offered[]` eines NPCs am Ort steht (case-insensitiv).
+- **Bindung:** Eine Aktion ist an einem Ort verfügbar, wenn ihr Name in `location.services[]` oder in `services_offered[]` eines NPCs am Ort steht (case-insensitiv). `GET /locations/{id}/actions` liefert standardmäßig nur gebundene Aktionen; `?all=true` (nur Leiter) zeigt den ganzen Katalog für die Autoren-Vorschau. `dmOnly`-Aktionen werden Nicht-Leitern nie ausgeliefert.
+- **`probe`:** `skill` muss in `skills[]` existieren (sonst Fehler). `target` ist die Basis-Schwierigkeit (Default 10, gilt für `d20_target`; bei `d100_threshold`/`d20_3attr` wirkt `difficulty` als Verschiebung/Schwelle).
 - **`chat`:** `public` persistiert im Welt-Chat, `actor` geht transient an den Ausführenden (User-Queue) und steht im Ergebnis; fehlt die Angabe, ist eine reine Text-Aktion öffentlich, eine mechanische privat.
-- **Händler:** NPC-Metadaten `is_merchant`, `shop_inventory[{item, price?}]`, optional `sell_rate`, `price_modifier`. Ohne expliziten `price` gilt `Item-Wert × Wohlstandsfaktor × price_modifier`; Verkaufserlös ist `floor(Preis × sellRate)`. Die Preisformel kommt aus `EconomyService`.
+- **Händler:** NPC-Metadaten `is_merchant`, `shop_inventory[{item, price?}]`, optional `sell_rate`, `price_modifier`. Ohne expliziten `price` gilt `Item-Wert × Wohlstandsfaktor × price_modifier`; Verkaufserlös ist `floor(Preis × sellRate)`. Die Preisformel kommt aus `EconomyService`. Kauf/Verkauf sind nur über eine an diesem Ort gebundene Aktion mit `trade` erlaubt; `buy`/`sell: false` schaltet die jeweilige Richtung ab, Mengen sind auf 1–10 000 begrenzt.
 - **Fehlend = Default, kaputt = Fehler:** unbekannte Aktion/Item/Zustand und nicht leistbare Kosten brechen ab, bevor irgendein Effekt wirkt.

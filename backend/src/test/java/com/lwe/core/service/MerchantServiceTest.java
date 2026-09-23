@@ -55,9 +55,10 @@ class MerchantServiceTest {
     void setUp() {
         service = new MerchantService(locationRepo, regionRepo, campaignRepo, entityRepo, itemRepo,
             rulesLoader, worldAccess, entityAccess, inventoryService, currencyService,
-            economyService, mapper);
+            economyService, new PoiBindings(entityRepo, mapper), mapper);
 
         var location = new Location(regionId, "village", "Bree");
+        location.setServices("[\"Handeln\"]");
         setId(location, locationId);
         when(locationRepo.findById(locationId)).thenReturn(Optional.of(location));
         when(regionRepo.findById(regionId)).thenReturn(Optional.of(new Region(worldId, "Mittelreich")));
@@ -197,5 +198,45 @@ class MerchantServiceTest {
             .isInstanceOf(MerchantService.MerchantException.class)
             .extracting(e -> ((MerchantService.MerchantException) e).getErrorCode())
             .isEqualTo("MERCHANT_NOT_FOUND");
+    }
+
+    @Test
+    void buyRejectedWhenNoTradeActionBound() {
+        locationRepo.findById(locationId).orElseThrow().setServices("[]");
+
+        assertThatThrownBy(() -> service.buy(locationId, merchantId, actorId, userId, "Heiltrank", 1, null))
+            .isInstanceOf(MerchantService.MerchantException.class)
+            .extracting(e -> ((MerchantService.MerchantException) e).getErrorCode())
+            .isEqualTo("POI_ACTION_NOT_AVAILABLE");
+    }
+
+    @Test
+    void sellRejectedWhenTradeDisallowsSelling() {
+        when(rulesLoader.loadRules(any(), eq(worldId))).thenReturn(Map.of(
+            "poi_actions", List.of(Map.of("name", "Handeln",
+                "trade", Map.of("buy", true, "sell", false)))));
+        actor.setInventoryJson("[{\"itemId\":\"" + potion.getId() + "\",\"quantity\":3}]");
+
+        assertThatThrownBy(() -> service.sell(locationId, merchantId, actorId, userId, "Heiltrank", 1, null))
+            .isInstanceOf(MerchantService.MerchantException.class)
+            .extracting(e -> ((MerchantService.MerchantException) e).getErrorCode())
+            .isEqualTo("TRADE_DISABLED");
+    }
+
+    @Test
+    void hugeQuantityRejected() {
+        assertThatThrownBy(() ->
+            service.buy(locationId, merchantId, actorId, userId, "Heiltrank", 1_000_000, null))
+            .isInstanceOf(MerchantService.MerchantException.class)
+            .extracting(e -> ((MerchantService.MerchantException) e).getErrorCode())
+            .isEqualTo("TRADE_INVALID_QUANTITY");
+        verify(inventoryService, never()).addItemInternal(any(), any(), anyInt());
+    }
+
+    @Test
+    void listReportsTradeFlags() {
+        var merchants = service.list(locationId, userId, null);
+        assertThat(merchants.getFirst().buyEnabled()).isTrue();
+        assertThat(merchants.getFirst().sellEnabled()).isTrue();
     }
 }

@@ -54,6 +54,7 @@ public class RulesLoader {
             var view = new GameSystem(system.getName(),
                 campaign.getGameSystemVersion() != null ? campaign.getGameSystemVersion() : system.getVersion(),
                 snapshot, system.getSchemaJson());
+            view.setId(system.getId()); // H-1: sonst ist getId() null (Item-/Händler-Lookups)
             view.setActive(system.isActive());
             return view;
         }

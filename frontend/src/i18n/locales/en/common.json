@@ -405,7 +405,8 @@
     "sold": "Sold",
     "tradeDone": "{label}: {qty}× {item} for {total} ({money})",
     "failed": "Trade failed",
-    "unresolved": "unknown item"
+    "unresolved": "unknown item",
+    "noTrade": "Trading not available here (missing \"Handeln\" action)."
   },
   "adventure": {
     "success": "✅ Success!",

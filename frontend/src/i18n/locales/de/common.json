@@ -405,7 +405,8 @@
     "sold": "Verkauft",
     "tradeDone": "{label}: {qty}× {item} für {total} ({money})",
     "failed": "Handel fehlgeschlagen",
-    "unresolved": "Item unbekannt"
+    "unresolved": "Item unbekannt",
+    "noTrade": "Handel hier nicht verfügbar (Aktion „Handeln“ fehlt)."
   },
   "adventure": {
     "success": "✅ Erfolg!",

@@ -263,6 +263,39 @@ class WorldServiceTest {
     }
 
     @Test
+    void cloneDeduplicatesRelationshipsWhenBothEntitiesMatch() {
+        // I-1 (Audit 2026-09-23): findByEntityAIdOrEntityBId liefert dieselbe Beziehung
+        // für A und B — der Klon darf sie nur einmal einfügen (sonst Duplicate-Key/500).
+        var original = worldWithId("Beziehungswelt", ownerId);
+        setId(original, UUID.randomUUID());
+        var a = new GameEntity(original.getId(), "PC", "A");
+        setId(a, UUID.randomUUID());
+        var b = new GameEntity(original.getId(), "PC", "B");
+        setId(b, UUID.randomUUID());
+
+        when(worldRepo.findById(original.getId())).thenReturn(Optional.of(original));
+        when(worldRepo.save(any())).thenAnswer(inv -> {
+            var w = inv.<World>getArgument(0);
+            if (w.getId() == null) setId(w, UUID.randomUUID());
+            return w;
+        });
+        when(entityRepo.findByWorldIdAndActiveTrue(original.getId())).thenReturn(List.of(a, b));
+        when(entityRepo.save(any())).thenAnswer(inv -> {
+            var e = inv.<GameEntity>getArgument(0);
+            if (e.getId() == null) setId(e, UUID.randomUUID());
+            return e;
+        });
+
+        var rel = new com.lwe.core.domain.EntityRelationship(a.getId(), b.getId(), "friend");
+        setLongId(rel, 1L);
+        when(relationshipRepo.findByEntityAIdOrEntityBId(any(), any())).thenReturn(List.of(rel));
+
+        worldService.cloneForCampaign(original.getId(), memberId);
+
+        verify(relationshipRepo, times(1)).save(any());
+    }
+
+    @Test
     void cloneCopiesCapitalWeatherDescriptionAndLeader() {
         var original = worldWithId("Detailwelt", ownerId);
         setId(original, UUID.randomUUID());
@@ -466,6 +499,14 @@ class WorldServiceTest {
     }
 
     private void setId(Object obj, UUID id) {
+        try {
+            var f = obj.getClass().getDeclaredField("id");
+            f.setAccessible(true);
+            f.set(obj, id);
+        } catch (Exception e) { throw new RuntimeException(e); }
+    }
+
+    private void setLongId(Object obj, Long id) {
         try {
             var f = obj.getClass().getDeclaredField("id");
             f.setAccessible(true);

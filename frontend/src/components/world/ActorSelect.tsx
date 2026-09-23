@@ -34,6 +34,7 @@ export function ActorSelect({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        aria-label={t('poi.actor')}
         className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
       >
         {actors.map((a) => (

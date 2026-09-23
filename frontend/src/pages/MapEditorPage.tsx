@@ -684,6 +684,14 @@ export default function MapEditorPage() {
                   </span>
                   <span className="flex shrink-0 items-center gap-1">
                     <button
+                      onClick={(e) => { e.stopPropagation(); navigate(`/worlds/${id}/locations/${loc.id}`); }}
+                      aria-label={t('editor.actions')}
+                      title={t('editor.actions')}
+                      className="text-text-secondary hover:text-accent"
+                    >
+                      <Sparkles size={12} />
+                    </button>
+                    <button
                       onClick={(e) => { e.stopPropagation(); openEditLocation(loc); }}
                       aria-label={t('editor.edit')}
                       title={t('editor.edit')}

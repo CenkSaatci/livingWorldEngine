@@ -70,6 +70,16 @@ class CurrencyServiceTest {
     }
 
     @Test
+    void nonCanonicalDenominationsFallBackToRawNumber() {
+        // L-4: ohne Faktor-1-Sorte lässt sich ein Rest nicht korrekt in Sorten zeigen.
+        var rules = Map.<String, Object>of("currency", Map.of("denominations", List.of(
+            Map.of("name", "Silber", "factor", 10),
+            Map.of("name", "Gold", "factor", 100))));
+        assertThat(service.format(105, rules)).isEqualTo("105");
+        assertThat(service.format(100, rules)).isEqualTo("1 Gold");
+    }
+
+    @Test
     void payAndCreditKeepBaseValue() {
         var actor = actor();
         service.setMoney(actor, 100);

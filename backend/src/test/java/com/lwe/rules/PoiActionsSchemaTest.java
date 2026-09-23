@@ -116,6 +116,34 @@ class PoiActionsSchemaTest {
     }
 
     @Test
+    void rejectsUnknownProbeSkillWhenCatalogExists() {
+        var errors = validate(rules("""
+            "skills": [ { "name": "Athletik", "attributes": ["mut"] } ],
+            "poi_actions": [ { "name": "X", "probe": { "skill": "Fliegen" } } ]
+            """));
+        assertThat(errors).anyMatch(e -> e.message().contains("nicht in skills[]"));
+    }
+
+    @Test
+    void rejectsUnknownConditionWhenCatalogExists() {
+        var errors = validate(rules("""
+            "conditions": [ { "name": "Wunde" } ],
+            "poi_actions": [ { "name": "X", "effects": [
+              { "type": "condition", "name": "Schluckauf" } ] } ]
+            """));
+        assertThat(errors).anyMatch(e -> e.message().contains("nicht in conditions[]"));
+    }
+
+    @Test
+    void acceptsProbeTarget() {
+        var errors = validate(rules("""
+            "skills": [ { "name": "Athletik", "attributes": ["mut"] } ],
+            "poi_actions": [ { "name": "X", "probe": { "skill": "Athletik", "target": 15 } } ]
+            """));
+        assertThat(errors).isEmpty();
+    }
+
+    @Test
     void rejectsUnknownActionField() {
         var errors = validate(rules("""
             "poi_actions": [ { "name": "X", "kind": "probe" } ]

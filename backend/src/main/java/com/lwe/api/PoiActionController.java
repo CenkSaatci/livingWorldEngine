@@ -27,8 +27,9 @@ public class PoiActionController {
             @PathVariable UUID locationId,
             @RequestParam(required = false) UUID actorId,
             @RequestParam(required = false) UUID campaignId,
+            @RequestParam(defaultValue = "false") boolean all,
             @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(service.list(locationId, actorId, user.getId(), campaignId));
+        return ResponseEntity.ok(service.list(locationId, actorId, user.getId(), campaignId, all));
     }
 
     @PostMapping("/actions/{actionName}")

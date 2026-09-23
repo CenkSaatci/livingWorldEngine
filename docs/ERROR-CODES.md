@@ -218,7 +218,8 @@ Jede Fehlerantwort der API folgt dem in [`API.md`](API.md) definierten Format:
 | `MERCHANT_ITEM_UNKNOWN` | 422 | Sortiments-Item existiert nicht im System |
 | `ITEM_NOT_IN_ASSORTMENT` | 422 | Item steht nicht im Sortiment |
 | `ITEM_NOT_OWNED` | 422 | Verkauf ohne Bestand beim Charakter |
-| `TRADE_INVALID_QUANTITY` | 422 | Menge < 1 |
+| `TRADE_INVALID_QUANTITY` | 422 | Menge < 1, > 10 000 oder Überlauf |
+| `TRADE_DISABLED` | 422 | Kauf/Verkauf laut `poi_actions[].trade` abgeschaltet |
 | `UNKNOWN_CONDITION` | 422 | Zustands-Effekt verweist auf unbekannten Zustand (Katalog) |
 
 > `chat: actor` erzeugt **keine** persistierte Chat-Nachricht, sondern eine transiente

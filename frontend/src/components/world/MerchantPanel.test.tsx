@@ -34,6 +34,8 @@ const merchants = [
     occupation: 'Händler',
     greeting: 'Was darfs sein?',
     sellRate: 0.5,
+    buyEnabled: true,
+    sellEnabled: true,
     offers: [
       { item: 'Heiltrank', itemId: 'i1', price: 30, sellPrice: 15, resolved: true },
       { item: 'Geisterklinge', itemId: null, price: 0, sellPrice: 0, resolved: false },

@@ -38,7 +38,7 @@ public class CurrencyService {
         if (entity.getMetadataJson() == null || entity.getMetadataJson().isBlank()) return 0;
         try {
             var node = mapper.readTree(entity.getMetadataJson()).path("money");
-            return node.isInt() || node.isLong() ? node.asInt() : 0;
+            return node.isNumber() ? node.asInt() : 0;
         } catch (Exception e) {
             log.warn("metadataJson.money nicht lesbar: {}", e.getMessage());
             return 0;
@@ -139,12 +139,9 @@ public class CurrencyService {
                 remaining -= count * d.factor();
             }
         }
-        // ponytail: Sorten ohne Faktor 1 (nicht-kanonisch) — Rest wandert in die kleinste Sorte,
-        // damit nie Wert verschwindet. Kanonische Systeme (1/10/100) haben nie einen Rest.
-        if (remaining > 0 && !denominations.isEmpty()) {
-            var smallest = denominations.get(denominations.size() - 1);
-            out.add(Map.of("name", smallest.name(), "abbr", smallest.abbr(), "count", remaining));
-        }
+        // L-4: Sorten ohne Faktor 1 (nicht-kanonisch) können einen Rest lassen.
+        // Dann lieber die rohe Basiszahl zeigen als einen falschen Sortenbetrag.
+        if (remaining > 0) return List.of();
         return out;
     }
 

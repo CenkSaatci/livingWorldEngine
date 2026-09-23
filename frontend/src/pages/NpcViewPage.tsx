@@ -294,7 +294,8 @@ export default function NpcViewPage() {
       );
       setOrDelete('is_merchant', editIsMerchant ? true : undefined);
       const shop = parseShopList(editShop);
-      setOrDelete('shop_inventory', shop.length > 0 ? shop : undefined);
+      // L-8: beim Abwählen des Händlers kein verwaistes Sortiment zurücklassen.
+      setOrDelete('shop_inventory', editIsMerchant && shop.length > 0 ? shop : undefined);
 
       await apiClient.patch(`/worlds/${worldId}/entities/${npc.id}`, {
         name: editName.trim(),
@@ -615,6 +616,9 @@ export default function NpcViewPage() {
           onClick={() => setEditing(false)}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('entity.editNpc')}
             className="w-80 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >

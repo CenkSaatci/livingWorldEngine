@@ -165,7 +165,8 @@ export function CharacterSheet({ entityId }: Props) {
             </span>
           )}
           <span className="flex items-center gap-1" title={t('sheet.money')!}>
-            <Coins size={12} className="text-warning" /> {data.moneyText ?? data.money ?? 0}
+            <Coins size={12} className="text-warning" /> {t('sheet.money')}:{' '}
+            {data.moneyText ?? data.money ?? 0}
           </span>
         </p>
       </div>

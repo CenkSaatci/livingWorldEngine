@@ -282,8 +282,12 @@ public class WorldService {
         }
 
         // Audit T7: Beziehungen (EntityRelationship) mit remappten IDs klonen.
+        // I-1 (Audit 2026-09-23): findByEntityAIdOrEntityBId liefert dieselbe Beziehung
+        // beim Verarbeiten von A und B — Dedupe per Beziehungs-ID verhindert Duplicate-Key.
+        var seenRelationships = new java.util.HashSet<Long>();
         for (var entry : entityIdMap.entrySet()) {
             for (var rel : relationshipRepo.findByEntityAIdOrEntityBId(entry.getKey(), entry.getKey())) {
+                if (!seenRelationships.add(rel.getId())) continue;
                 var newA = entityIdMap.get(rel.getEntityAId());
                 var newB = entityIdMap.get(rel.getEntityBId());
                 if (newA != null && newB != null) {

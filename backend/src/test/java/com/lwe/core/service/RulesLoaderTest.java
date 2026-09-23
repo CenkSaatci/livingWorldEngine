@@ -81,6 +81,9 @@ class RulesLoaderTest {
         assertThat(gs.getRulesJson()).contains("pin");
         assertThat(gs.getVersion()).isEqualTo(2);
         assertThat(gs.getName()).isEqualTo("DSA");
+        // H-1 (Audit 2026-09-23): die Snapshot-Sicht muss die System-ID tragen,
+        // sonst findet die Item-/Händler-Auflösung (findByGameSystemId) nichts.
+        assertThat(gs.getId()).isEqualTo(gameSystemId);
     }
 
     @Test
