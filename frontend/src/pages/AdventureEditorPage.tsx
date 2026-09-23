@@ -282,6 +282,7 @@ export default function AdventureEditorPage() {
               value={adventureName}
               onChange={(e) => setAdventureName(e.target.value)}
               placeholder="New adventure name"
+              aria-label="New adventure name"
               className="rounded border border-bg-elevated bg-bg-primary px-3 py-1.5 text-xs text-text-primary outline-none focus:border-accent"
             />
             <button
@@ -363,21 +364,19 @@ export default function AdventureEditorPage() {
             <h3 className="mb-3 font-heading text-sm text-text-primary">Node Editor</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-[10px] text-text-secondary mb-1">Text</label>
+                <label className="block text-[10px] text-text-secondary mb-1" htmlFor="adventureeditorpage-field-1">Text</label>
                 <textarea
                   value={selectedNode.data.text}
                   onChange={(e) => updateSelectedNode('text', e.target.value)}
                   rows={4}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1.5 text-xs text-text-primary outline-none focus:border-accent resize-none"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1.5 text-xs text-text-primary outline-none focus:border-accent resize-none" id="adventureeditorpage-field-1" />
               </div>
               <div>
-                <label className="block text-[10px] text-text-secondary mb-1">Image URL</label>
+                <label className="block text-[10px] text-text-secondary mb-1" htmlFor="adventureeditorpage-field-2">Image URL</label>
                 <input
                   value={selectedNode.data.imageUrl}
                   onChange={(e) => updateSelectedNode('imageUrl', e.target.value)}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1.5 text-xs text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1.5 text-xs text-text-primary outline-none focus:border-accent" id="adventureeditorpage-field-2" />
               </div>
               <label className="flex items-center gap-2">
                 <input

@@ -46,23 +46,21 @@ export function QuickFactionModal({ worldId, onCreated, onClose }: Props) {
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs text-text-secondary mb-1">{t('faction.name')}</label>
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="quickfactionmodal-field-1">{t('faction.name')}</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
               placeholder="Crown, Goblin Tribes…"
-              autoFocus
-            />
+              autoFocus id="quickfactionmodal-field-1" />
           </div>
           <div>
-            <label className="block text-xs text-text-secondary mb-1">{t('faction.color')}</label>
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="quickfactionmodal-field-2">{t('faction.color')}</label>
             <input
               type="color"
               value={color}
               onChange={(e) => setColor(e.target.value)}
-              className="h-9 w-full cursor-pointer rounded border border-bg-elevated bg-bg-primary"
-            />
+              className="h-9 w-full cursor-pointer rounded border border-bg-elevated bg-bg-primary" id="quickfactionmodal-field-2" />
           </div>
           <button
             onClick={handleSave}

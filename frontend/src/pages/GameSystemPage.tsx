@@ -641,22 +641,20 @@ export default function GameSystemPage() {
               <>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-xs text-text-secondary mb-1">Name</label>
+                    <label className="block text-xs text-text-secondary mb-1" htmlFor="gamesystempage-field-1">Name</label>
                     <input
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                    />
+                      className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="gamesystempage-field-1" />
                   </div>
                   <div>
-                    <label className="block text-xs text-text-secondary mb-1">Version</label>
+                    <label className="block text-xs text-text-secondary mb-1" htmlFor="gamesystempage-field-2">Version</label>
                     <input
                       type="number"
                       min={1}
                       value={version}
                       onChange={(e) => setVersion(Number(e.target.value))}
-                      className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                    />
+                      className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="gamesystempage-field-2" />
                   </div>
                 </div>
 
@@ -685,8 +683,9 @@ export default function GameSystemPage() {
 
                 {/* JSON Editor */}
                 <div className="mb-3">
-                  <label className="block text-xs text-text-secondary mb-1">Rules JSON</label>
+                  <span className="block text-xs text-text-secondary mb-1">Rules JSON</span>
                   <SyntaxHighlightedTextarea
+                    aria-label="Rules JSON"
                     value={rulesJson}
                     onChange={(e) => {
                       setRulesJson(e.target.value);

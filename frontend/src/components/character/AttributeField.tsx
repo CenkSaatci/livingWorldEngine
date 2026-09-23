@@ -36,6 +36,8 @@ export function AttributeField({ label, type, value, onChange }: WidgetProps) {
         <span className="text-sm text-text-primary capitalize">{label}</span>
         <button
           onClick={() => onChange(!value)}
+          aria-label={label}
+          aria-pressed={!!value}
           className={`h-5 w-9 rounded-full transition-colors ${
             value ? 'bg-accent' : 'bg-bg-elevated'
           }`}
@@ -51,10 +53,12 @@ export function AttributeField({ label, type, value, onChange }: WidgetProps) {
   }
 
   // STRING
+  const fieldId = `attr-${label}`;
   return (
     <div className="py-1">
-      <label className="mb-1 block text-sm text-text-primary capitalize">{label}</label>
+      <label className="mb-1 block text-sm text-text-primary capitalize" htmlFor={fieldId}>{label}</label>
       <input
+        id={fieldId}
         type="text"
         value={String(value ?? '')}
         onChange={(e) => onChange(e.target.value)}

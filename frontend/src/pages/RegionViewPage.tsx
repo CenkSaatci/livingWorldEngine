@@ -201,29 +201,27 @@ export default function RegionViewPage() {
             <h3 className="font-heading text-text-primary mb-4">{t('region.editTitle')}</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('entity.name')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="regionviewpage-field-1">{t('entity.name')}</label>
                 <input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="regionviewpage-field-1" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('region.description')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="regionviewpage-field-2">{t('region.description')}</label>
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   rows={3}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none" id="regionviewpage-field-2" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('region.climate')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="regionviewpage-field-3">{t('region.climate')}</label>
                 <select
                   value={editClimate}
                   onChange={(e) => setEditClimate(e.target.value)}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                >
+                 id="regionviewpage-field-3">
                   {CLIMATES.map((c) => (
                     <option key={c} value={c} className="capitalize">
                       {c}
@@ -232,7 +230,7 @@ export default function RegionViewPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="regionviewpage-field-4">
                   {t('region.dangerLevel')}
                 </label>
                 <input
@@ -241,37 +239,33 @@ export default function RegionViewPage() {
                   max={10}
                   value={editDangerLevel}
                   onChange={(e) => setEditDangerLevel(Number(e.target.value))}
-                  className="w-full accent-accent"
-                />
+                  className="w-full accent-accent" id="regionviewpage-field-4" />
                 <span className="text-xs text-text-secondary">{editDangerLevel}/10</span>
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('region.population')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="regionviewpage-field-5">{t('region.population')}</label>
                 <input
                   type="number"
                   min={0}
                   value={editPopulation}
                   onChange={(e) => setEditPopulation(Number(e.target.value))}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="regionviewpage-field-5" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('region.resourcesJson')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="regionviewpage-field-6">{t('region.resourcesJson')}</label>
                 <textarea
                   value={editResources}
                   onChange={(e) => setEditResources(e.target.value)}
                   rows={3}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none" id="regionviewpage-field-6" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('region.factionsJson')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="regionviewpage-field-7">{t('region.factionsJson')}</label>
                 <textarea
                   value={editFactionsJson}
                   onChange={(e) => setEditFactionsJson(e.target.value)}
                   rows={3}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none" id="regionviewpage-field-7" />
               </div>
               <div className="flex gap-2 pt-2">
                 <button

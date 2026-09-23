@@ -625,46 +625,42 @@ export default function NpcViewPage() {
             <h3 className="font-heading text-text-primary mb-4">{t('entity.editNpc')}</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('entity.name')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="npcviewpage-field-1">{t('entity.name')}</label>
                 <input
-                  value={editName} aria-label={t('entity.name')}
+                  value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="npcviewpage-field-1" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('entity.age')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="npcviewpage-field-2">{t('entity.age')}</label>
                 <input
                   type="number"
                   min={0}
-                  value={editAge ?? ''} aria-label={t('entity.age')}
+                  value={editAge ?? ''}
                   onChange={(e) => setEditAge(e.target.value ? Number(e.target.value) : undefined)}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="npcviewpage-field-2" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('entity.experience')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="npcviewpage-field-3">{t('entity.experience')}</label>
                 <input
-                  value={editExperienceLevel} aria-label={t('entity.experience')}
+                  value={editExperienceLevel}
                   onChange={(e) => setEditExperienceLevel(e.target.value)}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="npcviewpage-field-3" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('entity.standing')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="npcviewpage-field-4">{t('entity.standing')}</label>
                 <input
-                  value={editSocialStanding} aria-label={t('entity.standing')}
+                  value={editSocialStanding}
                   onChange={(e) => setEditSocialStanding(e.target.value)}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="npcviewpage-field-4" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('entity.faction')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="npcviewpage-field-5">{t('entity.faction')}</label>
                 <select
-                  value={editFactionId} aria-label={t('entity.faction')}
+                  value={editFactionId}
                   onChange={(e) => setEditFactionId(e.target.value)}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                >
+                 id="npcviewpage-field-5">
                   <option value="">{t('entity.none')}</option>
                   {factions.map((f) => (
                     <option key={f.id} value={f.id}>
@@ -674,12 +670,12 @@ export default function NpcViewPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('entity.location')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="npcviewpage-field-6">{t('entity.location')}</label>
                 <select
-                  value={editLocationId} aria-label={t('entity.location')}
+                  value={editLocationId}
                   onChange={(e) => setEditLocationId(e.target.value)}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                >
+                 id="npcviewpage-field-6">
                   <option value="">{t('entity.none')}</option>
                   {factionLocations.map((l) => (
                     <option key={l.id} value={l.id}>
@@ -691,8 +687,8 @@ export default function NpcViewPage() {
               </div>
               {/* Dienste & Händler direkt beim Ort — Kern der Orts-Interaktion (ADR-015) */}
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('entity.services')}</label>
-                <div className="flex flex-wrap gap-1">
+                <label id="npc-services" className="block text-xs text-text-secondary mb-1">{t('entity.services')}</label>
+                <div role="group" aria-labelledby="npc-services" className="flex flex-wrap gap-1">
                   {NPC_SERVICES.map((s) => {
                     const on = editServices.includes(s);
                     return (
@@ -717,14 +713,13 @@ export default function NpcViewPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('entity.priceModifier')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="npcviewpage-field-7">{t('entity.priceModifier')}</label>
                 <input
-                  value={editPriceMod} aria-label={t('entity.priceModifier')}
+                  value={editPriceMod}
                   onChange={(e) => setEditPriceMod(e.target.value)}
                   placeholder="1.0"
                   inputMode="decimal"
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="npcviewpage-field-7" />
               </div>
               <div>
                 <label className="flex items-center gap-2 text-xs text-text-secondary mb-1">
@@ -750,44 +745,40 @@ export default function NpcViewPage() {
                 )}
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('entity.personality')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="npcviewpage-field-8">{t('entity.personality')}</label>
                 <input
-                  value={editPersonality} aria-label={t('entity.personality')}
+                  value={editPersonality}
                   onChange={(e) => setEditPersonality(e.target.value)}
                   placeholder={t('entity.personality_placeholder')}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="npcviewpage-field-8" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="npcviewpage-field-9">
                   {t('entity.knowledge')}
                 </label>
                 <input
-                  value={editKnowledge} aria-label={t('entity.knowledge')}
+                  value={editKnowledge}
                   onChange={(e) => setEditKnowledge(e.target.value)}
                   placeholder={t('entity.knowledge_placeholder')}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="npcviewpage-field-9" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="npcviewpage-field-10">
                   {t('entity.goals')}
                 </label>
                 <input
-                  value={editGoals} aria-label={t('entity.goals')}
+                  value={editGoals}
                   onChange={(e) => setEditGoals(e.target.value)}
                   placeholder={t('entity.goals_placeholder')}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="npcviewpage-field-10" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('entity.backstory')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="npcviewpage-field-11">{t('entity.backstory')}</label>
                 <textarea
-                  value={editBackstory} aria-label={t('entity.backstory')}
+                  value={editBackstory}
                   onChange={(e) => setEditBackstory(e.target.value)}
                   rows={3}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none" id="npcviewpage-field-11" />
               </div>
               <div className="flex gap-2 pt-2">
                 <button

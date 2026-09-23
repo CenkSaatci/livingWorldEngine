@@ -299,6 +299,7 @@ export default function CampaignDetailPage() {
           <select
             value={botMode}
             onChange={(e) => handleBotMode(e.target.value)}
+            aria-label={t('campaign.botMode')}
             className="mt-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-sm text-text-primary outline-none focus:border-accent"
           >
             <option value="">{t('campaign.botModeWorld')}</option>
@@ -320,6 +321,7 @@ export default function CampaignDetailPage() {
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
               placeholder={t('campaign.addMemberPlaceholder')}
+              aria-label={t('campaign.addMemberPlaceholder')}
               className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
             />
             {searchResults.length > 0 && (

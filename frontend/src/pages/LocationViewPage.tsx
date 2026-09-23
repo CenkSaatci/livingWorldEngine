@@ -140,20 +140,19 @@ export default function LocationViewPage() {
             <h3 className="font-heading text-text-primary mb-4">{t('location.editTitle')}</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('entity.name')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="locationviewpage-field-1">{t('entity.name')}</label>
                 <input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="locationviewpage-field-1" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('location.type')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="locationviewpage-field-2">{t('location.type')}</label>
                 <select
                   value={editType}
                   onChange={(e) => setEditType(e.target.value)}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                >
+                 id="locationviewpage-field-2">
                   {LOCATION_TYPES.map((t) => (
                     <option key={t} value={t} className="capitalize">
                       {t}
@@ -162,25 +161,23 @@ export default function LocationViewPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('location.wealth')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="locationviewpage-field-3">{t('location.wealth')}</label>
                 <input
                   type="number"
                   min={1}
                   max={10}
                   value={editWealth}
                   onChange={(e) => setEditWealth(Number(e.target.value))}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="locationviewpage-field-3" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('location.population')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="locationviewpage-field-4">{t('location.population')}</label>
                 <input
                   type="number"
                   min={0}
                   value={editPopulation}
                   onChange={(e) => setEditPopulation(Number(e.target.value))}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="locationviewpage-field-4" />
               </div>
               <div className="flex gap-2 pt-2">
                 <button

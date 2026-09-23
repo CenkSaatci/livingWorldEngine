@@ -268,12 +268,12 @@ export function TradeModal({ entityId, entityName, onClose }: Props) {
 
         {/* Neues Angebot / Gegenangebot */}
         <div className="mb-2 flex items-center gap-2">
-          <label className="text-xs text-text-secondary">{t('trade.partner')}</label>
+          <label className="text-xs text-text-secondary" htmlFor="trademodal-field-1">{t('trade.partner')}</label>
           <select
             value={partnerId}
             onChange={(e) => { setPartnerId(e.target.value); setEditingId(null); setOffer({}); setRequest({}); }}
             className="rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-          >
+           id="trademodal-field-1">
             <option value="">—</option>
             {entities.map((e) => (
               <option key={e.id} value={e.id}>{e.name}</option>

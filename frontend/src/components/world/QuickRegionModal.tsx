@@ -66,21 +66,20 @@ export function QuickRegionModal({ worldId, onCreated, onClose }: Props) {
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs text-text-secondary mb-1">Name</label>
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="quickregionmodal-field-1">Name</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-              autoFocus
-            />
+              autoFocus id="quickregionmodal-field-1" />
           </div>
           <div>
-            <label className="block text-xs text-text-secondary mb-1">{t('region.climate')}</label>
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="quickregionmodal-field-2">{t('region.climate')}</label>
             <select
               value={climate}
               onChange={(e) => setClimate(e.target.value)}
               className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-            >
+             id="quickregionmodal-field-2">
               {CLIMATES.map((c) => (
                 <option key={c} value={c} className="capitalize">
                   {c}
@@ -89,15 +88,14 @@ export function QuickRegionModal({ worldId, onCreated, onClose }: Props) {
             </select>
           </div>
           <div>
-            <label className="block text-xs text-text-secondary mb-1">{t('region.dangerLevel')}</label>
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="quickregionmodal-field-3">{t('region.dangerLevel')}</label>
             <input
               type="range"
               min={1}
               max={10}
               value={dangerLevel}
               onChange={(e) => setDangerLevel(Number(e.target.value))}
-              className="w-full accent-accent"
-            />
+              className="w-full accent-accent" id="quickregionmodal-field-3" />
             <span className="text-xs text-text-secondary">{dangerLevel}/10</span>
           </div>
           <button

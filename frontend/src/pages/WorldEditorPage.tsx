@@ -260,17 +260,16 @@ export default function WorldEditorPage() {
           <h2 className="mb-4 font-heading text-text-primary">{t('worldEditor.general')}</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-xs text-text-secondary mb-1">World Name</label>
+              <label className="block text-xs text-text-secondary mb-1" htmlFor="worldeditorpage-field-1">World Name</label>
               <input
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
                   setDirty(true);
                 }}
-                className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-              />
+                className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="worldeditorpage-field-1" />
 
-            <label className="mb-1 mt-4 block text-xs text-text-secondary">
+            <label className="mb-1 mt-4 block text-xs text-text-secondary" htmlFor="worldeditorpage-field-2">
               {t('worldEditor.visibility')}
             </label>
             <select
@@ -280,14 +279,14 @@ export default function WorldEditorPage() {
               aria-label={t('worldEditor.visibility')}
               className="mb-4 w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2
                          text-text-primary focus:border-accent focus:outline-none"
-            >
+             id="worldeditorpage-field-2">
               <option value="PRIVATE">{t('worldEditor.visibilityPrivate')}</option>
               <option value="INVITE_ONLY">{t('worldEditor.visibilityInvite')}</option>
               <option value="PUBLIC">{t('worldEditor.visibilityPublic')}</option>
             </select>
             </div>
             <div>
-              <label className="block text-xs text-text-secondary mb-1">Description</label>
+              <label className="block text-xs text-text-secondary mb-1" htmlFor="worldeditorpage-field-3">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => {
@@ -295,8 +294,7 @@ export default function WorldEditorPage() {
                   setDirty(true);
                 }}
                 rows={3}
-                className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none"
-              />
+                className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none" id="worldeditorpage-field-3" />
             </div>
           </div>
         </section>
@@ -327,8 +325,8 @@ export default function WorldEditorPage() {
           <h2 className="mb-4 font-heading text-text-primary">{t('worldEditor.time')}</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-xs text-text-secondary mb-1">Mode</label>
-              <div className="flex gap-2">
+              <label id="world-time-mode" className="block text-xs text-text-secondary mb-1">Mode</label>
+              <div role="group" aria-labelledby="world-time-mode" className="flex gap-2">
                 {TIME_MODES.map((mode) => (
                   <button
                     key={mode.value}
@@ -346,7 +344,7 @@ export default function WorldEditorPage() {
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Tick Interval (s)</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="worldeditorpage-field-4">Tick Interval (s)</label>
                 <input
                   type="number"
                   min={1}
@@ -354,11 +352,10 @@ export default function WorldEditorPage() {
                   onChange={(e) =>
                     updateSetting(['time', 'tick_interval_real_seconds'], Number(e.target.value))
                   }
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="worldeditorpage-field-4" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Advance (min)</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="worldeditorpage-field-5">Advance (min)</label>
                 <input
                   type="number"
                   min={1}
@@ -366,11 +363,10 @@ export default function WorldEditorPage() {
                   onChange={(e) =>
                     updateSetting(['time', 'tick_advance_game_minutes'], Number(e.target.value))
                   }
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="worldeditorpage-field-5" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Day Starts At (h)</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="worldeditorpage-field-6">Day Starts At (h)</label>
                 <input
                   type="number"
                   min={0}
@@ -379,8 +375,7 @@ export default function WorldEditorPage() {
                   onChange={(e) =>
                     updateSetting(['time', 'day_starts_at_hour'], Number(e.target.value))
                   }
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="worldeditorpage-field-6" />
               </div>
             </div>
           </div>
@@ -398,6 +393,7 @@ export default function WorldEditorPage() {
               type="checkbox"
               checked={settings.combat_chat_log ?? true}
               onChange={(e) => updateSetting(['combat_chat_log'], e.target.checked)}
+              aria-label={t('worldEditor.combatChatLog')}
               className="accent-accent h-4 w-4"
             />
             <span className="text-sm text-text-primary">{t('worldEditor.combatChatLog')}</span>
@@ -412,15 +408,14 @@ export default function WorldEditorPage() {
             Worlds with AI bot enabled may want a shorter interval.
           </p>
           <div>
-            <label className="block text-xs text-text-secondary mb-1">Archive after (days)</label>
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="worldeditorpage-field-7">Archive after (days)</label>
             <input
               type="number"
               min={1}
               max={365}
               value={settings.event_archive_days ?? 30}
               onChange={(e) => updateSetting(['event_archive_days'], Number(e.target.value))}
-              className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-            />
+              className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="worldeditorpage-field-7" />
           </div>
         </section>
 
@@ -433,6 +428,7 @@ export default function WorldEditorPage() {
             <input
               readOnly
               value={`${window.location.origin}/worlds/${id}`}
+              aria-label="World link"
               className="flex-1 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-secondary"
             />
             <button
@@ -454,6 +450,7 @@ export default function WorldEditorPage() {
                 value={newMemberId}
                 onChange={(e) => handleSearchInput(e.target.value)}
                 placeholder="Search by username or email…"
+                aria-label="Search by username or email"
                 className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
               />
               {searchResults.length > 0 && (
@@ -554,6 +551,7 @@ export default function WorldEditorPage() {
               readOnly
               value={inviteLink}
               placeholder="Click 'Generate' to create an invite link"
+              aria-label="Invite link"
               className="flex-1 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-xs text-text-secondary"
             />
             {inviteLink && (

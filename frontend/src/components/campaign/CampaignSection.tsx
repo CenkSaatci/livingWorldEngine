@@ -115,7 +115,7 @@ export default function CampaignSection() {
                          text-text-primary placeholder:text-text-secondary/50
                          focus:border-accent focus:outline-none"
             />
-            <label className="mb-1 block text-xs text-text-secondary">
+            <label className="mb-1 block text-xs text-text-secondary" htmlFor="campaignsection-field-1">
               {t('campaign.world')}
             </label>
             <select
@@ -123,7 +123,7 @@ export default function CampaignSection() {
               onChange={(e) => setWorldId(e.target.value)}
               className="mb-4 w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2
                          text-text-primary focus:border-accent focus:outline-none"
-            >
+             id="campaignsection-field-1">
               <option value="">{t('campaign.worldRequired')}</option>
               {worlds.map((w) => (
                 <option key={w.id} value={w.id}>
@@ -131,7 +131,7 @@ export default function CampaignSection() {
                 </option>
               ))}
             </select>
-            <label className="mb-1 block text-xs text-text-secondary">
+            <label className="mb-1 block text-xs text-text-secondary" htmlFor="campaignsection-field-2">
               {t('campaign.system')}
             </label>
             <select
@@ -139,7 +139,7 @@ export default function CampaignSection() {
               onChange={(e) => setSystemId(e.target.value)}
               className="mb-4 w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2
                          text-text-primary focus:border-accent focus:outline-none"
-            >
+             id="campaignsection-field-2">
               <option value="">{t('campaign.systemRequired')}</option>
               {systems.map((s) => (
                 <option key={s.id} value={s.id}>

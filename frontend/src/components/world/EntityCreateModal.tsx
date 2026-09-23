@@ -133,21 +133,20 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
           {/* Name + Type */}
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
-              <label className="block text-xs text-text-secondary mb-1">{t('entity.name')}</label>
+              <label className="block text-xs text-text-secondary mb-1" htmlFor="entitycreatemodal-field-1">{t('entity.name')}</label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoFocus
-                className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-              />
+                className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="entitycreatemodal-field-1" />
             </div>
             <div>
-              <label className="block text-xs text-text-secondary mb-1">{t('entity.type')}</label>
+              <label className="block text-xs text-text-secondary mb-1" htmlFor="entitycreatemodal-field-2">{t('entity.type')}</label>
               <select
                 value={entityType}
                 onChange={(e) => setEntityType(e.target.value as 'NPC' | 'PC')}
                 className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-              >
+               id="entitycreatemodal-field-2">
                 <option value="NPC">NPC</option>
                 <option value="PC">PC</option>
               </select>
@@ -157,24 +156,23 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
           {/* Age + Experience + Standing */}
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs text-text-secondary mb-1">{t('entity.age')}</label>
+              <label className="block text-xs text-text-secondary mb-1" htmlFor="entitycreatemodal-field-3">{t('entity.age')}</label>
               <input
                 type="number"
                 min={1}
                 value={age}
                 onChange={(e) => setAge(Number(e.target.value))}
-                className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-              />
+                className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="entitycreatemodal-field-3" />
             </div>
             <div>
-              <label className="block text-xs text-text-secondary mb-1">
+              <label className="block text-xs text-text-secondary mb-1" htmlFor="entitycreatemodal-field-4">
                 {t('entity.experience')}
               </label>
               <select
                 value={experienceLevel}
                 onChange={(e) => setExperienceLevel(e.target.value)}
                 className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-              >
+               id="entitycreatemodal-field-4">
                 {EXPERIENCE_LEVELS.map((l) => (
                   <option key={l} value={l}>
                     {l}
@@ -183,14 +181,14 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-text-secondary mb-1">
+              <label className="block text-xs text-text-secondary mb-1" htmlFor="entitycreatemodal-field-5">
                 {t('entity.standing')}
               </label>
               <select
                 value={socialStanding}
                 onChange={(e) => setSocialStanding(e.target.value)}
                 className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-              >
+               id="entitycreatemodal-field-5">
                 {SOCIAL_STANDINGS.map((s) => (
                   <option key={s} value={s} className="capitalize">
                     {s}
@@ -202,9 +200,10 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
 
           {/* Faction */}
           <div>
-            <label className="block text-xs text-text-secondary mb-1">{t('entity.faction')}</label>
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="entity-create-faction">{t('entity.faction')}</label>
             <div className="flex gap-2">
               <select
+                id="entity-create-faction"
                 value={factionId}
                 onChange={(e) => setFactionId(e.target.value)}
                 className="flex-1 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
@@ -228,12 +227,12 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
 
           {/* Location */}
           <div>
-            <label className="block text-xs text-text-secondary mb-1">{t('entity.location')}</label>
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="entitycreatemodal-field-6">{t('entity.location')}</label>
             <select
               value={locationId}
               onChange={(e) => setLocationId(e.target.value)}
               className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-            >
+             id="entitycreatemodal-field-6">
               <option value="">— None —</option>
               {locations.map((l) => (
                 <option key={l.id} value={l.id}>
@@ -245,44 +244,41 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
 
           {/* Personality */}
           <div>
-            <label className="block text-xs text-text-secondary mb-1">
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="entitycreatemodal-field-7">
               {t('entity.personality')}
             </label>
             <input
               value={personality}
               onChange={(e) => setPersonality(e.target.value)}
               className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-              placeholder={t('entity.personality_placeholder')}
-            />
+              placeholder={t('entity.personality_placeholder')} id="entitycreatemodal-field-7" />
           </div>
 
           {/* Knowledge + Goals */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-text-secondary mb-1">
+              <label className="block text-xs text-text-secondary mb-1" htmlFor="entitycreatemodal-field-8">
                 {t('entity.knowledge')}
               </label>
               <input
                 value={knowledge}
                 onChange={(e) => setKnowledge(e.target.value)}
                 className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                placeholder={t('entity.knowledge_placeholder')}
-              />
+                placeholder={t('entity.knowledge_placeholder')} id="entitycreatemodal-field-8" />
             </div>
             <div>
-              <label className="block text-xs text-text-secondary mb-1">{t('entity.goals')}</label>
+              <label className="block text-xs text-text-secondary mb-1" htmlFor="entitycreatemodal-field-9">{t('entity.goals')}</label>
               <input
                 value={goals}
                 onChange={(e) => setGoals(e.target.value)}
                 className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                placeholder={t('entity.goals_placeholder')}
-              />
+                placeholder={t('entity.goals_placeholder')} id="entitycreatemodal-field-9" />
             </div>
           </div>
 
           {/* Backstory */}
           <div>
-            <label className="block text-xs text-text-secondary mb-1">
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="entitycreatemodal-field-10">
               {t('entity.backstory')}
             </label>
             <textarea
@@ -290,8 +286,7 @@ export function EntityCreateModal({ worldId, onCreated, onClose }: Props) {
               onChange={(e) => setBackstory(e.target.value)}
               rows={3}
               className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none"
-              placeholder={t('entity.backstory_placeholder')}
-            />
+              placeholder={t('entity.backstory_placeholder')} id="entitycreatemodal-field-10" />
           </div>
 
           {/* Actions */}

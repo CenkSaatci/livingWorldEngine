@@ -550,7 +550,7 @@ export default function MapEditorPage() {
         <aside className="flex w-64 flex-col gap-4 overflow-y-auto border-r border-bg-elevated bg-bg-surface p-4">
           {/* Upload */}
           <div>
-            <label className="mb-1 block text-xs text-text-secondary">{t('editor.map_image')}</label>
+            <span className="mb-1 block text-xs text-text-secondary">{t('editor.map_image')}</span>
             <label className="flex cursor-pointer items-center gap-2 rounded border border-bg-elevated px-3 py-2 text-sm text-text-secondary hover:text-text-primary">
               <Upload size={14} />
               {uploading ? t('editor.uploading') : t('editor.upload')}
@@ -568,8 +568,8 @@ export default function MapEditorPage() {
 
           {/* Mode toggle */}
           <div>
-            <label className="mb-1 block text-xs text-text-secondary">{t('editor.mode')}</label>
-            <div className="flex gap-1">
+            <label id="map-editor-mode" className="mb-1 block text-xs text-text-secondary">{t('editor.mode')}</label>
+            <div role="group" aria-labelledby="map-editor-mode" className="flex gap-1">
               {(['view', 'draw', 'place'] as const).map((m) => (
                 <button
                   key={m}
@@ -786,33 +786,33 @@ export default function MapEditorPage() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('editor.name')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="mapeditorpage-field-1">{t('editor.name')}</label>
                 <input
                   value={locForm.name}
                   onChange={(e) => setLocForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="mapeditorpage-field-1" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('editor.type')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="mapeditorpage-field-2">{t('editor.type')}</label>
                 <select
                   value={locForm.type}
                   onChange={(e) => setLocForm((f) => ({ ...f, type: e.target.value }))}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                >
+                 id="mapeditorpage-field-2">
                   {POI_TYPES.map((type) => (
                     <option key={type} value={type}>{locationTypeIcon(type)} {type}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('editor.region')}</label>
+                <span className="block text-xs text-text-secondary mb-1">{t('editor.region')}</span>
                 {locModal?.mode === 'edit' ? (
                   <p className="text-sm text-text-primary">{locForm.regionName || '—'}</p>
                 ) : (
                   <select
                     value={locForm.regionName}
                     onChange={(e) => setLocForm((f) => ({ ...f, regionName: e.target.value }))}
+                    aria-label={t('editor.region')}
                     className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
                   >
                     {regions.map((r) => <option key={r.id} value={r.name}>{r.name}</option>)}
@@ -820,35 +820,32 @@ export default function MapEditorPage() {
                 )}
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('editor.description')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="mapeditorpage-field-3">{t('editor.description')}</label>
                 <textarea
                   value={locForm.description}
                   onChange={(e) => setLocForm((f) => ({ ...f, description: e.target.value }))}
                   rows={2}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none" id="mapeditorpage-field-3" />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs text-text-secondary mb-1">{t('editor.population')}</label>
+                  <label className="block text-xs text-text-secondary mb-1" htmlFor="mapeditorpage-field-4">{t('editor.population')}</label>
                   <input
                     type="number"
                     min={0}
                     value={locForm.population}
                     onChange={(e) => setLocForm((f) => ({ ...f, population: Number(e.target.value) }))}
-                    className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                  />
+                    className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="mapeditorpage-field-4" />
                 </div>
                 <div>
-                  <label className="block text-xs text-text-secondary mb-1">{t('editor.wealth')}</label>
+                  <label className="block text-xs text-text-secondary mb-1" htmlFor="mapeditorpage-field-5">{t('editor.wealth')}</label>
                   <input
                     type="number"
                     min={1}
                     max={10}
                     value={locForm.wealth}
                     onChange={(e) => setLocForm((f) => ({ ...f, wealth: Number(e.target.value) }))}
-                    className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                  />
+                    className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="mapeditorpage-field-5" />
                 </div>
               </div>
               <button

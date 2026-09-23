@@ -135,8 +135,8 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           <h3 className="font-heading text-text-primary">{t('s0_title')}</h3>
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">{t('s0_progression_type')}</label>
-            <div className="flex flex-wrap gap-3">
+            <label id="wizard-progression-type" className="block text-sm font-medium text-text-secondary mb-2">{t('s0_progression_type')}</label>
+            <div role="group" aria-labelledby="wizard-progression-type" className="flex flex-wrap gap-3">
               {(['level', 'xp', 'improvement'] as const).map((type) => (
                 <label key={type} className={`flex cursor-pointer items-center gap-2 rounded border px-4 py-3 text-sm transition-colors ${
                   data.progressionType === type
@@ -157,8 +157,8 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">{t('s0_features')}</label>
-            <div className="grid grid-cols-2 gap-2">
+            <label id="wizard-features" className="block text-sm font-medium text-text-secondary mb-2">{t('s0_features')}</label>
+            <div role="group" aria-labelledby="wizard-features" className="grid grid-cols-2 gap-2">
               {(['magic', 'psionics', 'rangedCombat', 'criticalHits', 'armorPenalty'] as const).map((feat) => (
                 <label key={feat} className="flex cursor-pointer items-center gap-2 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-secondary hover:border-accent/50">
                   <input
@@ -185,33 +185,30 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s1_title')}</h3>
           <div>
-            <label className="block text-xs text-text-secondary mb-1">{t('s1_name')}</label>
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="systemwizard-field-1">{t('s1_name')}</label>
             <input
               value={data.name}
               onChange={(e) => update('name', e.target.value)}
-              className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-            />
+              className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="systemwizard-field-1" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-text-secondary mb-1">{t('s1_version')}</label>
+              <label className="block text-xs text-text-secondary mb-1" htmlFor="systemwizard-field-2">{t('s1_version')}</label>
               <input
                 type="number"
                 min={1}
                 value={data.version}
                 onChange={(e) => update('version', Number(e.target.value))}
-                className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-              />
+                className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="systemwizard-field-2" />
             </div>
           </div>
           <div>
-            <label className="block text-xs text-text-secondary mb-1">{t('s1_description')}</label>
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="systemwizard-field-3">{t('s1_description')}</label>
             <textarea
               value={data.description}
               onChange={(e) => update('description', e.target.value)}
               rows={3}
-              className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none"
-            />
+              className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none" id="systemwizard-field-3" />
           </div>
         </div>
       )}
@@ -571,7 +568,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 )}
               </div>
               <div>
-                <label className="block text-[10px] text-text-secondary mb-1">{t('sa_kind')}</label>
+                <label className="block text-[10px] text-text-secondary mb-1" htmlFor="systemwizard-field-4">{t('sa_kind')}</label>
                 <input
                   value={skill.kind ?? ''}
                   placeholder="combat"
@@ -580,11 +577,10 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                     s[i] = { ...s[i], kind: e.target.value.trim() || undefined };
                     update('skills', s);
                   }}
-                  className="w-20 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-20 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent" id="systemwizard-field-4" />
               </div>
               <div>
-                <label className="block text-[10px] text-text-secondary mb-1">Bonus</label>
+                <label className="block text-[10px] text-text-secondary mb-1" htmlFor="systemwizard-field-5">Bonus</label>
                 <input
                   type="number"
                   value={skill.bonus}
@@ -593,11 +589,10 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                     s[i] = { ...s[i], bonus: Number(e.target.value) };
                     update('skills', s);
                   }}
-                  className="w-14 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-14 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent" id="systemwizard-field-5" />
               </div>
               <div>
-                <label className="block text-[10px] text-text-secondary mb-1">{t('sa_column')}</label>
+                <label className="block text-[10px] text-text-secondary mb-1" htmlFor="systemwizard-field-6">{t('sa_column')}</label>
                 <select
                   value={skill.costColumn ?? ''}
                   onChange={(e) => {
@@ -606,7 +601,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                     update('skills', s);
                   }}
                   className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                >
+                 id="systemwizard-field-6">
                   <option value="">—</option>
                   {(data.advancement?.columns ?? ['A', 'B', 'C', 'D']).map((c) => (
                     <option key={c} value={c}>{c}</option>
@@ -614,7 +609,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] text-text-secondary mb-1">{t('sa_activation')}</label>
+                <label className="block text-[10px] text-text-secondary mb-1" htmlFor="systemwizard-field-7">{t('sa_activation')}</label>
                 <input
                   type="number"
                   value={skill.activationCost ?? ''}
@@ -624,11 +619,10 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                     s[i] = { ...s[i], activationCost: e.target.value === '' ? undefined : Number(e.target.value) };
                     update('skills', s);
                   }}
-                  className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent" id="systemwizard-field-7" />
               </div>
               <div>
-                <label className="block text-[10px] text-text-secondary mb-1">{t('sa_casting')}</label>
+                <span className="block text-[10px] text-text-secondary mb-1">{t('sa_casting')}</span>
                 <div className="flex items-center gap-1">
                   <input
                     value={skill.casting?.resource ?? ''}
@@ -1229,31 +1223,28 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
               <p className="text-xs font-semibold text-text-primary">{t('s7_magic_title')}</p>
               <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s7_magic_hint') }} />
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('s7_mana_formula')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="systemwizard-field-8">{t('s7_mana_formula')}</label>
                 <input
                   value={data.magic.manaFormula}
                   onChange={(e) => update('magic', { ...data.magic, manaFormula: e.target.value })}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm font-mono text-text-primary outline-none focus:border-accent"
-                  placeholder={t('s7_mana_placeholder')}
-                />
+                  placeholder={t('s7_mana_placeholder')} id="systemwizard-field-8" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('s7_spell_slots')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="systemwizard-field-9">{t('s7_spell_slots')}</label>
                 <input
                   value={data.magic.spellSlots}
                   onChange={(e) => update('magic', { ...data.magic, spellSlots: e.target.value })}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                  placeholder={t('s7_spell_slots_placeholder')}
-                />
+                  placeholder={t('s7_spell_slots_placeholder')} id="systemwizard-field-9" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('s7_schools')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="systemwizard-field-10">{t('s7_schools')}</label>
                 <input
                   value={data.magic.schools}
                   onChange={(e) => update('magic', { ...data.magic, schools: e.target.value })}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                  placeholder={t('s7_schools_placeholder')}
-                />
+                  placeholder={t('s7_schools_placeholder')} id="systemwizard-field-10" />
               </div>
             </div>
           )}
@@ -1263,22 +1254,20 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
               <p className="text-xs font-semibold text-text-primary">{t('s7_psionics_title')}</p>
               <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s7_psionics_hint') }} />
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('s7_power_points')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="systemwizard-field-11">{t('s7_power_points')}</label>
                 <input
                   value={data.psionics.powerPoints}
                   onChange={(e) => update('psionics', { ...data.psionics, powerPoints: e.target.value })}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm font-mono text-text-primary outline-none focus:border-accent"
-                  placeholder={t('s7_power_points_placeholder')}
-                />
+                  placeholder={t('s7_power_points_placeholder')} id="systemwizard-field-11" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('s7_disciplines')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="systemwizard-field-12">{t('s7_disciplines')}</label>
                 <input
                   value={data.psionics.disciplines}
                   onChange={(e) => update('psionics', { ...data.psionics, disciplines: e.target.value })}
                   className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                  placeholder={t('s7_disciplines_placeholder')}
-                />
+                  placeholder={t('s7_disciplines_placeholder')} id="systemwizard-field-12" />
               </div>
             </div>
           )}
@@ -1576,7 +1565,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
             <p dangerouslySetInnerHTML={{ __html: t('s4_probe_hint') }} />
           </div>
           <div>
-            <label className="block text-xs text-text-secondary mb-1">{t('s4_probe_type')}</label>
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="systemwizard-field-13">{t('s4_probe_type')}</label>
             <select
               value={data.probeType}
               onChange={(e) => {
@@ -1585,16 +1574,17 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 update('probe', pt === 'd20_target' ? '1d20+mod' : pt === 'd100_threshold' ? '1d100' : '3d20');
               }}
               className="rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-            >
+             id="systemwizard-field-13">
               <option value="d20_target">{t('s4_probe_d20')}</option>
               <option value="d100_threshold">{t('s4_probe_d100')}</option>
               <option value="d20_3attr">{t('s4_probe_3d20')}</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs text-text-secondary mb-1">{t('s4_probe_label')}</label>
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="wizard-probe-label">{t('s4_probe_label')}</label>
             <div className="flex gap-2">
               <input
+                id="wizard-probe-label"
                 value={data.probe}
                 onChange={(e) => update('probe', e.target.value)}
                 className="flex-1 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm font-mono text-text-primary outline-none focus:border-accent"
@@ -1816,7 +1806,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-text-secondary mb-1">{t('s4_ap_per_round')}</label>
+                  <label className="block text-xs text-text-secondary mb-1" htmlFor="systemwizard-field-14">{t('s4_ap_per_round')}</label>
                   <input
                     type="number"
                     min={1}
@@ -1830,11 +1820,10 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                         },
                       })
                     }
-                    className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                  />
+                    className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="systemwizard-field-14" />
                 </div>
                 <div>
-                  <label className="block text-xs text-text-secondary mb-1">{t('s4_ap_max')}</label>
+                  <label className="block text-xs text-text-secondary mb-1" htmlFor="systemwizard-field-15">{t('s4_ap_max')}</label>
                   <input
                     type="number"
                     min={1}
@@ -1845,15 +1834,14 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                         actionPoints: { ...data.combat.actionPoints, max: Number(e.target.value) },
                       })
                     }
-                    className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                  />
+                    className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="systemwizard-field-15" />
                 </div>
               </div>
 
               {/* Action Types */}
               <div>
-                <label className="block text-xs text-text-secondary mb-2">{t('s4_action_types')}</label>
-                <div className="flex flex-wrap gap-2">
+                <label id="wizard-action-types" className="block text-xs text-text-secondary mb-2">{t('s4_action_types')}</label>
+                <div role="group" aria-labelledby="wizard-action-types" className="flex flex-wrap gap-2">
                   {['action', 'bonus_action', 'reaction'].map((at) => (
                     <label key={at} className="flex cursor-pointer items-center gap-1.5 rounded border border-bg-elevated bg-bg-primary px-3 py-1.5 text-xs text-text-secondary hover:border-accent/50">
                       <input
@@ -1877,7 +1865,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   <div className="mt-2 grid grid-cols-3 gap-2">
                     {data.combat.actionTypes.map((at) => (
                       <div key={at}>
-                        <label className="block text-[10px] text-text-secondary mb-0.5">
+                        <label className="block text-[10px] text-text-secondary mb-0.5" htmlFor="systemwizard-field-16">
                           {t(`s4_action_${at}`)} {t('s4_action_per_turn')}
                         </label>
                         <input
@@ -1889,8 +1877,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                               actionsPerTurn: { ...data.combat.actionsPerTurn, [at]: Number(e.target.value) },
                             })
                           }
-                          className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                        />
+                          className="w-16 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent" id="systemwizard-field-16" />
                       </div>
                     ))}
                   </div>
@@ -1904,20 +1891,18 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 </summary>
                 <div className="space-y-3 px-3 pb-3">
                   <div>
-                    <label className="block text-xs text-text-secondary mb-1">{t('s4_crit_threshold')}</label>
+                    <label className="block text-xs text-text-secondary mb-1" htmlFor="systemwizard-field-17">{t('s4_crit_threshold')}</label>
                     <input type="number" min={1} max={20}
                       value={data.combat.criticalHit?.threshold ?? 20}
                       onChange={(e) => update('combat', { ...data.combat, criticalHit: { ...data.combat.criticalHit ?? { threshold: 20, multiplier: 2 }, threshold: Number(e.target.value) } })}
-                      className="w-20 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                    />
+                      className="w-20 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="systemwizard-field-17" />
                   </div>
                   <div>
-                    <label className="block text-xs text-text-secondary mb-1">{t('s4_crit_multiplier')}</label>
+                    <label className="block text-xs text-text-secondary mb-1" htmlFor="systemwizard-field-18">{t('s4_crit_multiplier')}</label>
                     <input type="number" min={1} max={10}
                       value={data.combat.criticalHit?.multiplier ?? 2}
                       onChange={(e) => update('combat', { ...data.combat, criticalHit: { ...data.combat.criticalHit ?? { threshold: 20, multiplier: 2 }, multiplier: Number(e.target.value) } })}
-                      className="w-20 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                    />
+                      className="w-20 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="systemwizard-field-18" />
                   </div>
                 </div>
               </details>
@@ -1929,12 +1914,11 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                 </summary>
                 <div className="space-y-3 px-3 pb-3">
                   <div>
-                    <label className="block text-xs text-text-secondary mb-1">{t('s4_save_base_dc')}</label>
+                    <label className="block text-xs text-text-secondary mb-1" htmlFor="systemwizard-field-19">{t('s4_save_base_dc')}</label>
                     <input type="number" min={1} max={30}
                       value={data.combat.savingThrows?.baseDc ?? 8}
                       onChange={(e) => update('combat', { ...data.combat, savingThrows: { ...data.combat.savingThrows ?? { baseDc: 8, proficiencyBonus: '' }, baseDc: Number(e.target.value) } })}
-                      className="w-20 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                    />
+                      className="w-20 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="systemwizard-field-19" />
                   </div>
                   <CombatExpressionRow
                     label={t('s4_save_prof_bonus')}
@@ -1958,7 +1942,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                     <p className="text-xs font-medium text-text-primary mb-2">{t('s4_short_rest')}</p>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[10px] text-text-secondary mb-0.5">{t('s4_rest_heal_pct')}</label>
+                        <label className="block text-[10px] text-text-secondary mb-0.5" htmlFor="systemwizard-field-20">{t('s4_rest_heal_pct')}</label>
                         <input type="number" min={0} max={1} step={0.1}
                           value={data.combat.resting?.shortRest.healPercent ?? 0.5}
                           onChange={(e) => update('combat', {
@@ -1966,8 +1950,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                             resting: { ...data.combat.resting ?? { shortRest: { healPercent: 0.5, recoverResources: true }, longRest: { fullHeal: true, recoverAll: true } },
                               shortRest: { ...(data.combat.resting?.shortRest ?? { healPercent: 0.5, recoverResources: true }), healPercent: Number(e.target.value) } },
                           })}
-                          className="w-20 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                        />
+                          className="w-20 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent" id="systemwizard-field-20" />
                       </div>
                       <label className="flex items-center gap-1.5 text-xs text-text-secondary">
                         <input type="checkbox" className="accent-accent"
@@ -2027,7 +2010,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           <div className="grid grid-cols-2 gap-3">
             {BUDGET_FIELDS.map((key) => (
               <div key={key}>
-                <label className="block text-xs text-text-secondary mb-1">{t(`sb_${key}`)}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="systemwizard-field-21">{t(`sb_${key}`)}</label>
                 <input
                   type="number"
                   value={data.creationBudget?.[key] ?? ''}
@@ -2037,8 +2020,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                     const budget = { ...(data.creationBudget ?? { ap: 0 }), [key]: v };
                     update('creationBudget', budget);
                   }}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1.5 text-xs text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1.5 text-xs text-text-primary outline-none focus:border-accent" id="systemwizard-field-21" />
               </div>
             ))}
           </div>
@@ -2046,7 +2028,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           {/* T4: Schicksalspunkt-Regeln */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-text-secondary mb-1">{t('sb_fateProbeBonus')}</label>
+              <label className="block text-xs text-text-secondary mb-1" htmlFor="systemwizard-field-22">{t('sb_fateProbeBonus')}</label>
               <input
                 type="number"
                 min={0}
@@ -2056,11 +2038,10 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   ...(data.fate ?? {}),
                   probeBonusPerPoint: e.target.value === '' ? undefined : Number(e.target.value),
                 })}
-                className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1.5 text-xs text-text-primary outline-none focus:border-accent"
-              />
+                className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1.5 text-xs text-text-primary outline-none focus:border-accent" id="systemwizard-field-22" />
             </div>
             <div>
-              <label className="block text-xs text-text-secondary mb-1">{t('sb_fateAvoidDeath')}</label>
+              <label className="block text-xs text-text-secondary mb-1" htmlFor="systemwizard-field-23">{t('sb_fateAvoidDeath')}</label>
               <input
                 type="number"
                 min={0}
@@ -2070,8 +2051,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   ...(data.fate ?? {}),
                   avoidDeathCost: e.target.value === '' ? undefined : Number(e.target.value),
                 })}
-                className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1.5 text-xs text-text-primary outline-none focus:border-accent"
-              />
+                className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1.5 text-xs text-text-primary outline-none focus:border-accent" id="systemwizard-field-23" />
             </div>
           </div>
 
@@ -2229,20 +2209,18 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] uppercase text-text-secondary mb-1">{t('st_requires')}</label>
+                    <label className="block text-[10px] uppercase text-text-secondary mb-1" htmlFor="systemwizard-field-24">{t('st_requires')}</label>
                     <input
                       value={(tr.requires ?? []).join(', ')}
                       onChange={(e) => setTrait({ requires: listOf(e.target.value) })}
-                      className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                    />
+                      className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent" id="systemwizard-field-24" />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase text-text-secondary mb-1">{t('st_excludes')}</label>
+                    <label className="block text-[10px] uppercase text-text-secondary mb-1" htmlFor="systemwizard-field-25">{t('st_excludes')}</label>
                     <input
                       value={(tr.excludes ?? []).join(', ')}
                       onChange={(e) => setTrait({ excludes: listOf(e.target.value) })}
-                      className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
-                    />
+                      className="w-full rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent" id="systemwizard-field-25" />
                   </div>
                 </div>
 
@@ -2762,10 +2740,11 @@ function CombatExpressionRow({
 
   return (
     <div>
-      <label className="block text-xs text-text-secondary mb-1">{label}</label>
+      <span className="block text-xs text-text-secondary mb-1">{label}</span>
       <div className="flex gap-2">
         <select
           value={selectedDice}
+          aria-label={label}
           onChange={(e) => {
             setSelectedDice(e.target.value);
             rebuild(e.target.value, selectedAttr);

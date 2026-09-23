@@ -102,12 +102,12 @@ export default function SettingsPage() {
           </div>
           {diceMode === '3d' && (
             <div className="mt-3">
-              <label className="block text-xs text-text-secondary mb-1">Skin</label>
+              <label className="block text-xs text-text-secondary mb-1" htmlFor="settingspage-field-1">Skin</label>
               <select
                 value={diceSkin}
                 onChange={(e) => setDiceSkin(e.target.value)}
                 className="rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-              >
+               id="settingspage-field-1">
                 <option value="classic">🎲 Classic</option>
                 <option value="cyber">💠 Cyber</option>
                 <option value="metal">⚙️ Metal</option>

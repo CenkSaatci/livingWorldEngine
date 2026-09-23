@@ -79,21 +79,20 @@ export function LocationCreateModal({ regionId, regionName, onCreated, onClose }
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label className="block text-xs text-text-secondary mb-1">{t('location.name')}</label>
+              <label className="block text-xs text-text-secondary mb-1" htmlFor="locationcreatemodal-field-1">{t('location.name')}</label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoFocus
-                className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-              />
+                className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="locationcreatemodal-field-1" />
             </div>
             <div>
-              <label className="block text-xs text-text-secondary mb-1">{t('location.type')}</label>
+              <label className="block text-xs text-text-secondary mb-1" htmlFor="locationcreatemodal-field-2">{t('location.type')}</label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
                 className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-              >
+               id="locationcreatemodal-field-2">
                 {LOCATION_TYPES.map((t) => (
                   <option key={t} value={t} className="capitalize">
                     {t}
@@ -102,7 +101,7 @@ export function LocationCreateModal({ regionId, regionName, onCreated, onClose }
               </select>
             </div>
             <div>
-              <label className="block text-xs text-text-secondary mb-1">
+              <label className="block text-xs text-text-secondary mb-1" htmlFor="locationcreatemodal-field-3">
                 {t('location.wealth')}
               </label>
               <input
@@ -111,11 +110,10 @@ export function LocationCreateModal({ regionId, regionName, onCreated, onClose }
                 max={10}
                 value={wealth}
                 onChange={(e) => setWealth(Number(e.target.value))}
-                className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-              />
+                className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="locationcreatemodal-field-3" />
             </div>
             <div className="col-span-2">
-              <label className="block text-xs text-text-secondary mb-1">
+              <label className="block text-xs text-text-secondary mb-1" htmlFor="locationcreatemodal-field-4">
                 {t('location.population')}
               </label>
               <input
@@ -123,41 +121,37 @@ export function LocationCreateModal({ regionId, regionName, onCreated, onClose }
                 min={0}
                 value={population}
                 onChange={(e) => setPopulation(Number(e.target.value))}
-                className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-              />
+                className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="locationcreatemodal-field-4" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('location.mapX')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="locationcreatemodal-field-5">{t('location.mapX')}</label>
                 <input
                   type="number"
                   value={positionX}
                   onChange={(e) => setPositionX(Number(e.target.value))}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="locationcreatemodal-field-5" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('location.mapY')}</label>
+                <label className="block text-xs text-text-secondary mb-1" htmlFor="locationcreatemodal-field-6">{t('location.mapY')}</label>
                 <input
                   type="number"
                   value={positionY}
                   onChange={(e) => setPositionY(Number(e.target.value))}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent" id="locationcreatemodal-field-6" />
               </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs text-text-secondary mb-1">
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="locationcreatemodal-field-7">
               {t('location.description')}
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none"
-            />
+              className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none" id="locationcreatemodal-field-7" />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">

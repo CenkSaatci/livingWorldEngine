@@ -114,10 +114,10 @@ export function StartCombatModal({ worldId, onClose }: Props) {
 
           {/* Entity Selection */}
           <div>
-            <label className="block text-xs text-text-secondary mb-2">
+            <label id="startcombat-participants" className="block text-xs text-text-secondary mb-2">
               {t('combatModal.selectParticipants')}
             </label>
-            <div className="max-h-56 overflow-y-auto space-y-1">
+            <div role="group" aria-labelledby="startcombat-participants" className="max-h-56 overflow-y-auto space-y-1">
               {entities.map((e) => (
                 <label
                   key={e.id}
@@ -143,14 +143,14 @@ export function StartCombatModal({ worldId, onClose }: Props) {
 
           {/* Map Selection */}
           <div>
-            <label className="block text-xs text-text-secondary mb-1">
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="startcombatmodal-field-1">
               {t('combatModal.battleMap')}
             </label>
             <select
               value={selectedMapId}
               onChange={(e) => setSelectedMapId(e.target.value)}
               className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-            >
+             id="startcombatmodal-field-1">
               {maps.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.name}
