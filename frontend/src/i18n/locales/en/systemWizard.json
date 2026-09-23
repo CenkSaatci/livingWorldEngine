@@ -338,5 +338,12 @@
   "s2_description_hint": "Explains the attribute on the character sheet.",
   "sdv_description_ph": "Short description (tooltip)",
   "sdv_description_hint": "Explains the value to players on the character sheet.",
-  "sa_kind": "Kind"
+  "sa_kind": "Kind",
+  "v_empty_condition_name": "Condition without a name",
+  "v_pkg_name": "Package {{index}}: name missing",
+  "v_pkg_cost": "Package {{index}}: cost must be an integer",
+  "v_pkg_mod": "Package {{index}}: attribute modifier incomplete",
+  "save_issues": "Save blockers",
+  "rename_confirm": "Another system already uses this name. Rename anyway?",
+  "rename_confirm_action": "Rename"
 }

@@ -338,5 +338,12 @@
   "s2_description_hint": "Erklärt das Attribut im Charakterbogen.",
   "sdv_description_ph": "Kurzbeschreibung (Tooltip)",
   "sdv_description_hint": "Erklärt den Wert den Spielern im Charakterbogen.",
-  "sa_kind": "Art"
+  "sa_kind": "Art",
+  "v_empty_condition_name": "Zustand ohne Namen",
+  "v_pkg_name": "Paket {{index}}: Name fehlt",
+  "v_pkg_cost": "Paket {{index}}: Kosten müssen eine ganze Zahl sein",
+  "v_pkg_mod": "Paket {{index}}: Attribut-Modifikator unvollständig",
+  "save_issues": "Speicher-Blocker",
+  "rename_confirm": "Ein anderes System trägt diesen Namen. Trotzdem umbenennen?",
+  "rename_confirm_action": "Umbenennen"
 }

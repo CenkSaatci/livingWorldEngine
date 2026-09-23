@@ -10,7 +10,7 @@ import {
   toRulesJson,
   calcBudget,
   danglingTraitRefs,
-  wizardIssues,
+  wizardIssueList,
   type AttributeDef,
   type CombatAttackConfig,
   type ConditionalDef,
@@ -54,30 +54,61 @@ interface Props {
   onClose: () => void;
   initialData?: WizardData;
   systemId?: string;
+  /** H-7: Versionssprung beim Speichern (Default true, wie im JSON-Editor). */
+  bumpVersion?: boolean;
+  /** H-7: Ein anderes System trägt denselben Namen → Bestätigung nötig. */
+  nameConflicts?: boolean;
 }
 
-export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function SystemWizard({ onSaved, onClose, initialData, systemId }, ref) {
+/** H-8: Ziel-Step je Blocker-Key (Step-Indizes aus STEPS). */
+const ISSUE_STEP: Record<string, number> = {
+  v_need_attributes: STEPS.indexOf('step_label_1'),
+  v_empty_attribute_name: STEPS.indexOf('step_label_1'),
+  v_empty_trait_name: STEPS.indexOf('step_label_traits'),
+  v_empty_condition_name: STEPS.indexOf('step_label_8'),
+  v_pkg_name: STEPS.indexOf('step_label_packages'),
+  v_pkg_cost: STEPS.indexOf('step_label_packages'),
+  v_pkg_mod: STEPS.indexOf('step_label_packages'),
+};
+
+export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function SystemWizard(
+  { onSaved, onClose, initialData, systemId, bumpVersion = true, nameConflicts = false }, ref) {
   const { t } = useTranslation('systemWizard');
   const [step, setStep] = useState(0);
   const [data, setData] = useState<WizardData>(() => initialData ?? INITIAL);
   const [saving, setSaving] = useState(false);
   const [pkgPreview, setPkgPreview] = useState<PackageSelection[]>([]);
+  const [saveIssues, setSaveIssues] = useState<{ key: string; index?: number; step: number }[]>([]);
+  const [renameConfirm, setRenameConfirm] = useState(false);
   const toast = useToast();
 
   useImperativeHandle(ref, () => ({ buildRulesJson }), [data]);
 
-  const update = <K extends keyof WizardData>(key: K, val: WizardData[K]) =>
+  const update = <K extends keyof WizardData>(key: K, val: WizardData[K]) => {
     setData((prev) => ({ ...prev, [key]: val }));
+    setSaveIssues([]);
+  };
 
   const buildRulesJson = () => toRulesJson(data);
 
-  const handleSave = async () => {
+  const handleSave = async (forceRename = false) => {
     if (!data.name.trim()) return;
-    const issues = wizardIssues(data);
-    if (issues.length > 0) {
-      toast.error(t(issues[0]));
+    // H-7: Doppelname nur nach Bestätigung (wie im JSON-Editor).
+    if (nameConflicts && !forceRename) {
+      setRenameConfirm(true);
       return;
     }
+    setRenameConfirm(false);
+    const issues = wizardIssueList(data).map((i) => ({
+      ...i,
+      step: ISSUE_STEP[i.key] ?? 0,
+    }));
+    if (issues.length > 0) {
+      setSaveIssues(issues);
+      toast.error(t(issues[0].key, { index: (issues[0].index ?? 0) + 1 }));
+      return;
+    }
+    setSaveIssues([]);
     if (calcBudget(data).over) {
       toast.error(t('sb_save_blocked'));
       return;
@@ -89,6 +120,8 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           name: data.name.trim(),
           version: data.version,
           rulesJson: buildRulesJson(),
+          forceRename,
+          bumpVersion,
         });
         toast.success(t('msg_updated'));
       } else {
@@ -2685,7 +2718,44 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
       </div>
 
       {/* Navigation */}
-      <div className="shrink-0 flex items-center justify-between mt-4 pt-4 border-t border-bg-elevated">
+      <div className="shrink-0 mt-4 pt-4 border-t border-bg-elevated">
+        {saveIssues.length > 0 && (
+          <ul className="mb-3 space-y-1 text-[11px] text-danger" aria-label={t('save_issues')}>
+            {saveIssues.map((issue, i) => (
+              <li key={`${issue.key}-${issue.index ?? i}`}>
+                <button
+                  type="button"
+                  onClick={() => setStep(issue.step)}
+                  className="underline underline-offset-2 hover:text-danger/70"
+                >
+                  {t(issue.key, { index: (issue.index ?? 0) + 1 })}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {renameConfirm && (
+          <div className="mb-3 rounded border border-warning/40 bg-warning/10 p-3 text-xs">
+            <p className="text-text-primary mb-2">{t('rename_confirm')}</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setRenameConfirm(false)}
+                className="rounded border border-bg-elevated px-3 py-1.5 text-text-secondary hover:text-text-primary"
+              >
+                {t('nav_cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSave(true)}
+                className="rounded bg-accent px-3 py-1.5 text-white hover:bg-accent/80"
+              >
+                {t('rename_confirm_action')}
+              </button>
+            </div>
+          </div>
+        )}
+        <div className="flex items-center justify-between">
         <button
           onClick={step === 0 ? onClose : () => setStep(step - 1)}
           className="flex items-center gap-1 text-xs text-text-secondary hover:text-text-primary">
@@ -2700,13 +2770,14 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           </button>
         ) : (
           <button
-            onClick={handleSave}
+            onClick={() => handleSave()}
             disabled={saving || !data.name.trim()}
             className="flex items-center gap-1 rounded bg-accent px-4 py-2 text-xs text-white hover:bg-accent/80 disabled:opacity-40"
           >
             <Save size={14} /> {saving ? t('nav_saving') : t('nav_save')}
           </button>
         )}
+        </div>
       </div>
     </div>
   );

@@ -768,24 +768,38 @@ export function skillAdvanceCost(
  * Blocker für den Save-Gate (Audit P28): liefert i18n-Keys statt Text.
  * Backend-Schema würde sonst mit generischem 400 antworten.
  */
-export function wizardIssues(data: WizardData): string[] {
-  if (data.attributes.length === 0) return ['v_need_attributes'];
-  const issues: string[] = [];
-  if (data.attributes.some((a) => !a.name.trim())) issues.push('v_empty_attribute_name');
-  if ((data.traits ?? []).some((tr) => !tr.name.trim())) issues.push('v_empty_trait_name');
-  if ((data.conditions ?? []).some((c) => !c.name.trim())) issues.push('v_empty_condition_name');
+/** Ein Wizard-Blocker mit Ziel-Step (H-8): Key + optionaler Listen-Index. */
+export interface WizardIssue {
+  key: string;
+  index?: number;
+}
+
+/**
+ * Blocker als strukturierte Liste (Key + Index) — die UI übersetzt den Key und
+ * springt zum betroffenen Step. `wizardIssues` bleibt als String-Form erhalten.
+ */
+export function wizardIssueList(data: WizardData): WizardIssue[] {
+  if (data.attributes.length === 0) return [{ key: 'v_need_attributes' }];
+  const issues: WizardIssue[] = [];
+  if (data.attributes.some((a) => !a.name.trim())) issues.push({ key: 'v_empty_attribute_name' });
+  if ((data.traits ?? []).some((tr) => !tr.name.trim())) issues.push({ key: 'v_empty_trait_name' });
+  if ((data.conditions ?? []).some((c) => !c.name.trim())) issues.push({ key: 'v_empty_condition_name' });
   (data.packages ?? []).forEach((p, i) => {
-    if (!p.name.trim()) issues.push(`v_pkg_name:${i}`);
-    if (p.cost !== undefined && !Number.isInteger(p.cost)) issues.push(`v_pkg_cost:${i}`);
+    if (!p.name.trim()) issues.push({ key: 'v_pkg_name', index: i });
+    if (p.cost !== undefined && !Number.isInteger(p.cost)) issues.push({ key: 'v_pkg_cost', index: i });
     (p.attributeMods ?? []).forEach((m) => {
-      if (!m.attr && m.choice === undefined) issues.push(`v_pkg_mod:${i}`);
+      if (!m.attr && m.choice === undefined) issues.push({ key: 'v_pkg_mod', index: i });
       if (m.choice !== undefined && m.choice !== '*'
         && (!Array.isArray(m.choice) || m.choice.length === 0)) {
-        issues.push(`v_pkg_mod:${i}`);
+        issues.push({ key: 'v_pkg_mod', index: i });
       }
     });
   });
   return issues;
+}
+
+export function wizardIssues(data: WizardData): string[] {
+  return wizardIssueList(data).map((i) => (i.index != null ? `${i.key}:${i.index}` : i.key));
 }
 
 /** WizardData → rulesJson (Backend-Wire-Format). */

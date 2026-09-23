@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import dsa5json from '../../../docs/examples/dsa5.json';
 import dnd5ejson from '../../../docs/examples/dnd5e.json';
 import coc7ejson from '../../../docs/examples/coc7e.json';
-import { defaultWizardData, toRulesJson, fromRulesJson, attrPointCost, calcBudget, traitCost, danglingTraitRefs, traitSelectionErrors, advanceCost, skillAdvanceCost, wizardIssues, resolvePackageMods, packageCost, packageAutoTraits, packageSelectionIssues, packageSelectionWarnings, packageChoiceCount, type PackageSelection } from './gameSystem';
+import { defaultWizardData, toRulesJson, fromRulesJson, attrPointCost, calcBudget, traitCost, danglingTraitRefs, traitSelectionErrors, advanceCost, skillAdvanceCost, wizardIssues, wizardIssueList, resolvePackageMods, packageCost, packageAutoTraits, packageSelectionIssues, packageSelectionWarnings, packageChoiceCount, type PackageSelection } from './gameSystem';
 
 describe('gameSystem roundtrip', () => {
   it('toRulesJson/fromRulesJson preserves all ability fields', () => {
@@ -353,6 +353,17 @@ describe('packages (P29-T05)', () => {
     const issues = wizardIssues(data);
     expect(issues.some((i) => i.startsWith('v_pkg_name:'))).toBe(true);
     expect(issues.some((i) => i.startsWith('v_pkg_cost:'))).toBe(true);
+  });
+
+  it('wizardIssueList liefert Key + Index (H-8: UI übersetzt und springt zum Step)', () => {
+    const data = withPackages();
+    data.packages!.push({ name: '  ', kind: 'species', cost: 0 });
+    data.packages!.push({ name: 'Halb', kind: 'species', cost: 1.5 });
+    const issues = wizardIssueList(data);
+    expect(issues.some((i) => i.key === 'v_pkg_name' && i.index === 4)).toBe(true);
+    expect(issues.some((i) => i.key === 'v_pkg_cost' && i.index === 5)).toBe(true);
+    // Keine rohen `key:index`-Strings mehr.
+    expect(issues.every((i) => !i.key.includes(':'))).toBe(true);
   });
 
   it('roundtrips packages through toRulesJson/fromRulesJson', () => {

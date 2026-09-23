@@ -185,10 +185,10 @@ export default function GameSystemPage() {
   const handleClone = async (id: string) => {
     try {
       await apiClient.post(`/game-systems/${id}/clone`);
-      toast.success('System duplicated');
+      toast.success(t('systems.msgDuplicated'));
       fetchSystems();
     } catch {
-      toast.error('Failed to duplicate');
+      toast.error(t('systems.msgDuplicateFailed'));
     }
   };
 
@@ -211,7 +211,7 @@ export default function GameSystemPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Failed to export');
+      toast.error(t('systems.msgExportFailed'));
     }
   };
 
@@ -230,15 +230,15 @@ export default function GameSystemPage() {
         ? sanitizeRulesForImport(data as Record<string, unknown>)
         : ((data as Record<string, unknown>).rulesJson ?? (data as Record<string, unknown>).rules_json ?? '{}') as string;
       await apiClient.post('/game-systems', {
-        name: data.name ?? file.name.replace(/\.json$/i, '') ?? 'Imported System',
+        name: data.name ?? file.name.replace(/\.json$/i, '') ?? t('systems.importDefaultName'),
         version: data.version ?? 1,
         rulesJson: rules,
         schemaJson: '{}',
       });
-      toast.success('System imported');
+      toast.success(t('systems.msgImported'));
       fetchSystems();
     } catch {
-      toast.error('Failed to import');
+      toast.error(t('systems.msgImportFailed'));
     }
     e.target.value = '';
   };
@@ -275,7 +275,7 @@ export default function GameSystemPage() {
     } catch (e: unknown) {
       const msg =
         (e as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-        'Invalid JSON';
+        t('systems.invalidJson');
       setValidation({ valid: false, errors: [msg] });
     } finally {
       setValidating(false);
@@ -301,7 +301,7 @@ export default function GameSystemPage() {
           forceRename,
           bumpVersion,
         });
-        toast.success('Game system updated');
+        toast.success(t('systems.msgUpdated'));
       } else {
         await apiClient.post('/game-systems', {
           name: name.trim(),
@@ -309,7 +309,7 @@ export default function GameSystemPage() {
           rulesJson,
           schemaJson: '{}',
         });
-        toast.success('Game system created');
+        toast.success(t('systems.msgCreated'));
       }
       setShowEditor(false);
       setEditingId(null);
@@ -318,7 +318,7 @@ export default function GameSystemPage() {
       setValidation(null);
       fetchSystems();
     } catch {
-      toast.error(editingId ? 'Failed to update game system' : 'Failed to create game system');
+      toast.error(editingId ? t('systems.msgUpdateFailed') : t('systems.msgCreateFailed'));
     }
   };
 
@@ -332,7 +332,7 @@ export default function GameSystemPage() {
       setShares([]);
       setShareError(
         (e as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message
-        ?? 'Could not load shares',
+        ?? t('systems.sharesLoadFailed'),
       );
     }
   };
@@ -345,11 +345,11 @@ export default function GameSystemPage() {
       setShares(res.data ?? []);
       setShareEmail('');
       setShareError('');
-      toast.success('Share added');
+      toast.success(t('systems.shareAdded'));
     } catch (e) {
       const msg = (e as { response?: { data?: { error?: { message?: string } } } })
         ?.response?.data?.error?.message;
-      setShareError(msg ?? 'Could not add share');
+      setShareError(msg ?? t('systems.shareAddFailed'));
     }
   };
 
@@ -361,7 +361,7 @@ export default function GameSystemPage() {
     } catch (e) {
       const msg = (e as { response?: { data?: { error?: { message?: string } } } })
         ?.response?.data?.error?.message;
-      setShareError(msg ?? 'Could not remove share');
+      setShareError(msg ?? t('systems.shareRemoveFailed'));
     }
   };
 
@@ -383,18 +383,18 @@ export default function GameSystemPage() {
       setEditorMode('wizard');
       setShowEditor(true);
     } catch {
-      toast.error('Failed to load game system details');
+      toast.error(t('systems.detailsLoadFailed'));
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await apiClient.delete(`/game-systems/${id}`);
-      toast.success('Game system deleted');
+      toast.success(t('systems.msgDeleted'));
       setDeleting(null);
       fetchSystems();
     } catch {
-      toast.error('Failed to delete game system');
+      toast.error(t('systems.msgDeleteFailed'));
     }
   };
 
@@ -445,7 +445,7 @@ export default function GameSystemPage() {
           type="file"
           accept=".json"
           onChange={handleImport}
-          aria-label="Import"
+          aria-label={t('systems.import')}
           className="hidden"
         />
       </header>
@@ -499,14 +499,14 @@ export default function GameSystemPage() {
                     <button
                       onClick={() => handleExport(sys)}
                       className="text-text-secondary hover:text-accent"
-                      title="Export"
+                      title={t('systems.export')}
                     >
                       <Download size={14} />
                     </button>
                     <button
                       onClick={() => handleClone(sys.id)}
                       className="text-text-secondary hover:text-accent"
-                      title="Duplicate"
+                      title={t('systems.duplicate')}
                     >
                       <Copy size={14} />
                     </button>
@@ -514,7 +514,7 @@ export default function GameSystemPage() {
                       <button
                         onClick={() => openShares(sys)}
                         aria-label={`Share ${sys.name}`}
-                        title="Share"
+                        title={t('systems.share')}
                         className="text-text-secondary hover:text-accent"
                       >
                         <Share2 size={14} />
@@ -532,7 +532,7 @@ export default function GameSystemPage() {
                     {canEdit && (
                       <button
                         onClick={() => setDeleting(sys.id)}
-                        aria-label={`Delete ${sys.name}`}
+                        aria-label={t('systems.deleteNamed', { name: sys.name })}
                         className="text-text-secondary hover:text-danger"
                       >
                         <Trash2 size={14} />
@@ -569,7 +569,7 @@ export default function GameSystemPage() {
           <div className="rounded-lg border border-accent/20 bg-bg-surface p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-heading text-text-primary">
-                {editingId ? `Edit: ${name}` : 'New Game System'}
+                {editingId ? t('systems.editTitle', { name }) : t('systems.newTitle')}
               </h2>
               {!editingId && (
                 <div className="flex gap-1 rounded bg-bg-elevated p-0.5">
@@ -612,14 +612,14 @@ export default function GameSystemPage() {
                           parsed.name = name;
                           setWizardData({ ...parsed, name });
                           setWizardKey((k) => k + 1);
-                          toast.success('Template loaded');
+                          toast.success(t('systems.templateLoaded'));
                         } else {
-                          toast.error('Failed to load template');
+                          toast.error(t('systems.templateFailed'));
                         }
                       }}
                       className="rounded bg-bg-elevated px-3 py-2 text-xs text-text-secondary hover:text-text-primary"
                     >
-                      Load Template
+                      {t('systems.loadTemplate')}
                     </button>
                   </div>
                 )}
@@ -628,6 +628,10 @@ export default function GameSystemPage() {
                 ref={wizardRef}
                 initialData={wizardData as WizardData | undefined}
                 systemId={editingId ?? undefined}
+                bumpVersion={bumpVersion}
+                nameConflicts={editingId
+                  ? systems.some((s) => s.id !== editingId && s.name === name.trim())
+                  : false}
                 onSaved={() => {
                   setShowEditor(false);
                   setEditingId(null);
@@ -676,16 +680,16 @@ export default function GameSystemPage() {
                       onClick={loadTemplate}
                       className="rounded bg-bg-elevated px-3 py-2 text-xs text-text-secondary hover:text-text-primary"
                     >
-                      Load Template
+                      {t('systems.loadTemplate')}
                     </button>
                   </div>
                 )}
 
                 {/* JSON Editor */}
                 <div className="mb-3">
-                  <span className="block text-xs text-text-secondary mb-1">Rules JSON</span>
+                  <span className="block text-xs text-text-secondary mb-1">{t('systems.rulesJson')}</span>
                   <SyntaxHighlightedTextarea
-                    aria-label="Rules JSON"
+                    aria-label={t('systems.rulesJson')}
                     value={rulesJson}
                     onChange={(e) => {
                       setRulesJson(e.target.value);
@@ -709,7 +713,7 @@ export default function GameSystemPage() {
                     ) : (
                       <Copy size={14} />
                     )}
-                    Validate
+                    {t('systems.validate')}
                   </button>
                   <button
                     onClick={() => {
@@ -721,23 +725,39 @@ export default function GameSystemPage() {
                     }}
                     className="flex items-center gap-1 rounded border border-bg-elevated px-3 py-2 text-xs text-text-secondary hover:text-text-primary"
                   >
-                    Format JSON
+                    {t('systems.formatJson')}
                   </button>
 
                   {validation && (
-                    <span
-                      className={`flex items-center gap-1 text-xs ${validation.valid
-                        ? (validation.warnings?.length ? 'text-warning' : 'text-success')
-                        : 'text-danger'}`}
-                      title={validation.warnings?.join('\n')}
-                    >
-                      {validation.valid ? <Check size={14} /> : <X size={14} />}
-                      {validation.valid
-                        ? (validation.warnings?.length
-                            ? `${t('systems.validWithWarnings', { count: validation.warnings.length })}`
-                            : 'Valid')
-                        : (validation.errors?.[0] ?? 'Invalid')}
-                    </span>
+                    <div className="text-xs">
+                      <span
+                        className={`flex items-center gap-1 ${validation.valid
+                          ? (validation.warnings?.length ? 'text-warning' : 'text-success')
+                          : 'text-danger'}`}
+                      >
+                        {validation.valid ? <Check size={14} /> : <X size={14} />}
+                        {validation.valid
+                          ? (validation.warnings?.length
+                              ? `${t('systems.validWithWarnings', { count: validation.warnings.length })}`
+                              : t('systems.valid'))
+                          : t('systems.invalidCount', { count: validation.errors?.length ?? 0 })}
+                      </span>
+                      {/* A2: Fehler/Warnungen als Liste statt Tooltip. */}
+                      {(validation.errors?.length ?? 0) > 0 && (
+                        <ul className="mt-1 max-h-24 space-y-0.5 overflow-y-auto text-danger">
+                          {validation.errors!.map((err, i) => (
+                            <li key={i}>{err}</li>
+                          ))}
+                        </ul>
+                      )}
+                      {(validation.warnings?.length ?? 0) > 0 && (
+                        <ul className="mt-1 max-h-24 space-y-0.5 overflow-y-auto text-warning">
+                          {validation.warnings!.map((warn, i) => (
+                            <li key={i}>{warn}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   )}
 
                   <div className="flex-1" />
@@ -746,14 +766,14 @@ export default function GameSystemPage() {
                     onClick={closeEditor}
                     className="rounded border border-bg-elevated px-3 py-2 text-xs text-text-secondary hover:text-text-primary"
                   >
-                    Cancel
+                    {t('systems.cancel')}
                   </button>
                   <button
                     onClick={() => handleSave(false)}
                     disabled={!name?.trim() || !rulesJson?.trim()}
                     className="rounded bg-accent px-4 py-2 text-xs text-white hover:bg-accent/80 disabled:opacity-40"
                   >
-                    {editingId ? 'Update System' : 'Save System'}
+                    {editingId ? t('systems.update') : t('systems.save')}
                   </button>
                 </div>
                 {editingId ? (
@@ -819,22 +839,22 @@ export default function GameSystemPage() {
               className="w-72 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="font-heading text-text-primary mb-2">Delete Game System?</h3>
+              <h3 className="font-heading text-text-primary mb-2">{t('systems.deleteTitle')}</h3>
               <p className="text-sm text-text-secondary mb-4">
-                This will permanently delete this game system.
+                {t('systems.deleteBody')}
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setDeleting(null)}
                   className="flex-1 rounded border border-bg-elevated py-2 text-sm text-text-secondary hover:text-text-primary"
                 >
-                  Cancel
+                  {t('systems.cancel')}
                 </button>
                 <button
                   onClick={() => handleDelete(deleting)}
                   className="flex-1 rounded bg-danger py-2 text-sm text-white hover:bg-danger/80"
                 >
-                  Delete
+                  {t('actions.delete')}
                 </button>
               </div>
             </div>
@@ -850,18 +870,18 @@ export default function GameSystemPage() {
           <div className="w-full max-w-md rounded-lg border border-bg-elevated bg-bg-surface p-5"
                onClick={(e) => e.stopPropagation()}>
             <h3 className="mb-3 font-heading text-text-primary">
-              Share system: {sharing.name}
+              {t('systems.shareTitle', { name: sharing.name })}
             </h3>
             <div className="mb-3 flex gap-2">
               <input
                 value={shareEmail}
                 onChange={(e) => setShareEmail(e.target.value)}
-                placeholder="Email or username"
+                placeholder={t('systems.sharePlaceholder')}
                 className="flex-1 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
               />
               <button onClick={addShare}
                       className="rounded bg-accent px-3 py-2 text-sm text-white hover:bg-accent/80">
-                Add
+                {t('systems.shareAdd')}
               </button>
             </div>
             {shareError && (
@@ -873,21 +893,21 @@ export default function GameSystemPage() {
                   <span className="text-text-primary">{s2.email || s2.username || s2.userId.slice(0, 8)}</span>
                   <button onClick={() => removeShare(s2.userId)}
                           className="text-text-secondary hover:text-danger"
-                          aria-label="Remove share">
+                          aria-label={t('systems.removeShare')}>
                     <Trash2 size={12} />
                   </button>
                 </li>
               ))}
               {shares.length === 0 && (
                 <li className="text-xs text-text-secondary">
-                  No shares yet
+                  {t('systems.noShares')}
                 </li>
               )}
             </ul>
             <div className="flex justify-end">
               <button onClick={() => setSharing(null)}
                       className="rounded border border-bg-elevated px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary">
-                Close
+                {t('systems.close')}
               </button>
             </div>
           </div>
