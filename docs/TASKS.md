@@ -1873,7 +1873,7 @@ Schadensarten (`damage_type`) gehören nicht auf Systemebene, sondern zu Items, 
 ### P23-T05: Skill-Kategorien (optional)
 - **Status:** ⏭️ zurückgestellt (optional, keine Gameplay-Auswirkung; nicht blockierend für P29 — aufnehmen, wenn Sheet-Gruppierung gewünscht)
 
-> **Offenes Ticket (finaler Audit F8):** globale Game-Systeme haben keinen Owner — jeder authentifizierte User kann sie per PATCH/DELETE ändern (Bestand vor P28, mit der neuen Mächtigkeit der Regeln relevant). Gehört in eine Berechtigungs-Phase (P32+).
+> **Geschlossen (2026-09-24):** F8 ist umgesetzt — `GameSystemService.requireOwner` lehnt Systeme ohne Owner (Legacy/global) für Nicht-Admins ab; `update`/`delete`/`share` nutzen ihn (Test: `GameSystemServiceTest`).
 
 > **Bewusst zurückgestellt (P23/P29-Audit):** `baseValues` in Paketen ist weiterhin schema-only (auch nach P30 — der Charakter-Wizard wendet sie noch nicht an); `attackMalus` wirkt erst mit Attack-Roll-Modell; Fate-Reroll ist client-vertrauensbasiert; Spieler-Rollensicht auf Zustände; Aktions-Sperren bei Zuständen.
 - **Aufwand:** 0,5 Tage
@@ -2157,7 +2157,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 > Geteilte Templates (Systeme/Welten mit Sichtbarkeit), Kampagnen als geforkte Universen, Bot pro Kampagne. Siehe [`ADR/011`](ADR/011-shared-universes-visibility.md). Entscheidungen (2026-09-11): Clone-on-Create (kein Copy-on-Write), Sichtbarkeit privat/Einladungsliste/öffentlich, Version-Pinning mit manuellem Nachziehen, Bot pro Kampagne (Abo-Gate später).
 
 ### P27-T01: Visibility-Modell + Ownership (Systeme + Welten)
-- **Status:** ✅ Teilstand (V098: `game_systems.owner_id/visibility`, Backfill Owner/PUBLIC; Owner/Admin-Schreibschutz inkl. Abilities/Items; Lese-Guard inkl. Kampagnen-Zugriff; Kampagnen nur mit eigenen/PUBLIC/Legacy-Systemen (F8); Grant/Clone-Policy. Offen: `INVITE_ONLY`-Shares, PUBLIC-Lesepfad für Welten)
+- **Status:** ✅ Teilstand (V098: `game_systems.owner_id/visibility`, Backfill Owner/PUBLIC; Owner/Admin-Schreibschutz inkl. Abilities/Items; Lese-Guard inkl. Kampagnen-Zugriff; Kampagnen nur mit eigenen/PUBLIC/Legacy-Systemen (F8); Grant/Clone-Policy. Erledigt (2026-09-24 verifiziert): `INVITE_ONLY`-Shares (`canRead`/`findVisibleForUser`/`requireUsableForCampaign` + Test) und PUBLIC-Lesepfad für Welten (`WorldAccess.requireRead` + `listAccessible`/`WorldVisibilityQueryIT`).
 - **Aufwand:** 1 Tag
 - **Beschreibung:**
   - `visibility` (`PRIVATE`/`INVITE_ONLY`/`PUBLIC`) auf `game_systems` + `worlds` (Migration)
@@ -2628,7 +2628,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - Chat: Zeitstempel (payload.timestamp) + lokalisierte Fehlermeldung; Quest: Typ-Labels lokalisiert, Beschreibung vor Button; NPC-Seite: i18n statt EN, Services-Empty-State; Wizard: Step-Anzeige; Sheet: aria-Labels.
 - Audit R2–R4 (Subagent) + alle Findings gefixt (u. a. WS-Timestamp „Invalid Date", Drawer-Überlappung, Fehlercode-Dedupe, EN-Reste in Übersetzungen).
 
-> Offen: `systemWizard.json`-Übersetzungen (GM-Tool), ADR-013-Social-Tasks (s. u.).
+> `systemWizard.json`-Übersetzungen: **erledigt (2026-09-24)** — alle 6 Sprachen vollständig. Offen bleiben die ADR-013-Social-Tasks (s. u.).
 
 ## Phase 35: Backlog aus DSA-Spieltest (Details s. `docs/PLAYTEST-DSA.md`)
 
@@ -2668,17 +2668,19 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Vision:** Wurf-Posten als stabile Codes (`RollPart.kind`) + Frontend-i18n statt deutscher Payload-Labels.
 - **Aufräumen:** `EntityJson` überall, Dead Code entfernt (`RuleNames.containsKey/contains`, `resolveGameSystem`, toter `updateProgression`/DTO), Utils-Tests (`EntityJson`/`RuleNames`/`EngineResolver`), ERROR-CODES-Drift bereinigt.
 
-### Offen (priorisiert für die nächste Runde)
-1. **Wizard:** Save-Flags (`forceRename`/`bumpVersion`), Validierungsliste + Step-Sprung/Feld-Highlight, fehlende `v_*`-Keys (H-7/H-8).
-2. **GameSystemPage** vollständig i18n (Buttons, Toasts, Delete-Dialog; Warnungen als Liste statt Tooltip).
-3. **d100-Anzeige:** Schwellwert im `ProbeResponse` + UI „43 ≤ 55 ✓" (CoC).
-4. **Fail-open-Reste:** korruptes Regel-JSON (geloggt, aber Defaults), Engine-Fallback (geloggt), NPC-Intent wendet Schaden nicht auf HP an.
-5. **Backend-Texte i18n-fähig:** Kampf-Chat-Meldungen + Wetter-Labels als Codes statt deutscher Strings.
-6. **Initiative-Fallback `geschicklichkeit`** (letzter Systemname im Engine-Pfad); seedbarer RNG (ADR-014) oder ADR anpassen.
-7. **Weitere i18n-Hardcodes:** QuestDetailPage (komplett EN + Endlos-Spinner), RollLog-JSON-Dump, ErrorBoundary, Kontrast „override"-Tag.
-8. **Lint/Format-Gate:** 42 `no-explicit-any` (`types/gameSystem.ts` + Tests) + 10 `exhaustive-deps`; Prettier repo-weit rot.
-9. **Kontrakte:** V106-Constraint „Creator muss DM sein"; Paginierungs-/Response-Vereinheitlichung.
-10. **Vision-Kleinigkeiten:** Legacy-Creator-UI-Gate, `kind`-Gruppierung statt Badge, Formel-Hilfe mit Skills, Ersteller-Übergabe-Dialog.
+### Nacharbeit 2026-09-24 (A1–A5 + B) — abgearbeitet
+
+1. **Wizard (A1):** Save reicht `forceRename`/`bumpVersion` durch + Doppelnamen-Bestätigung; Blocker als Liste (`wizardIssueList` mit Key+Index), Klick springt zum betroffenen Step; fehlende `v_*`-Keys ergänzt (H-7/H-8).
+2. **GameSystemPage-i18n (A2):** Buttons/Toasts/Dialoge/Freigaben übersetzt; Validierungsfehler/-warnungen als Liste statt Tooltip.
+3. **d100-Anzeige (A3):** `ProbeResponse.threshold` + UI „43 ≤ 55 ✓".
+4. **Fail-open-Reste (A4):** kaputtes Regel-JSON → `RULES_UNREADABLE` (fehlend bleibt leer); ungültiges `probe` → Fehler (leeres = D20-Default); NPC-Angriff wendet Schaden auf Ziel-HP an.
+5. **Backend-Texte (A5):** Kampf-Chat als `code`+`params`, Wetter-Labels über `weatherType`-i18n.
+6. **B-P7:** ObjectMapper in `EventArchiveJob`/`EntityAbilityService`/`CombatService` injiziert (statische Parser-Utils bleiben).
+7. **B-F8:** war bereits umgesetzt (`requireOwner` lehnt Owner-lose Systeme ab) — Ticket geschlossen.
+8. **B-P27:** `INVITE_ONLY`-Shares und PUBLIC-Lesepfad waren umgesetzt (Share-Lesetest + `WorldVisibilityQueryIT`) — Status korrigiert.
+9. **B-P35:** `systemWizard.json` in allen 6 Sprachen vollständig (je 347 Keys; fr/it/es/tr um 150 Keys ergänzt — Übersetzungen bitte gegenlesen).
+
+Damit sind alle offenen Audit-/Nacharbeitspunkte aus ADR-015 und dem P27/P35-Backlog geschlossen.
 
 ---
 
