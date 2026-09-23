@@ -2710,8 +2710,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
       <div className="shrink-0 flex items-center justify-between mt-4 pt-4 border-t border-bg-elevated">
         <button
           onClick={step === 0 ? onClose : () => setStep(step - 1)}
-          className="flex items-center gap-1 text-xs text-text-secondary hover:text-text-primary"
-        >
+          className="flex items-center gap-1 text-xs text-text-secondary hover:text-text-primary">
           <ArrowLeft size={14} /> {step === 0 ? t('nav_cancel') : t('nav_back')}
         </button>
         {step < STEPS.length - 1 ? (

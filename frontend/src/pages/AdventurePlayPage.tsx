@@ -136,7 +136,7 @@ export default function AdventurePlayPage() {
         <button
           onClick={() => navigate(`/worlds/${worldId}`)}
           className="text-text-secondary hover:text-accent"
-        >
+         aria-label={t('actions.back')} title={t('actions.back')}>
           <ArrowLeft size={20} />
         </button>
         <h1 className="text-lg font-heading text-text-primary">{title}</h1>

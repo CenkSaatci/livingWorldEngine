@@ -559,6 +559,7 @@ export default function MapEditorPage() {
                 accept="image/png,image/jpeg,image/webp"
                 onChange={handleImageUpload}
                 disabled={uploading}
+                aria-label={t('editor.upload')}
                 className="hidden"
               />
             </label>

@@ -96,7 +96,7 @@ export default function EntityListPage() {
           <button
             onClick={() => navigate(`/worlds/${worldId}`)}
             className="text-text-secondary hover:text-accent"
-          >
+           aria-label={t('actions.back')} title={t('actions.back')}>
             <ArrowLeft size={20} />
           </button>
           <h1 className="text-lg font-heading text-text-primary">{t('entityList.title')}</h1>
@@ -130,12 +130,14 @@ export default function EntityListPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('entityList.search')}
+            aria-label={t('entityList.search')}
             className="w-full rounded border border-bg-elevated bg-bg-primary pl-8 pr-3 py-1.5 text-sm text-text-primary outline-none focus:border-accent"
           />
         </div>
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value as 'ALL' | 'PC' | 'NPC')}
+          aria-label={t('entityList.allTypes')}
           className="rounded border border-bg-elevated bg-bg-primary px-3 py-1.5 text-sm text-text-primary outline-none focus:border-accent"
         >
           <option value="ALL">{t('entityList.allTypes')}</option>

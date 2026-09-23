@@ -414,7 +414,7 @@ export default function GameSystemPage() {
           <button
             onClick={() => navigate('/dashboard')}
             className="text-text-secondary hover:text-accent"
-          >
+           aria-label={t('actions.back')} title={t('actions.back')}>
             <ArrowLeft size={20} />
           </button>
           <h1 className="flex items-center gap-2 text-lg font-heading text-text-primary">
@@ -445,6 +445,7 @@ export default function GameSystemPage() {
           type="file"
           accept=".json"
           onChange={handleImport}
+          aria-label="Import"
           className="hidden"
         />
       </header>

@@ -270,7 +270,7 @@ export default function AdventureEditorPage() {
         <button
           onClick={() => navigate(`/worlds/${worldId}`)}
           className="text-text-secondary hover:text-accent"
-        >
+         aria-label="Back" title="Back">
           <ArrowLeft size={20} />
         </button>
         <h1 className="text-lg font-heading text-text-primary">Adventure Editor</h1>

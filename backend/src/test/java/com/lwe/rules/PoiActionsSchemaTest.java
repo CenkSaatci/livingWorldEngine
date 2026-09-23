@@ -144,6 +144,31 @@ class PoiActionsSchemaTest {
     }
 
     @Test
+    void acceptsLocalPricing() {
+        var errors = validate(rules("""
+            "poi_actions": [ { "name": "Medicus", "pricing": "local", "priceModifier": 1.5,
+              "effects": [ { "type": "money", "amount": -10 } ] } ]
+            """));
+        assertThat(errors).isEmpty();
+    }
+
+    @Test
+    void rejectsUnknownPricing() {
+        var errors = validate(rules("""
+            "poi_actions": [ { "name": "X", "pricing": "dynamic" } ]
+            """));
+        assertThat(errors).isNotEmpty();
+    }
+
+    @Test
+    void rejectsNonPositivePriceModifier() {
+        var errors = validate(rules("""
+            "poi_actions": [ { "name": "X", "priceModifier": 0 } ]
+            """));
+        assertThat(errors).isNotEmpty();
+    }
+
+    @Test
     void rejectsUnknownActionField() {
         var errors = validate(rules("""
             "poi_actions": [ { "name": "X", "kind": "probe" } ]

@@ -52,9 +52,9 @@ export default function CharacterSheetPage() {
 
   return (
     <div className="min-h-screen bg-bg-primary">
-      <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
+      <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} aria-label={t('sheet.import')} className="hidden" />
       <header className="flex items-center gap-3 border-b border-bg-elevated bg-bg-surface px-6 py-3">
-        <button onClick={() => navigate(-1)} className="text-text-secondary hover:text-accent">
+        <button onClick={() => navigate(-1)} className="text-text-secondary hover:text-accent" aria-label={t('actions.back', { ns: 'common' })} title={t('actions.back', { ns: 'common' })}>
           <ArrowLeft size={20} />
         </button>
         <h1 className="flex-1 text-lg font-heading text-text-primary">{t('sheet.title')}</h1>

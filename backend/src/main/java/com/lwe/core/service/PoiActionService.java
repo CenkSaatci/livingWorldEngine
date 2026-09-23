@@ -44,6 +44,7 @@ public class PoiActionService {
     private final ConditionService conditionService;
     private final ProbeService probeService;
     private final RestService restService;
+    private final EconomyService economyService;
     private final CampaignMemberService campaignMemberService;
     private final PoiBindings bindings;
     private final PoiItems items;
@@ -55,6 +56,7 @@ public class PoiActionService {
                             RulesLoader rulesLoader, WorldAccess worldAccess, EntityAccess entityAccess,
                             CurrencyService currencyService, ConditionService conditionService,
                             ProbeService probeService, RestService restService,
+                            EconomyService economyService,
                             CampaignMemberService campaignMemberService, PoiBindings bindings,
                             PoiItems items, PoiChat chat, ObjectMapper mapper) {
         this.locationRepo = locationRepo;
@@ -68,6 +70,7 @@ public class PoiActionService {
         this.conditionService = conditionService;
         this.probeService = probeService;
         this.restService = restService;
+        this.economyService = economyService;
         this.campaignMemberService = campaignMemberService;
         this.bindings = bindings;
         this.items = items;
@@ -107,7 +110,7 @@ public class PoiActionService {
                 chatMode(action, hasEffects(action)), action.get("trade") instanceof Map,
                 dmOnly, text(action.get("requiresTrait")),
                 reasons.isEmpty(), reasons.isEmpty() ? null : reasons.get(0),
-                costs(action, ctx.rules())));
+                costs(action, ctx.rules(), priceFactor(action, ctx))));
         }
         return out;
     }
@@ -169,13 +172,14 @@ public class PoiActionService {
         }
 
         // 2) Vorvalidierung ohne Wirkung.
-        validate(actor, effects, ctx);
+        double priceFactor = priceFactor(action, ctx);
+        validate(actor, effects, ctx, priceFactor);
 
         // 3) Anwenden (transaktional).
         var applied = new ArrayList<Map<String, Object>>();
         var texts = new ArrayList<String>();
         for (var effect : effects) {
-            applyEffect(actor, effect, ctx, applied, texts);
+            applyEffect(actor, effect, ctx, priceFactor, applied, texts);
         }
         // Rast zuletzt: RestService lädt dieselbe (gemanagte) Entity und speichert.
         for (var effect : effects) {
@@ -218,13 +222,14 @@ public class PoiActionService {
 
     // ------------------------------------------------------------- Validation
 
-    private void validate(GameEntity actor, List<Map<String, Object>> effects, Ctx ctx) {
+    private void validate(GameEntity actor, List<Map<String, Object>> effects, Ctx ctx,
+                          double priceFactor) {
         int moneyCost = 0;
         for (var effect : effects) {
             var type = text(effect.get("type"));
             if (type == null) throw new PoiException("POI_ACTION_INVALID", "Effect without type");
             switch (type) {
-                case "money" -> moneyCost += Math.max(0, -(intAmount(effect)));
+                case "money" -> moneyCost += Math.max(0, -effectiveMoney(effect, priceFactor));
                 case "item" -> {
                     var itemName = text(effect.get("name"));
                     if (itemName == null) throw new PoiException("POI_ACTION_INVALID", "Item without name");
@@ -259,13 +264,13 @@ public class PoiActionService {
 
     // -------------------------------------------------------------- Application
 
-    private void applyEffect(GameEntity actor, Map<String, Object> effect, Ctx ctx,
+    private void applyEffect(GameEntity actor, Map<String, Object> effect, Ctx ctx, double priceFactor,
                              List<Map<String, Object>> applied, List<String> texts) {
         var type = text(effect.get("type"));
         var row = new LinkedHashMap<String, Object>();
         switch (type) {
             case "money" -> {
-                int amount = intAmount(effect);
+                int amount = effectiveMoney(effect, priceFactor);
                 if (amount >= 0) currencyService.credit(actor, amount);
                 else currencyService.pay(actor, -amount);
                 row.put("type", "money");
@@ -472,20 +477,42 @@ public class PoiActionService {
         return !effects(action).isEmpty();
     }
 
-    /** Negative Geld-/Item-Posten als Anzeige-Kosten. */
-    private List<Map<String, Object>> costs(Map<String, Object> action, Map<String, Object> rules) {
+    /** Negative Geld-/Item-Posten als Anzeige-Kosten (Geld ggf. ortsabhängig skaliert). */
+    private List<Map<String, Object>> costs(Map<String, Object> action, Map<String, Object> rules,
+                                            double priceFactor) {
         var out = new ArrayList<Map<String, Object>>();
         for (var effect : effects(action)) {
             var type = text(effect.get("type"));
-            if ("money".equals(type) && intAmount(effect) < 0) {
-                out.add(Map.of("type", "money", "amount", intAmount(effect),
-                    "text", currencyService.format(-intAmount(effect), rules)));
+            if ("money".equals(type) && effectiveMoney(effect, priceFactor) < 0) {
+                int amount = effectiveMoney(effect, priceFactor);
+                out.add(Map.of("type", "money", "amount", amount,
+                    "text", currencyService.format(-amount, rules)));
             } else if ("item".equals(type) && itemQty(effect) < 0) {
                 out.add(Map.of("type", "item", "name", String.valueOf(effect.get("name")),
                     "qty", -itemQty(effect)));
             }
         }
         return out;
+    }
+
+    /**
+     * Preisfaktor einer Aktion: `pricing: "local"` skaliert Geldbeträge mit dem
+     * Ortswohlstand (wie der Händlermarkt), `priceModifier` multipliziert zusätzlich.
+     * Ohne `pricing` bleiben Beträge fix (rückwärtskompatibel).
+     */
+    private double priceFactor(Map<String, Object> action, Ctx ctx) {
+        double factor = "local".equals(text(action.get("pricing")))
+            ? economyService.wealthFactor(ctx.location().getWealth())
+            : 1.0;
+        if (action.get("priceModifier") instanceof Number n && n.doubleValue() > 0) {
+            factor *= n.doubleValue();
+        }
+        return factor;
+    }
+
+    /** Geldbetrag eines Effekts nach Preisfaktor (gerundet). */
+    private static int effectiveMoney(Map<String, Object> effect, double priceFactor) {
+        return (int) Math.round(intAmount(effect) * priceFactor);
     }
 
     private void validateCondition(String name, Map<String, Object> rules) {

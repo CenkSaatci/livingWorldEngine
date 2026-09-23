@@ -249,8 +249,7 @@ export default function CampaignDetailPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-1 text-sm text-text-secondary hover:text-accent"
-          >
+            className="flex items-center gap-1 text-sm text-text-secondary hover:text-accent">
             <ArrowLeft size={16} /> {t('nav.backToDashboard')}
           </button>
         </div>

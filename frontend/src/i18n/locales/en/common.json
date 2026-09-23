@@ -17,7 +17,8 @@
     "edit": "Edit",
     "create": "Create",
     "copy": "Copy",
-    "loadMore": "Load More"
+    "loadMore": "Load More",
+    "back": "Back"
   },
   "language": {
     "switch": "Change language",

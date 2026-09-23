@@ -2703,5 +2703,9 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Mittel:** `dmOnly` nicht mehr an Spieler ausgeliefert; `probe.target` (Default 10) konfigurierbar; unbekannter Probe-Skill/Condition fail-closed (Runtime + Validator); `map.editor.actions`-Key; Aktionsliste nur gebunden (`?all=true` für Leiter).
 - **Niedrig/UX/A11y:** Wohlstandsformel wiederverwendet, Items einmal geladen, tote Parameter raus, Währungs-Rest → rohe Zahl, Geldzeile beschriftet, Karten-Sidebar-Aktionslink, `aria-label`/`role=dialog`.
 - **Beiläufig:** `POST /campaigns` dedupliziert Beziehungen beim Welt-Klon (kein 500 mehr bei Mehrfach-Kampagnen).
-- Offen: nichts Blockierendes. Bewusst vertagt bleiben die globalen A11y-Themen (Icon-Buttons ohne Namen, Feld-Labels im NPC-Modal) und ein separates Preis-Konzept jenseits des Händlermarkts.
+### Nacharbeit 2026-09-23b (A11y + Dienstleistungspreise)
+
+- **A11y:** Alle Icon-Only-Buttons (Back-Pfeile u. a.) haben `aria-label`/`title` (`actions.back`); Suchfelder, Filter, versteckte Datei-Inputs und die NPC-Modal-Felder sind benannt. Diagnose-Scanner: `frontend/e2e/a11y-scan.spec.ts` (aktuell 0 Befunde auf den Kernseiten).
+- **Dienstleistungspreise:** `poi_actions[].pricing: "local"` skaliert Geldbeträge mit dem Ortswohlstand (Händlermarkt-Formel), `priceModifier` multipliziert; Anzeige-Kosten und Wirkung nutzen denselben Faktor (Tests).
+- Offen: nichts Blockierendes. Bewusst vertagt: Feld-Label per `htmlFor` statt `aria-label`, weitere A11y-Feinheiten jenseits der Kernseiten.
 - Details: `docs/AUDIT-2026-09-23-poi.md` (inkl. Fix-Status).

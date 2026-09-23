@@ -503,8 +503,7 @@ export function CharacterWizard({ worldId, rules, campaignId, onCreated, onClose
           <button
             onClick={() => (step === 0 ? onClose() : setStep(step - 1))}
             disabled={saving}
-            className="flex items-center gap-1 rounded border border-bg-elevated px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary disabled:opacity-40"
-          >
+            className="flex items-center gap-1 rounded border border-bg-elevated px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary disabled:opacity-40">
             <ArrowLeft size={14} /> {step === 0 ? t('wizard.cancel') : t('wizard.back')}
           </button>
           {step < 4 ? (

@@ -339,6 +339,8 @@ public class RuleSchemaValidator {
                 "chat":          { "type": "string", "enum": ["none", "public", "actor"] },
                 "requiresTrait": { "type": "string", "minLength": 1 },
                 "dmOnly":        { "type": "boolean" },
+                "pricing":       { "type": "string", "enum": ["fixed", "local"] },
+                "priceModifier": { "type": "number", "exclusiveMinimum": 0 },
                 "probe":         { "$ref": "#/$defs/poiProbe" },
                 "trade":         { "$ref": "#/$defs/poiTrade" },
                 "effects":       { "type": "array", "items": { "$ref": "#/$defs/poiEffect" } }

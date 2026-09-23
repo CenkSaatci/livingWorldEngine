@@ -82,7 +82,7 @@ export default function InventoryPage() {
     <DndContext onDragEnd={handleDragEnd} onDragStart={(e) => setDragTarget(e.active.id as string)}>
       <div className="min-h-screen bg-bg-primary">
         <header className="flex items-center gap-3 border-b border-bg-elevated bg-bg-surface px-6 py-3">
-          <button onClick={() => navigate(-1)} className="text-text-secondary hover:text-accent">
+          <button onClick={() => navigate(-1)} className="text-text-secondary hover:text-accent" aria-label={t('actions.back', { ns: 'common' })} title={t('actions.back', { ns: 'common' })}>
             <ArrowLeft size={20} />
           </button>
           <h1 className="text-lg font-heading text-text-primary">{t('sheet.inventory')}</h1>

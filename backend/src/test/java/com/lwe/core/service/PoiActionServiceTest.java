@@ -39,6 +39,7 @@ class PoiActionServiceTest {
     private final RestService restService = mock();
     private final InventoryService inventoryService = mock();
     private final CampaignMemberService campaignMemberService = mock();
+    private final EconomyService economyService = mock();
     private final ChatMessageRepository chatRepo = mock();
     private final SimpMessagingTemplate messaging = mock();
     private final ObjectMapper mapper = new ObjectMapper();
@@ -60,14 +61,15 @@ class PoiActionServiceTest {
     void setUp() {
         service = new PoiActionService(locationRepo, regionRepo, campaignRepo, entityRepo,
             rulesLoader, worldAccess, entityAccess, currencyService, conditionService, probeService,
-            restService, campaignMemberService,
+            restService, economyService, campaignMemberService,
             new PoiBindings(entityRepo, mapper),
             new PoiItems(itemRepo, inventoryService, mapper),
             new PoiChat(chatRepo, messaging),
             mapper);
+        when(economyService.wealthFactor(anyInt())).thenReturn(1.0);
 
         var location = new Location(regionId, "village", "Bree");
-        location.setServices("[\"Medicus\",\"Wirtshaus\",\"Handeln\",\"Aussichtspunkt\",\"Geheim\",\"Ruine\",\"Probe\",\"FalscherSkill\"]");
+        location.setServices("[\"Medicus\",\"Wirtshaus\",\"Handeln\",\"Aussichtspunkt\",\"Geheim\",\"Ruine\",\"Probe\",\"FalscherSkill\",\"Lokaler Medicus\"]");
         when(locationRepo.findById(locationId)).thenReturn(Optional.of(location));
         when(regionRepo.findById(regionId)).thenReturn(Optional.of(new Region(worldId, "Mittelreich")));
         when(campaignRepo.findByWorldId(worldId)).thenReturn(List.of());
@@ -99,7 +101,9 @@ class PoiActionServiceTest {
                     "onSuccess", List.of(Map.of("type", "text", "text", "Du findest etwas.")),
                     "onFailure", List.of(Map.of("type", "text", "text", "Nur Schutt.")))),
                 Map.of("name", "FalscherSkill", "probe", Map.of("skill", "Nix",
-                    "onSuccess", List.of(), "onFailure", List.of()))));
+                    "onSuccess", List.of(), "onFailure", List.of())),
+                Map.of("name", "Lokaler Medicus", "pricing", "local", "priceModifier", 2.0,
+                    "effects", List.of(Map.of("type", "money", "amount", -10)))));
         when(rulesLoader.loadRules(any(), eq(worldId))).thenReturn(rules);
         when(rulesLoader.resolveSystem(any(), eq(worldId))).thenReturn(null);
 
@@ -166,6 +170,36 @@ class PoiActionServiceTest {
         assertThat(actor.getHpCurrent()).isEqualTo(10);
         assertThat(conditionService.active(actor)).isNotEmpty();
         verify(inventoryService, never()).addItemInternal(any(), any(), anyInt());
+    }
+
+    @Test
+    void localPricingScalesMoneyByWealthAndModifier() {
+        // wealthFactor 1.0 × priceModifier 2.0 → -10 wird zu -20
+        var result = execute("Lokaler Medicus");
+
+        assertThat(currencyService.money(actor)).isEqualTo(80);
+        assertThat(result.effects()).extracting(e -> e.get("amount")).contains(-20);
+    }
+
+    @Test
+    void localPricingUsesLocationWealthFactor() {
+        when(economyService.wealthFactor(anyInt())).thenReturn(1.2); // z. B. Wohlstand 7
+        execute("Lokaler Medicus");
+        // round(10 × 1.2 × 2.0) = 24
+        assertThat(currencyService.money(actor)).isEqualTo(76);
+    }
+
+    @Test
+    void listShowsScaledCostsForLocalPricing() {
+        when(economyService.wealthFactor(anyInt())).thenReturn(1.5);
+        var byName = service.list(locationId, actorId, userId, null, false).stream()
+            .collect(java.util.stream.Collectors.toMap(PoiActionService.ActionInfo::name, a -> a));
+
+        assertThat(byName.get("Lokaler Medicus").costs())
+            .extracting(c -> c.get("amount")).contains(-30);
+        // Fixe Aktion bleibt unskaliert.
+        assertThat(byName.get("Medicus").costs())
+            .extracting(c -> c.get("amount")).contains(-15);
     }
 
     @Test

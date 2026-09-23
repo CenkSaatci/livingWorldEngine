@@ -248,6 +248,7 @@ export function CharacterSheet({ entityId }: Props) {
             value={skillFilter}
             onChange={(e) => setSkillFilter(e.target.value)}
             placeholder={t('sheet.searchSkills')!}
+            aria-label={t('sheet.searchSkills')!}
             className="w-32 rounded border border-bg-elevated bg-bg-primary px-2 py-0.5 text-[10px] text-text-primary outline-none focus:border-accent"
           />
         </div>
@@ -609,7 +610,8 @@ function FormulaOverrides({ entityId, onSaved }: { entityId: string; onSaved: ()
           <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
             {t('sheet.overrides')}
           </h3>
-          <button onClick={() => setIsAdding(true)} className="text-accent hover:text-accent/60">
+          <button onClick={() => setIsAdding(true)} aria-label={t('sheet.overrides')}
+            className="text-accent hover:text-accent/60">
             <Plus size={14} />
           </button>
         </div>
