@@ -87,6 +87,7 @@
     "draw_help": "Linksklick setzt Punkte. Rechtsklick speichert ab 3 Punkten. Esc bricht ab.",
     "place_help_empty": "Wähle links einen Ort, dann klicke auf die Karte.",
     "place_help_selected": "Klicke auf die Karte, um den gewählten Ort zu platzieren.",
-    "actions": "Aktionen"
+    "actions": "Aktionen",
+    "open_location": "Ort öffnen"
   }
 }

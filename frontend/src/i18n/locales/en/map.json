@@ -87,6 +87,7 @@
     "draw_help": "Left-click adds points. Right-click saves with 3+ points. Esc cancels.",
     "place_help_empty": "Select a location on the left, then click the map.",
     "place_help_selected": "Click the map to place the selected location.",
-    "actions": "Actions"
+    "actions": "Actions",
+    "open_location": "Open location"
   }
 }

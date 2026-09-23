@@ -2692,10 +2692,10 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **UI:** `LocationActionsPanel` (Ortsansicht), `MerchantPanel` (Markt), Geldzeile im Bogen, NPC-Editor (Händler-Schalter + Sortiment als `Name` / `Name = Preis`-Zeilen), Karten-POI-Info mit „Aktionen"-Button.
 - **Nachweise:** Backend-Suite grün (+4 Testklassen), Frontend 219 (+7), `tsc` clean; Live-Smoke: Routen lösen auf (`actions`/`merchants` → 200 `[]`, unbekannte Aktion → 404 `POI_ACTION_UNKNOWN`).
 
-### Offen / bewusste Abweichung
-- **Karten-POI:** der Info-Dialog navigiert zur Ortsansicht (dort liegt das Panel), statt das Panel direkt im Dialog zu rendern — gleiche Komponente, ein Klick mehr. Bei Bedarf als Sheet nachziehen.
-- **Nicht-Ziele v1:** keine Bestände/Lager, kein Feilschen, keine Ziel-Auswahl (`targetId`) für Effekte, keine persistierten Flüster-Nachrichten.
-- **Manueller Test offen:** `poi_actions`/`currency` im Spielsystem anlegen, Aktion an Ort/NPC binden, Medicus/Wirtshaus/Handeln durchklicken (GP-Block).
+### Abweichung / Scope
+- **Karten-POI:** erledigt — der Info-Dialog rendert jetzt dasselbe `LocationActionsPanel` (Sheet) und bietet zusätzlich „Ort öffnen" zum Navigieren.
+- **Nicht-Ziele v1 (bewusster Scope, kein To-do):** keine Bestände/Lager, kein Feilschen, keine Ziel-Auswahl (`targetId`) für Effekte, keine persistierten Flüster-Nachrichten.
+- **Manueller Test:** durch automatisiertes Playwright-Audit abgedeckt (`e2e/poi-audit.spec.ts`, 7 Tests); ein echter Durchklick mit eigenen POI-Daten bleibt der GP-Block.
 
 ### Nacharbeit 2026-09-23 (Audit-Fixes)
 
@@ -2705,7 +2705,7 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Beiläufig:** `POST /campaigns` dedupliziert Beziehungen beim Welt-Klon (kein 500 mehr bei Mehrfach-Kampagnen).
 ### Nacharbeit 2026-09-23b (A11y + Dienstleistungspreise)
 
-- **A11y:** Alle Icon-Only-Buttons (Back-Pfeile u. a.) haben `aria-label`/`title` (`actions.back`); Suchfelder, Filter, versteckte Datei-Inputs und die NPC-Modal-Felder sind benannt. Diagnose-Scanner: `frontend/e2e/a11y-scan.spec.ts` (aktuell 0 Befunde auf den Kernseiten).
+- **A11y:** Alle Icon-Only-Buttons (Back-Pfeile u. a.) haben `aria-label`/`title` (`actions.back`); app-weit 90 eigenständige Labels per `htmlFor`/`id` verknüpft (Gruppen als `role=group`+`aria-labelledby`), AttributeField prop-basiert, weitere unbenannte Inputs benannt. `frontend/e2e/a11y-scan.spec.ts` ist jetzt ein **Gate** (14 Seiten + NPC-Modal, 0 Befunde).
 - **Dienstleistungspreise:** `poi_actions[].pricing: "local"` skaliert Geldbeträge mit dem Ortswohlstand (Händlermarkt-Formel), `priceModifier` multipliziert; Anzeige-Kosten und Wirkung nutzen denselben Faktor (Tests).
-- Offen: nichts Blockierendes. Bewusst vertagt: Feld-Label per `htmlFor` statt `aria-label`, weitere A11y-Feinheiten jenseits der Kernseiten.
+- **Keine offenen Punkte** aus dem POI-Audit; nur die v1-Nicht-Ziele bleiben bewusster Scope.
 - Details: `docs/AUDIT-2026-09-23-poi.md` (inkl. Fix-Status).

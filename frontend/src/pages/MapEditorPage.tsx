@@ -9,6 +9,7 @@ import { apiClient, BACKEND_ORIGIN } from '../api/client';
 import { useToast } from '../hooks/useToast';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { POI_TYPES, locationTypeIcon, regionColor, validateMapFile } from '../utils/mapEditor';
+import { LocationActionsPanel } from '../components/world/LocationActionsPanel';
 
 const COLS = 20;
 const ROWS = 15;
@@ -876,7 +877,7 @@ export default function MapEditorPage() {
             role="dialog"
             aria-modal="true"
             aria-label={locModal.location.name}
-            className="w-72 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl"
+            className="w-96 max-h-[85vh] overflow-y-auto rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">
@@ -907,6 +908,20 @@ export default function MapEditorPage() {
             {locModal.location.positionJson && (
               <p className="text-xs text-text-secondary mt-1">{t('editor.placed_on_map')}</p>
             )}
+
+            {/* ADR-015: dasselbe Aktions-Panel wie in der Ortsansicht (Sheet statt Zweitpfad) */}
+            <div className="mt-4">
+              <LocationActionsPanel
+                worldId={id ?? ''}
+                locationId={locModal.location.id}
+                onOpenMarket={() => {
+                  const loc = locModal.location!;
+                  setLocModal(null);
+                  navigate(`/worlds/${id}/locations/${loc.id}/market`);
+                }}
+              />
+            </div>
+
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 onClick={() => {
@@ -916,7 +931,7 @@ export default function MapEditorPage() {
                 }}
                 className="flex items-center gap-1 rounded bg-accent px-3 py-1.5 text-xs text-white hover:bg-accent/80"
               >
-                <Sparkles size={12} /> {t('editor.actions')}
+                <Sparkles size={12} /> {t('editor.open_location')}
               </button>
               <button
                 onClick={() => openEditLocation(locModal.location!)}
