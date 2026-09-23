@@ -58,10 +58,13 @@ class PoiActionServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PoiActionService(locationRepo, regionRepo, campaignRepo, entityRepo, itemRepo,
+        service = new PoiActionService(locationRepo, regionRepo, campaignRepo, entityRepo,
             rulesLoader, worldAccess, entityAccess, currencyService, conditionService, probeService,
-            restService, inventoryService, campaignMemberService,
-            new PoiBindings(entityRepo, mapper), chatRepo, messaging, mapper);
+            restService, campaignMemberService,
+            new PoiBindings(entityRepo, mapper),
+            new PoiItems(itemRepo, inventoryService, mapper),
+            new PoiChat(chatRepo, messaging),
+            mapper);
 
         var location = new Location(regionId, "village", "Bree");
         location.setServices("[\"Medicus\",\"Wirtshaus\",\"Handeln\",\"Aussichtspunkt\",\"Geheim\",\"Ruine\",\"Probe\",\"FalscherSkill\"]");
@@ -127,16 +130,16 @@ class PoiActionServiceTest {
     @Test
     void unknownActionRejected() {
         assertThatThrownBy(() -> execute("NichtDa"))
-            .isInstanceOf(PoiActionService.PoiException.class)
-            .extracting(e -> ((PoiActionService.PoiException) e).getErrorCode())
+            .isInstanceOf(PoiException.class)
+            .extracting(e -> ((PoiException) e).getErrorCode())
             .isEqualTo("POI_ACTION_UNKNOWN");
     }
 
     @Test
     void actionNotBoundToLocationRejected() {
         assertThatThrownBy(() -> execute("Fund"))
-            .isInstanceOf(PoiActionService.PoiException.class)
-            .extracting(e -> ((PoiActionService.PoiException) e).getErrorCode())
+            .isInstanceOf(PoiException.class)
+            .extracting(e -> ((PoiException) e).getErrorCode())
             .isEqualTo("POI_ACTION_NOT_AVAILABLE");
     }
 
@@ -168,8 +171,8 @@ class PoiActionServiceTest {
     @Test
     void dmOnlyActionForbiddenForPlayer() {
         assertThatThrownBy(() -> execute("Geheim"))
-            .isInstanceOf(PoiActionService.PoiException.class)
-            .extracting(e -> ((PoiActionService.PoiException) e).getErrorCode())
+            .isInstanceOf(PoiException.class)
+            .extracting(e -> ((PoiException) e).getErrorCode())
             .isEqualTo("POI_ACTION_FORBIDDEN");
     }
 
@@ -177,8 +180,8 @@ class PoiActionServiceTest {
     void missingTraitRejected() {
         actor.setMetadataJson("{\"money\":100,\"traits\":[]}");
         assertThatThrownBy(() -> execute("Ruine"))
-            .isInstanceOf(PoiActionService.PoiException.class)
-            .extracting(e -> ((PoiActionService.PoiException) e).getErrorCode())
+            .isInstanceOf(PoiException.class)
+            .extracting(e -> ((PoiException) e).getErrorCode())
             .isEqualTo("POI_ACTION_TRAIT_REQUIRED");
     }
 
@@ -223,8 +226,8 @@ class PoiActionServiceTest {
     @Test
     void probeWithUnknownSkillRejected() {
         assertThatThrownBy(() -> execute("FalscherSkill"))
-            .isInstanceOf(PoiActionService.PoiException.class)
-            .extracting(e -> ((PoiActionService.PoiException) e).getErrorCode())
+            .isInstanceOf(PoiException.class)
+            .extracting(e -> ((PoiException) e).getErrorCode())
             .isEqualTo("ROLL_SKILL_NOT_FOUND");
     }
 

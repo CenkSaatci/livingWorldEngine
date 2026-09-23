@@ -1,15 +1,10 @@
 package com.lwe.core.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lwe.core.domain.ChatMessage;
 import com.lwe.core.domain.GameEntity;
-import com.lwe.core.domain.GameItem;
 import com.lwe.core.domain.Location;
 import com.lwe.core.repository.CampaignRepository;
-import com.lwe.core.repository.ChatMessageRepository;
 import com.lwe.core.repository.GameEntityRepository;
-import com.lwe.core.repository.GameItemRepository;
 import com.lwe.core.repository.LocationRepository;
 import com.lwe.core.repository.RegionRepository;
 import com.lwe.core.util.EntityAccess;
@@ -17,9 +12,6 @@ import com.lwe.core.util.EntityJson;
 import com.lwe.core.util.RuleNames;
 import com.lwe.core.util.WorldAccess;
 import com.lwe.rules.DiceExpression;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,20 +27,16 @@ import java.util.UUID;
  * gebunden an Ort ({@code location.services}) oder NPC ({@code services_offered}).
  *
  * <p>Ablauf strikt „erst validieren, dann anwenden" (H-2): alle negativen Posten
- * werden geprüft, bevor irgendein Effekt wirkt. Effekte laufen durch die
- * bestehenden Services (Geld, Inventar, Zustände, Rast, Probe).
+ * werden geprüft, bevor irgendein Effekt wirkt. Item- und Chat-Zugriffe liegen in
+ * {@link PoiItems} bzw. {@link PoiChat}, die Bindung in {@link PoiBindings}.
  */
 @Service
 public class PoiActionService {
-
-    private static final Logger log = LoggerFactory.getLogger(PoiActionService.class);
-    private static final TypeReference<List<Map<String, Object>>> ITEM_LIST = new TypeReference<>() {};
 
     private final LocationRepository locationRepo;
     private final RegionRepository regionRepo;
     private final CampaignRepository campaignRepo;
     private final GameEntityRepository entityRepo;
-    private final GameItemRepository itemRepo;
     private final RulesLoader rulesLoader;
     private final WorldAccess worldAccess;
     private final EntityAccess entityAccess;
@@ -56,29 +44,23 @@ public class PoiActionService {
     private final ConditionService conditionService;
     private final ProbeService probeService;
     private final RestService restService;
-    private final InventoryService inventoryService;
     private final CampaignMemberService campaignMemberService;
     private final PoiBindings bindings;
-    private final ChatMessageRepository chatRepo;
-    private final SimpMessagingTemplate messaging;
+    private final PoiItems items;
+    private final PoiChat chat;
     private final ObjectMapper mapper;
 
     public PoiActionService(LocationRepository locationRepo, RegionRepository regionRepo,
                             CampaignRepository campaignRepo, GameEntityRepository entityRepo,
-                            GameItemRepository itemRepo, RulesLoader rulesLoader,
-                            WorldAccess worldAccess, EntityAccess entityAccess,
+                            RulesLoader rulesLoader, WorldAccess worldAccess, EntityAccess entityAccess,
                             CurrencyService currencyService, ConditionService conditionService,
                             ProbeService probeService, RestService restService,
-                            InventoryService inventoryService,
-                            CampaignMemberService campaignMemberService,
-                            PoiBindings bindings,
-                            ChatMessageRepository chatRepo,
-                            SimpMessagingTemplate messaging, ObjectMapper mapper) {
+                            CampaignMemberService campaignMemberService, PoiBindings bindings,
+                            PoiItems items, PoiChat chat, ObjectMapper mapper) {
         this.locationRepo = locationRepo;
         this.regionRepo = regionRepo;
         this.campaignRepo = campaignRepo;
         this.entityRepo = entityRepo;
-        this.itemRepo = itemRepo;
         this.rulesLoader = rulesLoader;
         this.worldAccess = worldAccess;
         this.entityAccess = entityAccess;
@@ -86,11 +68,10 @@ public class PoiActionService {
         this.conditionService = conditionService;
         this.probeService = probeService;
         this.restService = restService;
-        this.inventoryService = inventoryService;
         this.campaignMemberService = campaignMemberService;
         this.bindings = bindings;
-        this.chatRepo = chatRepo;
-        this.messaging = messaging;
+        this.items = items;
+        this.chat = chat;
         this.mapper = mapper;
     }
 
@@ -211,7 +192,7 @@ public class PoiActionService {
         if (text.isEmpty()) text = text(action.get("description"));
 
         // 4) Chat/Event gemäß Sichtbarkeit.
-        chat(action, actor, ctx, text, applied);
+        deliverChat(action, actor, ctx, text, applied);
 
         return new ActionResult(actionName, true, false, text,
             moneyBefore, moneyAfter, moneyBeforeText,
@@ -247,11 +228,11 @@ public class PoiActionService {
                 case "item" -> {
                     var itemName = text(effect.get("name"));
                     if (itemName == null) throw new PoiException("POI_ACTION_INVALID", "Item without name");
-                    var item = resolveItem(itemName, ctx);
+                    var item = items.resolve(ctx.system(), itemName);
                     int qty = itemQty(effect);
                     if (qty == 0) throw new PoiException("POI_ACTION_INVALID", "Item quantity must not be 0");
                     if (qty < 0) {
-                        int have = inventoryQuantity(actor, item.getId());
+                        int have = items.quantity(actor, item.getId());
                         if (have < -qty) {
                             throw new PoiException("POI_ITEM_NOT_OWNED",
                                 "Needs " + (-qty) + "x " + itemName + ", has " + have);
@@ -292,11 +273,11 @@ public class PoiActionService {
                 row.put("text", currencyService.format(Math.abs(amount), ctx.rules()));
             }
             case "item" -> {
-                var item = resolveItem(text(effect.get("name")), ctx);
+                var item = items.resolve(ctx.system(), text(effect.get("name")));
                 int qty = itemQty(effect);
                 if (qty == 0) throw new PoiException("POI_ACTION_INVALID", "Item quantity must not be 0");
-                if (qty > 0) inventoryService.addItemInternal(actor, item.getId(), qty);
-                else inventoryService.removeItemInternal(actor, item.getId(), -qty);
+                if (qty > 0) items.add(actor, item.getId(), qty);
+                else items.remove(actor, item.getId(), -qty);
                 row.put("type", "item");
                 row.put("name", item.getName());
                 row.put("qty", qty);
@@ -404,64 +385,12 @@ public class PoiActionService {
         throw new PoiException("POI_ACTION_INVALID", "Invalid heal expression: " + expr);
     }
 
-    // ------------------------------------------------------------------- Items
-
-    private GameItem resolveItem(String name, Ctx ctx) {
-        if (name == null) throw new PoiException("POI_ITEM_UNKNOWN", "Item name missing");
-        if (ctx.system() == null) throw new PoiException("POI_ITEM_UNKNOWN", "No game system for items");
-        return itemRepo.findByGameSystemId(ctx.system().getId()).stream()
-            .filter(i -> RuleNames.eq(i.getName(), name))
-            .findFirst()
-            .orElseThrow(() -> new PoiException("POI_ITEM_UNKNOWN", "Unknown item: " + name));
-    }
-
-    private int inventoryQuantity(GameEntity owner, UUID itemId) {
-        try {
-            var raw = owner.getInventoryJson();
-            if (raw == null || raw.isBlank()) return 0;
-            List<Map<String, Object>> inv = mapper.readValue(raw, ITEM_LIST);
-            return inv.stream()
-                .filter(e -> itemId.toString().equals(String.valueOf(e.get("itemId"))))
-                .mapToInt(e -> e.get("quantity") instanceof Number n ? n.intValue() : 0)
-                .sum();
-        } catch (Exception e) {
-            return 0;
-        }
-    }
-
     // ------------------------------------------------------------------- Chat
 
-    private void chat(Map<String, Object> action, GameEntity actor,
-                      Ctx ctx, String text, List<Map<String, Object>> applied) {
-        var mode = chatMode(action, hasEffects(action));
-        if ("none".equals(mode) || text == null || text.isBlank()) return;
-        if ("public".equals(mode)) {
-            var message = Map.<String, Object>of(
-                "sender", actor.getName(),
-                "text", text,
-                "timestamp", java.time.Instant.now().toString());
-            try {
-                chatRepo.save(new ChatMessage(ctx.worldId(),
-                    actor.getName(), text));
-            } catch (Exception ignored) {
-                // Historie darf die Aktion nie brechen.
-            }
-            try {
-                messaging.convertAndSend("/topic/world/" + ctx.worldId(),
-                    Map.of("event_type", "CHAT_MESSAGE", "payload", message));
-            } catch (Exception e) {
-                log.warn("POI-Chat-Broadcast fehlgeschlagen: {}", e.getMessage());
-            }
-        } else {
-            // actor: transient an den Ausführenden, nicht im Welt-Verlauf.
-            try {
-                messaging.convertAndSendToUser(actor.getOwnerUserId() != null
-                        ? actor.getOwnerUserId().toString() : actor.getId().toString(),
-                    "/queue/poi", Map.of("action", action.get("name"), "text", text, "effects", applied));
-            } catch (Exception e) {
-                log.warn("POI-Direktnachricht fehlgeschlagen: {}", e.getMessage());
-            }
-        }
+    private void deliverChat(Map<String, Object> action, GameEntity actor, Ctx ctx, String text,
+                             List<Map<String, Object>> applied) {
+        chat.deliver(chatMode(action, hasEffects(action)), ctx.worldId(), actor,
+            text(action.get("name")), text, applied);
     }
 
     private String chatMode(Map<String, Object> action, boolean hasEffects) {
@@ -590,11 +519,5 @@ public class PoiActionService {
         if (value == null) return null;
         var s = String.valueOf(value);
         return s.isBlank() ? null : s;
-    }
-
-    public static class PoiException extends RuntimeException {
-        private final String errorCode;
-        public PoiException(String errorCode, String message) { super(message); this.errorCode = errorCode; }
-        public String getErrorCode() { return errorCode; }
     }
 }

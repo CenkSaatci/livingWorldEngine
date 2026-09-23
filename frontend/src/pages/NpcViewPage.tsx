@@ -689,46 +689,7 @@ export default function NpcViewPage() {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('entity.personality')}</label>
-                <input
-                  value={editPersonality}
-                  onChange={(e) => setEditPersonality(e.target.value)}
-                  placeholder={t('entity.personality_placeholder')}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-text-secondary mb-1">
-                  {t('entity.knowledge')}
-                </label>
-                <input
-                  value={editKnowledge}
-                  onChange={(e) => setEditKnowledge(e.target.value)}
-                  placeholder={t('entity.knowledge_placeholder')}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-text-secondary mb-1">
-                  {t('entity.goals')}
-                </label>
-                <input
-                  value={editGoals}
-                  onChange={(e) => setEditGoals(e.target.value)}
-                  placeholder={t('entity.goals_placeholder')}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-text-secondary mb-1">{t('entity.backstory')}</label>
-                <textarea
-                  value={editBackstory}
-                  onChange={(e) => setEditBackstory(e.target.value)}
-                  rows={3}
-                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none"
-                />
-              </div>
+              {/* Dienste & Händler direkt beim Ort — Kern der Orts-Interaktion (ADR-015) */}
               <div>
                 <label className="block text-xs text-text-secondary mb-1">{t('entity.services')}</label>
                 <div className="flex flex-wrap gap-1">
@@ -787,6 +748,46 @@ export default function NpcViewPage() {
                     <p className="mt-1 text-[10px] text-text-secondary">{t('entity.shopHint')}</p>
                   </>
                 )}
+              </div>
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">{t('entity.personality')}</label>
+                <input
+                  value={editPersonality}
+                  onChange={(e) => setEditPersonality(e.target.value)}
+                  placeholder={t('entity.personality_placeholder')}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">
+                  {t('entity.knowledge')}
+                </label>
+                <input
+                  value={editKnowledge}
+                  onChange={(e) => setEditKnowledge(e.target.value)}
+                  placeholder={t('entity.knowledge_placeholder')}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">
+                  {t('entity.goals')}
+                </label>
+                <input
+                  value={editGoals}
+                  onChange={(e) => setEditGoals(e.target.value)}
+                  placeholder={t('entity.goals_placeholder')}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">{t('entity.backstory')}</label>
+                <textarea
+                  value={editBackstory}
+                  onChange={(e) => setEditBackstory(e.target.value)}
+                  rows={3}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent resize-none"
+                />
               </div>
               <div className="flex gap-2 pt-2">
                 <button

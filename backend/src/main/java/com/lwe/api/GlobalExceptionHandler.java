@@ -122,7 +122,7 @@ public class GlobalExceptionHandler {
             case ProbeService.ProbeException e -> e.getErrorCode();
             case TradeService.TradeException e -> e.getErrorCode();            case EntityService.EntityException e -> e.getErrorCode();
             case AbilityService.AbilityException e -> e.getErrorCode();
-            case PoiActionService.PoiException e -> e.getErrorCode();
+            case PoiException e -> e.getErrorCode();
             case MerchantService.MerchantException e -> e.getErrorCode();
             case CurrencyService.CurrencyException e -> e.getErrorCode();
             case EntityAbilityService.EntityAbilityException e -> e.getErrorCode();
@@ -163,7 +163,7 @@ public class GlobalExceptionHandler {
                 case "TRADE_WORLD_MISMATCH", "TRADE_NOT_PARTICIPANT" -> HttpStatus.FORBIDDEN;
                 default -> HttpStatus.UNPROCESSABLE_ENTITY;
             };
-            case PoiActionService.PoiException e -> switch (e.getErrorCode()) {
+            case PoiException e -> switch (e.getErrorCode()) {
                 case "POI_ACTION_UNKNOWN", "LOCATION_NOT_FOUND", "REGION_NOT_FOUND",
                      "ENTITY_NOT_FOUND" -> HttpStatus.NOT_FOUND;
                 case "POI_ACTION_FORBIDDEN", "WORLD_ACCESS_DENIED" -> HttpStatus.FORBIDDEN;

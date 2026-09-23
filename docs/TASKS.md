@@ -2703,5 +2703,5 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 - **Mittel:** `dmOnly` nicht mehr an Spieler ausgeliefert; `probe.target` (Default 10) konfigurierbar; unbekannter Probe-Skill/Condition fail-closed (Runtime + Validator); `map.editor.actions`-Key; Aktionsliste nur gebunden (`?all=true` für Leiter).
 - **Niedrig/UX/A11y:** Wohlstandsformel wiederverwendet, Items einmal geladen, tote Parameter raus, Währungs-Rest → rohe Zahl, Geldzeile beschriftet, Karten-Sidebar-Aktionslink, `aria-label`/`role=dialog`.
 - **Beiläufig:** `POST /campaigns` dedupliziert Beziehungen beim Welt-Klon (kein 500 mehr bei Mehrfach-Kampagnen).
-- Offen: Refactor der 17-Abhängigkeiten (`PoiActionService`), Modal-Reihenfolge (UX-2), doppeltes Markt-Konzept (UX-4).
+- Offen: nichts Blockierendes. Bewusst vertagt bleiben die globalen A11y-Themen (Icon-Buttons ohne Namen, Feld-Labels im NPC-Modal) und ein separates Preis-Konzept jenseits des Händlermarkts.
 - Details: `docs/AUDIT-2026-09-23-poi.md` (inkl. Fix-Status).

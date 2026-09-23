@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { MapPin, Users, ScrollText, Coins, ShoppingCart, Briefcase, Swords } from 'lucide-react';
 import { useApiGet } from '../../hooks/useApiGet';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
-import { PriceTag } from '../ui/PriceTag';
 import { apiClient } from '../../api/client';
 
 export interface LocationData {
@@ -27,12 +26,15 @@ interface NpcSummary {
   entity_type: string;
 }
 
-interface MarketItem {
-  service: string;
-  npc: string;
-  base_price: number;
-  final_price: number;
+interface ServiceNpc {
+  npc_id: string;
+  npc_name: string;
+  occupation: string;
+  greeting: string;
 }
+
+/** `/locations/{id}/services`: Dienstname → NPCs, die ihn anbieten. */
+type Services = Record<string, ServiceNpc[]>;
 
 interface Props {
   locationId: string;
@@ -54,6 +56,11 @@ const SERVICE_ICONS: Record<string, string> = {
   identification: '🔍',
 };
 
+/**
+ * Ortsübersicht: Beschreibung, Geschichte, Abenteuer und NPCs mit ihren Diensten.
+ * Preise stehen bewusst **nicht** hier — die kommen aus dem Händlermarkt (ADR-015),
+ * damit es nur eine Preisquelle gibt.
+ */
 export function LocationDetail({ locationId, worldId, onSelectNpc, onLocationLoad }: Props) {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
@@ -64,7 +71,7 @@ export function LocationDetail({ locationId, worldId, onSelectNpc, onLocationLoa
     `/locations/${locationId}/npcs`,
     [locationId],
   );
-  const { data: market } = useApiGet<MarketItem[]>(`/locations/${locationId}/market`, [locationId]);
+  const { data: services } = useApiGet<Services>(`/locations/${locationId}/services`, [locationId]);
 
   const [adventures, setAdventures] = useState<{ id: string; name: string; description: string }[]>(
     [],
@@ -100,14 +107,14 @@ export function LocationDetail({ locationId, worldId, onSelectNpc, onLocationLoa
     );
   }
 
-  // Group market items by NPC
-  const npcServices = (market ?? []).reduce<Record<string, MarketItem[]>>((acc, item) => {
-    (acc[item.npc] ??= []).push(item);
-    return acc;
-  }, {});
-
-  // NPC detail lookup
-  const npcMap = new Map(npcs?.map((n) => [n.name, n]) ?? []);
+  // Dienste je NPC-Namen gruppieren (case-sensitiv wie geliefert).
+  const servicesByNpc = Object.entries(services ?? {}).reduce<Record<string, string[]>>(
+    (acc, [service, list]) => {
+      for (const entry of list) (acc[entry.npc_name] ??= []).push(service);
+      return acc;
+    },
+    {},
+  );
 
   return (
     <div className="max-w-2xl space-y-5">
@@ -176,52 +183,44 @@ export function LocationDetail({ locationId, worldId, onSelectNpc, onLocationLoa
         </div>
       )}
 
-      {/* Service Cards */}
+      {/* NPCs + ihre Dienste (ohne Preise — Preise nur im Markt) */}
       <div className="rounded-lg bg-bg-surface p-4">
         <h3 className="mb-3 text-sm font-semibold text-text-primary">
           {t('locationDetail.servicesAndNpcs')}
         </h3>
 
-        {Object.keys(npcServices).length === 0 && (!npcs || npcs.length === 0) ? (
+        {!npcs || npcs.length === 0 ? (
           <p className="text-xs text-text-secondary">{t('locationDetail.noNpcs')}</p>
         ) : (
           <div className="space-y-3">
-            {Object.entries(npcServices).map(([npcName, items]) => {
-              const npc = npcMap.get(npcName);
+            {npcs.map((npc) => {
+              const npcServices = servicesByNpc[npc.name] ?? [];
               return (
-                <div
-                  key={npcName}
-                  className="rounded border border-bg-elevated bg-bg-primary/50 p-3"
-                >
-                  {/* NPC Header */}
+                <div key={npc.id} className="rounded border border-bg-elevated bg-bg-primary/50 p-3">
                   <div
-                    onClick={() => npc && onSelectNpc?.(npc.id)}
-                    className="flex cursor-pointer items-center gap-2 mb-2 hover:text-accent"
+                    onClick={() => onSelectNpc?.(npc.id)}
+                    className="flex cursor-pointer items-center gap-2 hover:text-accent"
                   >
                     <div className="h-7 w-7 rounded-full bg-accent/20 flex items-center justify-center text-xs text-accent">
-                      {npcName.charAt(0)}
+                      {npc.name.charAt(0)}
                     </div>
-                    <span className="text-sm font-medium text-text-primary">{npcName}</span>
-                    {npc && (
-                      <span className="text-[10px] text-text-secondary">{npc.entity_type}</span>
-                    )}
+                    <span className="text-sm font-medium text-text-primary">{npc.name}</span>
+                    <span className="text-[10px] text-text-secondary">{npc.entity_type}</span>
                     <Briefcase size={12} className="text-text-secondary ml-auto" />
                   </div>
 
-                  {/* Service Items */}
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {items.map((item, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between rounded bg-bg-elevated/50 px-2 py-1.5 text-xs"
-                      >
-                        <span className="text-text-primary">
-                          {SERVICE_ICONS[item.service] ?? '📦'} {item.service.replace('_', ' ')}
+                  {npcServices.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {npcServices.map((service) => (
+                        <span
+                          key={service}
+                          className="rounded bg-bg-elevated/50 px-2 py-1 text-xs text-text-primary"
+                        >
+                          {SERVICE_ICONS[service] ?? '📦'} {service.replace('_', ' ')}
                         </span>
-                        <PriceTag basePrice={item.base_price} finalPrice={item.final_price} />
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}

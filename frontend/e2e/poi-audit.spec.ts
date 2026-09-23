@@ -41,8 +41,10 @@ test.describe.serial('POI-Audit', () => {
     await waitVisible(page.getByText('Aktionen'));
 
     check('poi-location', 'Panel', await anyVisible(page.getByText('Aktionen')), 'Aktions-Panel fehlt');
-    check('poi-location', 'Charakterauswahl',
-      await anyVisible(page.getByText('Charakter')), 'Actor-Select fehlt');
+    // Actor-Select lädt die PCs nach — auf das Label warten.
+    const actorLabel = page.getByText('Charakter');
+    await waitVisible(actorLabel);
+    check('poi-location', 'Charakterauswahl', await anyVisible(actorLabel), 'Actor-Select fehlt');
     // useApiGet braucht einen Moment — auf den Leerzustand warten statt sofort prüfen.
     const empty = page.getByText('Keine Aktionen an diesem Ort.');
     await waitVisible(empty);
