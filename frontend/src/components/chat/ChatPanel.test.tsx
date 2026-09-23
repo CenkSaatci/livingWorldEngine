@@ -60,6 +60,27 @@ describe('ChatPanel (B5/R3)', () => {
     expect(screen.getAllByText('Hallo QA')).toHaveLength(1);
   });
 
+  it('rendert Kampf-Meldungen aus Code + Parametern lokalisiert (A5)', async () => {
+    render(<ChatPanel worldId="w1" />);
+    await waitFor(() => expect(mockedGet).toHaveBeenCalled());
+    // Broadcast kommt nach dem Historien-Laden (sonst überschreibt die Historie die Zeile).
+    useWorldStore.setState({
+      worldEvents: [
+        {
+          event_type: 'CHAT_MESSAGE',
+          payload: {
+            sender: '⚔️ Combat',
+            code: 'combat.hit',
+            params: { actor: 'Räuber', target: 'Mira', damage: 5, type: '' },
+            timestamp: '2026-09-23T10:00:00Z',
+          },
+          created_at: '2026-09-23T10:00:00Z',
+        } as never,
+      ],
+    });
+    expect(await screen.findByText(/Räuber greift Mira an: 5 Schaden/)).toBeInTheDocument();
+  });
+
   it('zeigt keine Roh-JSON-Systemevents im Chat (Playtest #11)', async () => {
     useWorldStore.setState({
       worldEvents: [

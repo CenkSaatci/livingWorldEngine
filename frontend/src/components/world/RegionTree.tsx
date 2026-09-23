@@ -150,7 +150,7 @@ export function RegionTree({ worldId, onSelectRegion, onSelectLocation }: Props)
               <Trees size={16} className="text-accent" />
               <span className="flex-1 text-left">{r.name}</span>
               {weather[r.id] && (
-                <span className="shrink-0" title={weather[r.id].description}>
+                <span className="shrink-0" title={t(`weather.${weather[r.id].weatherType}`, { defaultValue: weather[r.id].description })}>
                   {weatherIcon(weather[r.id].weatherType, 12)}
                 </span>
               )}

@@ -172,7 +172,8 @@ public class CombatService {
 
         if ("MOVE".equals(actionType)) {
             deductAp(actor);
-            sendCombatMessage(session.getWorldId(), "🚶 " + entityName(actorId) + " bewegt sich");
+            sendCombatMessage(session.getWorldId(), "combat.move",
+                Map.of("actor", entityName(actorId)));
             eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED, actorId, null, Map.of(
                 "actionType", "MOVE", "damage", 0));
             return new CombatActionResult("MOVE", 0, actor.getApCurrent(), true, null);
@@ -180,7 +181,8 @@ public class CombatService {
 
         if ("DEFEND".equals(actionType)) {
             deductAp(actor);
-            sendCombatMessage(session.getWorldId(), "🛡️ " + entityName(actorId) + " verteidigt sich");
+            sendCombatMessage(session.getWorldId(), "combat.defend",
+                Map.of("actor", entityName(actorId)));
             eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED, actorId, null, Map.of(
                 "actionType", "DEFEND", "damage", 0));
             return new CombatActionResult("DEFEND", 0, actor.getApCurrent(), true, null);
@@ -211,8 +213,8 @@ public class CombatService {
             attackRoll = outcome.breakdown();
             if (Boolean.FALSE.equals(outcome.hit())) {
                 deductAp(actor);
-                sendCombatMessage(session.getWorldId(), "🎯 " + entityName(actorId)
-                    + " verfehlt " + entityName(targetId));
+                sendCombatMessage(session.getWorldId(), "combat.miss",
+                    Map.of("actor", entityName(actorId), "target", entityName(targetId)));
                 eventService.publish(session.getWorldId(), session.getCampaignId(),
                     COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
                         "actionType", "MISS", "damage", 0));
@@ -237,15 +239,18 @@ public class CombatService {
             participantRepo.save(target);
 
             if (target.getHpCurrent() <= 0 && !tryAvoidDeath(userId, session, targetId, target)) {
-                sendCombatMessage(session.getWorldId(), "💀 " + entityName(targetId) + " wurde besiegt!");
+                sendCombatMessage(session.getWorldId(), "combat.defeated",
+                    Map.of("target", entityName(targetId)));
                 eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED,
                     target.getEntityId(), null, Map.of("actionType", "DEFEATED"));
             }
         }
 
-        sendCombatMessage(session.getWorldId(), "⚔️ " + entityName(actorId) + " greift "
-            + (targetId != null ? entityName(targetId) : "unbekannt") + " an: " + damage
-            + " Schaden" + (damageType != null ? " (" + damageType + ")" : ""));
+        sendCombatMessage(session.getWorldId(), "combat.hit", Map.of(
+            "actor", entityName(actorId),
+            "target", targetId != null ? entityName(targetId) : "",
+            "damage", damage,
+            "type", damageType != null ? " (" + damageType + ")" : ""));
         eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
             "actionType", actionType, "damage", damage));
         return new CombatActionResult(actionType, damage, actor.getApCurrent(), true, null,
@@ -710,8 +715,9 @@ public class CombatService {
             if (Boolean.FALSE.equals(outcome.hit())) {
                 actor.setApCurrent(actor.getApCurrent() - apCost);
                 participantRepo.save(actor);
-                sendCombatMessage(session.getWorldId(), "\u2694\ufe0f " + entityName(actorId) + " \u2013 "
-                    + maneuverName + ": verfehlt " + entityName(targetId));
+                sendCombatMessage(session.getWorldId(), "combat.maneuverMiss", Map.of(
+                    "actor", entityName(actorId), "maneuver", maneuverName,
+                    "target", entityName(targetId)));
                 eventService.publish(session.getWorldId(), session.getCampaignId(),
                     COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
                         "actionType", "MISS", "maneuver", maneuverName, "damage", 0));
@@ -752,9 +758,9 @@ public class CombatService {
             }
         }
 
-        sendCombatMessage(session.getWorldId(), "\u2694\ufe0f " + entityName(actorId) + " \u2013 "
-            + maneuverName + ": " + damage + " Schaden"
-            + (maneuverType != null ? " (" + maneuverType + ")" : ""));
+        sendCombatMessage(session.getWorldId(), "combat.maneuverHit", Map.of(
+            "actor", entityName(actorId), "maneuver", maneuverName,
+            "damage", damage, "type", maneuverType != null ? " (" + maneuverType + ")" : ""));
         eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED,
             actorId, targetId, Map.of("actionType", "MANEUVER", "maneuver", maneuverName, "damage", damage));
         return new CombatActionResult("MANEUVER:" + maneuverName, damage, actor.getApCurrent(), true, null,
@@ -1154,7 +1160,8 @@ public class CombatService {
         }
         target.setHpCurrent(1);
         participantRepo.save(target);
-        sendCombatMessage(session.getWorldId(), "★ " + entityName(targetId) + " wendet den Tod ab!");
+        sendCombatMessage(session.getWorldId(), "combat.avoidDeath",
+            Map.of("target", entityName(targetId)));
         eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED,
             targetId, null, Map.of("actionType", "FATE_AVOIDED_DEATH"));
         return true;
@@ -1181,11 +1188,13 @@ public class CombatService {
             .orElse(entityId.toString().substring(0, 8));
     }
 
-    private void sendCombatMessage(UUID worldId, String text) {
+    /** A5: Kampf-Chat als Code + Parameter; die Lokalisierung macht das Frontend. */
+    private void sendCombatMessage(UUID worldId, String code, Map<String, Object> params) {
         if (!isCombatChatEnabled(worldId)) return;
         var msg = Map.of(
             "sender", "⚔️ Combat",
-            "text", text,
+            "code", code,
+            "params", params,
             "timestamp", java.time.Instant.now().toString());
         messaging.convertAndSend("/topic/world/" + worldId,
             Map.of("event_type", "CHAT_MESSAGE", "payload", msg));

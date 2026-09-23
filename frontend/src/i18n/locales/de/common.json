@@ -486,5 +486,15 @@
   },
   "editor": {
     "actions": "Aktionen"
+  },
+  "weather": {
+    "CLEAR": "Klarer Himmel",
+    "CLOUDY": "Bewölkt",
+    "RAIN": "Regen",
+    "STORM": "Gewitter",
+    "FOG": "Nebel",
+    "SNOW": "Schnee",
+    "WINDY": "Starker Wind",
+    "EXTREME_HEAT": "Extreme Hitze"
   }
 }

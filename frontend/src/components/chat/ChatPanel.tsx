@@ -81,7 +81,12 @@ export function ChatPanel({ worldId }: { worldId: string }) {
     const last = worldEvents[worldEvents.length - 1];
     if (!last || last.event_type !== 'CHAT_MESSAGE') return;
     const payload = (last.payload ?? {}) as Record<string, unknown>;
-    const text = payload.text;
+    // A5: Kampf-Meldungen kommen als Code + Parameter; ältere/andere Quellen als Text.
+    const code = typeof payload.code === 'string' ? payload.code : null;
+    const params = (payload.params ?? {}) as Record<string, unknown>;
+    const text = code
+      ? t(code, { ...params, defaultValue: code })
+      : payload.text;
     if (typeof text !== 'string' || !text.trim()) return;
     const sender = typeof payload.sender === 'string' && payload.sender ? payload.sender : 'System';
     const ts = typeof payload.timestamp === 'string' ? payload.timestamp : last.created_at;
@@ -102,6 +107,8 @@ export function ChatPanel({ worldId }: { worldId: string }) {
         },
       ];
     });
+    // `t` ist stabil pro Sprache; ein Dep würde den Effekt bei jedem Render neu triggern.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [worldEvents]);
 
   const appendLocal = (sender: string, text: string) => {

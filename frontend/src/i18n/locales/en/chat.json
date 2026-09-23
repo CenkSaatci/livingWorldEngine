@@ -3,5 +3,15 @@
   "send": "Send",
   "roll_log": "Roll log",
   "roll_command_hint": "/r <expression> — rolls dice and shares the result",
-  "invalidExpression": "Invalid expression. Use /r <count>d<sides>[+mod], e.g. /r 2d6+3"
+  "invalidExpression": "Invalid expression. Use /r <count>d<sides>[+mod], e.g. /r 2d6+3",
+  "combat": {
+    "miss": "🎯 {{actor}} misses {{target}}",
+    "defeated": "💀 {{target}} was defeated!",
+    "hit": "⚔️ {{actor}} attacks {{target}}: {{damage}} damage{{type}}",
+    "maneuverMiss": "⚔️ {{actor}} – {{maneuver}}: misses {{target}}",
+    "maneuverHit": "⚔️ {{actor}} – {{maneuver}}: {{damage}} damage{{type}}",
+    "move": "🚶 {{actor}} moves",
+    "defend": "🛡️ {{actor}} defends",
+    "avoidDeath": "★ {{target}} avoids death!"
+  }
 }

@@ -3,5 +3,15 @@
   "send": "Senden",
   "roll_log": "Wurf-Log",
   "roll_command_hint": "/r <Ausdruck> — würfelt und teilt das Ergebnis",
-  "invalidExpression": "Ungültiger Ausdruck. Nutze /r <Anzahl>d<Seiten>[+mod], z. B. /r 2d6+3"
+  "invalidExpression": "Ungültiger Ausdruck. Nutze /r <Anzahl>d<Seiten>[+mod], z. B. /r 2d6+3",
+  "combat": {
+    "miss": "🎯 {{actor}} verfehlt {{target}}",
+    "defeated": "💀 {{target}} wurde besiegt!",
+    "hit": "⚔️ {{actor}} greift {{target}} an: {{damage}} Schaden{{type}}",
+    "maneuverMiss": "⚔️ {{actor}} – {{maneuver}}: verfehlt {{target}}",
+    "maneuverHit": "⚔️ {{actor}} – {{maneuver}}: {{damage}} Schaden{{type}}",
+    "move": "🚶 {{actor}} bewegt sich",
+    "defend": "🛡️ {{actor}} verteidigt sich",
+    "avoidDeath": "★ {{target}} wendet den Tod ab!"
+  }
 }
