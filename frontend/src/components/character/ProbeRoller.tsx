@@ -30,6 +30,7 @@ interface ProbeResult {
   modifier: number;
   total: number;
   success: boolean;
+  threshold?: number | null;
   details: { die: number; attribute: string; attrValue: number; success: boolean }[];
   activeConditionals: { name: string; bonus: string; target: string }[];
 }
@@ -204,6 +205,12 @@ export function ProbeRoller({ entityId, skillName, fateAvailable, onSpendFate, c
             ) : (
               <>
                 {result.total}
+                {/* A3: d100 zeigt den Schwellwert-Vergleich (z. B. "43 ≤ 55 ✓"). */}
+                {result.threshold != null && (
+                  <span className="ml-1">
+                    ≤ {result.threshold} {result.success ? '✓' : '✗'}
+                  </span>
+                )}
                 {result.dice.length > 1 && (
                   <span className="text-text-secondary text-[10px] ml-1">
                     ({result.dice.join(', ')})

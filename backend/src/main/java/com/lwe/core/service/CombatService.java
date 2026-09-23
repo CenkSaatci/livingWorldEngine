@@ -1195,7 +1195,7 @@ public class CombatService {
         var world = worldRepo.findById(worldId).orElse(null);
         if (world == null) return true;
         try {
-            var tree = new ObjectMapper().readTree(world.getSettingsJson());
+            var tree = objectMapper.readTree(world.getSettingsJson());
             var val = tree.path("combat_chat_log");
             return val.isMissingNode() || val.asBoolean(true);
         } catch (Exception e) {

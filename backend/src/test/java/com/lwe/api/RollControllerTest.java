@@ -34,7 +34,7 @@ class RollControllerTest {
     }
 
     private ProbeResponse response() {
-        return new ProbeResponse("d20_target", new int[]{10}, 0, 10, true, List.of(), List.of());
+        return new ProbeResponse("d20_target", new int[]{10}, 0, 10, true, 10, List.of(), List.of());
     }
 
     @Test

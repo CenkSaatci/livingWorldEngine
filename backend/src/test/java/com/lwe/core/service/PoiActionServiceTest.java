@@ -247,7 +247,7 @@ class PoiActionServiceTest {
     void probeFailureRunsFailureBranch() {
         when(probeService.executeProbe(eq(actorId), eq(userId), eq("Sinnesschärfe"),
             anyInt(), anyBoolean(), any(), anyInt()))
-            .thenReturn(new ProbeResponse("d20_target", new int[]{3}, 0, 3, false, List.of(), List.of()));
+            .thenReturn(new ProbeResponse("d20_target", new int[]{3}, 0, 3, false, 10, List.of(), List.of()));
 
         var result = execute("Probe");
 

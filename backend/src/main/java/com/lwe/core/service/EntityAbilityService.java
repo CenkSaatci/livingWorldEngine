@@ -24,16 +24,19 @@ public class EntityAbilityService {
     private final AbilityRepository abilityRepo;
     private final WorldAccess worldAccess;
     private final EntityAccess entityAccess;
+    private final ObjectMapper objectMapper;
 
     public EntityAbilityService(EntityAbilityRepository repo,
                                 GameEntityRepository entityRepo,
                                 AbilityRepository abilityRepo,
-                                WorldAccess worldAccess, EntityAccess entityAccess) {
+                                WorldAccess worldAccess, EntityAccess entityAccess,
+                                ObjectMapper objectMapper) {
         this.repo = repo;
         this.entityRepo = entityRepo;
         this.abilityRepo = abilityRepo;
         this.worldAccess = worldAccess;
         this.entityAccess = entityAccess;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -75,13 +78,12 @@ public class EntityAbilityService {
     public Map<String, Integer> calculatePassiveBonuses(UUID entityId) {
         var assigned = repo.findByEntityId(entityId);
         var bonuses = new java.util.HashMap<String, Integer>();
-        var mapper = new ObjectMapper();
 
         for (var ea : assigned) {
             var ability = abilityRepo.findById(ea.getAbilityId()).orElse(null);
             if (ability == null || ability.getType() != AbilityType.PASSIVE) continue;
             try {
-                var tree = mapper.readTree(ability.getStatBonusesJson());
+                var tree = objectMapper.readTree(ability.getStatBonusesJson());
                 var it = tree.fields();
                 while (it.hasNext()) {
                     var entry = it.next();

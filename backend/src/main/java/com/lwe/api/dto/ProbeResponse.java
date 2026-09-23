@@ -8,6 +8,8 @@ public record ProbeResponse(
     int modifier,
     int total,
     boolean success,
+    /** Vergleichsschwelle (d100: Fertigkeitswert; d20: Zielwert; 3W20: null). */
+    Integer threshold,
     List<DieDetail> details,
     List<ConditionalResult> activeConditionals
 ) {

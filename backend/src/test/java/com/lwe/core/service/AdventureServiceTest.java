@@ -58,7 +58,7 @@ class AdventureServiceTest {
         when(probeService.executeProbe(eq(r.entityId()), eq(userId), eq("Klettern"), eq(10),
             eq(false), eq(r.campaignId()), any())).thenReturn(
                 new com.lwe.api.dto.ProbeResponse("d20_3attr", new int[]{1, 2, 3}, -1, 6, true,
-                    List.of(), List.of()));
+                    null, List.of(), List.of()));
 
         var result = service.advance(adventure.getId(), r.entityId(), r.choiceId(), userId);
 

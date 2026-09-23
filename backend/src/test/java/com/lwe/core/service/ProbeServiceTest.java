@@ -130,6 +130,9 @@ class ProbeServiceTest {
 
         assertThat(hard.success()).isFalse();
         assertThat(trivial.success()).isTrue();
+        // A3: der Schwellwert wird fürs UI mitgeliefert (d100: Fertigkeitswert nach Modifikator).
+        assertThat(hard.threshold()).isEqualTo(0);
+        assertThat(trivial.threshold()).isEqualTo(50000);
     }
 
     @Test
@@ -148,6 +151,9 @@ class ProbeServiceTest {
 
         assertThat(impossible.success()).isFalse();
         assertThat(trivial.success()).isTrue();
+        // A3: d20-Zielwert = target + difficulty (für die Anzeige).
+        assertThat(impossible.threshold()).isEqualTo(100);
+        assertThat(trivial.threshold()).isEqualTo(-100);
     }
 
     @Test

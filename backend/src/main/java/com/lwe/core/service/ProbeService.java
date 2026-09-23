@@ -194,6 +194,7 @@ public class ProbeService {
         int modifierTotal;
         int[] dice;
         boolean success;
+        Integer threshold = null;
         List<ProbeResponse.DieDetail> details = new ArrayList<>();
 
         switch (probeType) {
@@ -231,6 +232,7 @@ public class ProbeService {
                 total = die;
                 modifierTotal = effective - baseSkill;
                 success = die <= effective;
+                threshold = effective;
                 break;
             }
             case "d20_3attr": {
@@ -270,6 +272,7 @@ public class ProbeService {
                 total = die + modifierTotal;
                 // Audit P1: Difficulty-Delta verschiebt d20-Zielwerte (DC +/-), nicht doppelt.
                 success = total >= target + difficulty;
+                threshold = target + difficulty;
                 break;
             }
         }
@@ -283,7 +286,8 @@ public class ProbeService {
             applySocialEffects(socialDef, success ? "onSuccess" : "onFailure", socialTargetId, rules);
         }
 
-        return new ProbeResponse(probeType, dice, modifierTotal, total, success, details, activeConditionals);
+        return new ProbeResponse(probeType, dice, modifierTotal, total, success, threshold,
+            details, activeConditionals);
     }
 
     /** Difficulty-Level generisch: multiplier (d100) + delta (alle Systeme). */

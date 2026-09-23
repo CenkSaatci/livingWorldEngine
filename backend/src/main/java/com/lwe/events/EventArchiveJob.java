@@ -24,13 +24,14 @@ public class EventArchiveJob {
     private final EntityManager entityManager;
     private final WorldEventRepository eventRepo;
     private final WorldRepository worldRepo;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     public EventArchiveJob(EntityManager entityManager, WorldEventRepository eventRepo,
-                           WorldRepository worldRepo) {
+                           WorldRepository worldRepo, ObjectMapper objectMapper) {
         this.entityManager = entityManager;
         this.eventRepo = eventRepo;
         this.worldRepo = worldRepo;
+        this.objectMapper = objectMapper;
     }
 
     @Scheduled(cron = "0 0 3 * * *")
