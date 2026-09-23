@@ -43,9 +43,10 @@ test.describe.serial('POI-Audit', () => {
     check('poi-location', 'Panel', await anyVisible(page.getByText('Aktionen')), 'Aktions-Panel fehlt');
     check('poi-location', 'Charakterauswahl',
       await anyVisible(page.getByText('Charakter')), 'Actor-Select fehlt');
-    check('poi-location', 'Leerzustand',
-      await anyVisible(page.getByText('Keine Aktionen an diesem Ort.')),
-      'Leerzustand-Text fehlt');
+    // useApiGet braucht einen Moment — auf den Leerzustand warten statt sofort prüfen.
+    const empty = page.getByText('Keine Aktionen an diesem Ort.');
+    await waitVisible(empty);
+    check('poi-location', 'Leerzustand', await anyVisible(empty), 'Leerzustand-Text fehlt');
 
     const shotPath = await shot(page, 'poi-location');
     reportHeuristics('poi-location', 'Ortsansicht', await heuristics(page), shotPath);
