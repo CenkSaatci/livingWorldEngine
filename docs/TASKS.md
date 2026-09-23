@@ -2679,3 +2679,20 @@ Nach dem vollständigen API-Audit identifizierte Restpunkte — Feature-Gaps, ke
 8. **Lint/Format-Gate:** 42 `no-explicit-any` (`types/gameSystem.ts` + Tests) + 10 `exhaustive-deps`; Prettier repo-weit rot.
 9. **Kontrakte:** V106-Constraint „Creator muss DM sein"; Paginierungs-/Response-Vereinheitlichung.
 10. **Vision-Kleinigkeiten:** Legacy-Creator-UI-Gate, `kind`-Gruppierung statt Badge, Formel-Hilfe mit Skills, Ersteller-Übergabe-Dialog.
+
+---
+
+## Phase 39: ADR-015 — POI-Aktionen, Währung, Händler (✅ 2026-09-21)
+
+- **Regel-Schema:** `currency` + `poi_actions[]` (Schema + Semantik: Sorten-/Aktionsnamen eindeutig, Effekt-Vollständigkeit; live über `/game-systems/validate` verifiziert — gültig → `valid:true`, kaputt → konkrete Fehler).
+- **Währung:** `CurrencyService` (ein Basiswert `metadataJson.money`, Sorten nur Anzeige, nie negativ); `SheetResponse.money`/`moneyText`.
+- **Aktionen:** `PoiActionService` (Katalog, Bindung an Ort/NPC, `validate → apply`, Probe mit Erfolg/Fehlschlag, `chat none|public|actor`); Endpunkte `GET/POST /locations/{id}/actions`.
+- **Händler:** `MerchantService` (NPC `is_merchant` + `shop_inventory`, Kauf/Verkauf, `EconomyService`-Preisformel, `floor(Preis × sellRate)`); Endpunkte `/locations/{id}/merchants`, `/merchants/{id}/buy|sell`.
+- **Chat:** Broker um `/queue` erweitert; `actor` transient über `/user/queue/poi` (nicht persistiert).
+- **UI:** `LocationActionsPanel` (Ortsansicht), `MerchantPanel` (Markt), Geldzeile im Bogen, NPC-Editor (Händler-Schalter + Sortiment als `Name` / `Name = Preis`-Zeilen), Karten-POI-Info mit „Aktionen"-Button.
+- **Nachweise:** Backend-Suite grün (+4 Testklassen), Frontend 219 (+7), `tsc` clean; Live-Smoke: Routen lösen auf (`actions`/`merchants` → 200 `[]`, unbekannte Aktion → 404 `POI_ACTION_UNKNOWN`).
+
+### Offen / bewusste Abweichung
+- **Karten-POI:** der Info-Dialog navigiert zur Ortsansicht (dort liegt das Panel), statt das Panel direkt im Dialog zu rendern — gleiche Komponente, ein Klick mehr. Bei Bedarf als Sheet nachziehen.
+- **Nicht-Ziele v1:** keine Bestände/Lager, kein Feilschen, keine Ziel-Auswahl (`targetId`) für Effekte, keine persistierten Flüster-Nachrichten.
+- **Manueller Test offen:** `poi_actions`/`currency` im Spielsystem anlegen, Aktion an Ort/NPC binden, Medicus/Wirtshaus/Handeln durchklicken (GP-Block).
