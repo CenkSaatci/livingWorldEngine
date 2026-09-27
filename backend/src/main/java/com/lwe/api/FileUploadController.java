@@ -121,18 +121,19 @@ public class FileUploadController {
         };
     }
 
+    /**
+     * Karten-Assets werden per {@code <img>}/PIXI geladen — dort gibt es keinen
+     * Authorization-Header. Der Security-Layer gibt GET auf {@code /api/v1/uploads/**}
+     * daher frei (UUID im Pfad wirkt als Capability). Hier darf consequently kein
+     * Principal verlangt werden; geschützt bleiben Pfad-Traversal und Dateiname.
+     */
     @GetMapping("/uploads/{worldId}/{filename}")
     public ResponseEntity<?> serveFile(@PathVariable UUID worldId,
-                                       @PathVariable String filename,
-                                       @AuthenticationPrincipal User user) {
-        if (user == null) {
-            return ResponseEntity.status(401).body(new ErrorResponse("Authentication required"));
-        }
+                                       @PathVariable String filename) {
         if (!SERVE_FILENAME.matcher(filename).matches()) {
             return ResponseEntity.notFound().build();
         }
         try {
-            worldAccess.requireAccess(worldId, user.getId());
             var base = uploadDir.resolve(worldId.toString()).normalize();
             var path = base.resolve(filename).normalize();
             // Path-Traversal: aufgelöster Pfad muss unterhalb von uploadDir/worldId bleiben.
@@ -145,9 +146,6 @@ public class FileUploadController {
             var bytes = Files.readAllBytes(path);
             var ext = filename.substring(filename.lastIndexOf('.')).toLowerCase(java.util.Locale.ROOT);
             return ResponseEntity.ok().contentType(MEDIA_TYPES.get(ext)).body(bytes);
-        } catch (com.lwe.core.util.WorldAccess.WorldAccessException e) {
-            if ("WORLD_NOT_FOUND".equals(e.getErrorCode())) return ResponseEntity.notFound().build();
-            return ResponseEntity.status(403).body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }

@@ -1,6 +1,5 @@
 package com.lwe.config;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -17,10 +16,16 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private final WebSocketAuthInterceptor authInterceptor;
     private final List<String> allowedOrigins;
 
-    public WebSocketConfig(WebSocketAuthInterceptor authInterceptor,
-                           @Value("${lwe.cors.allowed-origins}") String allowedOrigins) {
+    public WebSocketConfig(WebSocketAuthInterceptor authInterceptor) {
         this.authInterceptor = authInterceptor;
-        this.allowedOrigins = List.of(allowedOrigins.split(","));
+        // Gleiche Quelle wie die HTTP-CORS-Regeln (SecurityConfig): ohne explizite
+        // CORS_ALLOWED_ORIGINS im Dev-Betrieb offen (`*`), sonst die konfigurierte Liste.
+        // Vorher stand hier `lwe.cors.allowed-origins` mit localhost-Default — dadurch
+        // schlug der WS-Handshake bei Zugriff über die LAN-IP mit 403 fehl.
+        var env = System.getenv("CORS_ALLOWED_ORIGINS");
+        this.allowedOrigins = (env == null || env.isBlank())
+            ? List.of("*")
+            : List.of(env.split(","));
     }
 
     @Override
