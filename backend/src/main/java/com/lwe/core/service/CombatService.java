@@ -376,14 +376,20 @@ public class CombatService {
         return new AbilitySource(name, rulesAbilityApCost(entry), damageExpr, null, damageType);
     }
 
-    @SuppressWarnings("unchecked")
+    /** Sucht eine Regel-Fähigkeit; fremde/kaputte Einträge werden übersprungen (fail-closed). */
     private Map<String, Object> findRulesAbility(Map<String, Object> rules, String name) {
-        var raw = (List<Map<String, Object>>) rules.getOrDefault("abilities", List.of());
-        return raw.stream()
-            .filter(a -> name.equalsIgnoreCase(String.valueOf(a.getOrDefault("name", ""))))
-            .findFirst()
-            .orElseThrow(() -> new CombatException("ABILITY_NOT_FOUND",
-                "Ability '" + name + "' not found in rules"));
+        if (rules.get("abilities") instanceof List<?> list) {
+            for (var item : list) {
+                if (item instanceof Map<?, ?> m
+                    && name.equalsIgnoreCase(String.valueOf(m.get("name")))) {
+                    @SuppressWarnings("unchecked")
+                    var entry = (Map<String, Object>) m;
+                    return entry;
+                }
+            }
+        }
+        throw new CombatException("ABILITY_NOT_FOUND",
+            "Ability '" + name + "' not found in rules");
     }
 
     /**

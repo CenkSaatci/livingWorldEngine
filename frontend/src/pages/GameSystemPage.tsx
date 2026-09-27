@@ -492,7 +492,8 @@ export default function GameSystemPage() {
                 <option value="SHARED">{t('systems.filterShared')}</option>
               </select>
               <span className="text-xs text-text-secondary">
-                {t('systems.count', { count: filteredSystems.length, total: systems.length })}
+                {/* `count` ist in i18next für Pluralisierung reserviert — daher `shown`. */}
+                {t('systems.count', { shown: filteredSystems.length, total: systems.length })}
               </span>
             </div>
           <div className="grid gap-3 sm:grid-cols-2">

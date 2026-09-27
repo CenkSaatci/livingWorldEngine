@@ -464,7 +464,8 @@
     "renameConfirm": "Renommer quand même",
     "templateLabel": "Modèle (optionnel)",
     "templateHint": "Charge un jeu de règles d’exemple complet dans l’assistant (D20Lite, TwoDicePool, Fudge). « Réinitialiser » vide l’assistant.",
-    "templateClear": "Réinitialiser"
+    "templateClear": "Réinitialiser",
+    "count": "{{shown}} / {{total}}"
   },
   "rollResult": "Résultat : {{total}}"
 }

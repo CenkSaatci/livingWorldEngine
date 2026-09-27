@@ -1,6 +1,7 @@
 package com.lwe.config;
 
 import com.lwe.security.JwtAuthFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -24,9 +25,12 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final String allowedOrigins;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter,
+                          @Value("${lwe.cors.allowed-origins}") String allowedOrigins) {
         this.jwtAuthFilter = jwtAuthFilter;
+        this.allowedOrigins = allowedOrigins;
     }
 
     @Bean
@@ -65,12 +69,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         var config = new CorsConfiguration();
-        var allowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
-        if (allowedOrigins != null && !allowedOrigins.isBlank()) {
-            config.setAllowedOrigins(List.of(allowedOrigins.split(",")));
-        } else {
-            config.setAllowedOriginPatterns(List.of("*")); // dev-only — einschränken via CORS_ALLOWED_ORIGINS
-        }
+        // Eine Quelle der Wahrheit: `lwe.cors.allowed-origins` (Dev-Default `*`,
+        // Prod-Default explizit; via CORS_ALLOWED_ORIGINS überschreibbar). Muster
+        // erlauben Wildcards. Vorher las diese Stelle die Env direkt und ignorierte
+        // die Property — dadurch blieb im Prod-Profil `*` aktiv.
+        config.setAllowedOriginPatterns(List.of(allowedOrigins.split(",")));
         config.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization"));

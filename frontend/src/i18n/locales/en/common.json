@@ -517,7 +517,7 @@
     "filterOwned": "Mine",
     "filterPublic": "Public",
     "filterShared": "Shared",
-    "count": "{{count}} / {{total}}",
+    "count": "{{shown}} / {{total}}",
     "noSystems": "No systems found",
     "templateLabel": "Template (optional)",
     "templateHint": "Loads a complete example ruleset into the wizard (D20Lite, TwoDicePool, Fudge). “Reset” clears the wizard again.",

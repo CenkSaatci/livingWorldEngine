@@ -2081,6 +2081,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   {t('s4_man_malus')}
                   <input
                     type="number"
+                    step={1}
                     value={m.attackMalus ?? 0}
                     aria-label={t('s4_man_malus')}
                     onChange={(e) => {
@@ -2096,6 +2097,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   <input
                     type="number"
                     min={1}
+                    step={1}
                     value={m.apCost ?? 1}
                     aria-label={t('s4_man_ap')}
                     onChange={(e) => {

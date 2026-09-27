@@ -1826,6 +1826,33 @@ class CombatServiceTest {
     }
 
     @Test
+    void malformedRulesAbilitiesFailClosed() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Magier");
+        setId(attacker, attackerId);
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(
+                new CombatParticipant(sessionId, attackerId, 10, 3, "A"))));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        // Kaputtes Snapshot-JSON: abilities ist keine Liste → fail-closed statt 500.
+        when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of("abilities", "kaputt"));
+
+        assertThatThrownBy(() -> combatService.useAbility(userId, sessionId, attackerId, null, "Feuerball", null))
+            .isInstanceOf(CombatService.CombatException.class)
+            .satisfies(e -> assertThat(((CombatService.CombatException) e).getErrorCode())
+                .isEqualTo("ABILITY_NOT_FOUND"));
+    }
+
+    @Test
     void passiveRulesAbilityIsRejected() {
         var sessionId = UUID.randomUUID();
         var attackerId = UUID.randomUUID();

@@ -464,7 +464,8 @@
     "renameConfirm": "Yine de adlandır",
     "templateLabel": "Şablon (isteğe bağlı)",
     "templateHint": "Sihirbaza eksiksiz bir örnek kural seti yükler (D20Lite, TwoDicePool, Fudge). «Sıfırla» sihirbazı boşaltır.",
-    "templateClear": "Sıfırla"
+    "templateClear": "Sıfırla",
+    "count": "{{shown}} / {{total}}"
   },
   "rollResult": "Sonuç: {{total}}"
 }

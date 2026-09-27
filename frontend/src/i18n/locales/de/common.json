@@ -517,7 +517,7 @@
     "filterOwned": "Meine",
     "filterPublic": "Öffentlich",
     "filterShared": "Geteilt",
-    "count": "{{count}} / {{total}}",
+    "count": "{{shown}} / {{total}}",
     "noSystems": "Keine Systeme gefunden",
     "templateLabel": "Vorlage (optional)",
     "templateHint": "Lädt ein vollständiges Beispiel-Regelwerk in den Wizard (D20Lite, TwoDicePool, Fudge). „Zurücksetzen\" leert den Wizard wieder.",

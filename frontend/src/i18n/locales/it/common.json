@@ -464,7 +464,8 @@
     "renameConfirm": "Rinomina comunque",
     "templateLabel": "Modello (opzionale)",
     "templateHint": "Carica un set di regole d’esempio completo nella procedura guidata (D20Lite, TwoDicePool, Fudge). «Reimposta» svuota la procedura.",
-    "templateClear": "Reimposta"
+    "templateClear": "Reimposta",
+    "count": "{{shown}} / {{total}}"
   },
   "rollResult": "Risultato: {{total}}"
 }

@@ -464,7 +464,8 @@
     "renameConfirm": "Renombrar igualmente",
     "templateLabel": "Plantilla (opcional)",
     "templateHint": "Carga un conjunto de reglas de ejemplo completo en el asistente (D20Lite, TwoDicePool, Fudge). «Restablecer» vacía el asistente.",
-    "templateClear": "Restablecer"
+    "templateClear": "Restablecer",
+    "count": "{{shown}} / {{total}}"
   },
   "rollResult": "Resultado: {{total}}"
 }
