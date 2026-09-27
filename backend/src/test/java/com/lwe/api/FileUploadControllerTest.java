@@ -15,6 +15,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,6 +47,38 @@ class FileUploadControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
+        // Audit: Kartenbild ist DM-Sache, nicht bloße Mitgliedschaft.
+        verify(worldAccess).requireDm(worldId, user.getId());
+        verify(worldAccess, never()).requireAccess(any(), any());
+    }
+
+    @Test
+    void shouldDeleteMapImage() throws IOException {
+        var worldMapRepo = mock(WorldMapRepository.class);
+        var worldAccess = mock(WorldAccess.class);
+        var controller = new FileUploadController(worldMapRepo, mock(WorldRepository.class),
+            worldAccess, tempDir.toString());
+
+        var worldId = UUID.randomUUID();
+        var user = new User("t@t.com", "t", "hash", "USER", "de");
+        setId(user, UUID.randomUUID());
+
+        var dir = tempDir.resolve(worldId.toString());
+        Files.createDirectories(dir);
+        var file = dir.resolve("map.png");
+        Files.write(file, new byte[] {1, 2, 3});
+
+        var map = new WorldMap(worldId);
+        map.setImageUrl("/uploads/" + worldId + "/map.png");
+        when(worldMapRepo.findByWorldId(worldId)).thenReturn(Optional.of(map));
+        when(worldMapRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var response = controller.deleteMap(worldId, user);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(Files.exists(file)).isFalse();
+        assertThat(map.getImageUrl()).isNull();
+        verify(worldAccess).requireDm(worldId, user.getId());
     }
 
     private void setId(Object obj, UUID id) {

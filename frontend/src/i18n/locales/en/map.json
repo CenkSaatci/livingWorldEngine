@@ -88,6 +88,13 @@
     "place_help_empty": "Select a location on the left, then click the map.",
     "place_help_selected": "Click the map to place the selected location.",
     "actions": "Actions",
-    "open_location": "Open location"
+    "open_location": "Open location",
+    "remove_map": "Remove map",
+    "confirm_remove_map": "Really remove the map image?",
+    "map_removed": "Map image removed",
+    "failed_remove_map": "Could not remove the map",
+    "confirm_title": "Confirm",
+    "confirm": "Confirm",
+    "draw_requires_region": "Select a region first (Region → Draw)"
   }
 }

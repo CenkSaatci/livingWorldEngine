@@ -57,6 +57,12 @@ export default function MapEditorPage() {
   const [locForm, setLocForm] = useState({
     name: '', type: 'village', regionName: '', description: '', population: 0, wealth: 5,
   });
+  // F-5: echte Modals statt window.prompt/confirm.
+  const [nameModal, setNameModal] = useState<
+    { mode: 'create-region' } | { mode: 'rename-region'; region: Region } | null
+  >(null);
+  const [nameInput, setNameInput] = useState('');
+  const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void | Promise<void> } | null>(null);
 
   const redraw = useCallback(() => setRenderTick((tick) => tick + 1), []);
 
@@ -253,7 +259,11 @@ export default function MapEditorPage() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
-      if (locModal) {
+      if (confirmModal) {
+        setConfirmModal(null);
+      } else if (nameModal) {
+        setNameModal(null);
+      } else if (locModal) {
         setLocModal(null);
       } else if (mode === 'draw') {
         setDrawingPoints([]);
@@ -266,7 +276,7 @@ export default function MapEditorPage() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [locModal, mode]);
+  }, [locModal, nameModal, confirmModal, mode]);
 
   const handleCanvasClick = (e: React.MouseEvent) => {
     const canvas = containerRef.current?.querySelector('canvas');
@@ -347,29 +357,53 @@ export default function MapEditorPage() {
 
   const handleUndoPoint = () => setDrawingPoints((prev) => prev.slice(0, -1));
 
-  const handleCreateRegion = async () => {
-    if (!id) return;
-    const name = window.prompt(t('editor.region_name_prompt'));
-    if (!name) return;
+  const openCreateRegion = () => {
+    setNameInput('');
+    setNameModal({ mode: 'create-region' });
+  };
+
+  const openRenameRegion = (region: Region) => {
+    setNameInput(region.name);
+    setNameModal({ mode: 'rename-region', region });
+  };
+
+  const submitRegionName = async () => {
+    if (!id || !nameModal || !nameInput.trim()) return;
     try {
-      await apiClient.post(`/worlds/${id}/regions`, { name, dangerLevel: 5 });
+      if (nameModal.mode === 'rename-region') {
+        await apiClient.patch(`/worlds/${id}/regions/${nameModal.region.id}`, { name: nameInput.trim() });
+        toast.success(t('editor.region_renamed'));
+      } else {
+        await apiClient.post(`/worlds/${id}/regions`, { name: nameInput.trim(), dangerLevel: 5 });
+      }
+      setNameModal(null);
       await refreshRegions();
     } catch {
-      toast.error(t('editor.failed_create_region'));
+      toast.error(nameModal.mode === 'rename-region'
+        ? t('editor.failed_rename_region') : t('editor.failed_create_region'));
     }
   };
 
-  const handleRenameRegion = async (region: Region) => {
+  const askConfirm = (message: string, onConfirm: () => void | Promise<void>) =>
+    setConfirmModal({ message, onConfirm });
+
+  const runConfirm = async () => {
+    const fn = confirmModal?.onConfirm;
+    setConfirmModal(null);
+    if (fn) await fn();
+  };
+
+  const handleRemoveMap = () => {
     if (!id) return;
-    const name = window.prompt(t('editor.region_rename_prompt'), region.name);
-    if (!name || name === region.name) return;
-    try {
-      await apiClient.patch(`/worlds/${id}/regions/${region.id}`, { name });
-      await refreshRegions();
-      toast.success(t('editor.region_renamed'));
-    } catch {
-      toast.error(t('editor.failed_rename_region'));
-    }
+    askConfirm(t('editor.confirm_remove_map'), async () => {
+      try {
+        await apiClient.delete(`/worlds/${id}/map`);
+        setBackgroundImage(null);
+        toast.success(t('editor.map_removed'));
+      } catch {
+        toast.error(t('editor.failed_remove_map'));
+      }
+    });
   };
 
   const handleClearPolygon = async (region: Region) => {
@@ -383,16 +417,17 @@ export default function MapEditorPage() {
     }
   };
 
-  const handleDeleteRegion = async (region: Region) => {
+  const handleDeleteRegion = (region: Region) => {
     if (!id) return;
-    if (!window.confirm(t('editor.confirm_delete_region', { name: region.name }))) return;
-    try {
-      await apiClient.delete(`/worlds/${id}/regions/${region.id}`);
-      const next = await refreshRegions();
-      await refreshLocations(next);
-    } catch {
-      toast.error(t('editor.failed_delete_region'));
-    }
+    askConfirm(t('editor.confirm_delete_region', { name: region.name }), async () => {
+      try {
+        await apiClient.delete(`/worlds/${id}/regions/${region.id}`);
+        const next = await refreshRegions();
+        await refreshLocations(next);
+      } catch {
+        toast.error(t('editor.failed_delete_region'));
+      }
+    });
   };
 
   const openCreateLocation = () => {
@@ -444,16 +479,17 @@ export default function MapEditorPage() {
     }
   };
 
-  const handleDeleteLocation = async (loc: Location) => {
+  const handleDeleteLocation = (loc: Location) => {
     if (!loc.regionId) { toast.error(t('editor.location_no_region')); return; }
-    if (!window.confirm(t('editor.confirm_delete_location', { name: loc.name }))) return;
-    try {
-      await apiClient.delete(`/regions/${loc.regionId}/locations/${loc.id}`);
-      setLocModal(null);
-      await refreshLocations();
-    } catch {
-      toast.error(t('editor.failed_delete_location'));
-    }
+    askConfirm(t('editor.confirm_delete_location', { name: loc.name }), async () => {
+      try {
+        await apiClient.delete(`/regions/${loc.regionId}/locations/${loc.id}`);
+        setLocModal(null);
+        await refreshLocations();
+      } catch {
+        toast.error(t('editor.failed_delete_location'));
+      }
+    });
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -565,6 +601,14 @@ export default function MapEditorPage() {
               />
             </label>
             <p className="mt-1 text-[10px] text-text-secondary">{t('editor.upload_hint')}</p>
+            {backgroundImage && (
+              <button
+                onClick={handleRemoveMap}
+                className="mt-2 flex items-center gap-1 text-xs text-danger hover:text-danger/80"
+              >
+                <Trash2 size={12} /> {t('editor.remove_map')}
+              </button>
+            )}
           </div>
 
           {/* Mode toggle */}
@@ -579,7 +623,10 @@ export default function MapEditorPage() {
                     if (m !== 'draw') setDrawingPoints([]);
                     if (m !== 'place') setSelectedLocation(null);
                   }}
-                  className={`flex-1 rounded px-3 py-1.5 text-xs ${
+                  // F-9: Zeichnen braucht eine ausgewählte Region (Region → „Zeichnen").
+                  disabled={m === 'draw' && !selectedRegion}
+                  title={m === 'draw' && !selectedRegion ? t('editor.draw_requires_region') : undefined}
+                  className={`flex-1 rounded px-3 py-1.5 text-xs disabled:opacity-40 ${
                     mode === m ? 'bg-accent text-white' : 'bg-bg-elevated text-text-secondary'
                   }`}
                 >
@@ -613,7 +660,7 @@ export default function MapEditorPage() {
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
                       <button
-                        onClick={() => handleRenameRegion(region)}
+                        onClick={() => openRenameRegion(region)}
                         aria-label={t('editor.rename')}
                         title={t('editor.rename')}
                         className="text-text-secondary hover:text-accent"
@@ -649,7 +696,7 @@ export default function MapEditorPage() {
                 </div>
               ))}
               <button
-                onClick={handleCreateRegion}
+                onClick={openCreateRegion}
                 className="w-full rounded border border-dashed border-bg-elevated py-1 text-xs text-text-secondary hover:text-accent hover:border-accent/50"
               >
                 {t('editor.create_region')}
@@ -956,6 +1003,84 @@ export default function MapEditorPage() {
                 className="flex items-center gap-1 rounded border border-danger/40 px-3 py-1.5 text-xs text-danger hover:bg-danger/10"
               >
                 <Trash2 size={12} /> {t('editor.delete')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* F-5: Region anlegen/umbenennen (statt window.prompt) */}
+      {nameModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setNameModal(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={nameModal.mode === 'rename-region' ? t('editor.region_rename_prompt') : t('editor.region_name_prompt')}
+            className="w-80 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-3 font-heading text-text-primary">
+              {nameModal.mode === 'rename-region' ? t('editor.rename') : t('editor.create_region')}
+            </h3>
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="region-name-input">
+              {t('editor.name')}
+            </label>
+            <input
+              id="region-name-input"
+              autoFocus
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') submitRegionName(); }}
+              className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+            />
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={submitRegionName}
+                disabled={!nameInput.trim()}
+                className="flex-1 rounded bg-accent py-2 text-sm text-white hover:bg-accent/80 disabled:opacity-40"
+              >
+                {nameModal.mode === 'rename-region' ? t('editor.apply') : t('editor.create')}
+              </button>
+              <button
+                onClick={() => setNameModal(null)}
+                className="flex-1 rounded border border-bg-elevated py-2 text-sm text-text-secondary hover:text-text-primary"
+              >
+                {t('editor.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* F-5: Bestätigung (statt window.confirm) */}
+      {confirmModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setConfirmModal(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('editor.confirm_title')}
+            className="w-80 rounded-xl border border-bg-elevated bg-bg-surface p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-4 text-sm text-text-primary">{confirmModal.message}</p>
+            <div className="flex gap-2">
+              <button
+                onClick={runConfirm}
+                className="flex-1 rounded bg-danger py-2 text-sm text-white hover:bg-danger/80"
+              >
+                {t('editor.confirm')}
+              </button>
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="flex-1 rounded border border-bg-elevated py-2 text-sm text-text-secondary hover:text-text-primary"
+              >
+                {t('editor.cancel')}
               </button>
             </div>
           </div>

@@ -88,6 +88,13 @@
     "place_help_empty": "Wähle links einen Ort, dann klicke auf die Karte.",
     "place_help_selected": "Klicke auf die Karte, um den gewählten Ort zu platzieren.",
     "actions": "Aktionen",
-    "open_location": "Ort öffnen"
+    "open_location": "Ort öffnen",
+    "remove_map": "Karte entfernen",
+    "confirm_remove_map": "Kartenbild wirklich entfernen?",
+    "map_removed": "Kartenbild entfernt",
+    "failed_remove_map": "Karte konnte nicht entfernt werden",
+    "confirm_title": "Bestätigen",
+    "confirm": "Bestätigen",
+    "draw_requires_region": "Zuerst eine Region auswählen (Region → Zeichnen)"
   }
 }

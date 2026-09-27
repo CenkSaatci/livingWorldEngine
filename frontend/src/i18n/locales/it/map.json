@@ -86,6 +86,13 @@
     "failed_delete_region": "Eliminazione regione non riuscita",
     "draw_help": "Clic sinistro aggiunge punti. Clic destro salva con 3+ punti. Esc annulla.",
     "place_help_empty": "Seleziona un luogo a sinistra, poi clicca sulla mappa.",
-    "place_help_selected": "Clicca sulla mappa per posizionare il luogo selezionato."
+    "place_help_selected": "Clicca sulla mappa per posizionare il luogo selezionato.",
+    "remove_map": "Rimuovi mappa",
+    "confirm_remove_map": "Rimuovere davvero l’immagine della mappa?",
+    "map_removed": "Immagine mappa rimossa",
+    "failed_remove_map": "Impossibile rimuovere la mappa",
+    "confirm_title": "Conferma",
+    "confirm": "Conferma",
+    "draw_requires_region": "Seleziona prima una regione (Regione → Disegna)"
   }
 }

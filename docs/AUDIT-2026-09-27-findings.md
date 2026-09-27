@@ -126,21 +126,31 @@ Rollen), Archivierung (Label + Beschreibung), Karte- und Klon-Bereich → `world
 `UserRepository` an. Frontend zeigt den Namen (Fallback UUID-Kürzel) und übersetzte Rollen.
 Vorher stand dort `a1b2c3d4…`.
 
-## F-7 — Kein Karten-Löschen — **OFFEN (Empfehlung)**
+## H-3 — Jedes Welt-Mitglied konnte die Karte überschreiben — **BEHOBEN**
 
-Es gibt nur Upload (ersetzt `map.<ext>`), keinen DELETE-Endpunkt. Ein falsch hochgeladenes
-Bild lässt sich überschreiben, aber nicht entfernen. Empfehlung: `DELETE /worlds/{id}/map`.
+**Evidenz:** `FileUploadController.uploadMap` prüfte nur `worldAccess.requireAccess`
+(Owner **oder beliebiges Mitglied**), während das Frontend den Karten-Editor auf DM/Owner
+gated und `WorldMapService.update` nur den Owner zulässt. Ein Spieler konnte per API ein
+neues Kartenbild hochladen (und damit das Kartenbild der Gruppe ersetzen).
+**Fix:** Upload **und** der neue Delete nutzen `worldAccess.requireDm` (Owner oder DM).
+Live verifiziert: Upload als `playtest-spieler1` → **403**.
 
-## F-9 — Modus „Zeichnen" ohne Region — **OFFEN (UX)**
+## F-7 — Kein Karten-Löschen — **BEHOBEN**
 
-Der Modus-Umschalter erlaubt Zeichnen ohne ausgewählte Region; Punkte sind möglich, das
-Speichern scheitert mit „Region auswählen". Empfehlung: Modus nur mit Region starten oder
-die Regionsauswahl im Zeichenmodus erzwingen.
+`DELETE /worlds/{id}/map` (DM/Owner) entfernt Datei(en) `map.*` und leert `imageUrl`;
+Editor-Button „Karte entfernen" mit Bestätigungs-Modal. Live: Owner-Delete → 204,
+`imageUrl` null. E2E deckt Entfernen + Wiederherstellen ab.
 
-## F-5 — Native `window.prompt`/`confirm` im Karten-Editor — **OFFEN (UX)**
+## F-9 — Modus „Zeichnen" ohne Region — **BEHOBEN**
 
-Region anlegen/umbenennen/löschen nutzt Browser-Dialoge (unstyled, in manchen Umgebungen
-blockiert). Empfehlung: Modal wie im Rest der App.
+Der Modus-Umschalter „Zeichnen" ist gesperrt, solange keine Region gewählt ist
+(Titel-Hinweis); Zeichnen startet über die Regionszeile („Zeichnen"/„Neu zeichnen").
+Unit-Test + E2E-Assertion.
+
+## F-5 — Native `window.prompt`/`confirm` im Karten-Editor — **BEHOBEN**
+
+Region anlegen/umbenennen sowie alle Lösch-Bestätigungen (Region, Ort, Karte) laufen jetzt
+über echte Modals im App-Stil (`role="dialog"`, `aria-modal`, Escape schließt).
 
 ---
 

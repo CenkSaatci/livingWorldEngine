@@ -68,39 +68,67 @@ describe('MapEditorPage', () => {
     });
   });
 
-  it('löscht einen POI nach Bestätigung', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('löscht einen POI nach Bestätigung (Modal, F-5)', async () => {
     renderPage();
     await screen.findByText('Dorf');
 
     // Regionen werden vor Orten gerendert -> index 1 ist der POI-Delete.
     fireEvent.click(screen.getAllByLabelText('editor.delete')[1]);
+    fireEvent.click(await screen.findByText('editor.confirm'));
 
     await vi.waitFor(() => {
       expect(apiClient.delete).toHaveBeenCalledWith('/regions/r1/locations/l1');
     });
   });
 
-  it('löscht eine Region nach Bestätigung', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('löscht eine Region nach Bestätigung (Modal, F-5)', async () => {
     renderPage();
     await screen.findByText('Waldmark');
 
     fireEvent.click(screen.getAllByLabelText('editor.delete')[0]);
+    fireEvent.click(await screen.findByText('editor.confirm'));
 
     await vi.waitFor(() => {
       expect(apiClient.delete).toHaveBeenCalledWith('/worlds/w1/regions/r1');
     });
   });
 
-  it('benennt eine Region um', async () => {
-    vi.spyOn(window, 'prompt').mockReturnValue('Düsterwald');
+  it('benennt eine Region um (Modal, F-5)', async () => {
     renderPage();
     const row = (await screen.findByText('Waldmark')).closest('div')!;
     fireEvent.click(within(row.parentElement as HTMLElement).getByLabelText('editor.rename'));
 
+    const input = await screen.findByDisplayValue('Waldmark');
+    fireEvent.change(input, { target: { value: 'Düsterwald' } });
+    fireEvent.click(screen.getByText('editor.apply'));
+
     await vi.waitFor(() => {
       expect(apiClient.patch).toHaveBeenCalledWith('/worlds/w1/regions/r1', { name: 'Düsterwald' });
+    });
+  });
+
+  it('sperrt Zeichnen ohne ausgewählte Region (F-9)', async () => {
+    renderPage();
+    await screen.findByText('Waldmark');
+
+    expect(screen.getByText('editor.mode_draw')).toBeDisabled();
+  });
+
+  it('entfernt die Karte nach Bestätigung (F-7)', async () => {
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url === '/worlds/w1/regions') return Promise.resolve({ data: REGIONS });
+      if (url === '/worlds/w1/map') return Promise.resolve({ data: { imageUrl: '/uploads/w1/map.png' } });
+      if (url === '/regions/r1/locations') return Promise.resolve({ data: LOCATIONS });
+      return Promise.resolve({ data: [] });
+    });
+    renderPage();
+    await screen.findByText('Waldmark');
+
+    fireEvent.click(await screen.findByText('editor.remove_map'));
+    fireEvent.click(await screen.findByText('editor.confirm'));
+
+    await vi.waitFor(() => {
+      expect(apiClient.delete).toHaveBeenCalledWith('/worlds/w1/map');
     });
   });
 

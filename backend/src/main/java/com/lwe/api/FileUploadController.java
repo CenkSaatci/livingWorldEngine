@@ -53,7 +53,9 @@ public class FileUploadController {
     public ResponseEntity<?> uploadMap(@PathVariable UUID worldId,
                                        @RequestParam("file") MultipartFile file,
                                        @AuthenticationPrincipal User user) {
-        worldAccess.requireAccess(worldId, user.getId());
+        // Audit: Kartenbild ist DM-Sache — vorher genügte Mitgliedschaft, ein Spieler
+        // konnte die Karte überschreiben.
+        worldAccess.requireDm(worldId, user.getId());
 
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body(new ErrorResponse("File is empty"));
@@ -97,6 +99,27 @@ public class FileUploadController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
         }
+    }
+
+    /** Entfernt das Kartenbild (Datei + Referenz). DM/Owner (Audit F-7). */
+    @DeleteMapping("/worlds/{worldId}/map")
+    public ResponseEntity<?> deleteMap(@PathVariable UUID worldId,
+                                       @AuthenticationPrincipal User user) {
+        worldAccess.requireDm(worldId, user.getId());
+        var dir = uploadDir.resolve(worldId.toString()).normalize();
+        for (var ext : ALLOWED_EXTENSIONS) {
+            try {
+                var path = dir.resolve("map" + ext).normalize();
+                if (path.startsWith(dir)) Files.deleteIfExists(path);
+            } catch (Exception ignored) {
+                // Datei bereits weg / nicht löschbar — die Referenz wird trotzdem geleert.
+            }
+        }
+        worldMapRepo.findByWorldId(worldId).ifPresent(m -> {
+            m.setImageUrl(null);
+            worldMapRepo.save(m);
+        });
+        return ResponseEntity.noContent().build();
     }
 
     private String extractExtension(String filename) {

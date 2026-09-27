@@ -61,9 +61,13 @@ test.describe.serial('Karten-Editor', () => {
     await page.goto(`/worlds/${worldId}/map`);
     await expect(page.getByRole('heading', { name: /Karten-Editor|Map Editor/i })).toBeVisible({ timeout: 15_000 });
 
-    // Region über den Editor anlegen (window.prompt).
-    page.once('dialog', (d) => d.accept(TEST_REGION));
+    // F-9: Zeichnen ist ohne ausgewählte Region gesperrt.
+    await expect(page.getByRole('button', { name: /^(Zeichnen|Draw)$/ }).first()).toBeDisabled();
+
+    // Region über den Editor anlegen (Modal, F-5).
     await page.getByRole('button', { name: /Region erstellen|Create region/i }).click();
+    await page.locator('#region-name-input').fill(TEST_REGION);
+    await page.getByRole('button', { name: /^(Erstellen|Create)$/ }).click();
 
     const regionItem = page.locator('div.rounded.px-2.py-1', { hasText: TEST_REGION }).first();
     await expect(regionItem).toBeVisible({ timeout: 10_000 });
@@ -99,6 +103,31 @@ test.describe.serial('Karten-Editor', () => {
     await page.goto(`/worlds/${worldId}`);
     await expect(page.locator('img[alt="Map"]')).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('svg polygon').first()).toBeVisible({ timeout: 15_000 });
+
+    await page.close();
+  });
+
+  test('Karte entfernen (F-7) und wiederherstellen', async ({ browser, request }) => {
+    const page = await qaPage(browser, 'dm');
+    await page.goto(`/worlds/${worldId}/map`);
+
+    await page.getByRole('button', { name: /Karte entfernen|Remove map/i }).click();
+    await page.getByRole('button', { name: /^(Bestätigen|Confirm)$/ }).click();
+
+    const auth = { headers: { Authorization: `Bearer ${tokenFor('dm')}` } };
+    await expect
+      .poll(async () => {
+        const res = await request.get(`${API}/api/v1/worlds/${worldId}/map`, auth);
+        return res.ok() ? ((await res.json()).imageUrl ?? null) : null;
+      }, { timeout: 10_000 })
+      .toBeNull();
+
+    // QA-Welt behält ihr Testbild: wieder hochladen.
+    const uploadDone = page.waitForResponse(
+      (r) => r.url().includes('/map/upload') && r.request().method() === 'POST',
+    );
+    await page.locator('input[type="file"]').setInputFiles('e2e/fixtures/map-test.png');
+    expect((await uploadDone).status()).toBe(200);
 
     await page.close();
   });

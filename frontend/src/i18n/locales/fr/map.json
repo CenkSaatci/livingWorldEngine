@@ -86,6 +86,13 @@
     "failed_delete_region": "Échec de la suppression de la région",
     "draw_help": "Clic gauche ajoute des points. Clic droit enregistre à partir de 3 points. Échap annule.",
     "place_help_empty": "Sélectionne un lieu à gauche, puis clique sur la carte.",
-    "place_help_selected": "Clique sur la carte pour placer le lieu sélectionné."
+    "place_help_selected": "Clique sur la carte pour placer le lieu sélectionné.",
+    "remove_map": "Supprimer la carte",
+    "confirm_remove_map": "Vraiment supprimer l’image de la carte ?",
+    "map_removed": "Image de carte supprimée",
+    "failed_remove_map": "Impossible de supprimer la carte",
+    "confirm_title": "Confirmer",
+    "confirm": "Confirmer",
+    "draw_requires_region": "Sélectionnez d’abord une région (Région → Dessiner)"
   }
 }

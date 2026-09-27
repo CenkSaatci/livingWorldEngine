@@ -86,6 +86,13 @@
     "failed_delete_region": "Bölge silinemedi",
     "draw_help": "Sol tık nokta ekler. Sağ tık 3+ noktada kaydeder. Esc iptal eder.",
     "place_help_empty": "Soldan bir yer seç, sonra haritaya tıkla.",
-    "place_help_selected": "Seçili yeri yerleştirmek için haritaya tıkla."
+    "place_help_selected": "Seçili yeri yerleştirmek için haritaya tıkla.",
+    "remove_map": "Haritayı kaldır",
+    "confirm_remove_map": "Harita görseli gerçekten kaldırılsın mı?",
+    "map_removed": "Harita görseli kaldırıldı",
+    "failed_remove_map": "Harita kaldırılamadı",
+    "confirm_title": "Onayla",
+    "confirm": "Onayla",
+    "draw_requires_region": "Önce bir bölge seç (Bölge → Çiz)"
   }
 }
