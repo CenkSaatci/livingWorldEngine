@@ -533,6 +533,11 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
         <div className="space-y-4">
           <h3 className="font-heading text-text-primary">{t('s3_title')}</h3>
           <p className="text-xs text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s3_hint') }} />
+          {/* #1: Ableitung AT/PA — konkret statt Kurzhinweis. */}
+          <details className="rounded border border-bg-elevated bg-bg-primary/50 p-3 text-xs text-text-secondary">
+            <summary className="cursor-pointer font-semibold text-text-primary">{t('s3_derive_title')}</summary>
+            <div className="mt-2 space-y-1" dangerouslySetInnerHTML={{ __html: t('s3_derive_body') }} />
+          </details>
           {data.probeType === 'd20_3attr' && (
             <p className="text-xs text-warning/80">DSA-Modus: Jedes Talent hat genau 3 Attribute.</p>
           )}

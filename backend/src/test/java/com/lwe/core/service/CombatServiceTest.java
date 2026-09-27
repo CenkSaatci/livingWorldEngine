@@ -1751,4 +1751,141 @@ class CombatServiceTest {
             .satisfies(e -> assertThat(((CombatService.CombatException) e).getErrorCode())
                 .isEqualTo("COMBAT_MANEUVER_UNKNOWN"));
     }
+
+    // ---- ADR-016: Regel-Fähigkeiten (systemweit aus dem Regel-JSON) ----
+
+    private Map<String, Object> rulesWithAbility(Map<String, Object> ability) {
+        return Map.of(
+            "dice_mechanics", Map.of("combat", Map.of("initiative", "1d20", "damage", "1d2")),
+            "abilities", List.of(ability));
+    }
+
+    @Test
+    void rulesAbilityDealsDamageAndCostsAp() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Magier");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        setId(defender, defenderId);
+
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        var pa = new CombatParticipant(sessionId, attackerId, 10, 3, "A");
+        var pd = new CombatParticipant(sessionId, defenderId, 5, 3, "B");
+        pd.setHpCurrent(20);
+        pd.setHpMax(20);
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(pa, pd)));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(rulesWithAbility(Map.of(
+            "name", "Feuerball", "type", "active", "cost", 2, "costType", "AP", "diceExpression", "1d2")));
+        when(participantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        var result = combatService.useAbility(userId, sessionId, attackerId, null, "Feuerball", defenderId);
+
+        assertThat(result.actionType()).isEqualTo("ABILITY_Feuerball");
+        assertThat(result.totalDamage()).isBetween(1, 2);
+        assertThat(pd.getHpCurrent()).isEqualTo(20 - result.totalDamage());
+        assertThat(pa.getApCurrent()).isEqualTo(1); // 3 - 2
+    }
+
+    @Test
+    void unknownRulesAbilityIsRejected() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Magier");
+        setId(attacker, attackerId);
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(
+                new CombatParticipant(sessionId, attackerId, 10, 3, "A"))));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(Map.of());
+
+        assertThatThrownBy(() -> combatService.useAbility(userId, sessionId, attackerId, null, "Nix", null))
+            .isInstanceOf(CombatService.CombatException.class)
+            .satisfies(e -> assertThat(((CombatService.CombatException) e).getErrorCode())
+                .isEqualTo("ABILITY_NOT_FOUND"));
+    }
+
+    @Test
+    void passiveRulesAbilityIsRejected() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Magier");
+        setId(attacker, attackerId);
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(
+                new CombatParticipant(sessionId, attackerId, 10, 3, "A"))));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(rulesWithAbility(Map.of(
+            "name", "Eisern", "type", "passive", "cost", 0)));
+
+        assertThatThrownBy(() -> combatService.useAbility(userId, sessionId, attackerId, null, "Eisern", null))
+            .isInstanceOf(CombatService.CombatException.class)
+            .satisfies(e -> assertThat(((CombatService.CombatException) e).getErrorCode())
+                .isEqualTo("ABILITY_NOT_ACTIVE"));
+    }
+
+    @Test
+    void mpRulesAbilityCostsNoAp() {
+        var sessionId = UUID.randomUUID();
+        var attackerId = UUID.randomUUID();
+        var defenderId = UUID.randomUUID();
+        var attacker = new GameEntity(worldId, "PC", "Magier");
+        setId(attacker, attackerId);
+        var defender = new GameEntity(worldId, "NPC", "Ork");
+        setId(defender, defenderId);
+
+        var session = new CombatSession(worldId, null);
+        setId(session, sessionId);
+        session.setCurrentTurnEntityId(attackerId);
+        var world = new com.lwe.core.domain.World("W", userId, "{}");
+        setId(world, worldId);
+
+        var pa = new CombatParticipant(sessionId, attackerId, 10, 2, "A");
+        var pd = new CombatParticipant(sessionId, defenderId, 5, 2, "B");
+        pd.setHpCurrent(20);
+        pd.setHpMax(20);
+        when(sessionRepo.findById(sessionId)).thenReturn(Optional.of(session));
+        when(worldRepo.findById(worldId)).thenReturn(Optional.of(world));
+        when(participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId))
+            .thenReturn(new java.util.ArrayList<>(List.of(pa, pd)));
+        when(entityRepo.findById(attackerId)).thenReturn(Optional.of(attacker));
+        when(entityRepo.findById(defenderId)).thenReturn(Optional.of(defender));
+        when(rulesLoader.loadRules(any(), any())).thenReturn(rulesWithAbility(Map.of(
+            "name", "Blitz", "type", "active", "cost", 3, "costType", "MP", "diceExpression", "1d2")));
+        when(participantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(eventService.publish(any(), any(WorldEventService.EventType.class), any(), any(), any())).thenReturn(1L);
+
+        combatService.useAbility(userId, sessionId, attackerId, null, "Blitz", defenderId);
+
+        // ponytail: MP kostet im Kampf vorerst 0 AP (kein Mana-Pool, ADR-016).
+        assertThat(pa.getApCurrent()).isEqualTo(2);
+    }
 }

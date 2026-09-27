@@ -360,5 +360,7 @@
   "s4_man_damage": "Daño",
   "s4_man_malus": "Ataque",
   "s4_man_ap": "PA",
-  "s4_man_add": "Añadir maniobra"
+  "s4_man_add": "Añadir maniobra",
+  "s3_derive_title": "Derivar ataque/parada (AT/PA)",
+  "s3_derive_body": "Valor de habilidad = <code>bonus de regla + suma de modificadores de atributo</code>. Los <strong>valores derivados</strong> (ataque/parada) se definen en el paso <strong>Valores</strong> con una fórmula que lee el nombre de la habilidad, p. ej. <code>at_espadas = Espadas + floor((fue-8)/3)</code>. Las fórmulas no distinguen mayúsculas."
 }

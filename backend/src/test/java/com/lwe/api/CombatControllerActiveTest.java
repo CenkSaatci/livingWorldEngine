@@ -91,13 +91,13 @@ class CombatControllerActiveTest {
             null, 6, null, null, null);
         var action = new CombatService.CombatActionResult("ABILITY:Feuerball", 6, 0, true, null,
             null, damage, 0);
-        when(combatService.useAbility(userId, sessionId, actorId, abilityId, null))
+        when(combatService.useAbility(userId, sessionId, actorId, abilityId, null, null))
             .thenReturn(action);
         when(combatService.getSession(userId, sessionId)).thenReturn(session);
         when(combatService.getParticipants(sessionId, userId)).thenReturn(List.of());
 
         var res = controller.useAbility(sessionId,
-            new CombatController.AbilityRequest(actorId, abilityId, null), user());
+            new CombatController.AbilityRequest(actorId, abilityId, null, null), user());
 
         assertThat(res.getBody().result()).isNotNull();
         assertThat(res.getBody().result().damage().dice()).containsExactly(6);

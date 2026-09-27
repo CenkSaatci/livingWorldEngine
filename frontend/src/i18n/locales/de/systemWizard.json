@@ -360,5 +360,7 @@
   "s4_man_damage": "Schaden",
   "s4_man_malus": "Angriff",
   "s4_man_ap": "AP",
-  "s4_man_add": "Manöver hinzufügen"
+  "s4_man_add": "Manöver hinzufügen",
+  "s3_derive_title": "Attacke/Parade ableiten (AT/PA)",
+  "s3_derive_body": "Der Skillwert ist <code>Regel-Bonus + Summe der Attributsmodifikatoren</code>; eigene Werte des Charakters überschreiben den Regel-Bonus. <strong>Abgeleitete Werte</strong> wie Attacke/Parade definierst du im Schritt <strong>Werte</strong> als Formel, die den Fertigkeitsnamen liest:<br/><code>at_schwerter = Schwerter + floor((mut-8)/3)</code><br/><code>pa_schwerter = floor(Schwerter/2)</code><br/>Formeln sind case-insensitiv; bei Namensgleichheit gewinnt das Attribut. Also: Fertigkeit <em>Schwerter</em> hier anlegen, dann im Werte-Schritt zwei Einträge mit diesen Formeln."
 }

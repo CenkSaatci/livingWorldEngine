@@ -257,9 +257,21 @@ public class CombatService {
             attackRoll, damageRoll, 0);
     }
 
+    /** Bestandsaufruf (DB-Katalog). */
     @Transactional
     public CombatActionResult useAbility(UUID userId, UUID sessionId, UUID actorId,
                                           UUID abilityId, UUID targetId) {
+        return useAbility(userId, sessionId, actorId, abilityId, null, targetId);
+    }
+
+    /**
+     * Führt eine Fähigkeit aus. Entweder {@code abilityId} (DB-Katalog) oder
+     * {@code abilityName} (Regel-JSON {@code abilities[]}, systemweit) — ADR-016.
+     * {@code abilityId} gewinnt, falls beide gesetzt sind.
+     */
+    @Transactional
+    public CombatActionResult useAbility(UUID userId, UUID sessionId, UUID actorId,
+                                          UUID abilityId, String abilityName, UUID targetId) {
         var session = validateSession(sessionId, userId, actorId);
         entityAccess.requireControl(actorId, userId); // Runde 1
         var participants = participantRepo.findByCombatIdOrderByInitiativeDesc(sessionId);
@@ -267,35 +279,32 @@ public class CombatService {
         if (actor.getHpCurrent() <= 0)
             throw new CombatException("COMBAT_ACTOR_DEFEATED", "Actor is defeated");
 
-        var ability = abilityRepo.findById(abilityId)
-            .orElseThrow(() -> new CombatException("ABILITY_NOT_FOUND", "Ability not found"));
-        if (ability.getType() != Ability.AbilityType.ACTIVE)
-            throw new CombatException("ABILITY_NOT_ACTIVE", "Ability is not an active ability");
         var rules = rulesLoader.loadRules(session.getCampaignId(), session.getWorldId());
         requireActionAllowed(session, actorId, rules, "ABILITY"); // T3
-        if (actor.getApCurrent() < ability.getApCost())
+
+        var source = resolveAbilitySource(abilityId, abilityName, rules);
+        if (actor.getApCurrent() < source.apCost())
             throw new CombatException("COMBAT_AP_INSUFFICIENT", "Not enough AP");
 
-        // Parse damage from effects_json — läuft durch dieselben Stufen wie Angriffe (ADR-014).
-        var effects = parseEffectsJson(ability.getEffectsJson());
+        // Schaden läuft durch dieselben Stufen wie Angriffe (ADR-014).
         RollBreakdown damageRoll = null;
         int damage = 0;
-        if (effects.damageExpr != null) {
+        if (source.damageExpr() != null) {
             var entity = entityRepo.findById(actorId)
                 .orElseThrow(() -> new CombatException("ENTITY_NOT_FOUND", "Actor not found"));
-            var parts = parseDamageOrThrow(effects.damageExpr, "ability");
+            var parts = parseDamageOrThrow(source.damageExpr(), "ability");
             damageRoll = computeDamage(entity, rules, parts.dice(), parts.flat(), parts.attr(),
                 parts.attrBonusSign());
             damage = damageRoll.total();
         }
         // Heil-Ausdruck vorab validieren: kaputt = Fehler, BEVOR Schaden angewendet wird.
         int healAmount = 0;
-        if (effects.healExpr != null) {
+        if (source.healExpr() != null) {
             try {
-                healAmount = new com.lwe.rules.DiceExpression(effects.healExpr).getTotal();
+                healAmount = new com.lwe.rules.DiceExpression(source.healExpr()).getTotal();
             } catch (IllegalArgumentException e) {
                 throw new CombatException("COMBAT_EFFECTS_INVALID",
-                    "Heil-Ausdruck '" + effects.healExpr + "' nicht parsbar");
+                    "Heil-Ausdruck '" + source.healExpr() + "' nicht parsbar");
             }
         }
 
@@ -312,7 +321,7 @@ public class CombatService {
             // Schadende Abilities treffen keine Besiegten (Heilung schon).
             if (target.getHpCurrent() <= 0)
                 throw new CombatException("COMBAT_TARGET_DEFEATED", "Target is already defeated");
-            var mitigation = applyDamageModifiers(damage, targetId, effects.damageType());
+            var mitigation = applyDamageModifiers(damage, targetId, source.damageType());
             damageRoll = withMitigation(damageRoll, mitigation);
             damage = mitigation.total();
             target.setHpCurrent(Math.max(0, target.getHpCurrent() - damage));
@@ -329,16 +338,63 @@ public class CombatService {
             participantRepo.save(actor);
         }
 
-        actor.setApCurrent(Math.max(0, actor.getApCurrent() - ability.getApCost()));
+        actor.setApCurrent(Math.max(0, actor.getApCurrent() - source.apCost()));
         participantRepo.save(actor);
 
         eventService.publish(session.getWorldId(), session.getCampaignId(), COMBAT_ACTION_EXECUTED, actorId, targetId, Map.of(
-            "actionType", "ABILITY_" + ability.getName(), "damage", damage));
-        return new CombatActionResult("ABILITY_" + ability.getName(), damage,
+            "actionType", "ABILITY_" + source.name(), "damage", damage));
+        return new CombatActionResult("ABILITY_" + source.name(), damage,
             actor.getApCurrent(), true, null, null, damageRoll, healAmount);
     }
 
     private record Effects(String damageExpr, String healExpr, String damageType) {}
+
+    /** Aufgelöste Fähigkeitsquelle: DB-Katalog oder Regel-JSON (ADR-016). */
+    private record AbilitySource(String name, int apCost, String damageExpr,
+                                 String healExpr, String damageType) {}
+
+    private AbilitySource resolveAbilitySource(UUID abilityId, String abilityName,
+                                               Map<String, Object> rules) {
+        if (abilityId != null) {
+            var ability = abilityRepo.findById(abilityId)
+                .orElseThrow(() -> new CombatException("ABILITY_NOT_FOUND", "Ability not found"));
+            if (ability.getType() != Ability.AbilityType.ACTIVE)
+                throw new CombatException("ABILITY_NOT_ACTIVE", "Ability is not an active ability");
+            var effects = parseEffectsJson(ability.getEffectsJson());
+            return new AbilitySource(ability.getName(), ability.getApCost(),
+                effects.damageExpr(), effects.healExpr(), effects.damageType());
+        }
+        if (abilityName == null || abilityName.isBlank())
+            throw new CombatException("ABILITY_NOT_FOUND", "Ability not found");
+
+        var entry = findRulesAbility(rules, abilityName);
+        if (!"active".equalsIgnoreCase(String.valueOf(entry.getOrDefault("type", "active"))))
+            throw new CombatException("ABILITY_NOT_ACTIVE", "Ability is not an active ability");
+        var name = entry.get("name") instanceof String s && !s.isBlank() ? s : abilityName;
+        var damageExpr = entry.get("diceExpression") instanceof String d && !d.isBlank() ? d : null;
+        var damageType = entry.get("damageType") instanceof String dt && !dt.isBlank() ? dt : null;
+        return new AbilitySource(name, rulesAbilityApCost(entry), damageExpr, null, damageType);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> findRulesAbility(Map<String, Object> rules, String name) {
+        var raw = (List<Map<String, Object>>) rules.getOrDefault("abilities", List.of());
+        return raw.stream()
+            .filter(a -> name.equalsIgnoreCase(String.valueOf(a.getOrDefault("name", ""))))
+            .findFirst()
+            .orElseThrow(() -> new CombatException("ABILITY_NOT_FOUND",
+                "Ability '" + name + "' not found in rules"));
+    }
+
+    /**
+     * AP-Kosten aus {@code cost}; {@code costType: "MP"} kostet vorerst 0 AP, weil das
+     * Kampfmodell keinen Mana-Vorrat kennt.
+     * ponytail: kein Mana-Pool im Kampf — bei Bedarf Mana einführen und hier abbuchen.
+     */
+    private int rulesAbilityApCost(Map<String, Object> entry) {
+        if ("MP".equalsIgnoreCase(String.valueOf(entry.getOrDefault("costType", "")))) return 0;
+        return entry.get("cost") instanceof Number n ? Math.max(0, n.intValue()) : 1;
+    }
 
     private Effects parseEffectsJson(String effectsJson) {
         if (effectsJson == null || effectsJson.isBlank()) return new Effects(null, null, null);

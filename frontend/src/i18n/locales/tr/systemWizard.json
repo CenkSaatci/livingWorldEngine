@@ -360,5 +360,7 @@
   "s4_man_damage": "Hasar",
   "s4_man_malus": "Saldırı",
   "s4_man_ap": "AP",
-  "s4_man_add": "Manevra ekle"
+  "s4_man_add": "Manevra ekle",
+  "s3_derive_title": "Saldırı/savunma türet (AT/PA)",
+  "s3_derive_body": "Beceri değeri = <code>kural bonusu + nitelik değiştiricileri toplamı</code>. <strong>Türetilmiş değerler</strong> (saldırı/savunma) <strong>Değerler</strong> adımında beceri adını okuyan bir formülle tanımlanır, örn. <code>at_kiliclar = Kiliclar + floor((cev-8)/3)</code>. Formüller büyük/küçük harf duyarsızdır."
 }

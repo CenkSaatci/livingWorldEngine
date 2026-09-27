@@ -360,5 +360,7 @@
   "s4_man_damage": "Danno",
   "s4_man_malus": "Attacco",
   "s4_man_ap": "AP",
-  "s4_man_add": "Aggiungi manovra"
+  "s4_man_add": "Aggiungi manovra",
+  "s3_derive_title": "Derivare attacco/parata (AT/PA)",
+  "s3_derive_body": "Valore abilità = <code>bonus regola + somma dei modificatori di attributo</code>. I <strong>valori derivati</strong> (attacco/parata) si definiscono nel passo <strong>Valori</strong> con una formula che legge il nome dell’abilità, es. <code>at_spade = Spade + floor((for-8)/3)</code>. Le formule non distinguono maiuscole/minuscole."
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkipForward, LogOut, Shield, Swords, Zap } from 'lucide-react';
 import { apiClient } from '../../api/client';
-import { useCombatStore } from '../../store/combatStore';
+import { useCombatStore, type CombatSession, type CombatParticipant } from '../../store/combatStore';
 import { useCampaignStore, useActiveCampaign } from '../../store/campaignStore';
 import { useToast } from '../../hooks/useToast';
 import { playCombatHit } from '../../utils/sound';
@@ -24,6 +24,12 @@ interface AbilityEntry {
   apCost: number;
 }
 
+/** Aktive Fähigkeit aus dem Regel-JSON (ADR-016) — systemweit, per Name im Kampf nutzbar. */
+interface RulesAbility {
+  name: string;
+  apCost: number;
+}
+
 export function ActionBar({ worldId }: Props) {
   const { t } = useTranslation('common');
   const session = useCombatStore((s) => s.session);
@@ -35,6 +41,7 @@ export function ActionBar({ worldId }: Props) {
   const [actionTypes, setActionTypes] = useState<string[]>(['action']);
   const [actionsPerTurn, setActionsPerTurn] = useState<Record<string, number>>({ action: 1 });
   const [maneuvers, setManeuvers] = useState<{ name: string; apCost?: number }[]>([]);
+  const [rulesAbilities, setRulesAbilities] = useState<RulesAbility[]>([]);
   const [weaponItemId, setWeaponItemId] = useState<string | null>(null);
   const [usedActions, setUsedActions] = useState<Record<string, number>>({});
   // QA-Fix: Hook muss VOR dem Early-Return stehen (sonst Rules-of-Hooks-Crash beim
@@ -63,6 +70,17 @@ export function ActionBar({ worldId }: Props) {
           if (combat?.action_types) setActionTypes(combat.action_types);
           if (combat?.actions_per_turn) setActionsPerTurn(combat.actions_per_turn);
           if (combat?.maneuvers) setManeuvers(combat.maneuvers);
+          // ADR-016: aktive System-Fähigkeiten direkt aus dem Regel-JSON.
+          const sysAbilities = Array.isArray(rules.abilities) ? rules.abilities : [];
+          setRulesAbilities(
+            (sysAbilities as { name?: string; type?: string; cost?: number; costType?: string }[])
+              .filter((a) => (a.type ?? 'active') === 'active' && !!a.name)
+              .map((a) => ({
+                name: a.name as string,
+                // ponytail: MP kostet im Kampf vorerst 0 AP (kein Mana-Pool, ADR-016).
+                apCost: a.costType === 'MP' ? 0 : (typeof a.cost === 'number' ? a.cost : 1),
+              })),
+          );
         } catch { /* Ungültiges rulesJson → Standard-Action-Typen bleiben. */ }
         // Best-effort Config-Ladung — Defaults aus useState gelten weiter.
         // Best-effort Config-Ladung — Defaults aus useState gelten weiter.
@@ -94,6 +112,7 @@ export function ActionBar({ worldId }: Props) {
         if (!cancelled) {
           setActionTypes([]);
           setActionsPerTurn({});
+          setRulesAbilities([]);
         }
       });
       return () => { cancelled = true; };
@@ -102,6 +121,7 @@ export function ActionBar({ worldId }: Props) {
     // ohne Kampagne gibt es keine Action-Typen.
     setActionTypes([]);
     setActionsPerTurn({});
+    setRulesAbilities([]);
   }, [worldId, activeCampaignId, activeGameSystemId]);
 
   // Reset used actions on turn change
@@ -154,6 +174,42 @@ export function ActionBar({ worldId }: Props) {
     return err?.message ?? fallback;
   };
 
+  /** Gemeinsame Auswertung einer Kampf-Antwort (Session-State + Toasts). */
+  const applyCombatResponse = (
+    data: { session: CombatSession; participants: CombatParticipant[]; result?: unknown },
+    opts: { playedHit: boolean },
+  ) => {
+    // POST returns full session state → AP-Werte sind bereits korrekt
+    useCombatStore.getState().setSession(data.session, data.participants);
+    const result = data.result as {
+      actionType?: string; totalDamage?: number; healing?: number;
+      attack?: RollBreakdown | null; damage?: RollBreakdown | null;
+    } | null | undefined;
+    // QA/UX: Treffer, Miss, Heilung und die Wurf-Aufstellung sichtbar machen.
+    if (result?.actionType === 'MISS') {
+      const detail = result.attack ? ` (${formatRollBreakdown(result.attack, t)})` : '';
+      toast.error(`${t('combat.missed', { name: targetName(targetEntityId) })}${detail}`);
+      return;
+    }
+    const damage = result?.totalDamage ?? 0;
+    const healing = result?.healing ?? 0;
+    if (opts.playedHit && (damage > 0 || healing > 0)) playCombatHit();
+    const messages: string[] = [];
+    if (damage > 0) {
+      const detail = result?.damage ? ` · ${formatRollBreakdown(result.damage, t)}` : '';
+      messages.push(t('combat.hitFor', { name: targetName(targetEntityId), damage }) + detail);
+    } else if (result?.attack) {
+      // Angriff traf, aber Schaden auf 0 reduziert (Rüstung/Resistenz).
+      messages.push(t('combat.hitNoDamage', { name: targetName(targetEntityId) }));
+    }
+    if (healing > 0) {
+      messages.push(t('combat.healedFor', {
+        name: targetName(currentActor?.entityId ?? null), healing,
+      }));
+    }
+    toast.success(messages.length > 0 ? messages.join(' · ') : t('combat.done'));
+  };
+
   const handleAction = async (type: string, abilityId?: string) => {
     if (acting) return;
     setActing(true);
@@ -166,36 +222,24 @@ export function ActionBar({ worldId }: Props) {
         : { actorId: currentActor?.entityId, actionType: type.toUpperCase(), targetId: targetEntityId, itemId: weaponItemId ?? undefined };
 
       const res = await apiClient.post(url, body);
-      // POST returns full session state → AP-Werte sind bereits korrekt
-      useCombatStore.getState().setSession(res.data.session, res.data.participants);
       setUsedActions((prev) => ({ ...prev, [type]: (prev[type] ?? 0) + 1 }));
-      const result = res.data.result as {
-        actionType?: string; totalDamage?: number; healing?: number;
-        attack?: RollBreakdown | null; damage?: RollBreakdown | null;
-      } | null | undefined;
-      // QA/UX: Treffer, Miss, Heilung und die Wurf-Aufstellung sichtbar machen.
-      if (result?.actionType === 'MISS') {
-        const detail = result.attack ? ` (${formatRollBreakdown(result.attack, t)})` : '';
-        toast.error(`${t('combat.missed', { name: targetName(targetEntityId) })}${detail}`);
-      } else {
-        const damage = result?.totalDamage ?? 0;
-        const healing = result?.healing ?? 0;
-        if (!abilityId && (damage > 0 || healing > 0)) playCombatHit();
-        const messages: string[] = [];
-        if (damage > 0) {
-          const detail = result?.damage ? ` · ${formatRollBreakdown(result.damage, t)}` : '';
-          messages.push(t('combat.hitFor', { name: targetName(targetEntityId), damage }) + detail);
-        } else if (result?.attack) {
-          // Angriff traf, aber Schaden auf 0 reduziert (Rüstung/Resistenz).
-          messages.push(t('combat.hitNoDamage', { name: targetName(targetEntityId) }));
-        }
-        if (healing > 0) {
-          messages.push(t('combat.healedFor', {
-            name: targetName(currentActor?.entityId ?? null), healing,
-          }));
-        }
-        toast.success(messages.length > 0 ? messages.join(' · ') : t('combat.done'));
-      }
+      applyCombatResponse(res.data, { playedHit: !abilityId });
+    } catch (e) {
+      toast.error(errorText(e, t('combat.actionFailed', { defaultValue: 'Action failed' })));
+    } finally {
+      setActing(false);
+    }
+  };
+
+  /** ADR-016: aktive System-Fähigkeit per Name aus dem Regel-JSON ausführen. */
+  const handleRulesAbility = async (abilityName: string) => {
+    if (acting) return;
+    setActing(true);
+    try {
+      const res = await apiClient.post(`/combat/${session.id}/ability`, {
+        actorId: currentActor?.entityId, abilityName, targetId: targetEntityId,
+      });
+      applyCombatResponse(res.data, { playedHit: false });
     } catch (e) {
       toast.error(errorText(e, t('combat.actionFailed', { defaultValue: 'Action failed' })));
     } finally {
@@ -326,6 +370,18 @@ export function ActionBar({ worldId }: Props) {
             title={t('combat.apCost', { cost: a.apCost })}
           >
             <Zap size={14} /> {a.abilityName}
+          </button>
+        ))}
+
+        {/* System-Fähigkeiten aus dem Regel-JSON (ADR-016) */}
+        {rulesAbilities.map((a) => (
+          <button key={`rules-${a.name}`}
+            onClick={() => handleRulesAbility(a.name)}
+            disabled={!currentActor || acting || (currentActor.apCurrent ?? 0) < a.apCost}
+            className="flex items-center gap-1 rounded bg-warning/20 px-3 py-1.5 text-xs text-warning hover:bg-warning/30 disabled:opacity-40"
+            title={t('combat.apCost', { cost: a.apCost })}
+          >
+            <Zap size={14} /> {a.name}
           </button>
         ))}
 

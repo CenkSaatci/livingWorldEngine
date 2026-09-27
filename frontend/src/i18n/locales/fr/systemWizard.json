@@ -360,5 +360,7 @@
   "s4_man_damage": "Dégâts",
   "s4_man_malus": "Attaque",
   "s4_man_ap": "AP",
-  "s4_man_add": "Ajouter une manœuvre"
+  "s4_man_add": "Ajouter une manœuvre",
+  "s3_derive_title": "Dériver attaque/parade (AT/PA)",
+  "s3_derive_body": "Valeur de compétence = <code>bonus de règle + somme des modificateurs d’attribut</code>. Les <strong>valeurs dérivées</strong> (attaque/parade) se définissent à l’étape <strong>Valeurs</strong> par une formule qui lit le nom de la compétence, p. ex. <code>at_epees = Epees + floor((for-8)/3)</code>. Les formules sont insensibles à la casse."
 }

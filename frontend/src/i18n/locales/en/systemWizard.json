@@ -360,5 +360,7 @@
   "s4_man_damage": "Damage",
   "s4_man_malus": "Attack",
   "s4_man_ap": "AP",
-  "s4_man_add": "Add maneuver"
+  "s4_man_add": "Add maneuver",
+  "s3_derive_title": "Derive attack/parry (AT/PA)",
+  "s3_derive_body": "Skill value = <code>rule bonus + sum of attribute modifiers</code>; per-character values override the rule bonus. <strong>Derived values</strong> like attack/parry are defined in the <strong>Values</strong> step as a formula that reads the skill name:<br/><code>at_swords = Swords + floor((str-8)/3)</code><br/><code>pa_swords = floor(Swords/2)</code><br/>Formulas are case-insensitive; on a name collision the attribute wins. So: create skill <em>Swords</em> here, then add two entries with these formulas in the Values step."
 }

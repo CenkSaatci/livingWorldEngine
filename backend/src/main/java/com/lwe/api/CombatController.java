@@ -98,7 +98,7 @@ public class CombatController {
                                                                       @Valid @RequestBody AbilityRequest req,
                                                                       @AuthenticationPrincipal User user) {
         var result = combatService.useAbility(user.getId(), sessionId,
-            req.actorId(), req.abilityId(), req.targetId());
+            req.actorId(), req.abilityId(), req.abilityName(), req.targetId());
         var session = combatService.getSession(user.getId(), sessionId);
         var participants = combatService.getParticipants(sessionId, user.getId());
         return ResponseEntity.ok(new CombatSessionWithParticipants(
@@ -125,9 +125,11 @@ public class CombatController {
         @NotBlank String maneuver
     ) {}
 
+    /** Entweder {@code abilityId} (DB-Katalog) oder {@code abilityName} (Regel-JSON, ADR-016). */
     public record AbilityRequest(
         @NotNull UUID actorId,
-        @NotNull UUID abilityId,
+        UUID abilityId,
+        String abilityName,
         UUID targetId
     ) {}
 
