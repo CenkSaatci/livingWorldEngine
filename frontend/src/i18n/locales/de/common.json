@@ -94,7 +94,24 @@
     "inviteGenerate": "Einladungslink erzeugen",
     "deleteHint": "Löscht diese Welt und alle Daten dauerhaft. Nicht umkehrbar.",
     "deleteConfirm": "Wirklich löschen?",
-    "deleteConfirmAction": "Löschen bestätigen"
+    "deleteConfirmAction": "Löschen bestätigen",
+    "membersCount": "Mitglieder ({{n}})",
+    "worldLinkLabel": "Welt-Link",
+    "copyLink": "Link kopieren",
+    "memberSearchPlaceholder": "Nach Benutzername oder E-Mail suchen…",
+    "memberSearchLabel": "Nach Benutzername oder E-Mail suchen",
+    "addMemberAction": "Hinzufügen",
+    "noMembers": "Noch keine Mitglieder",
+    "removeMember": "Entfernen",
+    "archiveAfterDays": "Archivieren nach (Tagen)",
+    "eventArchivingHint": "Ereignisse, die älter als diese Anzahl realer Tage sind, werden archiviert (in die Archivtabelle verschoben). Welten mit aktivem KI-Bot möchten ggf. ein kürzeres Intervall.",
+    "mapHint": "Kartenregionen und Orte bearbeiten",
+    "editMapAction": "Karte bearbeiten",
+    "cloneHint": "Erstellt eine Kopie dieser Welt inklusive Regionen, Orten, NPCs und Fraktionen",
+    "cloneAction": "Welt klonen",
+    "roleOwner": "Eigentümer",
+    "roleDm": "Spielleitung",
+    "rolePlayer": "Spieler"
   },
   "combat": {
     "target": "Ziel",
@@ -433,7 +450,8 @@
     "loadFailed": "Karte konnte nicht geladen werden",
     "zoomIn": "Vergrößern",
     "zoomOut": "Verkleinern",
-    "resetView": "Ansicht zurücksetzen"
+    "resetView": "Ansicht zurücksetzen",
+    "regions": "Regionen"
   },
   "trade": {
     "title": "Handel",

@@ -4,6 +4,8 @@ import com.lwe.api.dto.PaginatedWorldResponse;
 import com.lwe.api.dto.WorldInfoResponse;
 import com.lwe.api.dto.WorldMemberResponse;
 import com.lwe.core.domain.User;
+import com.lwe.core.domain.WorldMember;
+import com.lwe.core.repository.UserRepository;
 import com.lwe.core.service.WorldService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -26,9 +28,11 @@ import java.util.UUID;
 public class WorldController {
 
     private final WorldService worldService;
+    private final UserRepository userRepository;
 
-    public WorldController(WorldService worldService) {
+    public WorldController(WorldService worldService, UserRepository userRepository) {
         this.worldService = worldService;
+        this.userRepository = userRepository;
     }
 
     @PostMapping
@@ -85,7 +89,8 @@ public class WorldController {
                                                           @Valid @RequestBody MemberRequest req,
                                                           @AuthenticationPrincipal User user) {
         var member = worldService.addMember(id, user.getId(), req.userId(), req.role());
-        return ResponseEntity.status(HttpStatus.CREATED).body(WorldMemberResponse.from(member));
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(WorldMemberResponse.from(member, userRepository.findById(member.getUserId()).orElse(null)));
     }
 
     @GetMapping("/{id}/membership")
@@ -98,7 +103,11 @@ public class WorldController {
     public ResponseEntity<List<WorldMemberResponse>> listMembers(@PathVariable UUID id,
                                                                   @AuthenticationPrincipal User user) {
         var members = worldService.listMembers(id, user.getId());
-        return ResponseEntity.ok(members.stream().map(WorldMemberResponse::from).toList());
+        // Benutzername/E-Mail anreichern, damit die UI keine rohen UUIDs zeigt.
+        var users = userRepository.findAllById(members.stream().map(WorldMember::getUserId).toList())
+            .stream().collect(java.util.stream.Collectors.toMap(User::getId, u -> u));
+        return ResponseEntity.ok(members.stream()
+            .map(m -> WorldMemberResponse.from(m, users.get(m.getUserId()))).toList());
     }
 
     @DeleteMapping("/{id}/members/{memberId}")

@@ -94,7 +94,24 @@
     "inviteGenerate": "Generate invite link",
     "deleteHint": "Permanently deletes this world and all its data. This cannot be undone.",
     "deleteConfirm": "Delete for good?",
-    "deleteConfirmAction": "Confirm delete"
+    "deleteConfirmAction": "Confirm delete",
+    "membersCount": "Members ({{n}})",
+    "worldLinkLabel": "World link",
+    "copyLink": "Copy link",
+    "memberSearchPlaceholder": "Search by username or email…",
+    "memberSearchLabel": "Search by username or email",
+    "addMemberAction": "Add",
+    "noMembers": "No members yet",
+    "removeMember": "Remove",
+    "archiveAfterDays": "Archive after (days)",
+    "eventArchivingHint": "Events older than this many real-world days are archived (moved to the archive table). Worlds with an AI bot enabled may want a shorter interval.",
+    "mapHint": "Edit map regions and locations",
+    "editMapAction": "Edit map",
+    "cloneHint": "Create a copy of this world including regions, locations, NPCs and factions",
+    "cloneAction": "Clone world",
+    "roleOwner": "Owner",
+    "roleDm": "Dungeon Master",
+    "rolePlayer": "Player"
   },
   "combat": {
     "target": "Target",
@@ -433,7 +450,8 @@
     "loadFailed": "Failed to load map",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
-    "resetView": "Reset view"
+    "resetView": "Reset view",
+    "regions": "Regions"
   },
   "trade": {
     "title": "Trade",

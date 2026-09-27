@@ -93,7 +93,24 @@
     "inviteGenerate": "Générer un lien d’invitation",
     "deleteHint": "Supprime définitivement ce monde et toutes ses données.",
     "deleteConfirm": "Supprimer définitivement ?",
-    "deleteConfirmAction": "Confirmer la suppression"
+    "deleteConfirmAction": "Confirmer la suppression",
+    "membersCount": "Membres ({{n}})",
+    "worldLinkLabel": "Lien du monde",
+    "copyLink": "Copier le lien",
+    "memberSearchPlaceholder": "Rechercher par nom d’utilisateur ou e-mail…",
+    "memberSearchLabel": "Rechercher par nom d’utilisateur ou e-mail",
+    "addMemberAction": "Ajouter",
+    "noMembers": "Aucun membre pour l’instant",
+    "removeMember": "Retirer",
+    "archiveAfterDays": "Archiver après (jours)",
+    "eventArchivingHint": "Les événements plus anciens que ce nombre de jours réels sont archivés (déplacés dans la table d’archive). Les mondes avec bot IA peuvent préférer un intervalle plus court.",
+    "mapHint": "Modifier les régions et lieux de la carte",
+    "editMapAction": "Modifier la carte",
+    "cloneHint": "Crée une copie de ce monde avec régions, lieux, PNJ et factions",
+    "cloneAction": "Cloner le monde",
+    "roleOwner": "Propriétaire",
+    "roleDm": "Meneur de jeu",
+    "rolePlayer": "Joueur"
   },
   "combat": {
     "target": "Cible",
@@ -366,7 +383,8 @@
     "loadFailed": "Impossible de charger la carte",
     "zoomIn": "Zoom avant",
     "zoomOut": "Zoom arrière",
-    "resetView": "Réinitialiser la vue"
+    "resetView": "Réinitialiser la vue",
+    "regions": "Régions"
   },
   "trade": {
     "title": "Échange",

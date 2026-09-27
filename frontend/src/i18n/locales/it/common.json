@@ -93,7 +93,24 @@
     "inviteGenerate": "Genera link d’invito",
     "deleteHint": "Elimina definitivamente questo mondo e tutti i dati.",
     "deleteConfirm": "Eliminare davvero?",
-    "deleteConfirmAction": "Conferma eliminazione"
+    "deleteConfirmAction": "Conferma eliminazione",
+    "membersCount": "Membri ({{n}})",
+    "worldLinkLabel": "Link del mondo",
+    "copyLink": "Copia link",
+    "memberSearchPlaceholder": "Cerca per nome utente o email…",
+    "memberSearchLabel": "Cerca per nome utente o email",
+    "addMemberAction": "Aggiungi",
+    "noMembers": "Ancora nessun membro",
+    "removeMember": "Rimuovi",
+    "archiveAfterDays": "Archivia dopo (giorni)",
+    "eventArchivingHint": "Gli eventi più vecchi di questo numero di giorni reali vengono archiviati (spostati nella tabella archivio). I mondi con bot IA potrebbero preferire un intervallo più breve.",
+    "mapHint": "Modifica regioni e luoghi della mappa",
+    "editMapAction": "Modifica mappa",
+    "cloneHint": "Crea una copia di questo mondo con regioni, luoghi, PNG e fazioni",
+    "cloneAction": "Clona mondo",
+    "roleOwner": "Proprietario",
+    "roleDm": "Game Master",
+    "rolePlayer": "Giocatore"
   },
   "combat": {
     "target": "Target",
@@ -366,7 +383,8 @@
     "loadFailed": "Impossibile caricare la mappa",
     "zoomIn": "Avvicina",
     "zoomOut": "Allontana",
-    "resetView": "Ripristina vista"
+    "resetView": "Ripristina vista",
+    "regions": "Regioni"
   },
   "trade": {
     "title": "Commercio",

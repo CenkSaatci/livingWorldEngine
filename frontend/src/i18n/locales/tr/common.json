@@ -93,7 +93,24 @@
     "inviteGenerate": "Davet bağlantısı oluştur",
     "deleteHint": "Bu dünyayı ve tüm verilerini kalıcı olarak siler.",
     "deleteConfirm": "Kalıcı olarak silinsin mi?",
-    "deleteConfirmAction": "Silmeyi onayla"
+    "deleteConfirmAction": "Silmeyi onayla",
+    "membersCount": "Üyeler ({{n}})",
+    "worldLinkLabel": "Dünya bağlantısı",
+    "copyLink": "Bağlantıyı kopyala",
+    "memberSearchPlaceholder": "Kullanıcı adı veya e-posta ile ara…",
+    "memberSearchLabel": "Kullanıcı adı veya e-posta ile ara",
+    "addMemberAction": "Ekle",
+    "noMembers": "Henüz üye yok",
+    "removeMember": "Kaldır",
+    "archiveAfterDays": "Şu kadar gün sonra arşivle",
+    "eventArchivingHint": "Bu gerçek gün sayısından eski olaylar arşivlenir (arşiv tablosuna taşınır). Yapay zeka botu olan dünyalar daha kısa aralık isteyebilir.",
+    "mapHint": "Harita bölgelerini ve yerleri düzenle",
+    "editMapAction": "Haritayı düzenle",
+    "cloneHint": "Bu dünyanın bölgeler, yerler, NPC’ler ve gruplar dahil bir kopyasını oluşturur",
+    "cloneAction": "Dünyayı klonla",
+    "roleOwner": "Sahip",
+    "roleDm": "Oyun Yöneticisi",
+    "rolePlayer": "Oyuncu"
   },
   "combat": {
     "target": "Target",
@@ -366,7 +383,8 @@
     "loadFailed": "Harita yüklenemedi",
     "zoomIn": "Yakınlaştır",
     "zoomOut": "Uzaklaştır",
-    "resetView": "Görünümü sıfırla"
+    "resetView": "Görünümü sıfırla",
+    "regions": "Bölgeler"
   },
   "trade": {
     "title": "Takas",

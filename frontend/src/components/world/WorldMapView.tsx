@@ -17,12 +17,25 @@ import { apiClient, BACKEND_ORIGIN } from '../../api/client';
 import { useApiGet } from '../../hooks/useApiGet';
 import { useToast } from '../../hooks/useToast';
 import { useTranslation } from 'react-i18next';
+import { regionColorHex } from '../../utils/mapEditor';
 
 interface Region {
   id: string;
   name: string;
   climate: string;
   dangerLevel: number;
+  polygonPoints?: string;
+}
+
+/** Polygon aus dem Region-Polygon (Editor) — nur gültige Dreiecke+ zählen. */
+function parsePolygon(points?: string): { x: number; y: number }[] | null {
+  if (!points) return null;
+  try {
+    const arr = JSON.parse(points) as { x: number; y: number }[];
+    return Array.isArray(arr) && arr.length >= 3 ? arr : null;
+  } catch {
+    return null;
+  }
 }
 
 interface Location {
@@ -248,6 +261,32 @@ export function WorldMapView({
           <div className="w-[960px] h-[720px]" />
         )}
 
+        {/* Region polygons (im Editor gezeichnet) — SVG-Overlay in Bildkoordinaten */}
+        {mapUrl && naturalSize.w > 0 && regions && regions.length > 0 && (
+          <svg
+            className="absolute left-0 top-0 pointer-events-none"
+            width={naturalSize.w}
+            height={naturalSize.h}
+            viewBox={`0 0 ${naturalSize.w} ${naturalSize.h}`}
+            aria-hidden="true"
+          >
+            {regions.map((r) => {
+              const pts = parsePolygon(r.polygonPoints);
+              if (!pts) return null;
+              const color = regionColorHex(r.id);
+              return (
+                <polygon
+                  key={r.id}
+                  points={pts.map((p) => `${p.x},${p.y}`).join(' ')}
+                  fill={`${color}40`}
+                  stroke={color}
+                  strokeWidth={3}
+                />
+              );
+            })}
+          </svg>
+        )}
+
         {/* Grid overlay */}
         <div
           className="absolute inset-0 pointer-events-none"
@@ -286,12 +325,13 @@ export function WorldMapView({
       {/* Region Legend */}
       {regions && regions.length > 0 && (
         <div className="absolute bottom-3 left-3 max-h-60 overflow-y-auto rounded-lg bg-bg-surface/90 p-3 text-xs text-text-secondary shadow-lg z-10">
-          <p className="font-semibold text-text-primary mb-1">Regions ({regions.length})</p>
+          <p className="font-semibold text-text-primary mb-1">{t('map.regions', { count: regions.length })}</p>
           {regions.map((r) => {
             const w = weather[r.id];
             return (
               <div key={r.id} className="flex items-center gap-2 py-0.5">
-                <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${r.dangerLevel > 5 ? 'bg-danger' : 'bg-success'}`} />
+                {/* Farbe wie das Polygon im Kartenbild (regionColorHex) */}
+                <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: regionColorHex(r.id) }} />
                 <span className="truncate">{r.name}</span>
                 {w && (
                   <span className="flex items-center gap-1 shrink-0" title={w.description}>

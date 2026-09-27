@@ -93,7 +93,24 @@
     "inviteGenerate": "Generar enlace de invitación",
     "deleteHint": "Elimina este mundo y todos sus datos de forma permanente.",
     "deleteConfirm": "¿Eliminar definitivamente?",
-    "deleteConfirmAction": "Confirmar eliminación"
+    "deleteConfirmAction": "Confirmar eliminación",
+    "membersCount": "Miembros ({{n}})",
+    "worldLinkLabel": "Enlace del mundo",
+    "copyLink": "Copiar enlace",
+    "memberSearchPlaceholder": "Buscar por nombre de usuario o correo…",
+    "memberSearchLabel": "Buscar por nombre de usuario o correo",
+    "addMemberAction": "Añadir",
+    "noMembers": "Aún no hay miembros",
+    "removeMember": "Quitar",
+    "archiveAfterDays": "Archivar después de (días)",
+    "eventArchivingHint": "Los eventos más antiguos que este número de días reales se archivan (se mueven a la tabla de archivo). Los mundos con bot de IA pueden preferir un intervalo más corto.",
+    "mapHint": "Editar regiones y lugares del mapa",
+    "editMapAction": "Editar mapa",
+    "cloneHint": "Crea una copia de este mundo con regiones, lugares, PNJ y facciones",
+    "cloneAction": "Clonar mundo",
+    "roleOwner": "Propietario",
+    "roleDm": "Director de juego",
+    "rolePlayer": "Jugador"
   },
   "combat": {
     "target": "Target",
@@ -366,7 +383,8 @@
     "loadFailed": "No se pudo cargar el mapa",
     "zoomIn": "Acercar",
     "zoomOut": "Alejar",
-    "resetView": "Restablecer vista"
+    "resetView": "Restablecer vista",
+    "regions": "Regiones"
   },
   "trade": {
     "title": "Comercio",

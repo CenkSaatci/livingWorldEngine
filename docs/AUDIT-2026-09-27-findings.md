@@ -91,6 +91,59 @@ Zwei identische Zeilen `// Best-effort Config-Ladung …` (vorbestehend).
 
 ---
 
+---
+
+# Nachtrag — Welterstellung/-anpassung & Karten-Flow (2026-09-27)
+
+**Verifikation (live, E2E `e2e/map-editor.spec.ts`):**
+- **Bild hochladen:** ✅ `POST /worlds/{id}/map/upload` → 200.
+- **Anzeige:** ✅ anonymes `GET /uploads/{id}/map.png` → 200 `image/png`; `<img alt="Map">`
+  in der Spielansicht lädt (`naturalWidth > 0`), kein 4xx auf `/uploads/`.
+- **Regionen einzeichnen:** ✅ Editor zeichnet + speichert (`PATCH …/regions/{id}`),
+  Polygon persistiert (3 Punkte).
+
+## F-1 — Regionen im Spiel nicht sichtbar — **BEHOBEN**
+
+**Evidenz:** Polygone wurden nur in `MapEditorPage` (PIXI) gerendert; `WorldMapView`
+(Spielansicht) zeigte Bild + Ortsmarker + Legende, aber **keine** Regionen. Wer Regionen
+einzeichnete, sah sie im Spiel nie.
+**Fix:** SVG-Overlay in `WorldMapView` (Bildkoordinaten, `regionColorHex` wie im Editor);
+Legenden-Punkt nutzt jetzt dieselbe Regionfarbe. E2E-Assertion `svg polygon` ergänzt.
+
+## F-2 — Legende hartkodiert englisch — **BEHOBEN**
+
+`Regions ({n})` → `t('map.regions')` (6 Sprachen).
+
+## F-3/F-6 — WorldEditorPage hartkodiert englisch — **BEHOBEN**
+
+Member-Bereich (`Members (n)`, Copy Link, Suche-Platzhalter, Add, No members yet, Remove,
+Rollen), Archivierung (Label + Beschreibung), Karte- und Klon-Bereich → `worldEditor.*`
+(6 Sprachen).
+
+## F-8 — Member-Liste zeigte rohe UUIDs — **BEHOBEN**
+
+`WorldMemberResponse` trägt jetzt `username`/`email`; `WorldController` reichert per
+`UserRepository` an. Frontend zeigt den Namen (Fallback UUID-Kürzel) und übersetzte Rollen.
+Vorher stand dort `a1b2c3d4…`.
+
+## F-7 — Kein Karten-Löschen — **OFFEN (Empfehlung)**
+
+Es gibt nur Upload (ersetzt `map.<ext>`), keinen DELETE-Endpunkt. Ein falsch hochgeladenes
+Bild lässt sich überschreiben, aber nicht entfernen. Empfehlung: `DELETE /worlds/{id}/map`.
+
+## F-9 — Modus „Zeichnen" ohne Region — **OFFEN (UX)**
+
+Der Modus-Umschalter erlaubt Zeichnen ohne ausgewählte Region; Punkte sind möglich, das
+Speichern scheitert mit „Region auswählen". Empfehlung: Modus nur mit Region starten oder
+die Regionsauswahl im Zeichenmodus erzwingen.
+
+## F-5 — Native `window.prompt`/`confirm` im Karten-Editor — **OFFEN (UX)**
+
+Region anlegen/umbenennen/löschen nutzt Browser-Dialoge (unstyled, in manchen Umgebungen
+blockiert). Empfehlung: Modal wie im Rest der App.
+
+---
+
 ## Abdeckung / Grenzen
 
 - **Getestet:** Backend-Unit (Fähigkeit: Schaden/AP, unbekannt, passiv, MP, kaputtes JSON),

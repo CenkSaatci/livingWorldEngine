@@ -18,6 +18,8 @@ interface WorldDetail extends WorldSummary {
 interface Member {
   id: string;
   userId: string;
+  username?: string | null;
+  email?: string | null;
   role: string;
   joinedAt: string;
 }
@@ -403,12 +405,9 @@ export default function WorldEditorPage() {
         {/* Event Archiving */}
         <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
           <h2 className="mb-3 font-heading text-text-primary">{t('worldEditor.eventArchiving')}</h2>
-          <p className="mb-3 text-xs text-text-secondary">
-            Events older than this many real-world days are archived (moved to archive table).
-            Worlds with AI bot enabled may want a shorter interval.
-          </p>
+          <p className="mb-3 text-xs text-text-secondary">{t('worldEditor.eventArchivingHint')}</p>
           <div>
-            <label className="block text-xs text-text-secondary mb-1" htmlFor="worldeditorpage-field-7">Archive after (days)</label>
+            <label className="block text-xs text-text-secondary mb-1" htmlFor="worldeditorpage-field-7">{t('worldEditor.archiveAfterDays')}</label>
             <input
               type="number"
               min={1}
@@ -422,13 +421,13 @@ export default function WorldEditorPage() {
         {/* Invite + Members */}
         <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
           <h2 className="mb-3 flex items-center gap-2 font-heading text-text-primary">
-            <Users size={18} /> Members ({(members ?? []).length})
+            <Users size={18} /> {t('worldEditor.membersCount', { n: (members ?? []).length })}
           </h2>
           <div className="flex gap-2 mb-4">
             <input
               readOnly
               value={`${window.location.origin}/worlds/${id}`}
-              aria-label="World link"
+              aria-label={t('worldEditor.worldLinkLabel')}
               className="flex-1 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-secondary"
             />
             <button
@@ -439,7 +438,7 @@ export default function WorldEditorPage() {
               }}
               className="flex items-center gap-1 rounded bg-accent px-3 py-2 text-sm text-white hover:bg-accent/80"
             >
-              <Copy size={16} /> {copied ? 'Copied!' : 'Copy Link'}
+              <Copy size={16} /> {copied ? t('worldEditor.copied') : t('worldEditor.copyLink')}
             </button>
           </div>
 
@@ -449,8 +448,8 @@ export default function WorldEditorPage() {
               <input
                 value={newMemberId}
                 onChange={(e) => handleSearchInput(e.target.value)}
-                placeholder="Search by username or email…"
-                aria-label="Search by username or email"
+                placeholder={t('worldEditor.memberSearchPlaceholder')}
+                aria-label={t('worldEditor.memberSearchLabel')}
                 className="w-full rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
               />
               {searchResults.length > 0 && (
@@ -472,7 +471,7 @@ export default function WorldEditorPage() {
               onClick={handleAddMember}
               className="rounded bg-accent px-3 py-2 text-sm text-white hover:bg-accent/80"
             >
-              Add
+              {t('worldEditor.addMemberAction')}
             </button>
           </div>
 
@@ -486,17 +485,20 @@ export default function WorldEditorPage() {
                   key={m.id}
                   className="flex items-center justify-between rounded bg-bg-primary/50 px-3 py-2 text-sm"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="text-text-primary">{m.userId.slice(0, 8)}…</span>
-                    <span className="rounded bg-bg-elevated px-2 py-0.5 text-xs text-text-secondary">
-                      {m.role}
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="truncate text-text-primary">
+                      {m.username ?? m.email ?? `${m.userId.slice(0, 8)}…`}
+                    </span>
+                    <span className="shrink-0 rounded bg-bg-elevated px-2 py-0.5 text-xs text-text-secondary">
+                      {m.role === 'OWNER' ? t('worldEditor.roleOwner')
+                        : m.role === 'DM' ? t('worldEditor.roleDm') : t('worldEditor.rolePlayer')}
                     </span>
                   </div>
                   <button
                     onClick={() => handleRemoveMember(m.id)}
-                    className="text-xs text-danger hover:text-danger/80"
+                    className="shrink-0 text-xs text-danger hover:text-danger/80"
                   >
-                    Remove
+                    {t('worldEditor.removeMember')}
                   </button>
                 </li>
               ))}
@@ -509,15 +511,13 @@ export default function WorldEditorPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-heading text-text-primary">{t('worldEditor.map')}</h2>
-              <p className="mt-1 text-xs text-text-secondary">
-                Edit world map regions and locations
-              </p>
+              <p className="mt-1 text-xs text-text-secondary">{t('worldEditor.mapHint')}</p>
             </div>
             <button
               onClick={() => navigate(`/worlds/${id}/map`)}
               className="rounded bg-accent px-4 py-2 text-sm text-white hover:bg-accent/80"
             >
-              Edit Map
+              {t('worldEditor.editMapAction')}
             </button>
           </div>
         </section>
@@ -527,15 +527,13 @@ export default function WorldEditorPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-heading text-text-primary">{t('worldEditor.clone')}</h2>
-              <p className="mt-1 text-xs text-text-secondary">
-                Create a copy of this world including regions, locations, NPCs and factions
-              </p>
+              <p className="mt-1 text-xs text-text-secondary">{t('worldEditor.cloneHint')}</p>
             </div>
             <button
               onClick={handleClone}
               className="rounded bg-accent px-4 py-2 text-sm text-white hover:bg-accent/80"
             >
-              <Copy size={16} className="inline mr-1" /> Clone World
+              <Copy size={16} className="inline mr-1" /> {t('worldEditor.cloneAction')}
             </button>
           </div>
         </section>
