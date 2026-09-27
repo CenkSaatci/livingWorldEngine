@@ -53,8 +53,9 @@ describe('LoginPage (auth smoke)', () => {
     await user.click(screen.getByRole('button', { name: /sign in|anmelden/i }));
 
     await waitFor(() => expect(postMock).toHaveBeenCalledWith('/auth/login', expect.anything()));
+    // #1: Fehlercode wird lokalisiert (errors-Namespace), nicht roh angezeigt.
     await waitFor(() =>
-      expect(screen.getByText('AUTH_INVALID_CREDENTIALS')).toBeInTheDocument(),
+      expect(screen.getByText('E-Mail oder Passwort ist falsch.')).toBeInTheDocument(),
     );
   });
 });

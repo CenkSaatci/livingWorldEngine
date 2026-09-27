@@ -15,6 +15,7 @@ import {
   Upload,
   Copy,
   Share2,
+  Search,
 } from 'lucide-react';
 import { SyntaxHighlightedTextarea } from '../components/ui/SyntaxHighlightedTextarea';
 import { apiClient } from '../api/client';
@@ -152,6 +153,8 @@ export default function GameSystemPage() {
   const [loading, setLoading] = useState(true);
   const [showEditor, setShowEditor] = useState(false);
   const [bumpVersion, setBumpVersion] = useState(true);
+  const [search, setSearch] = useState('');
+  const [visFilter, setVisFilter] = useState<'ALL' | 'OWNED' | 'PUBLIC' | 'SHARED'>('ALL');
   const [renameConfirm, setRenameConfirm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -407,6 +410,15 @@ export default function GameSystemPage() {
     setValidation(null);
   };
 
+  // #2: Suche + Sichtbarkeitsfilter über die geladene Systemliste.
+  const filteredSystems = systems.filter((sys) => {
+    if (search.trim() && !sys.name.toLowerCase().includes(search.trim().toLowerCase())) return false;
+    if (visFilter === 'OWNED') return !!sys.ownerId && sys.ownerId === currentUser?.id;
+    if (visFilter === 'PUBLIC') return sys.visibility === 'PUBLIC';
+    if (visFilter === 'SHARED') return sys.visibility === 'INVITE_ONLY';
+    return true;
+  });
+
   return (
     <div className="min-h-screen bg-bg-primary">
       <header className="flex items-center justify-between border-b border-bg-elevated bg-bg-surface px-6 py-3">
@@ -455,8 +467,36 @@ export default function GameSystemPage() {
         {loading ? (
           <LoadingSpinner />
         ) : (
+          <>
+            {/* #2: Filter/Suche — bei vielen Systemen unverzichtbar. */}
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <div className="relative flex-1 max-w-xs">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t('systems.search')}
+                  aria-label={t('systems.search')}
+                  className="w-full rounded border border-bg-elevated bg-bg-primary pl-8 pr-3 py-1.5 text-sm text-text-primary outline-none focus:border-accent"
+                />
+              </div>
+              <select
+                value={visFilter}
+                onChange={(e) => setVisFilter(e.target.value as 'ALL' | 'OWNED' | 'PUBLIC' | 'SHARED')}
+                aria-label={t('systems.filter')}
+                className="rounded border border-bg-elevated bg-bg-primary px-3 py-1.5 text-sm text-text-primary outline-none focus:border-accent"
+              >
+                <option value="ALL">{t('systems.filterAll')}</option>
+                <option value="OWNED">{t('systems.filterOwned')}</option>
+                <option value="PUBLIC">{t('systems.filterPublic')}</option>
+                <option value="SHARED">{t('systems.filterShared')}</option>
+              </select>
+              <span className="text-xs text-text-secondary">
+                {t('systems.count', { count: filteredSystems.length, total: systems.length })}
+              </span>
+            </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            {systems.map((sys) => {
+            {filteredSystems.map((sys) => {
               // Legacy ohne Owner ist admin-only (Backend-Regel, Audit P27).
               const canEdit = currentUser?.role === 'ADMIN'
                 || (!!sys.ownerId && sys.ownerId === currentUser?.id);
@@ -546,12 +586,13 @@ export default function GameSystemPage() {
               </div>
               );
             })}
-            {systems.length === 0 && (
+            {filteredSystems.length === 0 && (
               <p className="col-span-2 text-center text-sm text-text-secondary py-8">
-                No game systems yet
+                {t('systems.noSystems')}
               </p>
             )}
           </div>
+          </>
         )}
 
         {/* Editor als eigene Ansicht (QA-Fund: Inline-Editor ging unten unter — kein Scrollen mehr nötig) */}

@@ -500,7 +500,15 @@
     "shareTitle": "System teilen: {{name}}",
     "shareAdd": "Hinzufügen",
     "noShares": "Noch keine Freigaben",
-    "close": "Schließen"
+    "close": "Schließen",
+    "search": "Systeme suchen…",
+    "filter": "Filter",
+    "filterAll": "Alle",
+    "filterOwned": "Meine",
+    "filterPublic": "Öffentlich",
+    "filterShared": "Geteilt",
+    "count": "{{count}} / {{total}}",
+    "noSystems": "Keine Systeme gefunden"
   },
   "rollResult": "Wurfergebnis: {{total}}",
   "poi": {

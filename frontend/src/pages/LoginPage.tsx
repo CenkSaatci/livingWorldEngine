@@ -35,7 +35,10 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const axiosErr = err as AxiosError<{ error?: { code?: string } }>;
       const code = axiosErr.response?.data?.error?.code;
-      setError(t(code ?? 'login.error_generic'));
+      // Fehlercodes leben im `errors`-Namespace; ohne Treffer bleibt die generische Meldung.
+      setError(code
+        ? t(`errors:${code}`, { defaultValue: t('login.error_generic') })
+        : t('login.error_generic'));
     }
   };
 

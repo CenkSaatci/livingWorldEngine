@@ -6,17 +6,18 @@ import deCommon from '../i18n/locales/de/common.json';
 import deAuth from '../i18n/locales/de/auth.json';
 import deCharacter from '../i18n/locales/de/character.json';
 import deChat from '../i18n/locales/de/chat.json';
+import deErrors from '../i18n/locales/de/errors.json';
 import deSystemWizard from '../i18n/locales/de/systemWizard.json';
 
 void i18n.use(initReactI18next).init({
   lng: 'de',
   fallbackLng: 'de',
-  ns: ['common', 'auth', 'character', 'chat', 'systemWizard'],
+  ns: ['common', 'auth', 'character', 'chat', 'errors', 'systemWizard'],
   defaultNS: 'common',
   resources: {
     de: {
       common: deCommon, auth: deAuth, character: deCharacter,
-      chat: deChat, systemWizard: deSystemWizard,
+      chat: deChat, errors: deErrors, systemWizard: deSystemWizard,
     },
   },
   interpolation: { escapeValue: false },

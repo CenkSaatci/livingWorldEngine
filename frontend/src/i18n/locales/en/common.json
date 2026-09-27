@@ -500,7 +500,15 @@
     "shareTitle": "Share system: {{name}}",
     "shareAdd": "Add",
     "noShares": "No shares yet",
-    "close": "Close"
+    "close": "Close",
+    "search": "Search systems…",
+    "filter": "Filter",
+    "filterAll": "All",
+    "filterOwned": "Mine",
+    "filterPublic": "Public",
+    "filterShared": "Shared",
+    "count": "{{count}} / {{total}}",
+    "noSystems": "No systems found"
   },
   "rollResult": "Roll result: {{total}}",
   "poi": {
