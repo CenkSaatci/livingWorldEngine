@@ -224,6 +224,7 @@ export default function DashboardPage() {
         ) : worlds.length === 0 ? (
           <div className="rounded-lg border border-dashed border-bg-elevated p-12 text-center">
             <p className="text-text-secondary">{t('app.no_worlds')}</p>
+            <p className="mt-2 text-xs text-text-secondary">{t('dashboard.noWorldsHint')}</p>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">

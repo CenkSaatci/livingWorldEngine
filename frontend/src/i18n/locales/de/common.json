@@ -47,7 +47,8 @@
     "createLocation": "Ort erstellen",
     "closeSidebar": "Seitenleiste schließen",
     "openSidebar": "Seitenleiste öffnen",
-    "closeLocation": "Ort schließen"
+    "closeLocation": "Ort schließen",
+    "editMap": "Karte bearbeiten"
   },
   "admin": {
     "accessDenied": "Zugriff verweigert",
@@ -85,7 +86,15 @@
     "visibility": "Sichtbarkeit",
     "visibilityPrivate": "Privat (nur ich)",
     "visibilityInvite": "Nur Eingeladene",
-    "visibilityPublic": "Öffentlich (alle lesend)"
+    "visibilityPublic": "Öffentlich (alle lesend)",
+    "invitesHint": "Einladungslinks geben Zugriff auf dieses Welt-Template (einmalig verwendbar). Spieler treten normalerweise über eine Kampagne bei — die Kampagne forkt die Welt und ist der Ort zum Spielen.",
+    "invitePlaceholder": "„Einladung erzeugen\" klicken, um einen Link zu erstellen",
+    "copied": "Kopiert!",
+    "copy": "Kopieren",
+    "inviteGenerate": "Einladungslink erzeugen",
+    "deleteHint": "Löscht diese Welt und alle Daten dauerhaft. Nicht umkehrbar.",
+    "deleteConfirm": "Wirklich löschen?",
+    "deleteConfirmAction": "Löschen bestätigen"
   },
   "combat": {
     "target": "Ziel",
@@ -274,7 +283,8 @@
     "createWorld": "Welt erstellen",
     "worldName": "Weltname",
     "editWorldSettings": "Welteinstellungen bearbeiten",
-    "public": "Öffentlich"
+    "public": "Öffentlich",
+    "noWorldsHint": "Öffentliche Welten erscheinen hier automatisch. Spieler treten sonst über eine Kampagneneinladung bei."
   },
   "campaign": {
     "title": "Kampagnen",
@@ -508,7 +518,10 @@
     "filterPublic": "Öffentlich",
     "filterShared": "Geteilt",
     "count": "{{count}} / {{total}}",
-    "noSystems": "Keine Systeme gefunden"
+    "noSystems": "Keine Systeme gefunden",
+    "templateLabel": "Vorlage (optional)",
+    "templateHint": "Lädt ein vollständiges Beispiel-Regelwerk in den Wizard (D20Lite, TwoDicePool, Fudge). „Zurücksetzen\" leert den Wizard wieder.",
+    "templateClear": "Zurücksetzen"
   },
   "rollResult": "Wurfergebnis: {{total}}",
   "poi": {

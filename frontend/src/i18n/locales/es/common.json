@@ -46,7 +46,8 @@
     "createLocation": "Crear lugar",
     "closeSidebar": "Cerrar barra lateral",
     "openSidebar": "Abrir barra lateral",
-    "closeLocation": "Cerrar lugar"
+    "closeLocation": "Cerrar lugar",
+    "editMap": "Editar mapa"
   },
   "admin": {
     "accessDenied": "Access denied",
@@ -84,7 +85,15 @@
     "visibility": "Visibilidad",
     "visibilityPrivate": "Privado (solo yo)",
     "visibilityInvite": "Solo invitados",
-    "visibilityPublic": "Público (lectura para todos)"
+    "visibilityPublic": "Público (lectura para todos)",
+    "invitesHint": "Los enlaces de invitación dan acceso a esta plantilla de mundo (un solo uso). Los jugadores suelen unirse mediante una campaña — la campaña forka el mundo y es donde se juega.",
+    "invitePlaceholder": "Pulsa «Generar invitación» para crear un enlace",
+    "copied": "¡Copiado!",
+    "copy": "Copiar",
+    "inviteGenerate": "Generar enlace de invitación",
+    "deleteHint": "Elimina este mundo y todos sus datos de forma permanente.",
+    "deleteConfirm": "¿Eliminar definitivamente?",
+    "deleteConfirmAction": "Confirmar eliminación"
   },
   "combat": {
     "target": "Target",
@@ -385,7 +394,8 @@
     "createWorld": "Crear mundo",
     "worldName": "Nombre del mundo",
     "editWorldSettings": "Editar ajustes del mundo",
-    "public": "Público"
+    "public": "Público",
+    "noWorldsHint": "Los mundos públicos aparecen aquí automáticamente. Si no, los jugadores se unen mediante una invitación de campaña."
   },
   "campaign": {
     "title": "Campañas",
@@ -451,7 +461,10 @@
     "renameTitle": "Nombre en uso",
     "renameHint": "Otro sistema ya tiene este nombre. ¿Renombrar igualmente?",
     "cancel": "Cancelar",
-    "renameConfirm": "Renombrar igualmente"
+    "renameConfirm": "Renombrar igualmente",
+    "templateLabel": "Plantilla (opcional)",
+    "templateHint": "Carga un conjunto de reglas de ejemplo completo en el asistente (D20Lite, TwoDicePool, Fudge). «Restablecer» vacía el asistente.",
+    "templateClear": "Restablecer"
   },
   "rollResult": "Resultado: {{total}}"
 }

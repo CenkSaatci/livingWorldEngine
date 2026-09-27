@@ -46,7 +46,8 @@
     "createLocation": "Créer un lieu",
     "closeSidebar": "Fermer le panneau",
     "openSidebar": "Ouvrir le panneau",
-    "closeLocation": "Fermer le lieu"
+    "closeLocation": "Fermer le lieu",
+    "editMap": "Modifier la carte"
   },
   "admin": {
     "accessDenied": "Access denied",
@@ -84,7 +85,15 @@
     "visibility": "Visibilité",
     "visibilityPrivate": "Privé (moi uniquement)",
     "visibilityInvite": "Sur invitation uniquement",
-    "visibilityPublic": "Public (lecture pour tous)"
+    "visibilityPublic": "Public (lecture pour tous)",
+    "invitesHint": "Les liens d’invitation donnent accès à ce modèle de monde (usage unique). Les joueurs rejoignent normalement via une campagne — la campagne forke le monde et sert à jouer.",
+    "invitePlaceholder": "Cliquez sur « Générer une invitation »",
+    "copied": "Copié !",
+    "copy": "Copier",
+    "inviteGenerate": "Générer un lien d’invitation",
+    "deleteHint": "Supprime définitivement ce monde et toutes ses données.",
+    "deleteConfirm": "Supprimer définitivement ?",
+    "deleteConfirmAction": "Confirmer la suppression"
   },
   "combat": {
     "target": "Cible",
@@ -385,7 +394,8 @@
     "createWorld": "Créer un monde",
     "worldName": "Nom du monde",
     "editWorldSettings": "Modifier les paramètres du monde",
-    "public": "Public"
+    "public": "Public",
+    "noWorldsHint": "Les mondes publics apparaissent ici automatiquement. Sinon, les joueurs rejoignent via une invitation de campagne."
   },
   "campaign": {
     "title": "Campagnes",
@@ -451,7 +461,10 @@
     "renameTitle": "Nom déjà pris",
     "renameHint": "Un autre système porte déjà ce nom. Renommer quand même ?",
     "cancel": "Annuler",
-    "renameConfirm": "Renommer quand même"
+    "renameConfirm": "Renommer quand même",
+    "templateLabel": "Modèle (optionnel)",
+    "templateHint": "Charge un jeu de règles d’exemple complet dans l’assistant (D20Lite, TwoDicePool, Fudge). « Réinitialiser » vide l’assistant.",
+    "templateClear": "Réinitialiser"
   },
   "rollResult": "Résultat : {{total}}"
 }

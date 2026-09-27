@@ -634,34 +634,51 @@ export default function GameSystemPage() {
             {editorMode === 'wizard' ? (
               <>
                 {!editingId && (
-                  <div className="flex items-center gap-2 mb-4">
-                    <select
-                      value={template}
-                      onChange={(e) => setTemplate(e.target.value)}
-                      className="rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
-                    >
-                      {Object.keys(TEMPLATES).map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => {
-                        const parsed = parseRulesToWizard(TEMPLATES[template] ?? '');
-                        if (parsed) {
-                          parsed.name = name;
-                          setWizardData({ ...parsed, name });
+                  <div className="mb-4 rounded border border-bg-elevated bg-bg-primary/50 p-3">
+                    <label className="mb-1 block text-xs text-text-secondary" htmlFor="system-template">
+                      {t('systems.templateLabel')}
+                    </label>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        id="system-template"
+                        value={template}
+                        onChange={(e) => setTemplate(e.target.value)}
+                        className="rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                      >
+                        {Object.keys(TEMPLATES).map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => {
+                          const parsed = parseRulesToWizard(TEMPLATES[template] ?? '');
+                          if (parsed) {
+                            parsed.name = name;
+                            setWizardData({ ...parsed, name });
+                            setWizardKey((k) => k + 1);
+                            toast.success(t('systems.templateLoaded'));
+                          } else {
+                            toast.error(t('systems.templateFailed'));
+                          }
+                        }}
+                        className="rounded bg-bg-elevated px-3 py-2 text-xs text-text-secondary hover:text-text-primary"
+                      >
+                        {t('systems.loadTemplate')}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setWizardData(null);
                           setWizardKey((k) => k + 1);
-                          toast.success(t('systems.templateLoaded'));
-                        } else {
-                          toast.error(t('systems.templateFailed'));
-                        }
-                      }}
-                      className="rounded bg-bg-elevated px-3 py-2 text-xs text-text-secondary hover:text-text-primary"
-                    >
-                      {t('systems.loadTemplate')}
-                    </button>
+                          toast.success(t('systems.templateCleared'));
+                        }}
+                        className="rounded border border-bg-elevated px-3 py-2 text-xs text-text-secondary hover:text-text-primary"
+                      >
+                        {t('systems.templateClear')}
+                      </button>
+                    </div>
+                    <p className="mt-1 text-[10px] text-text-secondary">{t('systems.templateHint')}</p>
                   </div>
                 )}
                 <SystemWizard

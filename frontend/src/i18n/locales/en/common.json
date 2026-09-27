@@ -47,7 +47,8 @@
     "createLocation": "Create location",
     "closeSidebar": "Close sidebar",
     "openSidebar": "Open sidebar",
-    "closeLocation": "Close location"
+    "closeLocation": "Close location",
+    "editMap": "Edit map"
   },
   "admin": {
     "accessDenied": "Access denied",
@@ -85,7 +86,15 @@
     "visibility": "Visibility",
     "visibilityPrivate": "Private (only me)",
     "visibilityInvite": "Invite only",
-    "visibilityPublic": "Public (readable by all)"
+    "visibilityPublic": "Public (readable by all)",
+    "invitesHint": "Invite links grant access to this world template (single use). Players normally join via a campaign — the campaign forks the world and is where you play.",
+    "invitePlaceholder": "Click “Generate invite” to create a link",
+    "copied": "Copied!",
+    "copy": "Copy",
+    "inviteGenerate": "Generate invite link",
+    "deleteHint": "Permanently deletes this world and all its data. This cannot be undone.",
+    "deleteConfirm": "Delete for good?",
+    "deleteConfirmAction": "Confirm delete"
   },
   "combat": {
     "target": "Target",
@@ -274,7 +283,8 @@
     "createWorld": "Create World",
     "worldName": "World name",
     "editWorldSettings": "Edit world settings",
-    "public": "Public"
+    "public": "Public",
+    "noWorldsHint": "Public worlds appear here automatically. Otherwise players join via a campaign invite."
   },
   "campaign": {
     "title": "Campaigns",
@@ -508,7 +518,10 @@
     "filterPublic": "Public",
     "filterShared": "Shared",
     "count": "{{count}} / {{total}}",
-    "noSystems": "No systems found"
+    "noSystems": "No systems found",
+    "templateLabel": "Template (optional)",
+    "templateHint": "Loads a complete example ruleset into the wizard (D20Lite, TwoDicePool, Fudge). “Reset” clears the wizard again.",
+    "templateClear": "Reset"
   },
   "rollResult": "Roll result: {{total}}",
   "poi": {

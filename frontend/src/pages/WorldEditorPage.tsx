@@ -544,14 +544,14 @@ export default function WorldEditorPage() {
         <section className="rounded-lg border border-bg-elevated bg-bg-surface p-5">
           <h2 className="mb-3 font-heading text-text-primary">{t('worldEditor.invites')}</h2>
           <p className="text-xs text-text-secondary mb-3">
-            Generate single-use invite links for your players. Each link works once.
+            {t('worldEditor.invitesHint')}
           </p>
           <div className="flex gap-2 mb-3">
             <input
               readOnly
               value={inviteLink}
-              placeholder="Click 'Generate' to create an invite link"
-              aria-label="Invite link"
+              placeholder={t('worldEditor.invitePlaceholder')}
+              aria-label={t('worldEditor.invites')}
               className="flex-1 rounded border border-bg-elevated bg-bg-primary px-3 py-2 text-xs text-text-secondary"
             />
             {inviteLink && (
@@ -563,7 +563,7 @@ export default function WorldEditorPage() {
                 }}
                 className="rounded bg-accent px-3 py-2 text-xs text-white hover:bg-accent/80"
               >
-                {copied ? 'Copied!' : 'Copy'}
+                {copied ? t('worldEditor.copied') : t('worldEditor.copy')}
               </button>
             )}
           </div>
@@ -572,7 +572,7 @@ export default function WorldEditorPage() {
             disabled={generating}
             className="rounded bg-accent px-4 py-2 text-sm text-white hover:bg-accent/80 disabled:opacity-40"
           >
-            {generating ? '…' : 'Generate Invite Link'}
+            {generating ? '…' : t('worldEditor.inviteGenerate')}
           </button>
         </section>
 
@@ -580,22 +580,22 @@ export default function WorldEditorPage() {
         <section className="rounded-lg border border-danger/20 bg-danger/5 p-5">
           <h2 className="mb-2 font-heading text-danger">{t('worldEditor.dangerZone')}</h2>
           <p className="text-xs text-text-secondary mb-3">
-            Permanently deletes this world and all its data. This cannot be undone.
+            {t('worldEditor.deleteHint')}
           </p>
           {showDeleteConfirm ? (
             <div className="flex items-center gap-3">
-              <p className="text-sm text-danger">Are you sure?</p>
+              <p className="text-sm text-danger">{t('worldEditor.deleteConfirm')}</p>
               <button
                 onClick={handleDelete}
                 className="rounded bg-danger px-4 py-2 text-sm text-white hover:bg-danger/80"
               >
-                Confirm Delete
+                {t('worldEditor.deleteConfirmAction')}
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 className="text-sm text-text-secondary hover:text-text-primary"
               >
-                Cancel
+                {t('actions.cancel')}
               </button>
             </div>
           ) : (

@@ -46,7 +46,8 @@
     "createLocation": "Konum oluştur",
     "closeSidebar": "Kenar çubuğunu kapat",
     "openSidebar": "Kenar çubuğunu aç",
-    "closeLocation": "Konumu kapat"
+    "closeLocation": "Konumu kapat",
+    "editMap": "Haritayı düzenle"
   },
   "admin": {
     "accessDenied": "Access denied",
@@ -84,7 +85,15 @@
     "visibility": "Görünürlük",
     "visibilityPrivate": "Özel (yalnızca ben)",
     "visibilityInvite": "Yalnızca davetli",
-    "visibilityPublic": "Herkese açık (herkes okur)"
+    "visibilityPublic": "Herkese açık (herkes okur)",
+    "invitesHint": "Davet bağlantıları bu dünya şablonuna erişim verir (tek kullanımlık). Oyuncular genelde bir kampanya üzerinden katılır — kampanya dünyayı çatallar ve oynanan yerdir.",
+    "invitePlaceholder": "Bağlantı oluşturmak için «Davet oluştur»a tıkla",
+    "copied": "Kopyalandı!",
+    "copy": "Kopyala",
+    "inviteGenerate": "Davet bağlantısı oluştur",
+    "deleteHint": "Bu dünyayı ve tüm verilerini kalıcı olarak siler.",
+    "deleteConfirm": "Kalıcı olarak silinsin mi?",
+    "deleteConfirmAction": "Silmeyi onayla"
   },
   "combat": {
     "target": "Target",
@@ -385,7 +394,8 @@
     "createWorld": "Dünya oluştur",
     "worldName": "Dünya adı",
     "editWorldSettings": "Dünya ayarlarını düzenle",
-    "public": "Herkese açık"
+    "public": "Herkese açık",
+    "noWorldsHint": "Herkese açık dünyalar burada otomatik görünür. Aksi halde oyuncular bir kampanya davetiyle katılır."
   },
   "campaign": {
     "title": "Kampanyalar",
@@ -451,7 +461,10 @@
     "renameTitle": "Ad kullanımda",
     "renameHint": "Başka bir sistem bu adı taşıyor. Yine de yeniden adlandır?",
     "cancel": "İptal",
-    "renameConfirm": "Yine de adlandır"
+    "renameConfirm": "Yine de adlandır",
+    "templateLabel": "Şablon (isteğe bağlı)",
+    "templateHint": "Sihirbaza eksiksiz bir örnek kural seti yükler (D20Lite, TwoDicePool, Fudge). «Sıfırla» sihirbazı boşaltır.",
+    "templateClear": "Sıfırla"
   },
   "rollResult": "Sonuç: {{total}}"
 }

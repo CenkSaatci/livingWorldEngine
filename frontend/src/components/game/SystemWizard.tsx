@@ -254,6 +254,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
           {/* Header */}
           <div className="flex items-center gap-2 px-2 text-[10px] text-text-secondary uppercase tracking-wider">
             <span className="w-24">{t('s2_header_name')}</span>
+            <span className="w-40">{t('s2_header_description')}</span>
             <span className="w-[88px]">{t('s2_header_type')}</span>
             <span className="w-14 text-center">{t('s2_header_min')}</span>
             <span className="w-14 text-center">{t('s2_header_max')}</span>
@@ -338,6 +339,8 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                   )
                 }
                 className="text-danger hover:text-danger/80"
+                aria-label={t('st_delete')}
+                title={t('st_delete')}
               >
                 <X size={14} />
               </button>
@@ -845,6 +848,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
             <span className="w-14">{t('s5a_header_type')}</span>
             <span className="w-20">{t('s5a_header_cost')}</span>
             {data.combat.actionTypes.length > 0 && <span className="w-16">{t('s5a_header_action')}</span>}
+            <span className="w-24">{t('s5a_header_damage')}</span>
             <span className="w-28">{t('s5a_header_dice')}</span>
             <span className="flex-1">{t('s5a_header_effect')}</span>
             <span className="w-4" />
@@ -888,6 +892,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                         update('abilities', a);
                       }}
                       className="w-10 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                      title={t('s5a_cost_hint')}
                     />
                     <select
                       value={ability.costType}
@@ -896,6 +901,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                         a[i] = { ...a[i], costType: e.target.value as 'AP' | 'MP' | '' };
                         update('abilities', a);
                       }}
+                      title={t('s5a_costtype_hint')}
                       className="w-10 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
                     >
                       <option value="">-</option>
@@ -911,6 +917,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                         a[i] = { ...a[i], actionCost: { ...(a[i].actionCost ?? { type: '', amount: 0 }), type: e.target.value } };
                         update('abilities', a);
                       }}
+                      title={t('s5a_action_hint')}
                       className="w-16 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
                     >
                       <option value="">-</option>
@@ -943,6 +950,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                     }}
                     className="w-28 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs font-mono text-text-primary outline-none focus:border-accent"
                     placeholder={t('s5a_dice_placeholder')}
+                    title={t('s5a_dice_hint')}
                   />
                   <input
                     value={ability.effect}
@@ -953,11 +961,14 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                     }}
                     className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
                     placeholder={t('s5a_effect_placeholder')}
+                    title={t('s5a_effect_hint')}
                   />
                 </>
               ) : (
                 <>
-                  <div className="w-20" />
+                  <div className="w-20" title={t('s5a_cost_hint')} />
+                  {data.combat.actionTypes.length > 0 && <div className="w-16" />}
+                  <div className="w-24" />
                   <div className="w-28" />
                   <input
                     value={ability.bonus}
@@ -968,6 +979,7 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
                     }}
                     className="flex-1 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
                     placeholder={t('s5a_bonus_placeholder')}
+                    title={t('s5a_bonus_hint')}
                   />
                 </>
               )}
@@ -2029,6 +2041,89 @@ export const SystemWizard = forwardRef<SystemWizardHandle, Props>(function Syste
               </details>
             </div>
           )}
+          {/* Kampfmanöver (ADR-014): z. B. Wuchtschlag = Schaden +x bei Angriffsmalus */}
+          <div className="rounded border border-bg-elevated bg-bg-primary/50 p-3">
+            <h4 className="mb-1 text-xs font-semibold text-text-primary">{t('s4_maneuvers')}</h4>
+            <p className="mb-2 text-[10px] text-text-secondary" dangerouslySetInnerHTML={{ __html: t('s4_maneuvers_hint') }} />
+            {(data.combat.maneuvers ?? []).map((m, i) => (
+              <div key={i} className="mb-1 flex flex-wrap items-center gap-2">
+                <input
+                  value={m.name}
+                  placeholder={t('s4_man_name')}
+                  aria-label={t('s4_man_name')}
+                  onChange={(e) => {
+                    const a = [...(data.combat.maneuvers ?? [])];
+                    a[i] = { ...a[i], name: e.target.value };
+                    update('combat', { ...data.combat, maneuvers: a });
+                  }}
+                  className="w-32 rounded border border-bg-elevated bg-bg-primary px-2 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                />
+                <label className="flex items-center gap-1 text-[10px] text-text-secondary">
+                  {t('s4_man_damage')}
+                  <input
+                    type="number"
+                    value={m.damageBonus ?? 0}
+                    aria-label={t('s4_man_damage')}
+                    onChange={(e) => {
+                      const a = [...(data.combat.maneuvers ?? [])];
+                      a[i] = { ...a[i], damageBonus: Number(e.target.value) };
+                      update('combat', { ...data.combat, maneuvers: a });
+                    }}
+                    className="w-14 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                </label>
+                <label className="flex items-center gap-1 text-[10px] text-text-secondary">
+                  {t('s4_man_malus')}
+                  <input
+                    type="number"
+                    value={m.attackMalus ?? 0}
+                    aria-label={t('s4_man_malus')}
+                    onChange={(e) => {
+                      const a = [...(data.combat.maneuvers ?? [])];
+                      a[i] = { ...a[i], attackMalus: Number(e.target.value) };
+                      update('combat', { ...data.combat, maneuvers: a });
+                    }}
+                    className="w-14 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                </label>
+                <label className="flex items-center gap-1 text-[10px] text-text-secondary">
+                  {t('s4_man_ap')}
+                  <input
+                    type="number"
+                    min={1}
+                    value={m.apCost ?? 1}
+                    aria-label={t('s4_man_ap')}
+                    onChange={(e) => {
+                      const a = [...(data.combat.maneuvers ?? [])];
+                      a[i] = { ...a[i], apCost: Number(e.target.value) };
+                      update('combat', { ...data.combat, maneuvers: a });
+                    }}
+                    className="w-12 rounded border border-bg-elevated bg-bg-primary px-1 py-1 text-xs text-text-primary outline-none focus:border-accent"
+                  />
+                </label>
+                <button
+                  onClick={() => update('combat', {
+                    ...data.combat,
+                    maneuvers: (data.combat.maneuvers ?? []).filter((_, j) => j !== i),
+                  })}
+                  className="text-danger hover:text-danger/80"
+                  aria-label={t('st_delete')}
+                  title={t('st_delete')}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+            <button
+              onClick={() => update('combat', {
+                ...data.combat,
+                maneuvers: [...(data.combat.maneuvers ?? []), { name: '', damageBonus: 2, attackMalus: 2 }],
+              })}
+              className="flex items-center gap-1 rounded bg-bg-elevated px-2 py-1 text-xs text-text-secondary hover:text-text-primary"
+            >
+              <Plus size={12} /> {t('s4_man_add')}
+            </button>
+          </div>
         </div>
       )}
 

@@ -80,6 +80,23 @@ export interface DiceCombat {
   resting?: { shortRest: { healPercent: number; recoverResources: boolean }; longRest: { fullHeal: boolean; recoverAll: boolean } };
   /** P1: optionales Angriffswurf-Modell (generisch, default aus). */
   attack?: CombatAttackConfig;
+  /** Kampfmanöver (Backend `dice_mechanics.combat.maneuvers`), z. B. Wuchtschlag. */
+  maneuvers?: ManeuverDef[];
+}
+
+/**
+ * Kampfmanöver: Zusatzschaden bei Angriffsmalus und/oder AP-Kosten.
+ * Der Zusatzschaden wird als Backend-Effekt `{target:"damage",op:"add",value}` gespeichert.
+ */
+export interface ManeuverDef {
+  name: string;
+  /** Erschwernis auf den Angriff (positiv = schwerer). */
+  attackMalus?: number;
+  damageType?: string;
+  /** AP-Kosten (Backend verlangt ≥1, wenn gesetzt). */
+  apCost?: number;
+  /** Zusatzschaden (kann negativ sein). */
+  damageBonus?: number;
 }
 
 export interface SystemFeatures {
@@ -922,6 +939,17 @@ export function toRulesJson(data: WizardData): string {
         },
       };
     }
+    // Kampfmanöver (Wuchtschlag etc.): Zusatzschaden als `damage`-Effekt.
+    const maneuvers = (data.combat.maneuvers ?? []).filter((m) => m.name.trim() !== '');
+    if (maneuvers.length > 0) {
+      combat.maneuvers = maneuvers.map((m) => ({
+        name: m.name,
+        ...(m.attackMalus != null ? { attackMalus: m.attackMalus } : {}),
+        ...(m.damageType ? { damageType: m.damageType } : {}),
+        ...(m.apCost != null && m.apCost >= 1 ? { apCost: m.apCost } : {}),
+        effects: m.damageBonus != null ? [{ target: 'damage', op: 'add', value: m.damageBonus }] : [],
+      }));
+    }
     (rules.dice_mechanics as Record<string, unknown>).combat = combat;
   }
   return JSON.stringify(rules, null, 2);
@@ -1058,6 +1086,20 @@ export function fromRulesJson(json: string): WizardData | null {
             recoverAll: combat.resting?.long_rest?.recover_all ?? true,
           },
         },
+        ...(Array.isArray(combat.maneuvers)
+          ? { maneuvers: (combat.maneuvers as Record<string, unknown>[]).map((m) => {
+              const dmg = Array.isArray(m.effects)
+                ? (m.effects as Record<string, unknown>[]).find((e) => e.target === 'damage')
+                : undefined;
+              return {
+                name: (m.name as string) ?? '',
+                ...(m.attackMalus != null ? { attackMalus: m.attackMalus as number } : {}),
+                ...(m.damageType != null ? { damageType: m.damageType as string } : {}),
+                ...(m.apCost != null ? { apCost: m.apCost as number } : {}),
+                ...(dmg?.value != null ? { damageBonus: dmg.value as number } : {}),
+              };
+            }) }
+          : {}),
       },
       difficulties: Array.isArray(dice.difficulties)
         ? (dice.difficulties as Record<string, unknown>[]).map((l) => ({

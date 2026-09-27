@@ -9,6 +9,7 @@ import {
   LogOut,
   Swords,
   Plus,
+  Map,
 } from 'lucide-react';
 import { RegionTree } from '../components/world/RegionTree';
 import { LocationDetail } from '../components/world/LocationDetail';
@@ -127,6 +128,15 @@ export default function GameView() {
           >
             <Globe size={16} /> {currentLocale.toUpperCase()}
           </button>
+          {isPrivileged && (
+            <button
+              onClick={() => navigate(`/worlds/${worldId}/map`)}
+              className="flex items-center gap-1 text-sm text-text-secondary hover:text-accent"
+              aria-label={tc('gameView.editMap')}
+            >
+              <Map size={16} /> <span className="hidden sm:inline">{tc('gameView.editMap')}</span>
+            </button>
+          )}
           <button
             onClick={() => setShowStartCombat(true)}
             className="flex items-center gap-1 text-sm text-danger hover:text-danger/60"

@@ -372,6 +372,23 @@ describe('packages (P29-T05)', () => {
     expect(restored!.packages).toEqual(data.packages);
   });
 
+  it('roundtrips combat maneuvers (Wuchtschlag)', () => {
+    const data = defaultWizardData();
+    data.attributes = [{ name: 'staerke', type: 'INT', min: 1, max: 20, default: 10 }];
+    data.enableCombat = true;
+    data.combat.maneuvers = [{ name: 'Wuchtschlag', damageBonus: 2, attackMalus: 2 }];
+
+    const json = toRulesJson(data);
+    const combat = JSON.parse(json).dice_mechanics.combat;
+    // Backend-Form: Zusatzschaden als `damage`-Effekt, Malus separat.
+    expect(combat.maneuvers[0]).toEqual({
+      name: 'Wuchtschlag', attackMalus: 2, effects: [{ target: 'damage', op: 'add', value: 2 }],
+    });
+
+    const restored = fromRulesJson(json)!;
+    expect(restored.combat.maneuvers).toEqual([{ name: 'Wuchtschlag', damageBonus: 2, attackMalus: 2 }]);
+  });
+
   it('validates choice groups exactly once and flags untypical combos', () => {
     const data = withPackages();
     const ok: PackageSelection[] = [{ name: 'Elf', choices: ['KK'] }, { name: 'Waldelf' }];

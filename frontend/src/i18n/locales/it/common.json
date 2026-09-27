@@ -46,7 +46,8 @@
     "createLocation": "Crea luogo",
     "closeSidebar": "Chiudi barra laterale",
     "openSidebar": "Apri barra laterale",
-    "closeLocation": "Chiudi luogo"
+    "closeLocation": "Chiudi luogo",
+    "editMap": "Modifica mappa"
   },
   "admin": {
     "accessDenied": "Access denied",
@@ -84,7 +85,15 @@
     "visibility": "Visibilità",
     "visibilityPrivate": "Privato (solo io)",
     "visibilityInvite": "Solo su invito",
-    "visibilityPublic": "Pubblico (lettura per tutti)"
+    "visibilityPublic": "Pubblico (lettura per tutti)",
+    "invitesHint": "I link d’invito danno accesso a questo modello di mondo (uso singolo). I giocatori di solito entrano tramite una campagna — la campagna fork del mondo e serve a giocare.",
+    "invitePlaceholder": "Clicca «Genera invito» per creare un link",
+    "copied": "Copiato!",
+    "copy": "Copia",
+    "inviteGenerate": "Genera link d’invito",
+    "deleteHint": "Elimina definitivamente questo mondo e tutti i dati.",
+    "deleteConfirm": "Eliminare davvero?",
+    "deleteConfirmAction": "Conferma eliminazione"
   },
   "combat": {
     "target": "Target",
@@ -385,7 +394,8 @@
     "createWorld": "Crea mondo",
     "worldName": "Nome del mondo",
     "editWorldSettings": "Modifica impostazioni del mondo",
-    "public": "Pubblico"
+    "public": "Pubblico",
+    "noWorldsHint": "I mondi pubblici appaiono qui automaticamente. Altrimenti i giocatori entrano tramite un invito a una campagna."
   },
   "campaign": {
     "title": "Campagne",
@@ -451,7 +461,10 @@
     "renameTitle": "Nome già usato",
     "renameHint": "Un altro sistema ha già questo nome. Rinominare comunque?",
     "cancel": "Annulla",
-    "renameConfirm": "Rinomina comunque"
+    "renameConfirm": "Rinomina comunque",
+    "templateLabel": "Modello (opzionale)",
+    "templateHint": "Carica un set di regole d’esempio completo nella procedura guidata (D20Lite, TwoDicePool, Fudge). «Reimposta» svuota la procedura.",
+    "templateClear": "Reimposta"
   },
   "rollResult": "Risultato: {{total}}"
 }
